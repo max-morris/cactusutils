@@ -336,7 +336,7 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
                     "scheduling graceful termination of Cactus");
       CCTK_TerminateNext (NULL);
     }
-    else if (CCTK_Equals (info.action_if_found, "abort"))
+    else if (info.action_if_found && CCTK_Equals (info.action_if_found, "abort"))
     {
       CCTK_WARN (1, "'action_if_found' parameter is set to 'abort' - "
                     "aborting Cactus now");
@@ -778,24 +778,24 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
 
   /* do the checking according to the variable's type */
   nans_found = 0;
-  if (vtype == CCTK_VARIABLE_REAL || CCTK_VARIABLE_COMPLEX)
+  if (vtype == CCTK_VARIABLE_REAL || vtype == CCTK_VARIABLE_COMPLEX)
   {
     CHECK_DATA (CCTK_REAL);
   }
 #ifdef CCTK_REAL4
-  else if (vtype == CCTK_VARIABLE_REAL4 || CCTK_VARIABLE_COMPLEX8)
+  else if (vtype == CCTK_VARIABLE_REAL4 || vtype == CCTK_VARIABLE_COMPLEX8)
   {
     CHECK_DATA (CCTK_REAL4);
   }
 #endif
 #ifdef CCTK_REAL8
-  else if (vtype == CCTK_VARIABLE_REAL8 || CCTK_VARIABLE_COMPLEX16)
+  else if (vtype == CCTK_VARIABLE_REAL8 || vtype == CCTK_VARIABLE_COMPLEX16)
   {
     CHECK_DATA (CCTK_REAL8);
   }
 #endif
 #ifdef CCTK_REAL16
-  else if (vtype == CCTK_VARIABLE_REAL16 || CCTK_VARIABLE_COMPLEX32)
+  else if (vtype == CCTK_VARIABLE_REAL16 || vtype == CCTK_VARIABLE_COMPLEX32)
   {
     CHECK_DATA (CCTK_REAL16);
   }
