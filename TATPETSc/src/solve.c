@@ -45,6 +45,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   
   /* world communicator */
   MPI_Comm comm;
+  int rank, size;
   
   /* multigrid contest */
   DMMG *dmmg;
@@ -129,6 +130,8 @@ int TATPETSc_solve (const cGH *cctkGH,
   
   comm = PETSC_COMM_WORLD;
   user.comm = comm;
+  MPI_Comm_size (comm, &size);
+  MPI_Comm_rank (comm, &rank);
   
   
   
@@ -440,8 +443,15 @@ int TATPETSc_solve (const cGH *cctkGH,
     /* Calculate Jacobian directly through a user given function */
     
     if (veryverbose) CCTK_INFO ("DAGetMatrix");
-    ierr = DAGetMatrix (da, MATAIJ, &J);
-    CHKERRQ(ierr);
+/*     ierr = DAGetMatrix (da, MATAIJ, &J); */
+/*     CHKERRQ(ierr); */
+    if (size==1) {
+      ierr = DAGetMatrix (da, MATSEQAIJ, &J);
+      CHKERRQ(ierr);
+    } else {
+      ierr = DAGetMatrix (da, MATMPIAIJ, &J);
+      CHKERRQ(ierr);
+    }
     if (veryverbose) CCTK_INFO ("DAGetColoring");
     ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
     CHKERRQ(ierr);
@@ -456,9 +466,15 @@ int TATPETSc_solve (const cGH *cctkGH,
     
     if (!get_coloring) {
       if (veryverbose) CCTK_INFO ("DAGetMatrix");
-/*       ierr = DAGetMatrix (da, MATMPIAIJ, &J); */
-      ierr = DAGetMatrix (da, MATAIJ, &J);
-      CHKERRQ(ierr);
+/*       ierr = DAGetMatrix (da, MATAIJ, &J); */
+/*       CHKERRQ(ierr); */
+      if (size==1) {
+        ierr = DAGetMatrix (da, MATSEQAIJ, &J);
+        CHKERRQ(ierr);
+      } else {
+        ierr = DAGetMatrix (da, MATMPIAIJ, &J);
+        CHKERRQ(ierr);
+      }
       if (veryverbose) CCTK_INFO ("DAGetColoring");
       ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
       CHKERRQ(ierr);

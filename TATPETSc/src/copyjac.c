@@ -174,6 +174,7 @@ int TATPETSc_copyjac (Mat J, void *userptr)
   
   ierr = MatSetOption(J,MAT_ROWS_SORTED);CHKERRQ(ierr);
   ierr = MatSetOption(J,MAT_COLUMNS_SORTED);CHKERRQ(ierr);
+/*   ierr = MatSetOption(J,MAT_IGNORE_ZERO_ENTRIES);CHKERRQ(ierr); */
   
   assert (nvars==1);
   
