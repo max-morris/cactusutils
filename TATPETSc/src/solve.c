@@ -38,7 +38,7 @@ int TATPETSc_solve (cGH *cctkGH,
   CCTK_INT periodic[DIM];
   CCTK_INT solvebnds[2*DIM];
   CCTK_INT sw;
-  CCTK_FN_POINTER ptmp;
+  CCTK_FPOINTER ptmp;
   int (*jac) (const cGH *cctkGH, Mat *J, Mat *B,
 	      MatStructure *flag, void *data);
   int (*get_coloring)(DA da, ISColoring *iscoloring,
