@@ -19,7 +19,7 @@
 #include "cctk_Termination.h"
 /* the rcsid and the macro to use it */
 static char *rcsid = "$Header$";
-CCTK_FILEVERSION(BetaThorns_NaNChecker_NaNCheck_c)
+CCTK_FILEVERSION(CactusUtils_NaNChecker_NaNCheck_c)
 
 
 /********************************************************************
@@ -90,9 +90,8 @@ int NaNChecker_NaNCheck (cGH *GH)
    @author     Thomas Radke
    @date       Sat 21 Apr 2001
    @desc
-               Prints a level 1 warning for a Inf/NaN found in a variable
-               at the given processor-local linear index and terminates
-               Cactus if requested.
+               Prints a warning for a Inf/NaN found in a variable
+               at the given processor-local linear index.
                The warning includes the variable's fullname along with
                the global index of the NaN element in fortran order.
    @enddesc
@@ -130,7 +129,6 @@ static void PrintWarning (const char *error_type,
                           const char *fullname,
                           const cGroupDynamicData *gdata)
 {
-  DECLARE_CCTK_PARAMETERS
   int i;
   char *index_string;
   const char *complex_part;
@@ -166,21 +164,11 @@ static void PrintWarning (const char *error_type,
                (linear_index % gdata->lsh[i]) + gdata->lbnd[i] + 1);
     }
 
-    CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+    CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
                 "%s caught in %svariable '%s' at (%s)",
                 error_type, complex_part, fullname, index_string);
 
     free (index_string);
-  }
-
-  /* Do more than just print a warning ? */
-  if (CCTK_Equals (action_if_found, "terminate"))
-  {
-    CCTK_TerminateNext (NULL);
-  }
-  else if (CCTK_Equals (action_if_found, "abort"))
-  {
-    CCTK_Abort (NULL, 0);
   }
 }
 
@@ -215,8 +203,12 @@ static void PrintWarning (const char *error_type,
   {                                                                           \
     if (! finite ((double) _typed_data[_i]))                                  \
     {                                                                         \
-      PrintWarning (isnan ((double) _typed_data[_i]) ? "NaN" : "Inf",         \
-                    _i, fp_type, fullname, &gdata);                           \
+      nans_found++;                                                           \
+      if (check_max == 0 || nans_found <= check_max)                          \
+      {                                                                       \
+        PrintWarning (isnan ((double) _typed_data[_i]) ? "NaN" : "Inf",       \
+                      _i, fp_type, fullname, &gdata);                         \
+      }                                                                       \
     }                                                                         \
   }                                                                           \
 }
@@ -236,7 +228,11 @@ static void PrintWarning (const char *error_type,
   {                                                                           \
     if (isnan ((double) _typed_data[_i]))                                     \
     {                                                                         \
-      PrintWarning ("NaN", _i, fp_type, fullname, &gdata);                    \
+      nans_found++;                                                           \
+      if (check_max == 0 || nans_found <= check_max)                          \
+      {                                                                       \
+        PrintWarning ("NaN", _i, fp_type, fullname, &gdata);                  \
+      }                                                                       \
     }                                                                         \
   }                                                                           \
 }
@@ -256,7 +252,9 @@ static void PrintWarning (const char *error_type,
    @author     Thomas Radke
    @desc
                Checks a CCTK variable given by its index against NaN's.
-               Only floating point typed variables are checked.
+               It will issue a warning each time a NaN was found and also
+               terminate Cactus afterwards if requested.
+               Note that only floating point typed variables are checked.
                <BR>
                This routine is called as a callback via CCTK_TraverseString().
    @enddesc
@@ -280,8 +278,9 @@ static void PrintWarning (const char *error_type,
 @@*/
 static void NaNCheck (int vindex, const char *optstring, void *_GH)
 {
-  cGH *GH;
-  int i, fp_type;
+  DECLARE_CCTK_PARAMETERS
+  const cGH *GH;
+  int i, fp_type, nans_found;
   int vtype, gindex, nelems;
   char *fullname;
   const char *vtypename;
@@ -341,6 +340,7 @@ static void NaNCheck (int vindex, const char *optstring, void *_GH)
       data = CCTK_VarDataPtrI (GH, 0, vindex);
 
       /* do the checking according to the variable's type */
+      nans_found = 0;
       if (vtype == CCTK_VARIABLE_REAL || CCTK_VARIABLE_COMPLEX)
       {
         CHECK_DATA (CCTK_REAL);
@@ -368,6 +368,26 @@ static void NaNCheck (int vindex, const char *optstring, void *_GH)
         CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
                     "NanCheck: Unknown variable type '%s' for variable '%s'",
                     vtypename, fullname);
+      }
+
+      /* Do more than just print a warning ? */
+      if (nans_found > 0)
+      {
+        if (gdata.dim > 0)
+        {
+          CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                      "There were %d NaN/Inf value(s) found in variable '%s'",
+                      nans_found, fullname);
+        }
+
+        if (CCTK_Equals (action_if_found, "terminate"))
+        {
+          CCTK_TerminateNext (NULL);
+        }
+        else if (CCTK_Equals (action_if_found, "abort"))
+        {
+          CCTK_Abort (NULL, 0);
+        }
       }
     }
     else
