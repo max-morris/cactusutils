@@ -3,6 +3,9 @@
 
 implements: NaNChecker
 
+inherits: Reduce
+
+
 INCLUDES HEADER: NaNCheck.h in NaNChecker.h
 
 private:
