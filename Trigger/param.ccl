@@ -7,8 +7,20 @@ CCTK_INT Trigger_Number "Number of triggers"
 
 STRING Trigger_Checked_Variable[10] "variable to be checked for"
 {
-  ".+" :: "fully qualified variable name"
-  "^$" :: "An empty string to trigger nothing"     
+  ".+" :: "fully qualified variable name, 'param' for a parameter"
+  "^$" :: "An empty string to trigger nothing"
+} ""
+
+STRING Trigger_Checked_Parameter_Thorn[10] "thorn of parameter to be checked for"
+{
+  ".+" :: "thorn name"
+  "^$" :: "An empty string to trigger nothing"
+} ""
+
+STRING Trigger_Checked_Parameter_Name[10] "parameter name to be checked for"
+{
+  ".+" :: "parameter name"
+  "^$" :: "An empty string to trigger nothing"
 } ""
 
 STRING Trigger_Relation[10] "relation operator for checked variable"
@@ -23,18 +35,30 @@ CCTK_REAL Trigger_Checked_Value[10] "triggered value for checked variable"
 
 STRING Trigger_Reduction[10] "valid reduction method"
 {
-  ".+" :: "some relations"
+  ".+" :: "some relations e.g. 'norm2'"
+  "^$" :: "An empty string for no reduction (for scalars)"
 } "norm2"
+
+STRING Trigger_Reaction[10] "how to react on a positive trigger"
+{
+  ".+" :: "'output' for file output, 'steer' to steer a parameter"
+} "output"
 
 STRING Trigger_Output_Method[10] "IO-output method for this trigger"
 {
-  ".+" :: "a enabled IO-method"
+  ".+" :: "an enabled IO-method"
 } "1D"
 
 STRING Trigger_Output_Variables[10] "variable to be put out"
 {
   ".+" :: "Space-separated list of fully qualified variable name"
   "^$" :: "An empty string to trigger nothing"     
+} ""
+
+STRING Trigger_Steer_Parameter[10] "parameter to steer"
+{
+  ".+" :: "fully qualified parameter name"
+  "^$" :: "An empty string to steer nothing"     
 } ""
 
 CCTK_INT Trigger_Debug "turnes on debug messages"

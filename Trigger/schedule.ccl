@@ -4,3 +4,10 @@ schedule Trigger_Startup at STARTUP
     LANG: C
 }   "Startup Routine"
 
+schedule Trigger_Check at ANALYSIS
+{
+    LANG: C
+}   "test"
+
+STORAGE: Trigger_Vars
+

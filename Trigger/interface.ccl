@@ -3,3 +3,8 @@
 inherits: IO
 implements: trigger
 
+CCTK_REAL Trigger_Vars DISTRIB=CONSTANT
+{
+  trigger_cctk_iteration
+} "Scalars for the triggers"
+

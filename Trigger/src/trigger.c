@@ -15,6 +15,8 @@ typedef struct
   int *last_checked;
   const char **relation;
   const char **reduction;
+  const char **checked_parameter_name;
+  const char **checked_parameter_thorn;
   CCTK_REAL *checked_value;
   const char **output_method;
   const char *out_dir;
@@ -34,7 +36,7 @@ int Trigger_Write(const cGH *GH, int varindex, const char *method)
   snprintf(file_name, 8+(int)strlen(CCTK_VarName(varindex))+1,
            "%s%s", "trigger_", CCTK_VarName(varindex));
   if (my_GH->debug)
-    printf("Doing tiggered output of %s with method %s in file %s.",
+    printf("Doing tiggered output of %s with method %s in file %s.\n",
            full_name, method, file_name);
   CCTK_OutputVarAsByMethod(GH, full_name, method, file_name);
   free(file_name);
@@ -42,11 +44,12 @@ int Trigger_Write(const cGH *GH, int varindex, const char *method)
   return 1;
 }
 
+/* This routine checks if a trigger is fullfilled */
 int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
 {
   TriggerGH *my_GH;
-  int varindex, reduction_handle, errno, ret;
-  CCTK_REAL value;
+  int varindex, reduction_handle=0, errno, ret;
+  CCTK_REAL *tmp_value, value;
   cGH *not_const_GH;
 
   /* as long as GH in Reduce() is not const, we have to use a cast to
@@ -65,21 +68,39 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
       printf("not doing output for trigger %d twice\n", trigger);
     return 0;
   }
-  /* get a reduction handle */
-  reduction_handle=CCTK_ReductionHandle(my_GH->reduction[trigger]);
-  if (reduction_handle<0)
-    CCTK_WARN(0, "Unable to get reduction handle.");
+  /* do we have to use a reduction" */
+  if (!CCTK_EQUALS(my_GH->reduction[trigger], ""))
+  {
+    /* get a reduction handle */
+    reduction_handle=CCTK_ReductionHandle(my_GH->reduction[trigger]);
+    if (reduction_handle<0)
+      CCTK_WARN(0, "Unable to get reduction handle.");
+  }
   /* get variable to check for */
   varindex=my_GH->checked_variable[trigger];
-  /* Do Reduce */
-  if (my_GH->debug)
-    printf("reducing %d %d\n", reduction_handle, varindex);
-  errno=CCTK_Reduce(not_const_GH, 0, reduction_handle, 1,
-                    CCTK_VARIABLE_REAL, &value, 1, varindex);
-  if (my_GH->debug)
-    printf("reducing was ok\n");
-  if (errno)
-    CCTK_WARN(0, "Reduce returned an error.");
+  /* Do reduce */
+  if (reduction_handle)
+  {
+    if (my_GH->debug)
+      printf("reducing %d %d\n", reduction_handle, varindex);
+    errno=CCTK_Reduce(not_const_GH, -1, reduction_handle, 1,
+                      CCTK_VARIABLE_REAL, &value, 1, varindex);
+    if (my_GH->debug)
+      printf("reducing was ok\n");
+    if (errno)
+      CCTK_WARN(0, "Reduce returned an error.");
+  }
+  else
+    // -1 indicates a paramter
+    if (varindex>=0)
+      value=((CCTK_REAL *)CCTK_VarDataPtrI(GH , 0, varindex))[0];
+    else
+    {
+      tmp_value=((CCTK_REAL *)CCTK_ParameterGet(
+                               my_GH->checked_parameter_name[trigger],
+                               my_GH->checked_parameter_thorn[trigger],NULL));
+      value=tmp_value[0];
+    }
   /* check condition of this trigger */
   ret=0;
   if ( (CCTK_EQUALS(my_GH->relation[trigger], ">") &&
@@ -93,16 +114,33 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
      )
     ret=1;
   if (ret)
-    CCTK_VInfo(CCTK_THORNSTRING,"trigger nr. %d fullfilled for %s (%f%s%f)",
-               trigger, CCTK_VarName(varindex),
-               value, my_GH->relation[trigger], my_GH->checked_value[trigger]);
-  else
-    if (my_GH->debug)
-      CCTK_VInfo(CCTK_THORNSTRING,
-                 "trigger nr. %d not fullfilled for %s (%f%s%f)",
+    if (varindex>=0)
+      CCTK_VInfo(CCTK_THORNSTRING,"trigger nr. %d fullfilled for %s (%f%s%f)",
                  trigger, CCTK_VarName(varindex),
                  value, my_GH->relation[trigger],
                  my_GH->checked_value[trigger]);
+    else
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "trigger nr. %d fullfilled for %s::%s (%f%s%f)",
+                 trigger, my_GH->checked_parameter_name[trigger],
+                          my_GH->checked_parameter_thorn[trigger],
+                 value, my_GH->relation[trigger],
+                 my_GH->checked_value[trigger]);
+  else
+    if (my_GH->debug)
+      if (varindex>=0)
+        CCTK_VInfo(CCTK_THORNSTRING,
+                   "trigger nr. %d not fullfilled for %s (%f%s%f)",
+                   trigger, CCTK_VarName(varindex),
+                   value, my_GH->relation[trigger],
+                   my_GH->checked_value[trigger]);
+      else
+        CCTK_VInfo(CCTK_THORNSTRING,
+                   "trigger nr. %d not fullfilled for %s::%s (%f%s%f)",
+                   trigger, my_GH->checked_parameter_name[trigger],
+                            my_GH->checked_parameter_thorn[trigger],
+                   value, my_GH->relation[trigger],
+                   my_GH->checked_value[trigger]);
   return ret;
 }
 
@@ -180,21 +218,24 @@ int Trigger_TriggerOutput(const cGH *GH, int varindex)
 }
 
 /* This function gets called for triggered output variables */
-int Trigger_OutputGH(const cGH *GH)
+void Trigger_Check(CCTK_ARGUMENTS)
 {
+  DECLARE_CCTK_ARGUMENTS
+  DECLARE_CCTK_PARAMETERS
   int varindex, ret;
   TriggerGH *my_GH;
-  my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
+  my_GH = (TriggerGH*)CCTK_GHExtension(cctkGH, "Trigger");
   if (my_GH->debug)
-    printf("Trigger_OutputGH\n");
+    printf("Testing triggers\n");
+  /* refresh internal variables */
+  trigger_cctk_iteration[0]=(CCTK_REAL)cctk_iteration;
   ret=0;
   /* loop over all variables */ 
   for (varindex = CCTK_NumVars()-1; varindex >= 0; varindex--)
     /* if it is time for output and output was ok, count this */
-    if (Trigger_TimeForOutput(GH, varindex) &&
-        Trigger_TriggerOutput(GH, varindex))
+    if (Trigger_TimeForOutput(cctkGH, varindex) &&
+        Trigger_TriggerOutput(cctkGH, varindex))
       ret++;
-  return ret;
 }
 
 /* This struct is (only) used to pass three arguments to the callback of
@@ -235,18 +276,6 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
   int i,method;
   transverse_info *info;
   
-  /* register the trigger routines as new I/O method */
-  method = CCTK_RegisterIOMethod("Trigger");
-  if (method)
-  {
-    CCTK_RegisterIOMethodTimeToOutput(method, Trigger_TimeForOutput);
-    CCTK_RegisterIOMethodTriggerOutput(method, Trigger_TriggerOutput);
-    CCTK_RegisterIOMethodOutputGH(method, Trigger_OutputGH);
-    CCTK_INFO("Registered Trigger as IO-method");
-  }
-  else
-    CCTK_WARN(0,"Could not register Trigger as IO-method.");
-
   /* allocate internal data structures */
   my_GH = (TriggerGH*) malloc(sizeof(TriggerGH));
   info = (transverse_info*) malloc(sizeof(transverse_info));
@@ -284,8 +313,20 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
     my_GH->checked_value[i]=Trigger_Checked_Value[i];
     info->trigger_number=i;
     info->input_output=0;
-    CCTK_TraverseString(Trigger_Checked_Variable[i],
-                        Trigger_Transverse_Callback, info, CCTK_VAR);
+    /* If it is no variable, try a parameter */
+    if (CCTK_EQUALS(Trigger_Checked_Variable[i],"param"))
+    {
+        if (!CCTK_ParameterGet(Trigger_Checked_Parameter_Name[i],
+                               Trigger_Checked_Parameter_Thorn[i],NULL))
+            CCTK_WARN(0,"No parameter with that name found");
+        my_GH->checked_variable[i]=-1;
+        my_GH->checked_parameter_name[i] =Trigger_Checked_Parameter_Name[i];
+        my_GH->checked_parameter_thorn[i]=Trigger_Checked_Parameter_Thorn[i];
+    }
+    else
+        if (!CCTK_TraverseString(Trigger_Checked_Variable[i],
+                                 Trigger_Transverse_Callback, info, CCTK_VAR))
+            CCTK_WARN(0,"No variable with that name found");
     info->input_output=1;
     CCTK_TraverseString(Trigger_Output_Variables[i],
                         Trigger_Transverse_Callback, info, CCTK_GROUP_OR_VAR);
