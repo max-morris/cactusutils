@@ -1,0 +1,25 @@
+# Parameter definitions for thorn NaNChecker
+# $Header$
+
+#############################################################################
+### declare NaNChecker parameters
+#############################################################################
+private:
+
+INT check_every "How often to check for NaN's" STEERABLE = ALWAYS
+{
+  0   :: "Never (default)"
+  1:* :: "Every so many iterations"
+} 0
+
+STRING check_vars "Groups and/or variables to check for NaN's" STEERABLE = ALWAYS
+{
+  .* :: "List of full group and/or variable names, or 'all' for everything"
+} ""
+
+KEYWORD action_if_found "What do do if a NaN was found" STEERABLE = ALWAYS
+{
+  "just warn" :: "Just print a level warning warning"
+  "terminate" :: "Warn and terminate Cactus gracefully as soon as possible"
+  "abort"     :: "Warn and abort Cactus immediately"
+} "just warn"

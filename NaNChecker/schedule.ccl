@@ -1,0 +1,10 @@
+# Schedule definitions for thorn NaNChecker
+# $Header$
+
+if (*check_vars && check_every > 0)
+{
+  schedule NaNChecker_NaNCheck at POSTSTEP
+  {
+    LANG:C
+  } "Check for NaN's"
+}

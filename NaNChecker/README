@@ -1,0 +1,30 @@
+Cactus Code Thorn NaNChecker
+Authors    : Thomas Radke (tradke@aei.mpg.de)
+CVS info   : $Header$
+--------------------------------------------------------------------------
+
+Purpose of the thorn:
+
+This thorn can be used to analyze CCTK variables of real or complex data type
+for NaN (Not-a-Number) and (on availability of finite(3)) infinite values.
+It does this by registering a routine at CCTK_POSTSTEP which checks at every
+
+  NanChecker::check_every
+
+iteration all the variables listed in
+
+  NaNChecker::check_vars
+
+and - in case a NaN was found - performs an action as specified in
+
+  NaNChecker::action_if_found
+
+Currently these actions can be to
+
+ * just print a level 1 warning message telling you where the NaN occurred,
+
+ * also set the CCTK termination flag so that Cactus will stop the evolution
+   loop and gracefully terminate at the next time possible (giving you the
+   choice of outputting the data from the last evolution timestep),
+
+ * print the warning and immediately terminate Cactus by a call to CCTK_Abort()
