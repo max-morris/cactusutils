@@ -41,7 +41,7 @@ int TATPETSc_solve (cGH *cctkGH,
   CCTK_FPOINTER ptmp;
   int (*jac) (const cGH *cctkGH, Mat *J, Mat *B,
 	      MatStructure *flag, void *data);
-  int (*get_coloring) (DA da, ISColoring *iscoloring, void *data);
+  int (*get_coloring) (DA da, ISColoring *iscoloring, Mat *J, void *data);
   
   /* world communicator */
   MPI_Comm comm;
@@ -430,16 +430,16 @@ int TATPETSc_solve (cGH *cctkGH,
   } else {
     /* Approximate Jacobian numerically (automatically) */
     
-    if (veryverbose) CCTK_INFO ("DAGetMatrix");
-    ierr = DAGetMatrix (da, MATMPIAIJ, &J);
-    CHKERRQ(ierr);
     if (!get_coloring) {
+      if (veryverbose) CCTK_INFO ("DAGetMatrix");
+      ierr = DAGetMatrix (da, MATMPIAIJ, &J);
+    CHKERRQ(ierr);
       if (veryverbose) CCTK_INFO ("DAGetColoring");
       ierr = DAGetColoring (da, IS_COLORING_GHOSTED, &iscoloring);
       CHKERRQ(ierr);
     } else {
       if (veryverbose) CCTK_INFO ("get_coloring");
-      ierr = get_coloring (da, &iscoloring, data);
+      ierr = get_coloring (da, &iscoloring, &J, data);
       CHKERRQ(ierr);
     }
     if (veryverbose) CCTK_INFO ("MatFDColoringCreate");
