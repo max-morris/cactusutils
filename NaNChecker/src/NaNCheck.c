@@ -181,7 +181,6 @@ void NaNChecker_NaNCheck (CCTK_ARGUMENTS)
 #endif
 
   CCTK_TraverseString (check_vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR);
-
   if (info.NaNmask && info.bitmask)
   {
     sum_handle = CCTK_ReductionHandle ("sum");
@@ -721,7 +720,8 @@ static void PrintWarning (const char *error_type,
 static void CheckForNaN (int vindex, const char *optstring, void *_info)
 {
   t_nanchecker_info *info;
-  int i, nans_found;
+  int i, sum_handle;
+  CCTK_INT nans_found, global_nans_found;
   int timelevel, fp_type, vtype, gtype, gindex, nelems;
   char *fullname, *endptr;
   const char *vtypename;
@@ -864,25 +864,32 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
   /* Do more than just print a warning ? */
   if (nans_found > 0 && info->action_if_found && gdata.dim > 0)
   {
-    if (info->NaNmask && gtype == CCTK_GF)
+    if (info->NaNmask && gtype == CCTK_GF && info->bitmask < 8*sizeof (CCTK_INT))
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "There were %d NaN/Inf value(s) found in variable '%s' "
                   "(NaNmask bitfield %d)",
-                  nans_found, fullname, info->bitmask);
+                  (int) nans_found, fullname, info->bitmask);
     }
     else
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "There were %d NaN/Inf value(s) found in variable '%s'",
-                  nans_found, fullname);
+                  (int) nans_found, fullname);
+    }
+  }
+  /* check if the (global) bitmask needs to be incremented */
+  if (info->NaNmask && gtype == CCTK_GF && info->bitmask < 8*sizeof (CCTK_INT))
+  {
+    sum_handle = CCTK_ReductionHandle ("sum");
+    CCTK_ReduceLocalScalar (info->GH, -1, sum_handle, &nans_found,
+                            &global_nans_found, CCTK_VARIABLE_INT);
+    if (global_nans_found)
+    {
+      info->bitmask++;
     }
   }
   info->count += nans_found;
-  if (gtype == CCTK_GF)
-  {
-    info->bitmask++;
-  }
 
   if (coords)
   {
