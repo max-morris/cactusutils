@@ -53,6 +53,7 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
 static void CheckForNaN (int vindex, const char *optstring, void *arg);
 static void SetToNaN (int vindex, const char *optstring, void *arg);
 static void PrintWarning (const char *error_type,
+			  int verbose,
                           int linear_index,
                           int fp_type,
                           const CCTK_REAL *const coords[],
@@ -65,6 +66,7 @@ static void PrintWarning (const char *error_type,
 typedef struct
 {
   const cGH *GH;
+  int verbose;
   int report_max;
   const char *action_if_found;
   int count;
@@ -109,6 +111,14 @@ int NaNChecker_NaNCheck (const cGH *GH)
     info.GH = GH;
     info.report_max = report_max;
     info.action_if_found = action_if_found;
+    if (CCTK_EQUALS(verbose,"all"))
+    {
+      info.verbose = 1;
+    }
+    else
+    {
+      info.verbose = 0;
+    }
 #ifdef HAVE_FINITE
     if (CCTK_Equals (check_for, "NaN"))
     {
@@ -347,6 +357,11 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
    @vtype      const char *
    @vio        in
    @endvar
+   @var        verbose
+   @vdesc      how much information to give
+   @vtype      int
+   @vio        in
+   @endvar
    @var        linear_index
    @vdesc      processor-local linear index of the NaN/Inf
    @vtype      int
@@ -374,6 +389,7 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
    @endvar
 @@*/
 static void PrintWarning (const char *error_type,
+			  int verbose,
                           int linear_index,
                           int fp_type,
                           const CCTK_REAL *const coords[],
@@ -383,6 +399,7 @@ static void PrintWarning (const char *error_type,
   int i;
   char *index_string, *coord_string;
   const char *complex_part;
+  int amended_index;
 
 
   if (fp_type == 2)
@@ -408,39 +425,44 @@ static void PrintWarning (const char *error_type,
     index_string = (char *) malloc (5 * 10 * gdata->dim);
     coord_string = index_string + 10 * gdata->dim;
 
+    amended_index = linear_index;
+
     sprintf (index_string, "%d",
-             (linear_index % gdata->lsh[0]) + gdata->lbnd[0] + 1);
+             (amended_index % gdata->lsh[0]) + gdata->lbnd[0] + 1);
     if (coords)
     {
       sprintf (coord_string, "%5.3e", (double) coords[0][linear_index]);
     }
     for (i = 1; i < gdata->dim; i++)
     {
-      linear_index /= gdata->lsh[i - 1];
+      amended_index /= gdata->lsh[i - 1];
       sprintf (index_string, "%s, %d", index_string,
-               (linear_index % gdata->lsh[i]) + gdata->lbnd[i] + 1);
+               (amended_index % gdata->lsh[i]) + gdata->lbnd[i] + 1);
       if (coords)
       {
-        sprintf (coord_string, "%s, %5.3e", coord_string,
+	sprintf (coord_string, "%s, %5.3e", coord_string,
                  (double) coords[i][linear_index]);
       }
     }
 
-    if (coords)
+    if (verbose)
     {
-      CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "%s caught in %svariable '%s' at index (%s) with coordinates "
-                  "(%s)", error_type, complex_part, fullname, index_string,
-                  coord_string);
-    }
-    else
-    {
-      CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "%s caught in %svariable '%s' at (%s)",
-                  error_type, complex_part, fullname, index_string);
-    }
+      if (coords)
+      {
+	CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
+		    "%s caught in %svariable '%s' at index (%s) with coordinates "
+		    "(%s)", error_type, complex_part, fullname, index_string,
+		    coord_string);
+      }
+      else
+      {
+	CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
+		    "%s caught in %svariable '%s' at (%s)",
+		    error_type, complex_part, fullname, index_string);
+      }
 
-    free (index_string);
+      free (index_string);
+    }
   }
 }
 
@@ -481,7 +503,7 @@ static void PrintWarning (const char *error_type,
           (info->report_max < 0 || nans_found <= info->report_max))           \
       {                                                                       \
         PrintWarning (isnan ((double) _data[_i]) ? "NaN" : "Inf",             \
-                      _i, fp_type, coords, fullname, &gdata);                 \
+		      info->verbose, _i, fp_type, coords, fullname, &gdata);  \
       }                                                                       \
     }                                                                         \
   }                                                                           \
@@ -504,7 +526,8 @@ static void PrintWarning (const char *error_type,
       if (info->action_if_found &&                                            \
           (info->report_max < 0 || nans_found <= info->report_max))           \
       {                                                                       \
-        PrintWarning ("NaN", _i, fp_type, coords, fullname, &gdata);          \
+        PrintWarning ("NaN", info->verbose, _i, fp_type, coords, fullname,    \
+                       &gdata);                                               \
       }                                                                       \
     }                                                                         \
   }                                                                           \
