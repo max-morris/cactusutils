@@ -33,9 +33,14 @@ and to fix any problems as soon as they are seen.
 \section{Periodic Testing}
 
 Periodic testing of variables can easily be achieved by adding NaNChecker
-to the {\tt ActiveThorns} parameter, and setting the parameters {\tt 
-NaNChecker::check\_every} and {\tt NaNChecker::check\_vars} to the required
-values. (For most testing purposes these can be set to {\tt 1} and {``all''} 
+to the {\tt ActiveThorns} parameter, and setting the parameters 
+
+\noindent
+{\tt NaNChecker::check\_every} and {\tt NaNChecker::check\_vars} 
+
+\noindent
+to the required
+values. (For most testing purposes these can be set to {\tt 1} and {"all"} 
 respectively).
 
 The NaNChecker then registers a routine at {\bf CCTK\_POSTSTEP} which checks
@@ -68,7 +73,13 @@ print the warning message(s) and immediately terminate Cactus
 By default, the current timelevel of the variables given in
 {\tt NaNChecker::check\_vars} will be checked. This can be overwritten by
 an optional string {\tt [timelevel=<timelevel>]} appended to the
-variable/group name.
+variable/group name. For example, to apply the NaNChecker to timelevel 0
+of the variable grid::x, timelevel 1 of {\tt grid::y} and timelevel 2 of 
+{\tt grid::z} you would use the parameter
+
+\noindent
+{\tt NaNChecker::check\_vars = "grid::x grid::y[timelevel=1] grid::z[timelevel=2"}
+
 %
 \section{NaNChecker API}
 %
@@ -76,8 +87,9 @@ Thorn NaNChecker also provides a function API which can be used by other code
 to invoke the NaNChecker routines to test for NaN values or to set NaN values
 for a list of variables:
 
-\begin{itemize}
-  \item{\bf C API}
+\vskip .2cm
+\noindent{\bf C API}
+
 \begin{verbatim}
   int NaNChecker_CheckVarsForNaN (const cGH *cctkGH,
                                   int report_max,
@@ -87,7 +99,11 @@ for a list of variables:
   int NaNChecker_SetVarsToNaN (const cGH *cctkGH,
                                const char *vars);
 \end{verbatim}
-  \item{\bf Fortran API}
+
+\vskip.2cm
+\noindent
+{\bf Fortran API}
+
 \begin{verbatim}
   call NaNChecker_CheckVarsForNaN (ierror, cctkGH, report_max,
                                    vars, action_if_found)
@@ -104,7 +120,6 @@ for a list of variables:
                                 CCTK_POINTER cctkGH
                                 character*(*) vars
 \end{verbatim}
-\end{itemize}
 
 The {\tt report\_max, check\_vars,} and {\tt action\_if\_found} arguments
 have the same semantics as their parameter counterparts.\\
