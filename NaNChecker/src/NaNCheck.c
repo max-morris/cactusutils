@@ -182,6 +182,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
     {
       CCTK_WARN (1, "'action_if_found' parameter is set to 'terminate' - "
                     "scheduling graceful termination of Cactus");
+      CCTK_TerminateNext (GH);
     }
     else if (CCTK_Equals (info.action_if_found, "abort"))
     {
