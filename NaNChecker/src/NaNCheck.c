@@ -30,7 +30,9 @@ CCTK_FILEVERSION(CactusUtils_NaNChecker_NaNCheck_c)
 /********************************************************************
  ********************    External Routines   ************************
  ********************************************************************/
+int NaNChecker_ResetCounter (const cGH *GH);
 int NaNChecker_NaNCheck (const cGH *GH);
+int NaNChecker_TakeAction (const cGH *GH);
 
 
 /********************************************************************
@@ -69,7 +71,7 @@ typedef struct
   int verbose;
   int report_max;
   const char *action_if_found;
-  CCTK_INT count, sum;
+  CCTK_INT count;
   CCTK_INT *NaNmask;
   int bitmask;
 #ifdef HAVE_FINITE
@@ -82,6 +84,37 @@ typedef struct
  ********************    Static Variables    ************************
  ********************************************************************/
 static int last_iteration_output = -1;
+
+
+ /*@@
+   @routine    NaNChecker_ResetCounter
+   @author     Thomas Radke
+   @date       Tue 22 June 2004
+   @desc
+               Set the NaNChecker::NaNsFound counter to 0.
+   @enddesc    
+
+   @var        GH
+   @vdesc      Pointer to CCTK GH
+   @vtype      const cGH *
+   @vio        in
+   @endvar
+
+   @returntype int
+   @returndesc
+               0 for success
+   @endreturndesc
+@@*/
+int NaNChecker_ResetCounter (const cGH *GH)
+{
+  CCTK_INT *NaNsFound;
+
+
+  NaNsFound = CCTK_VarDataPtr (GH, 0, "NaNChecker:NaNsFound");
+  *NaNsFound = 0;
+
+  return (0);
+}
 
 
  /*@@
@@ -111,6 +144,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
 {
   int i, nelems, sum_handle, retval;
   t_nanchecker_info info;
+  CCTK_INT *NaNsFound;
   DECLARE_CCTK_PARAMETERS
 
 
@@ -119,8 +153,9 @@ int NaNChecker_NaNCheck (const cGH *GH)
     return (0);
   }
 
+  NaNsFound = CCTK_VarDataPtr (GH, 0, "NaNChecker:NaNsFound");
   info.GH = GH;
-  info.count = info.sum = 0;
+  info.count = *NaNsFound = 0;
   info.bitmask = 0;
   info.report_max = report_max;
   info.action_if_found = action_if_found;
@@ -166,41 +201,72 @@ int NaNChecker_NaNCheck (const cGH *GH)
   if (info.NaNmask && info.bitmask)
   {
     sum_handle = CCTK_ReductionHandle ("sum");
-    CCTK_ReduceLocalScalar (GH, -1, sum_handle, &info.count, &info.sum,
+    CCTK_ReduceLocalScalar (GH, -1, sum_handle, &info.count, NaNsFound,
                             CCTK_VARIABLE_INT);
   }
 
-  /* if NaNs were found then output NaN mask with the 'IOHDF5' I/O method */
-  if (info.sum > 0)
-  {
-    if (info.verbose)
-    {
-      CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
-    }
-    CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
-                              "IOHDF5", "NaNmask");
-
-    /* save the iteration of the last NaNmask output */
-    last_iteration_output = GH->cctk_iteration;
-  }
-
-  if (info.count > 0)
-  {
-    if (CCTK_Equals (info.action_if_found, "terminate"))
-    {
-      CCTK_WARN (1, "'action_if_found' parameter is set to 'terminate' - "
-                    "scheduling graceful termination of Cactus");
-      CCTK_TerminateNext (GH);
-    }
-    else if (CCTK_Equals (info.action_if_found, "abort"))
-    {
-      CCTK_WARN (1, "'action_if_found' parameter is set to 'abort' - "
-                    "aborting Cactus now");
-      CCTK_Abort (NULL, 0);
-    }
-  }
-
   return (retval);
+}
+
+
+ /*@@
+   @routine    NaNChecker_TakeAction
+   @author     Thomas Radke
+   @date       Tue 22 June 2004
+   @desc
+               If any NaNs were found, output the NaNmask (if requested)
+               and take some action (according to NaNChecker::action_if_found).
+   @enddesc
+
+   @var        GH
+   @vdesc      Pointer to CCTK GH
+   @vtype      const cGH *
+   @vio        in
+   @endvar
+
+   @returntype int
+   @returndesc
+               0 for success
+   @endreturndesc
+@@*/
+int NaNChecker_TakeAction (const cGH *GH)
+{
+  const CCTK_INT *NaNsFound;
+  DECLARE_CCTK_PARAMETERS
+
+
+  /* if no NaNs were found then this routine doesn't do anything */
+  NaNsFound = CCTK_VarDataPtr (GH, 0, "NaNChecker::NaNsFound");
+  if (! *NaNsFound)
+  {
+    return (0);
+  }
+
+  /* output NaN mask with the 'IOHDF5' I/O method */
+  if (CCTK_Equals (verbose, "all"))
+  {
+    CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
+  }
+  CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
+                            "IOHDF5", "NaNmask");
+
+  /* save the iteration of the last NaNmask output */
+  last_iteration_output = GH->cctk_iteration;
+
+  if (CCTK_Equals (action_if_found, "terminate"))
+  {
+    CCTK_WARN (1, "'action_if_found' parameter is set to 'terminate' - "
+                  "scheduling graceful termination of Cactus");
+    CCTK_TerminateNext (GH);
+  }
+  else if (CCTK_Equals (action_if_found, "abort"))
+  {
+    CCTK_WARN (1, "'action_if_found' parameter is set to 'abort' - "
+                  "aborting Cactus now");
+    CCTK_Abort (NULL, 0);
+  }
+
+  return (0);
 }
 
 
@@ -887,7 +953,7 @@ static void SetToNaN (int vindex, const char *optstring, void *_info)
   cGroupDynamicData gdata;
 
 
-  info = (t_nanchecker_info *) _info;
+  info = _info;
 
   vtype = CCTK_VarTypeI (vindex);
   fullname = CCTK_FullName (vindex);

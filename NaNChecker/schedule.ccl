@@ -3,9 +3,23 @@
 
 if (*check_vars && check_every > 0)
 {
+  STORAGE: NaNmask NaNsFound
+
+  schedule NaNChecker_ResetCounter at ANALYSIS before NaNChecker_TakeAction
+  {
+    LANG:    C
+    OPTIONS: level
+  } "Reset the NaNChecker::NaNsFound counter"
+
   schedule NaNChecker_NaNCheck at ANALYSIS
   {
-    LANG:C
-    STORAGE: NaNmask_group
-  } "Check for NaNs"
+    LANG:    C
+    OPTIONS: local
+  } "Check for NaNs and count them in NaNChecker::NaNsFound"
+
+  schedule NaNChecker_TakeAction at ANALYSIS after NaNChecker_NaNCheck
+  {
+    LANG:    C
+    OPTIONS: level
+  } "Output NaNChecker::NaNmask and take action according to NaNChecker::action_if_found"
 }
