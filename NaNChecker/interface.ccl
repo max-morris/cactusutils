@@ -4,3 +4,10 @@
 implements: NaNChecker
 
 INCLUDES HEADER: NaNCheck.h in NaNChecker.h
+
+private:
+
+INT NaNmask_group TYPE = GF
+{
+  NaNmask
+} "Grid function mask for NaN locations"

@@ -53,7 +53,7 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
 static void CheckForNaN (int vindex, const char *optstring, void *arg);
 static void SetToNaN (int vindex, const char *optstring, void *arg);
 static void PrintWarning (const char *error_type,
-			  int verbose,
+                          int verbose,
                           int linear_index,
                           int fp_type,
                           const CCTK_REAL *const coords[],
@@ -70,10 +70,18 @@ typedef struct
   int report_max;
   const char *action_if_found;
   int count;
+  CCTK_INT *NaNmask;
+  int bitmask;
 #ifdef HAVE_FINITE
   enum {CHECK_FOR_NAN = 0, CHECK_FOR_INF = 1, CHECK_FOR_BOTH = 2} check_for;
 #endif
 } t_nanchecker_info;
+
+
+/********************************************************************
+ ********************    Static Variables    ************************
+ ********************************************************************/
+static int last_iteration_output = -1;
 
 
  /*@@
@@ -101,44 +109,87 @@ typedef struct
 @@*/
 int NaNChecker_NaNCheck (const cGH *GH)
 {
-  int retval;
+  int i, nelems, retval;
+  const char *method;
   t_nanchecker_info info;
   DECLARE_CCTK_PARAMETERS
 
 
-  if (GH->cctk_iteration % check_every == 0)
+  if (GH->cctk_iteration % check_every)
   {
-    info.GH = GH;
-    info.report_max = report_max;
-    info.action_if_found = action_if_found;
-    if (CCTK_EQUALS(verbose,"all"))
+    return (0);
+  }
+  if (GH->cctk_iteration == last_iteration_output)
+  {
+    CCTK_WARN (2, "Already called NaNChecker I/O method at this iteration");
+    return (0);
+  }
+
+  info.GH = GH;
+  info.count = 0;
+  info.bitmask = 0;
+  info.report_max = report_max;
+  info.action_if_found = action_if_found;
+  info.verbose = CCTK_Equals (verbose, "all");
+
+  info.NaNmask = out_NaNmask ?
+                 CCTK_VarDataPtr (GH, 0, "NaNChecker::NaNmask") : NULL;
+  if (info.NaNmask)
+  {
+    /* zero out the NaN mask */
+    for (i = 0, nelems = 1; i < GH->cctk_dim; i++)
     {
-      info.verbose = 1;
+      nelems *= GH->cctk_lsh[i];
     }
-    else
-    {
-      info.verbose = 0;
-    }
+    memset (info.NaNmask, 0, nelems * sizeof (CCTK_INT));
+  }
+
 #ifdef HAVE_FINITE
-    if (CCTK_Equals (check_for, "NaN"))
-    {
-      info.check_for = CHECK_FOR_NAN;
-    }
-    else if (CCTK_Equals (check_for, "Inf"))
-    {
-      info.check_for = CHECK_FOR_INF;
-    }
-    else
-    {
-      info.check_for = CHECK_FOR_BOTH;
-    }
-#endif
-    retval = CCTK_TraverseString (check_vars, CheckForNaN, &info,
-                                  CCTK_GROUP_OR_VAR);
+  if (CCTK_Equals (check_for, "NaN"))
+  {
+    info.check_for = CHECK_FOR_NAN;
+  }
+  else if (CCTK_Equals (check_for, "Inf"))
+  {
+    info.check_for = CHECK_FOR_INF;
   }
   else
   {
-    retval = 0;
+    info.check_for = CHECK_FOR_BOTH;
+  }
+#endif
+
+  retval = CCTK_TraverseString (check_vars, CheckForNaN, &info,
+                                CCTK_GROUP_OR_VAR);
+
+  /* save the iteration of the last call */
+  last_iteration_output = GH->cctk_iteration;
+
+  if (info.count > 0)
+  {
+    /* if NaNs were found then output NaN mask with the 'IOHDF5' I/O method */
+    if (info.NaNmask && info.bitmask)
+    {
+      if (info.verbose)
+      {
+        CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
+      }
+      CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
+                                "IOHDF5", "NaNmask");
+    }
+
+    if (CCTK_Equals (info.action_if_found, "terminate"))
+    {
+      CCTK_WARN (1, "'action_if_found' parameter is set to 'terminate' - "
+                    "scheduling graceful termination of Cactus");
+      CCTK_TerminateNext (NULL);
+    }
+    else if (CCTK_Equals (info.action_if_found, "abort"))
+    {
+      CCTK_WARN (1, "'action_if_found' parameter is set to 'abort' - "
+                    "aborting Cactus now");
+      CCTK_Abort (NULL, 0);
+    }
   }
 
   return (retval);
@@ -191,8 +242,9 @@ int NaNChecker_NaNCheck (const cGH *GH)
    @returndesc
                the total number of NaN values found, or<BR>
                -1 if a NULL pointer was passed for 'GH' and/or 'vars',<BR>
-               -2 if an unknow keyword was passed in 'action_if_found',<BR>
-               -3 if the 'vars' string couldn't be parsed
+               -2 if NaNChecker was already called at this iteration,<BR>
+               -3 if an unknow keyword was passed in 'action_if_found',<BR>
+               -4 if the 'vars' string couldn't be parsed
    @endreturndesc
 @@*/
 int NaNChecker_CheckVarsForNaN (const cGH *GH,
@@ -208,6 +260,11 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
   {
     CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                 "NULL pointer passed for 'GH' and/or 'vars' argument");
+    return (-2);
+  }
+  if (GH->cctk_iteration == last_iteration_output)
+  {
+    CCTK_WARN (2, "Already called NaNChecker I/O method at this iteration");
     return (-1);
   }
 
@@ -218,13 +275,16 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
     CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                 "Unknown keyword '%s' for 'action_if_found' argument",
                 action_if_found);
-    return (-2);
+    return (-3);
   }
 
   info.GH = GH;
+  info.count = 0;
+  info.bitmask = 0;
+  info.verbose = 0;
   info.report_max = report_max;
   info.action_if_found = action_if_found;
-  info.count = 0;
+
 #ifdef HAVE_FINITE
   if (CCTK_Equals (check_for, "NaN"))
   {
@@ -245,11 +305,42 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
     info.check_for = CHECK_FOR_BOTH;
   }
 #endif
+
   if (CCTK_TraverseString (vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR) < 0)
   {
     CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                 "Couldn't traverse 'vars' string '%s'", vars);
-    return (-3);
+    return (-4);
+  }
+
+  /* save the iteration of the last call */
+  last_iteration_output = GH->cctk_iteration;
+
+  if (info.count > 0)
+  {
+    /* if NaNs were found then output NaN mask with the 'IOHDF5' I/O method */
+    if (info.NaNmask && info.bitmask)
+    {
+      if (info.verbose)
+      {
+        CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
+      }
+      CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
+                                "IOHDF5", "NaNmask");
+    }
+
+    if (CCTK_Equals (info.action_if_found, "terminate"))
+    {
+      CCTK_WARN (1, "'action_if_found' parameter is set to 'terminate' - "
+                    "scheduling graceful termination of Cactus");
+      CCTK_TerminateNext (NULL);
+    }
+    else if (CCTK_Equals (info.action_if_found, "abort"))
+    {
+      CCTK_WARN (1, "'action_if_found' parameter is set to 'abort' - "
+                    "aborting Cactus now");
+      CCTK_Abort (NULL, 0);
+    }
   }
 
   return (info.count);
@@ -389,7 +480,7 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
    @endvar
 @@*/
 static void PrintWarning (const char *error_type,
-			  int verbose,
+                          int verbose,
                           int linear_index,
                           int fp_type,
                           const CCTK_REAL *const coords[],
@@ -422,7 +513,7 @@ static void PrintWarning (const char *error_type,
   {
     /* assume max. 10 characters per index number and 40 characters per
        coordinate value (including separators) */
-    index_string = (char *) malloc (5 * 10 * gdata->dim);
+    index_string = malloc (5 * 10 * gdata->dim);
     coord_string = index_string + 10 * gdata->dim;
 
     amended_index = linear_index;
@@ -440,7 +531,7 @@ static void PrintWarning (const char *error_type,
                (amended_index % gdata->lsh[i]) + gdata->lbnd[i] + 1);
       if (coords)
       {
-	sprintf (coord_string, "%s, %5.3e", coord_string,
+        sprintf (coord_string, "%s, %5.3e", coord_string,
                  (double) coords[i][linear_index]);
       }
     }
@@ -449,16 +540,16 @@ static void PrintWarning (const char *error_type,
     {
       if (coords)
       {
-	CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
-		    "%s caught in %svariable '%s' at index (%s) with coordinates "
-		    "(%s)", error_type, complex_part, fullname, index_string,
-		    coord_string);
+        CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
+                    "%s caught in %svariable '%s' at index (%s) with coordinates "
+                    "(%s)", error_type, complex_part, fullname, index_string,
+                    coord_string);
       }
       else
       {
-	CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
-		    "%s caught in %svariable '%s' at (%s)",
-		    error_type, complex_part, fullname, index_string);
+        CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
+                    "%s caught in %svariable '%s' at (%s)",
+                    error_type, complex_part, fullname, index_string);
       }
 
       free (index_string);
@@ -503,7 +594,11 @@ static void PrintWarning (const char *error_type,
           (info->report_max < 0 || nans_found <= info->report_max))           \
       {                                                                       \
         PrintWarning (isnan ((double) _data[_i]) ? "NaN" : "Inf",             \
-		      info->verbose, _i, fp_type, coords, fullname, &gdata);  \
+                      info->verbose, _i, fp_type, coords, fullname, &gdata);  \
+      }                                                                       \
+      if (info->NaNmask && gtype == CCTK_GF)                                  \
+      {                                                                       \
+        info->NaNmask[_i] |= 1 << info->bitmask;                              \
       }                                                                       \
     }                                                                         \
   }                                                                           \
@@ -528,6 +623,10 @@ static void PrintWarning (const char *error_type,
       {                                                                       \
         PrintWarning ("NaN", info->verbose, _i, fp_type, coords, fullname,    \
                        &gdata);                                               \
+      }                                                                       \
+      if (info->NaNmask)                                                      \
+      {                                                                       \
+        info->NaNmask[_i] |= 1 << info->bitmask;                              \
       }                                                                       \
     }                                                                         \
   }                                                                           \
@@ -580,7 +679,7 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
   const void *data;
 
 
-  info = (t_nanchecker_info *) _info;
+  info = _info;
 
   vtype = CCTK_VarTypeI (vindex);
   fullname = CCTK_FullName (vindex);
@@ -657,8 +756,7 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
       sprintf (coord_system_name, "cart%dd", gdata.dim);
       if (CCTK_CoordSystemHandle (coord_system_name) >= 0)
       {
-        coords = (const CCTK_REAL **)
-                 malloc (gdata.dim * sizeof (const CCTK_REAL *));
+        coords = malloc (gdata.dim * sizeof (const CCTK_REAL *));
       }
     }
     for (i = 0; i < gdata.dim; i++)
@@ -668,7 +766,7 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
       {
         coords[i] = (const CCTK_REAL *) CCTK_VarDataPtrI (info->GH, 0,
                     CCTK_CoordIndex (i + 1, NULL, coord_system_name));
-        if (! coords[i]) 
+        if (! coords[i])
         {
           free (coords);
           coords = NULL;
@@ -712,31 +810,27 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
   }
 
   /* Do more than just print a warning ? */
-  if (nans_found > 0 && info->action_if_found)
+  if (nans_found > 0 && info->action_if_found && gdata.dim > 0)
   {
-    if (gdata.dim > 0)
+    if (info->NaNmask && gtype == CCTK_GF)
+    {
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "There were %d NaN/Inf value(s) found in variable '%s' "
+                  "(NaNmask bitfield %d)",
+                  nans_found, fullname, info->bitmask);
+    }
+    else
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "There were %d NaN/Inf value(s) found in variable '%s'",
                   nans_found, fullname);
     }
-
-    if (CCTK_Equals (info->action_if_found, "terminate"))
-    {
-      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "\"action_if_found\" parameter is set to \"terminate\" - "
-                  "scheduling graceful termination of Cactus");
-      CCTK_TerminateNext (NULL);
-    }
-    else if (CCTK_Equals (info->action_if_found, "abort"))
-    {
-      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "\"action_if_found\" parameter is set to \"abort\" - "
-                  "aborting Cactus now");
-      CCTK_Abort (NULL, 0);
-    }
   }
   info->count += nans_found;
+  if (gtype == CCTK_GF)
+  {
+    info->bitmask++;
+  }
 
   if (coords)
   {

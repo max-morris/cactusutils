@@ -30,6 +30,10 @@ KEYWORD check_for "Check for NaN's and/or infinite numbers (only evaluated if fi
   "both" :: "Check for both NaN's and infinite numbers"
 } "both"
 
+BOOLEAN out_NaNmask "Dump the NaN grid function mask into an HDF5 file" STEERABLE = ALWAYS
+{
+} "yes"
+
 KEYWORD action_if_found "What to do if a NaN was found" STEERABLE = ALWAYS
 {
   "just warn" :: "Just print a level 1 warning"

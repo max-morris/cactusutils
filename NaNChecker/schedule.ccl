@@ -6,5 +6,6 @@ if (*check_vars && check_every > 0)
   schedule NaNChecker_NaNCheck at POSTSTEP
   {
     LANG:C
+    STORAGE: NaNmask_group
   } "Check for NaN's"
 }
