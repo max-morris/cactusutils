@@ -223,6 +223,8 @@ static void PrintWarning (const char *error_type,
 
 #else
 
+#ifdef HAVE_ISNAN
+
 #define CHECK_DATA(cctk_type)                                                 \
 {                                                                             \
   int _i;                                                                     \
@@ -238,6 +240,12 @@ static void PrintWarning (const char *error_type,
     }                                                                         \
   }                                                                           \
 }
+
+#else
+
+#error Unable to check for NaNs on this architecture yet
+
+#endif /* HAVE_ISNAN */
 
 #endif /* HAVE_FINITE */
 
