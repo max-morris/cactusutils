@@ -1,7 +1,7 @@
 # $Header$
 # Erik Schnetter <schnetter@uni-tuebingen.de>
 
-ActiveThorns = "Boundary CartGrid3D IOASCII IOBasic IOUtil Time PUGH PUGHReduce PUGHSlab NaNCatcher IDScalarWave WaveToyC IDSWTEF TATelliptic TATPETSc TATMG"
+ActiveThorns = "Boundary CartGrid3D CoordBase IOASCII IOBasic IOUtil Time PUGH PUGHReduce PUGHSlab NaNCatcher IDScalarWave WaveToyC IDSWTEF TATelliptic TATPETSc TATMG"
 
 !DESC "Charged sphere initial data, solved with TATelliptic/TATPETSc"
 
