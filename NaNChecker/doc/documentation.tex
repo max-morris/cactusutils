@@ -1,13 +1,25 @@
-% Thorn documentation template
 \documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../doc/ThornGuide/cactus}
+
 \begin{document}
 
 \title{NaNChecker}
 \author{Thomas Radke}
-\date{26 May 2001}
+\date{$ $Date$ $}
+
 \maketitle
 
-\abstract{Thorn NaNChecker reports NaN values found in variables.}
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Thorn NaNChecker reports NaN values found in variables.
+\end{abstract}
 
 \section{Purpose}
 
@@ -134,11 +146,8 @@ The C function {\tt NaNChecker\_CheckVarsForNaN()} returns the total number of
 NaN/Inf values found, {\tt NaNChecker\_SetToNaN()} returns the total number of
 variables set to NaN; this return value is stored in the {\tt ierror} argument
 for the corresponding fortran wrapper routines.
-%
-% Automatically created from the ccl files 
-% Do not worry for now.
-\include{interface}
-\include{param}
-\include{schedule}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
 
 \end{document}
