@@ -23,9 +23,9 @@ STRING check_vars "Groups and/or variables to check for NaN's" STEERABLE = ALWAY
   .* :: "List of full group and/or variable names, or 'all' for everything"
 } ""
 
-KEYWORD action_if_found "What do do if a NaN was found" STEERABLE = ALWAYS
+KEYWORD action_if_found "What to do if a NaN was found" STEERABLE = ALWAYS
 {
-  "just warn" :: "Just print a level warning warning"
+  "just warn" :: "Just print a level 1 warning"
   "terminate" :: "Warn and terminate Cactus gracefully as soon as possible"
   "abort"     :: "Warn and abort Cactus immediately"
 } "just warn"
