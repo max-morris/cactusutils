@@ -2,11 +2,6 @@
 # $Header$
 
 
-SCHEDULE TimerReport_Startup AT CCTK_STARTUP
-{
-  LANG: C
-} "Startup routine"
-
 SCHEDULE TimerReport_Output AS zzz_TimerReport_Output AT CCTK_ANALYSIS
 {
   LANG: C
