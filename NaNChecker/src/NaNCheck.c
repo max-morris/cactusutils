@@ -130,7 +130,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
                  CCTK_VarDataPtr (GH, 0, "NaNChecker::NaNmask") : NULL;
   if (info.NaNmask)
   {
-    /* NaNmask cannot be output only once per iteration */
+    /* NaNmask can only be output once per iteration */
     if (GH->cctk_iteration == last_iteration_output)
     {
       CCTK_WARN (2, "Already output NaNmask at this iteration");
