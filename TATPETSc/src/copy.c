@@ -23,11 +23,10 @@ static const char *rcsid = "$Header$";
       
 int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
 {
-  DECLARE_CCTK_PARAMETERS
-  int dummy;
+  DECLARE_CCTK_PARAMETERS;
   
   userdata *user = (userdata*)userptr;
-  const cGH *cctkGH = user->cctkGH;
+  cGH *cctkGH = user->cctkGH;
   
   const int nvars = user->nvars;
   

@@ -18,9 +18,8 @@
 
 int TATPETSc_function (SNES snes, Vec x, Vec f, void *userptr)
 {
-  DECLARE_CCTK_PARAMETERS
-  int dummy;
-  int ierr;
+  DECLARE_CCTK_PARAMETERS;
+  int ierr, ierr2;
   
 #if 1
   userdata *user = (userdata*)userptr;
@@ -28,7 +27,7 @@ int TATPETSc_function (SNES snes, Vec x, Vec f, void *userptr)
   DMMG dmmg = (DMMG)userptr;
   userdata *user = (userdata*)dmmg->user;
 #endif
-  const cGH *cctkGH = user->cctkGH;
+  cGH *cctkGH = user->cctkGH;
   
   assert (user->magic==MAGIC);
   
@@ -38,7 +37,8 @@ int TATPETSc_function (SNES snes, Vec x, Vec f, void *userptr)
   
   TATPETSc_copy (x, userptr, TATcopyout, TATcopyvars);
   ierr = (user->bnd) (cctkGH, user->data);
-  ierr = (user->fun) (cctkGH, user->data);
+  ierr2 = (user->fun) (cctkGH, user->data);
+  if (!ierr) ierr = ierr2;
   TATPETSc_copy (f, userptr, TATcopyin, TATcopyvals);
   
   if (veryverbose) CCTK_INFO ("*** TATPETSc_function done.");

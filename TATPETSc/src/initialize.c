@@ -20,7 +20,7 @@
 
 
 /* A new error handler that does nothing */
-static int error_handler (int line, char *fun, char *file, char *dir, int n, int p, char *mess, void *ctx)
+int TATPETSc_error_handler (int line, char *fun, char *file, char *dir, int n, int p, char *mess, void *ctx)
 {
   return p;
 }
@@ -29,9 +29,8 @@ static int error_handler (int line, char *fun, char *file, char *dir, int n, int
 
 void TATPETSc_initialize (CCTK_ARGUMENTS)
 {
-  DECLARE_CCTK_ARGUMENTS
-  DECLARE_CCTK_PARAMETERS
-  int dummy;
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
   
   /* world communicator */
   MPI_Comm comm;
@@ -65,7 +64,7 @@ void TATPETSc_initialize (CCTK_ARGUMENTS)
     }
   }
   
-  argv = malloc(sizeof(*argv) * argc);
+  argv = malloc(sizeof(*argv) * (argc+1));
   assert (argv);
   argv[0] = "Cactus";
   argv[1] = args;
@@ -76,6 +75,7 @@ void TATPETSc_initialize (CCTK_ARGUMENTS)
       ++argc;
     }
   }
+  argv[argc] = 0;
   
   if (veryverbose) {
     CCTK_INFO ("PETSc command line arguments:");
@@ -98,7 +98,7 @@ void TATPETSc_initialize (CCTK_ARGUMENTS)
   
   
   /* Install a new error handler */
-  ierr = PetscPushErrorHandler (error_handler, 0);
+  ierr = PetscPushErrorHandler (TATPETSc_error_handler, 0);
   CHKERRQ(ierr);
   
   

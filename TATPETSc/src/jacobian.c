@@ -20,8 +20,7 @@
 int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B,
 		       MatStructure *flag, void *userptr)
 {
-  DECLARE_CCTK_PARAMETERS
-  int dummy;
+  DECLARE_CCTK_PARAMETERS;
   int ierr;
   
 #if 1
@@ -30,7 +29,7 @@ int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B,
   DMMG dmmg = (DMMG)userptr;
   userdata *user = (userdata*)dmmg->user;
 #endif
-  const cGH *cctkGH = user->cctkGH;
+  cGH *cctkGH = user->cctkGH;
   
   if (veryverbose) CCTK_INFO ("*** TATPETSc_jacobian");
   

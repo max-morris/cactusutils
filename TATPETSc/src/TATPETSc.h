@@ -28,7 +28,7 @@ typedef enum { TATcopyvars, TATcopyvals } TATvarset;
 
 typedef struct {
   int magic;
-  const cGH *cctkGH;
+  cGH *cctkGH;
   MPI_Comm comm;
   DA da;
   int nvars;
@@ -36,10 +36,9 @@ typedef struct {
   int *val;
   int solvebnds[2*DIM];
   cGroupDynamicData dyndata;
-  int (*fun) (const cGH *cctkGH, void *data);
-  int (*bnd) (const cGH *cctkGH, void *data);
-  int (*jac) (const cGH *cctkGH, Mat *J, Mat *B, MatStructure *flag,
-	      void *data);
+  int (*fun) (cGH *cctkGH, void *data);
+  int (*bnd) (cGH *cctkGH, void *data);
+  int (*jac) (cGH *cctkGH, Mat *J, Mat *B, MatStructure *flag, void *data);
   void *data;
   int funcall_count;
   int jaccall_count;
@@ -54,15 +53,17 @@ int TATPETSc_function (SNES snes, Vec x, Vec f, void *userptr);
 int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B, MatStructure *flag,
 		       void *userptr);
 
+int TATPETSc_error_handler (int line, char *fun, char *file, char *dir, int n, int p, char *mess, void *ctx);
+
 
 
 /* public functions */
 
-int TATPETSc_solve (const cGH *cctkGH,
+int TATPETSc_solve (cGH *cctkGH,
 		    const int *var, const int *val, int nvars,
 		    int options_table,
-		    int (*fun) (const cGH *cctkGH, void *data),
-		    int (*bnd) (const cGH *cctkGH, void *data),
+		    int (*fun) (cGH *cctkGH, void *data),
+		    int (*bnd) (cGH *cctkGH, void *data),
 		    void *data);
 
 

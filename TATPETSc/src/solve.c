@@ -26,15 +26,14 @@
 
 
 
-int TATPETSc_solve (const cGH *cctkGH,
+int TATPETSc_solve (cGH *cctkGH,
 		    const int *var, const int *val, int nvars,
 		    int options_table,
-		    int (*fun) (const cGH *cctkGH, void *data),
-		    int (*bnd) (const cGH *cctkGH, void *data),
+		    int (*fun) (cGH *cctkGH, void *data),
+		    int (*bnd) (cGH *cctkGH, void *data),
 		    void *data)
 {
-  DECLARE_CCTK_PARAMETERS
-  int dummy;
+  DECLARE_CCTK_PARAMETERS;
   
   CCTK_INT periodic[DIM];
   CCTK_INT solvebnds[2*DIM];
@@ -188,20 +187,23 @@ int TATPETSc_solve (const cGH *cctkGH,
     }
   }
   
+  dim = user.dyndata.dim;
+  assert (dim>=0 && dim<=DIM);
+  
   /* optional arguments */
   ierr = Util_TableGetIntArray (options_table, DIM, periodic, "periodic");
   if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
-    for (d=0; d<DIM; ++d) periodic[d] = 0;
-    ierr = DIM;
+    for (d=0; d<dim; ++d) periodic[d] = 0;
+    ierr = dim;
   }
-  assert (ierr == DIM);
+  assert (ierr == dim);
   
   ierr = Util_TableGetIntArray (options_table, 2*DIM, solvebnds, "solvebnds");
   if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
-    for (d=0; d<2*DIM; ++d) solvebnds[d] = 0;
-    ierr = 2*DIM;
+    for (d=0; d<2*dim; ++d) solvebnds[d] = 0;
+    ierr = 2*dim;
   }
-  assert (ierr == 2*DIM);
+  assert (ierr == 2*dim);
   
   ierr = Util_TableGetInt (options_table, &sw, "stencil_width");
   if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
@@ -249,10 +251,13 @@ int TATPETSc_solve (const cGH *cctkGH,
   
   
   
-  /* Determine Cactus' processor layout of grid variables */
+  /* Deinstall error handler temporarily */
+  ierr = PetscPopErrorHandler ();
+  CHKERRQ(ierr);
   
-  dim = user.dyndata.dim;
-  assert (dim>=0 && dim<=DIM);
+  
+  
+  /* Determine Cactus' processor layout of grid variables */
   
   lbnd = user.dyndata.lbnd;
   lsh  = user.dyndata.lsh;
@@ -331,8 +336,8 @@ int TATPETSc_solve (const cGH *cctkGH,
     ierr = DACreate1d (comm,
 		       periodic[0] ? DA_XPERIODIC : DA_NONPERIODIC,
 		       NI[0],
-		       nvars /* degrees of freedom */,
-		       sw /* stencil width */,
+		       nvars	/* degrees of freedom */,
+		       sw	/* stencil width */,
 		       lx[0],
 		       &da);
     CHKERRQ(ierr);
@@ -346,8 +351,8 @@ int TATPETSc_solve (const cGH *cctkGH,
 		       DA_STENCIL_BOX,
 		       NI[0],NI[1],
 		       nprocs_dim[0],nprocs_dim[1],
-		       nvars /* degrees of freedom */,
-		       sw /* stencil width */,
+		       nvars	/* degrees of freedom */,
+		       sw	/* stencil width */,
 		       lx[0],lx[1],
 		       &da);
     CHKERRQ(ierr);
@@ -365,8 +370,8 @@ int TATPETSc_solve (const cGH *cctkGH,
 		       DA_STENCIL_BOX,
 		       NI[0],NI[1],NI[2],
 		       nprocs_dim[0],nprocs_dim[1],nprocs_dim[2],
-		       nvars /* degrees of freedom */,
-		       sw /* stencil width */,
+		       nvars	/* degrees of freedom */,
+		       sw	/* stencil width */,
 		       lx[0],lx[1],lx[2],
 		       &da);
     CHKERRQ(ierr);
@@ -672,6 +677,10 @@ int TATPETSc_solve (const cGH *cctkGH,
   free (all_lsh);
   for (d=0; d<user.dyndata.dim; ++d) free (npoints_proc[d]);
   for (d=0; d<user.dyndata.dim; ++d) free (lx[d]);
+  
+  /* Reinstall error handler */
+  ierr = PetscPushErrorHandler (TATPETSc_error_handler, 0);
+  CHKERRQ(ierr);
   
   if (veryverbose) CCTK_INFO ("*** TATPETSc_solve done.");
   
