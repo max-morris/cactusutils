@@ -41,8 +41,7 @@ int TATPETSc_solve (cGH *cctkGH,
   CCTK_FPOINTER ptmp;
   int (*jac) (const cGH *cctkGH, Mat *J, Mat *B,
 	      MatStructure *flag, void *data);
-  int (*get_coloring)(DA da, ISColoring *iscoloring,
-		      Mat *J, void *data);
+  int (*get_coloring) (DA da, ISColoring *iscoloring, void *data);
   
   /* world communicator */
   MPI_Comm comm;
@@ -405,9 +404,7 @@ int TATPETSc_solve (cGH *cctkGH,
   /* Create nonlinear solver context */
   
   if (veryverbose) CCTK_INFO ("SNESCreate");
-  ierr = SNESCreate (comm,
-		     SNES_NONLINEAR_EQUATIONS /* problem type */,
-		     &snes);
+  ierr = SNESCreate (comm, &snes);
   CHKERRQ(ierr);
   
   
@@ -424,7 +421,7 @@ int TATPETSc_solve (cGH *cctkGH,
     /* Calculate Jacobian directly through a user given function */
     
     if (veryverbose) CCTK_INFO ("DAGetColoring");
-    ierr = DAGetColoring (da, IS_COLORING_GLOBAL, MATMPIAIJ, PETSC_NULL, &J);
+    ierr = DAGetColoring (da, IS_COLORING_GHOSTED, &iscoloring);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("SNESSetJacobian");
     ierr = SNESSetJacobian (snes, J, J, TATPETSc_jacobian, &user);
@@ -433,14 +430,16 @@ int TATPETSc_solve (cGH *cctkGH,
   } else {
     /* Approximate Jacobian numerically (automatically) */
     
+    if (veryverbose) CCTK_INFO ("DAGetMatrix");
+    ierr = DAGetMatrix (da, MATMPIAIJ, &J);
+    CHKERRQ(ierr);
     if (!get_coloring) {
       if (veryverbose) CCTK_INFO ("DAGetColoring");
-      ierr = DAGetColoring (da, IS_COLORING_GLOBAL, MATMPIAIJ,
- 			    &iscoloring, &J);
+      ierr = DAGetColoring (da, IS_COLORING_GHOSTED, &iscoloring);
       CHKERRQ(ierr);
     } else {
       if (veryverbose) CCTK_INFO ("get_coloring");
-      ierr = get_coloring (da, &iscoloring, &J, data);
+      ierr = get_coloring (da, &iscoloring, data);
       CHKERRQ(ierr);
     }
     if (veryverbose) CCTK_INFO ("MatFDColoringCreate");
