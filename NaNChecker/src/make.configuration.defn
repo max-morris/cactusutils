@@ -5,10 +5,5 @@
 HAVE_ISNAN := $(shell grep HAVE_ISNAN $(CONFIG)/cctk_Config.h)
 
 ifneq (define, $(findstring define,$(HAVE_ISNAN)))
-$(NAME): MissingIsNaN
-.pseudo: MissingIsNaN
-MissingIsNaN:
-	@echo "Thorn NaNChecker requires isnan(3) which is not available on this architecture."
-	@echo "Please remove NaNChecker from your ThornList !"
-	exit 2
+    $(error "Thorn NaNChecker requires isnan(3), which is not available on this architecture.  Please remove NaNChecker from your ThornList.")
 endif
