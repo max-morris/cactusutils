@@ -27,6 +27,7 @@ IDSWTE::charge			= 1.0
 WaveToyC::bound			= radiation
 
 TATPETSc::verbose		= yes
+#TATPETSc::options		= "-snes_atol 1e-8 -snes_stol 1e-8 -snes_monitor -ksp_compute_eigenvalues"
 
 IO::out_dir			= "charge_te_petsc"
 IO::out_fileinfo		= none
