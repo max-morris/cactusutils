@@ -4,7 +4,7 @@ schedule Trigger_Startup at STARTUP
     LANG: C
 }   "Startup Routine"
 
-schedule Trigger_Check at ANALYSIS
+schedule Trigger_Check at ANALYSIS before AHFinderDirect_setupupdate
 {
     LANG: C
 }   "test"
