@@ -8,7 +8,7 @@ SCHEDULE TATPETSc_initialize AT startup AFTER Driver_Startup
   LANG: C
 } "Initialise PETSc"
 
-SCHEDULE TATPETSc_finalize AT terminate BEFORE Driver_Terminate
+SCHEDULE TATPETSc_finalize AT shutdown
 {
   LANG: C
 } "Finalise PETSc"

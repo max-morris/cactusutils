@@ -4,16 +4,14 @@
 #include "petsc.h"
 
 #include "cctk.h"
-#include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
 #include "TATPETSc.h"
 
 
 
-void TATPETSc_finalize (CCTK_ARGUMENTS)
+void TATPETSc_finalize (void)
 {
-  DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
   
   int ierr;
