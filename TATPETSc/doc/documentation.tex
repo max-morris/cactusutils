@@ -75,8 +75,8 @@ void \=TATPETSc\_solve (\\
 \>const int *val,\\
 \>int nvars,\\
 \>int options\_table,\\
-\>void (*fun) (cGH *cctkGH, void *userdata),\\
-\>void (*bnd) (cGH *cctkGH, void *userdata),\\
+\>void (*fun) (cGH *cctkGH, int options\_table, void *userdata),\\
+\>void (*bnd) (cGH *cctkGH, int options\_table, void *userdata),\\
 \>void *data);
 \end{tabbing}
 }
@@ -132,10 +132,10 @@ The options table can have the following elements:
 
    \item[\texttt{CCTK\_FN\_POINTER get\_coloring}] The real type of
    \texttt{get\_coloring} must be \texttt{void (*get\_coloring)(DA da,
-   ISColoring *iscoloring, Mat *J, void *userdata)}.  This is either a
-   routine that calculates the colouring for calculating the Jacobian,
-   or 0 (zero).  You need to pass a nonzero value only if you have
-   very special boundary conditions.  The default is 0.
+   ISColoring *iscoloring, void *userdata)}.  This is either a routine
+   that calculates the colouring for calculating the Jacobian, or 0
+   (zero).  You need to pass a nonzero value only if you have very
+   special boundary conditions.  The default is 0.
 \end{description}
 
 A few remarks:
@@ -285,20 +285,15 @@ options when you configure your Cactus applications.  To do so, create
 an options file containing the following options.
 
 \begin{description}
-   \item{SYS\_INC\_DIRS} /home/eschnett/proj/petsc-2.1.0/include
-   /home/eschnett/proj/petsc-2.1.0/bmake/linux
+   \item{SYS\_INC\_DIRS} /usr/include/petsc
 
-   \item{LDFLAGS}
-   -Wl,-rpath,/home/eschnett/proj/petsc-2.1.0/lib/libO/linux
-
-   \item{LIBDIRS} /home/eschnett/proj/petsc-2.1.0/lib/libO/linux
-   /usr/X11R6/lib
+   \item{LIBDIRS} /usr/X11R6/lib
 
    \item{LIBS} crypt petscfortran petscts petscsnes petscsles petscdm
    petscmat petscvec petsc lapack blas mpe mpich X11 g2c z
 \end{description}
 
-Replace /home/eschnett/proj with the corresponding directory on your
+Replace /usr/include/petsc with the corresponding directory on your
 machine.
 
 If you have other packages that need other options, then you have to
