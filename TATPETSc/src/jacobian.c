@@ -29,7 +29,7 @@ int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B,
   DMMG dmmg = (DMMG)userptr;
   userdata *user = (userdata*)dmmg->user;
 #endif
-  cGH *cctkGH = user->cctkGH;
+  const cGH *cctkGH = user->cctkGH;
   
   if (veryverbose) CCTK_INFO ("*** TATPETSc_jacobian");
   

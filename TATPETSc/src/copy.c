@@ -26,7 +26,7 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
   DECLARE_CCTK_PARAMETERS;
   
   userdata *user = (userdata*)userptr;
-  cGH *cctkGH = user->cctkGH;
+  const cGH *cctkGH = user->cctkGH;
   
   const int nvars = user->nvars;
   

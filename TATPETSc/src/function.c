@@ -27,7 +27,7 @@ int TATPETSc_function (SNES snes, Vec x, Vec f, void *userptr)
   DMMG dmmg = (DMMG)userptr;
   userdata *user = (userdata*)dmmg->user;
 #endif
-  cGH *cctkGH = user->cctkGH;
+  const cGH *cctkGH = user->cctkGH;
   
   assert (user->magic==MAGIC);
   

@@ -26,11 +26,11 @@
 
 
 
-int TATPETSc_solve (cGH *cctkGH,
+int TATPETSc_solve (const cGH *cctkGH,
 		    const int *var, const int *val, int nvars,
 		    int options_table,
-		    int (*fun) (cGH *cctkGH, int options_table, void *data),
-		    int (*bnd) (cGH *cctkGH, int options_table, void *data),
+		    int (*fun) (const cGH *cctkGH, int options_table, void *data),
+		    int (*bnd) (const cGH *cctkGH, int options_table, void *data),
 		    void *data)
 {
   DECLARE_CCTK_PARAMETERS;
