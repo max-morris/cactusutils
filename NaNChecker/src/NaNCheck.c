@@ -302,7 +302,7 @@ static void PrintWarning (const char *error_type,
 static void NaNCheck (int vindex, const char *optstring, void *_GH)
 {
   DECLARE_CCTK_PARAMETERS
-  const cGH *GH;
+  cGH *GH;
   int i, fp_type, nans_found;
   int vtype, gtype, gindex, nelems;
   char *fullname;
