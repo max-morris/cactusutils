@@ -12,11 +12,11 @@ INT check_every "How often to check for NaN's" STEERABLE = ALWAYS
   1:* :: "Every so many iterations"
 } 0
 
-INT check_max "How many NaN's to report for a single variable" STEERABLE = ALWAYS
+INT report_max "How many NaN's to report for a single variable" STEERABLE = ALWAYS
 {
-  0   :: "Report all (default)"
-  1:* :: "Do not report more than check_max number of NaN's"
-} 0
+  -1   :: "Report all (default)"
+   0:* :: "Do not report more than report_max number of NaN's"
+} -1
 
 STRING check_vars "Groups and/or variables to check for NaN's" STEERABLE = ALWAYS
 {

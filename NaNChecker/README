@@ -25,7 +25,7 @@ Currently these actions can be to
    and how many (for grid array variables).
    For grid arrays it will also print level 2 warnings with the array index
    (in fortran order) for all NaN elements. You can limit the number of
-   such warnings by setting the 'NanChecker::check_max' parameter.
+   such warnings by setting the 'NanChecker::report_max' parameter.
 
  * also set the CCTK termination flag so that Cactus will stop the evolution
    loop and gracefully terminate at the next time possible (giving you the
