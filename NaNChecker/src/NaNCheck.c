@@ -17,7 +17,6 @@
 #include "cctk_WarnLevel.h"
 #include "cctk_Parameters.h"
 #include "cctk_Termination.h"
-
 /* the rcsid and the macro to use it */
 static char *rcsid = "$Header$";
 CCTK_FILEVERSION(BetaThorns_NaNChecker_NaNCheck_c)
@@ -331,7 +330,7 @@ static void NaNCheck (int vindex, const char *optstring, void *_GH)
       }
 
       /* get the pointer to the data (current time level) */
-      data = CCTK_VarDataPtrI (GH, CCTK_NumTimeLevelsFromVarI(vindex)-1,vindex);
+      data = CCTK_VarDataPtrI (GH, 0, vindex);
 
       /* do the checking according to the variable's type */
       if (vtype == CCTK_VARIABLE_REAL || CCTK_VARIABLE_COMPLEX)
