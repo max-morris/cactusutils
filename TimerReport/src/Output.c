@@ -33,6 +33,7 @@ CCTK_FILEVERSION(CactusUtils_TimerReport_Output_c);
  ********************************************************************/
 
 void TimerReport_Output(CCTK_ARGUMENTS);
+void TimerReport_Checkpoint(CCTK_ARGUMENTS);
 
 /********************************************************************
  ********************* Other Routine Prototypes *********************
