@@ -222,7 +222,7 @@ void NaNChecker_TakeAction (CCTK_ARGUMENTS)
   {
     CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
   }
-  CCTK_OutputVarAsByMethod (cctkGH, "NaNChecker::NaNmask[downsample={1 1 1}]",
+  CCTK_OutputVarAsByMethod (cctkGH, "NaNChecker::NaNmask",
                             "IOHDF5", "NaNmask");
 
   /* save the iteration of the last NaNmask output */
