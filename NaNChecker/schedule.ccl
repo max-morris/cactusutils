@@ -7,5 +7,5 @@ if (*check_vars && check_every > 0)
   {
     LANG:C
     STORAGE: NaNmask_group
-  } "Check for NaN's"
+  } "Check for NaNs"
 }
