@@ -10,7 +10,7 @@ INCLUDES HEADER: NaNCheck.h in NaNChecker.h
 
 private:
 
-INT NaNmask_group TYPE = GF
+INT NaNmask_group TYPE = GF tags='Prolongation="None"'
 {
   NaNmask
 } "Grid function mask for NaN locations"
