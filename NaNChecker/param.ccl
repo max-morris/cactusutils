@@ -36,3 +36,9 @@ KEYWORD action_if_found "What to do if a NaN was found" STEERABLE = ALWAYS
   "terminate" :: "Warn and terminate Cactus gracefully as soon as possible"
   "abort"     :: "Warn and abort Cactus immediately"
 } "just warn"
+
+KEYWORD verbose "How much information to give" STEERABLE = ALWAYS
+{
+  "all"      :: "All information"
+  "standard" :: "Standard information"
+} "standard"
