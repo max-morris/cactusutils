@@ -23,7 +23,7 @@ become corrupted during a simulation, for example following a division
 by zero or illegal memory usage.
 
 On many architectures, uninitialised variables will be given the value
-zero, and simulations using such variables will seeming run perfectly 
+zero, and simulations using such variables will seemingly run perfectly 
 well. However, not only is it dubious programming practise to assume such
 behaviour, but also moving to a new machine may well cause pathalogical 
 problems (for example, with Alpha processors used in Compaq or Cray machines).
@@ -46,7 +46,7 @@ respectively).
 The NaNChecker then registers a routine at {\bf CCTK\_POSTSTEP} which checks
 at every {\tt NanChecker::check\_every} iteration all the variables listed in
 {\tt NaNChecker::check\_vars} for NaN or infinite values (depending on {\tt
-NaNChecker::check\_for}) and -- if such a value is found -- performs an
+NaNChecker::check\_for}) and --- if such a value is found --- performs an
 action as specified in {\tt NaNChecker::action\_if\_found}.\\
 
 Currently these actions can be to
@@ -79,7 +79,7 @@ of the variable grid::x, timelevel 1 of {\tt grid::y} and timelevel 2 of
 {\tt grid::z} you would use the parameter
 
 \noindent
-{\tt NaNChecker::check\_vars = "grid::x grid::y[timelevel=1] grid::z[timelevel=2"}
+{\tt NaNChecker::check\_vars = "grid::x grid::y[timelevel=1] grid::z[timelevel=2]"}
 
 %
 \section{NaNChecker API}
