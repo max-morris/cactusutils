@@ -15,8 +15,8 @@ typedef struct
   int *last_checked;
   const char **relation;
   const char **reduction;
-  const char **checked_parameter_name;
   const char **checked_parameter_thorn;
+  const char **checked_parameter_name;
   CCTK_REAL *checked_value;
   const char **output_method;
   const char *out_dir;
@@ -222,7 +222,8 @@ void Trigger_Check(CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS
   DECLARE_CCTK_PARAMETERS
-  int varindex, ret;
+  int varindex, ret, i;
+  char *valstr;
   TriggerGH *my_GH;
   my_GH = (TriggerGH*)CCTK_GHExtension(cctkGH, "Trigger");
   if (my_GH->debug)
@@ -236,6 +237,39 @@ void Trigger_Check(CCTK_ARGUMENTS)
     if (Trigger_TimeForOutput(cctkGH, varindex) &&
         Trigger_TriggerOutput(cctkGH, varindex))
       ret++;
+  /* check for parameter steering */
+  /* loop over all triggers */
+  for (i=my_GH->number-1; i>=0; i--)
+  {
+    if (CCTK_EQUALS(Trigger_Output_Variables[i],"param"))
+    {
+      if (Trigger_TriggerFullFilled(cctkGH, i))
+      {
+        valstr=CCTK_ParameterValString(Trigger_Steered_Parameter_Name[i],
+                                       Trigger_Steered_Parameter_Thorn[i]);
+        if (CCTK_EQUALS(valstr, Trigger_Steered_Parameter_Value[i]))
+          free(valstr);
+        else
+        {
+          free(valstr);
+          if (my_GH->debug)
+            printf("Steering parameter\n");
+          ret=CCTK_ParameterSet(Trigger_Steered_Parameter_Name[i],
+                                Trigger_Steered_Parameter_Thorn[i],
+                                Trigger_Steered_Parameter_Value[i]);
+          switch(ret)
+          {
+            case  0: printf("Parameter steered\n"); break;
+            case -1: CCTK_WARN(1,"Parameter is out of range."); break;
+            case -2: CCTK_WARN(0,"Parameter was not found."); break;
+            case -3: CCTK_WARN(0,"Parameter is not steerable."); break;
+            default: CCTK_WARN(1,"Error occured while setting parameter.");
+                     break;
+          }
+        }
+      }
+    }
+  }
 }
 
 /* This struct is (only) used to pass three arguments to the callback of
@@ -328,8 +362,22 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
                                  Trigger_Transverse_Callback, info, CCTK_VAR))
             CCTK_WARN(0,"No variable with that name found");
     info->input_output=1;
-    CCTK_TraverseString(Trigger_Output_Variables[i],
-                        Trigger_Transverse_Callback, info, CCTK_GROUP_OR_VAR);
+    /* If it is no variable, try a parameter */
+    if (CCTK_EQUALS(Trigger_Output_Variables[i],"param"))
+    {
+        if (!CCTK_ParameterGet(Trigger_Steered_Parameter_Name[i],
+                               Trigger_Steered_Parameter_Thorn[i],NULL))
+            CCTK_WARN(0,"No parameter with that name found");
+        my_GH->output_variables
+                 [i*CCTK_NumVars() + my_GH->output_variables_number[i]]
+              =-1;
+        my_GH->output_variables_number[i]++;
+    }
+    else
+      if (!CCTK_TraverseString(Trigger_Output_Variables[i],
+                               Trigger_Transverse_Callback,
+                               info, CCTK_GROUP_OR_VAR))
+        CCTK_WARN(0,"No variable with that name found");
   }
   free(info);
   return my_GH;

@@ -47,18 +47,31 @@ STRING Trigger_Reaction[10] "how to react on a positive trigger"
 STRING Trigger_Output_Method[10] "IO-output method for this trigger"
 {
   ".+" :: "an enabled IO-method"
+  "^$" :: "An empty string for no output"
 } "1D"
 
-STRING Trigger_Output_Variables[10] "variable to be put out"
+STRING Trigger_Output_Variables[10] "variable to be put out 'param' for parameter"
 {
   ".+" :: "Space-separated list of fully qualified variable name"
   "^$" :: "An empty string to trigger nothing"     
 } ""
 
-STRING Trigger_Steer_Parameter[10] "parameter to steer"
+STRING Trigger_Steered_Parameter_Thorn[10] "thorn of parameter to be changed"
 {
-  ".+" :: "fully qualified parameter name"
-  "^$" :: "An empty string to steer nothing"     
+  ".+" :: "thorn name"
+  "^$" :: "An empty string to change nothing"
+} ""
+
+STRING Trigger_Steered_Parameter_Name[10] "parameter name to be changed"
+{
+  ".+" :: "parameter name"
+  "^$" :: "An empty string to change nothing"
+} ""
+
+STRING Trigger_Steered_Parameter_Value[10] "parameter value to be changed to"
+{
+  ".+" :: "parameter value"
+  "^$" :: "can be empty"
 } ""
 
 CCTK_INT Trigger_Debug "turnes on debug messages"
