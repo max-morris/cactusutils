@@ -37,13 +37,13 @@ int NaNChecker_NaNCheck (const cGH *GH);
  ********************    Fortran Wrappers    ************************
  ********************************************************************/
 void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
-                           (const cGH *GH,
-                            int *ierror,
+                           (int *ierror,
+                            const cGH *GH,
                             const int *report_max,
                             TWO_FORTSTRING_ARG);
 void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
-                           (const cGH *GH,
-                            int *ierror,
+                           (int *ierror,
+                            const cGH *GH,
                             ONE_FORTSTRING_ARG);
 
 
@@ -202,8 +202,8 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
 }
 
 void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
-                           (const cGH *GH,
-                            int *ierror,
+                           (int *ierror,
+                            const cGH *GH,
                             const int *report_max,
                             TWO_FORTSTRING_ARG)
 {
@@ -269,8 +269,8 @@ int NaNChecker_SetVarsToNaN (const cGH *GH,
 }
 
 void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
-                           (const cGH *GH,
-                            int *ierror,
+                           (int *ierror,
+                            const cGH *GH,
                             ONE_FORTSTRING_ARG)
 {
   ONE_FORTSTRING_CREATE (vars);
