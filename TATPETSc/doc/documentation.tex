@@ -214,6 +214,61 @@ points that are not solved for.
 solution for these grid points.  Setting $F(x)=0$ does \emph{not} work
 because it leads to a singular matrix, as outlined above.)
 
+\section{Common PETSc options}
+
+Options Database Keys (from the PETSc documentation)
+
+\begin{description}
+
+\item[\texttt{-snes\_type} \textit{type}]
+	ls, tr, umls, umtr, test 
+
+\item[\texttt{-snes\_stol}]
+	convergence tolerance in terms of the norm of the change in
+	the solution between steps
+
+\item[\texttt{-snes\_atol} \textit{atol}]
+	absolute tolerance of residual norm
+
+\item[\texttt{-snes\_rtol} \textit{rtol}]
+	relative decrease in tolerance norm from initial
+
+\item[\texttt{-snes\_max\_it} \textit{max\_it}] 
+	maximum number of iterations
+
+\item[\texttt{-snes\_max\_funcs} \textit{max\_funcs}]
+	maximum number of function evaluations 
+
+\item[\texttt{-snes\_trtol} \textit{trtol}]
+	trust region tolerance 
+
+\item[\texttt{-snes\_no\_convergence\_test}]
+	skip convergence test in nonlinear or minimization solver;
+	hence iterations will continue until \textit{max\_it} or some
+	other criterion is reached.  Saves expense of convergence test
+
+\item[\texttt{-snes\_monitor}] 
+	prints residual norm at each iteration 
+
+\item[\texttt{-snes\_vecmonitor}]
+	plots solution at each iteration 
+
+\item[\texttt{-snes\_vecmonitor\_update}]
+	plots update to solution at each iteration 
+
+\item[\texttt{-snes\_xmonitor}]
+	plots residual norm at each iteration 
+
+\item[\texttt{-snes\_fd}]
+	use finite differences to compute Jacobian; very slow, only
+	for testing
+
+\item[\texttt{-snes\_mf\_ksp\_monitor}]
+	if using matrix-free multiply then print $h$ at each KSP
+	iteration
+
+\end{description}
+
 \begin{thebibliography}{99}
 \bibitem{petsc} PETSc: \verb+http://www-fp.mcs.anl.gov/petsc/+
 \end{thebibliography}
