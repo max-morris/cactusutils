@@ -294,6 +294,7 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
   info.verbose = 0;
   info.report_max = report_max;
   info.action_if_found = action_if_found;
+  info.NaNmask = NULL;
 
 #ifdef HAVE_FINITE
   if (CCTK_Equals (check_for, "NaN"))
