@@ -177,8 +177,8 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
     return (-1);
   }
 
-  if (action_if_found && (! CCTK_Equals (action_if_found, "just warn") ||
-                          ! CCTK_Equals (action_if_found, "terminate") ||
+  if (action_if_found && (! CCTK_Equals (action_if_found, "just warn") &&
+                          ! CCTK_Equals (action_if_found, "terminate") &&
                           ! CCTK_Equals (action_if_found, "abort")))
   {
     CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
@@ -537,7 +537,7 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
 
   /* check if variable has storage assigned */
   gindex = CCTK_GroupIndexFromVarI (vindex);
-  if (CCTK_QueryGroupStorageI (info->GH, gindex))
+  if (CCTK_QueryGroupStorageI (info->GH, gindex)<=0)
   {
     CCTK_VWarn (3, __LINE__, __FILE__, CCTK_THORNSTRING,
                 "CheckForNaN: Ignoring variable '%s' (no storage)", fullname);
@@ -739,7 +739,7 @@ static void SetToNaN (int vindex, const char *optstring, void *_info)
 
   /* check if variable has storage assigned */
   gindex = CCTK_GroupIndexFromVarI (vindex);
-  if (CCTK_QueryGroupStorageI (info->GH, gindex))
+  if (CCTK_QueryGroupStorageI (info->GH, gindex)<=0)
   {
     CCTK_VWarn (3, __LINE__, __FILE__, CCTK_THORNSTRING,
                 "SetToNaN: Ignoring variable '%s' (no storage)", fullname);
