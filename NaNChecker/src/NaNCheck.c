@@ -270,11 +270,13 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
                 "NULL pointer passed for 'GH' and/or 'vars' argument");
     return (-2);
   }
+#if 0
   if (GH->cctk_iteration == last_iteration_output)
   {
     CCTK_WARN (2, "Already called NaNChecker I/O method at this iteration");
     return (-1);
   }
+#endif
 
   if (action_if_found && (! CCTK_Equals (action_if_found, "just warn") &&
                           ! CCTK_Equals (action_if_found, "terminate") &&
@@ -321,8 +323,10 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
     return (-4);
   }
 
+#if 0
   /* save the iteration of the last call */
   last_iteration_output = GH->cctk_iteration;
+#endif
 
   if (info.count > 0 && info.action_if_found)
   {
