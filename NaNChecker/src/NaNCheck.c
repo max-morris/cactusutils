@@ -316,7 +316,7 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
   /* save the iteration of the last call */
   last_iteration_output = GH->cctk_iteration;
 
-  if (info.count > 0)
+  if (info.count > 0 && info.action_if_found)
   {
     /* if NaNs were found then output NaN mask with the 'IOHDF5' I/O method */
     if (info.NaNmask && info.bitmask)
