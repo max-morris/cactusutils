@@ -1,0 +1,80 @@
+% Thorn documentation template
+\documentclass{article}
+\begin{document}
+
+\title{NaNChecker}
+\author{Thomas Radke}
+\date{26 May 2001}
+\maketitle
+
+\abstract{Thorn NaNChecker reports NaN values found in variables.}
+
+\section{Purpose}
+%
+This thorn can be used to analyze CCTK variables of real or complex data type
+for NaN (Not-a-Number) and (on availability of {\tt finite(3)}) infinite
+values.\\
+It does this by registering a routine at {\bf CCTK\_POSTSTEP} which checks
+at every {\tt NanChecker::check\_every} iteration all the variables listed in
+{\tt NaNChecker::check\_vars} and -- in case a NaN was found -- performs an
+action as specified in {\tt NaNChecker::action\_if\_found}.\\
+
+Currently these actions can be to
+\begin{itemize}
+ \item just print a level 1 warning message telling you where NaNs were found
+   and how many (for grid array variables).\\
+   For grid arrays it will also print level 2 warnings with the array index
+   (in fortran order) for all NaN elements. You can limit the number of
+   such warnings by setting the {\tt NanChecker::report\_max} parameter.
+
+ \item also set the CCTK termination flag so that Cactus will stop the evolution
+   loop and gracefully terminate at the next time possible (giving you the
+   choice of outputting the data from the last evolution timestep),
+
+ \item print the warning message(s) and immediately terminate Cactus
+   by a call to {\tt CCTK\_Abort()}
+\end{itemize}
+%
+\section{NaNChecker API}
+%
+Thorn NaNChecker also provides a function API which can be used by other code
+to invoke the NaNChecker routine directly:
+
+\begin{itemize}
+  \item{\bf C API}
+\begin{verbatim}
+  int NaNChecker_NaNCheckVars (const cGH *cctkGH,
+                               int report_max,
+                               const char *check_vars,
+                               const char *action_if_found);
+\end{verbatim}
+  \item{\bf Fortran API}
+\begin{verbatim}
+  call NaNChecker_NaNCheckVars (ierror, cctkGH, report_max,
+                                check_vars, action_if_found)
+
+                                integer ierror
+                                CCTK_POINTER cctkGH
+                                integer report_max
+                                character*(*) check_vars
+                                character*(*) action_if_found
+\end{verbatim}
+\end{itemize}
+
+The {\tt report\_max, check\_vars,} and {\tt action\_if\_found} arguments
+have the same semantics as their parameter counterparts.\\
+If {\tt action\_if\_found} is given as a NULL pointer (C API) or as an empty
+string (Fortran API) the routine will be quiet and just return the number of
+NaN values found.\\
+
+The C function {\tt NaNChecker\_NaNCheckVars} returns the total number of NaN
+values found; this value is stored in the {\tt ierror} argument for the
+fortran wrapper routine.
+%
+% Automatically created from the ccl files 
+% Do not worry for now.
+\include{interface}
+\include{param}
+\include{schedule}
+
+\end{document}
