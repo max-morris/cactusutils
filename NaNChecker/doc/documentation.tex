@@ -18,7 +18,7 @@
 % START CACTUS THORNGUIDE
 
 \begin{abstract}
-Thorn NaNChecker reports NaN values found in variables.
+Thorn NaNChecker reports NaN values found in CCTK grid variables.
 \end{abstract}
 
 % Do not delete next line
@@ -83,8 +83,8 @@ also set the CCTK termination flag so that Cactus will stop the evolution
 
  \item{\tt abort} 
 
-print the warning message(s) and immediately terminate Cactus
-   by a call to {\tt CCTK\_Abort()}
+print the warning message(s) and immediately terminate Cactus after checking
+all variables from {\tt NaNChecker::check\_vars} by a call to {\tt CCTK\_Abort()}
 \end{itemize}
 
 By default, the current timelevel of the variables given in
@@ -96,6 +96,37 @@ of the variable grid::x, timelevel 1 of {\tt grid::y} and timelevel 2 of
 
 \noindent
 {\tt NaNChecker::check\_vars = "grid::x grid::y[timelevel=1] grid::z[timelevel=2]"}
+
+%
+\section{Tracking and Visualizing NaNs Positions}
+%
+The NaNChecker thorn can also mark the positions (in grid index points)
+of all the NaNs found for a given list of CCTK grid functions in a mask array
+and save this array to an HDF5 file.
+
+The mask array is declared as a grid function {\tt NaNChecker::NaNmask} with
+data type INTEGER. Each bit $i$ in an integer element is used to flag a NaN
+value found in grid function $i$ at the corresponding grid position
+(the counting for $i$ starts at 0 and is incremented for each grid function
+as it appears in {\tt NaNChecker::check\_vars}).
+Thus the NaN locations of up to 32 individual grid functions can be coded
+in the NaNmask array.
+
+In order to activate the NaNmask output you need to set the parameter
+{\tt NaNChecker::out\_NaNmask} to {\tt "yes"} (which is already the default)
+and have the IOHDF5 thorn activated.
+
+The NaN locations can be visualized with OpenDX. An example DX network
+{\tt VisualizeNaNs.net} and a sample NaNmask HDF5 output file {\tt NaNmask.h5}
+are available via anonymous CVS from the NumRel CVS server:
+\begin{verbatim}
+  # this is for (t)csh; use export CVSROOT for bash
+  setenv CVSROOT :pserver:cvs_anon@cvs.aei.mpg.de:/numrelcvs
+
+  # CVS pserver password is 'anon'
+  cvs login
+  cvs checkout AEIPhysics/Visualization/OpenDX/Networks/Miscellaneous
+\end{verbatim}
 
 %
 \section{NaNChecker API}
