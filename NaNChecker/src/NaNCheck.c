@@ -38,12 +38,12 @@ int NaNChecker_NaNCheck (const cGH *GH);
  ********************************************************************/
 void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                            (int *ierror,
-                            const cGH *GH,
+                            const cGH **GH,
                             const int *report_max,
                             THREE_FORTSTRING_ARG);
 void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
                            (int *ierror,
-                            const cGH *GH,
+                            const cGH **GH,
                             ONE_FORTSTRING_ARG);
 
 
@@ -349,12 +349,12 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
 
 void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                            (int *ierror,
-                            const cGH *GH,
+                            const cGH **GH,
                             const int *report_max,
                             THREE_FORTSTRING_ARG)
 {
   THREE_FORTSTRING_CREATE (vars, check_for, action_if_found);
-  *ierror = NaNChecker_CheckVarsForNaN (GH, *report_max, vars, check_for,
+  *ierror = NaNChecker_CheckVarsForNaN (*GH, *report_max, vars, check_for,
                                      *action_if_found ? action_if_found : NULL);
   free (vars);
   free (check_for);
@@ -417,11 +417,11 @@ int NaNChecker_SetVarsToNaN (const cGH *GH,
 
 void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
                            (int *ierror,
-                            const cGH *GH,
+                            const cGH **GH,
                             ONE_FORTSTRING_ARG)
 {
   ONE_FORTSTRING_CREATE (vars);
-  *ierror = NaNChecker_SetVarsToNaN (GH, vars);
+  *ierror = NaNChecker_SetVarsToNaN (*GH, vars);
   free (vars);
 }
 
