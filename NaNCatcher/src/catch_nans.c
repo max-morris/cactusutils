@@ -6,7 +6,7 @@
 
 #include <fpu_control.h>
 
-void catch_nans (void)
+int catch_nans (void)
 {
   fpu_control_t cw;
   
@@ -16,9 +16,11 @@ void catch_nans (void)
   _FPU_SETCW(cw);
   
   CCTK_INFO ("NaNCatcher enabled");
+  
+  return 0;
 }
 
-void no_catch_nans (void)
+int no_catch_nans (void)
 {
   fpu_control_t cw;
   
@@ -29,18 +31,24 @@ void no_catch_nans (void)
   _FPU_SETCW(cw);
   
   CCTK_INFO ("NaNCatcher disabled");
+  
+  return 0;
 }
 
 #else
 
-void catch_nans (void)
+int catch_nans (void)
 {
   CCTK_WARN (1, "NaNCatcher disabled -- no support for your compiler");
+  
+  return 0;
 }
 
-void no_catch_nans (void)
+int no_catch_nans (void)
 {
   CCTK_WARN (1, "NaNCatcher disabled -- no support for your compiler");
+  
+  return 0;
 }
 
 #endif
