@@ -586,8 +586,13 @@ int TATPETSc_solve (const cGH *cctkGH,
   
 #if 1
   if (verbose) CCTK_INFO ("SNESSolve");
+#  if PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 2
   ierr = SNESSolve (snes, x, &iters);
   CHKERRQ(ierr);
+#  else
+  ierr = SNESSolve (snes, x);
+  CHKERRQ(ierr);
+#  endif
 #else
   if (verbose) CCTK_INFO ("DMMGSolve");
   ierr = DMMGSolve (dmmg);
