@@ -5,7 +5,7 @@ if (*check_vars && check_every > 0)
 {
   STORAGE: NaNmask NaNsFound
 
-  schedule NaNChecker_ResetCounter at ANALYSIS before NaNChecker_TakeAction
+  schedule NaNChecker_ResetCounter at ANALYSIS before NaNChecker_NaNCheck
   {
     LANG:    C
     OPTIONS: level
