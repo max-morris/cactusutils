@@ -69,7 +69,7 @@ typedef struct
   int verbose;
   int report_max;
   const char *action_if_found;
-  int count;
+  CCTK_INT count, sum;
   CCTK_INT *NaNmask;
   int bitmask;
 #ifdef HAVE_FINITE
@@ -109,8 +109,7 @@ static int last_iteration_output = -1;
 @@*/
 int NaNChecker_NaNCheck (const cGH *GH)
 {
-  int i, nelems, retval;
-  const char *method;
+  int i, nelems, sum_handle, retval;
   t_nanchecker_info info;
   DECLARE_CCTK_PARAMETERS
 
@@ -121,7 +120,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
   }
 
   info.GH = GH;
-  info.count = 0;
+  info.count = info.sum = 0;
   info.bitmask = 0;
   info.report_max = report_max;
   info.action_if_found = action_if_found;
@@ -164,22 +163,29 @@ int NaNChecker_NaNCheck (const cGH *GH)
   retval = CCTK_TraverseString (check_vars, CheckForNaN, &info,
                                 CCTK_GROUP_OR_VAR);
 
+  if (info.NaNmask && info.bitmask)
+  {
+    sum_handle = CCTK_ReductionHandle ("sum");
+    CCTK_ReduceLocalScalar (GH, -1, sum_handle, &info.count, &info.sum,
+                            CCTK_VARIABLE_INT);
+  }
+
+  /* if NaNs were found then output NaN mask with the 'IOHDF5' I/O method */
+  if (info.sum > 0)
+  {
+    if (info.verbose)
+    {
+      CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
+    }
+    CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
+                              "IOHDF5", "NaNmask");
+
+    /* save the iteration of the last NaNmask output */
+    last_iteration_output = GH->cctk_iteration;
+  }
+
   if (info.count > 0)
   {
-    /* if NaNs were found then output NaN mask with the 'IOHDF5' I/O method */
-    if (info.NaNmask && info.bitmask)
-    {
-      if (info.verbose)
-      {
-        CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
-      }
-      CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
-                                "IOHDF5", "NaNmask");
-
-      /* save the iteration of the last NaNmask output */
-      last_iteration_output = GH->cctk_iteration;
-    }
-
     if (CCTK_Equals (info.action_if_found, "terminate"))
     {
       CCTK_WARN (1, "'action_if_found' parameter is set to 'terminate' - "
@@ -568,7 +574,7 @@ static void PrintWarning (const char *error_type,
 #define CHECK_DATA(cctk_type)                                                 \
 {                                                                             \
   int _i;                                                                     \
-  const cctk_type *_data = (const cctk_type *) data;                          \
+  const cctk_type *_data = data;                                              \
                                                                               \
                                                                               \
   /* now loop over all elements and check against NaN's */                    \
