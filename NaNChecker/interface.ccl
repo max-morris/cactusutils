@@ -2,3 +2,5 @@
 # $Header$
 
 implements: NaNChecker
+
+INCLUDES HEADER: NaNCheck.h in NaNChecker.h
