@@ -269,8 +269,6 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
                            calloc(Trigger_Number,sizeof(CCTK_REAL));
   my_GH->output_method   = (const char**)
                            calloc(Trigger_Number,sizeof(const char *));
-  my_GH->debug           = (CCTK_INT)   
-                           calloc(1 ,sizeof(CCTK_INT));
 
   /* initialize datastructure */
   info->my_GH=my_GH;
