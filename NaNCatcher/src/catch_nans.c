@@ -1,0 +1,26 @@
+/* $Header$ */
+
+#if defined(__linux__) && defined(__i386__)
+
+#include <fpu_control.h>
+
+int catch_nans (void)
+{
+  fpu_control_t cw;
+  
+  _FPU_GETCW(cw);
+  /* create interrupts for invalid operations, zero divide, and overflow */
+  cw &= ~(_FPU_MASK_IM | _FPU_MASK_ZM | _FPU_MASK_OM);
+  _FPU_SETCW(cw);
+  
+  return 0;
+}
+
+#else
+
+int catch_nans (void)
+{
+  return 0;
+}
+
+#endif

@@ -1,0 +1,10 @@
+Cactus Code Thorn NaNCatcher
+Authors    : Erik Schnetter <schnetter@uni-tuebingen.de>
+CVS info   : $Header$
+--------------------------------------------------------------------------
+
+Purpose of the thorn:
+
+Switch the FPU into a mode where it catches nans and infinities.
+This works currently on IA32 processors under Linux.
+This thorn does nothing on other architectures.
