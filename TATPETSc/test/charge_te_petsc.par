@@ -1,0 +1,43 @@
+# $Header$
+# Erik Schnetter <schnetter@uni-tuebingen.de>
+
+ActiveThorns = "Boundary CartGrid3D IOASCII IOBasic IOUtil Time PUGH PUGHReduce PUGHSlab NaNCatcher IDScalarWave WaveToyC IDSWTE TATelliptic TATPETSc TATMG"
+
+!DESC "Charged sphere initial data, solved with TATelliptic/TATPETSc"
+
+cactus::cctk_full_warnings	= yes
+cactus::cctk_timer_output	= full
+
+Cactus::cctk_itlast		= 10
+ 
+Time::dtfac			= 0.5
+
+#driver::global_nsize		= 20
+driver::global_nsize		= 40
+
+grid::type			= byspacing
+grid::domain			= octant
+grid::dxyz			= 0.6
+
+IDScalarWave::initial_data	= charge-TATelliptic
+IDSWTE::solver			= TATPETSc
+IDSWTE::radius			= 5.5
+IDSWTE::charge			= 1.0
+
+WaveToyC::bound			= radiation
+
+TATPETSc::verbose		= yes
+
+IO::out_dir			= "charge_te_petsc"
+IO::out_fileinfo		= none
+
+IOBasic::outInfo_every		= 1
+IOBasic::outInfo_vars		= "wavetoy::phi"
+
+IOBasic::outScalar_every	= 1
+IOBasic::outScalar_vars		= "wavetoy::phi"
+IOBasic::outScalar_style	= "gnuplot"
+
+IOASCII::out1D_every		= 1
+IOASCII::out1D_vars		= "wavetoy::phi"
+IOASCII::out1D_style		= "gnuplot f(x)"
