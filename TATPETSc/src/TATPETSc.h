@@ -34,7 +34,7 @@ typedef struct {
   int nvars;
   int *var;
   int *val;
-  int solvebnds[2*DIM];
+  int nboundaryzones[2*DIM];
   cGroupDynamicData dyndata;
   int (*fun) (const cGH *cctkGH, int options_table, void *data);
   int (*bnd) (const cGH *cctkGH, int options_table, void *data);

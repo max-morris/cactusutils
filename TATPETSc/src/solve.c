@@ -37,6 +37,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   
   CCTK_INT periodic[DIM];
   CCTK_INT solvebnds[2*DIM];
+  CCTK_INT nboundaryzones[2*DIM];
   CCTK_INT sw;
   CCTK_FPOINTER ptmp;
   int (*jac) (const cGH *cctkGH, Mat *J, Mat *B,
@@ -204,6 +205,13 @@ int TATPETSc_solve (const cGH *cctkGH,
   }
   assert (ierr == 2*dim);
   
+  ierr = Util_TableGetIntArray (options_table, 2*DIM, nboundaryzones, "nboundaryzones");
+  if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
+    for (d=0; d<2*dim; ++d) nboundaryzones[d] = user.dyndata.nghostzones[d/2];
+    ierr = 2*dim;
+  }
+  assert (ierr == 2*dim);
+  
   ierr = Util_TableGetInt (options_table, &sw, "stencil_width");
   if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
     sw = 1;
@@ -227,9 +235,8 @@ int TATPETSc_solve (const cGH *cctkGH,
   assert (ierr == 1);
   get_coloring = ptmp;
   
-  assert (solvebnds);
   for (d=0; d<2*user.dyndata.dim; ++d) {
-    user.solvebnds[d] = solvebnds[d];
+    user.nboundaryzones[d] = solvebnds[d] ? 0 : nboundaryzones[d];
   }
   
   assert (fun);
@@ -314,17 +321,19 @@ int TATPETSc_solve (const cGH *cctkGH,
   for (d=0; d<user.dyndata.dim; ++d) {
     int sum;
     /* global number of grid points */
-    NI[d] = (user.dyndata.gsh[d]
-	     - (user.dyndata.nghostzones[d]
-		* (!user.solvebnds[2*d] + !user.solvebnds[2*d+1])));
+    NI[d] = user.dyndata.gsh[d] - (user.nboundaryzones[2*d]
+                                   + user.nboundaryzones[2*d+1]);
     /* local number of grid points */
     lx[d] = malloc(nprocs_dim[d] * sizeof(*lx[d]));
     sum = 0;
     for (n=0; n<nprocs_dim[d]; ++n) {
       lx[d][n] = (npoints_proc[d][n]
-		  - (user.dyndata.nghostzones[d]
-		     * (!(n==0 && user.solvebnds[2*d])
-			+ !(n==nprocs_dim[d]-1 && user.solvebnds[2*d+1]))));
+                  - (n==0
+                     ? user.nboundaryzones[2*d  ]
+                     : user.dyndata.nghostzones[d])
+                  - (n==nprocs_dim[d]-1
+                     ? user.nboundaryzones[2*d+1]
+                     : user.dyndata.nghostzones[d]));
       sum += lx[d][n];
     }
     assert (sum == NI[d]);

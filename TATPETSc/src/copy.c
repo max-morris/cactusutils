@@ -90,17 +90,18 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
     ni[d] = user->dyndata.lsh[d];
     i0[d] = user->dyndata.lbnd[d];
     gi[d] = user->dyndata.nghostzones[d];
-    bi[d] = user->dyndata.bbox[2*d  ] && user->solvebnds[2*d  ] ? 0 : gi[d];
-    ei[d] = user->dyndata.bbox[2*d+1] && user->solvebnds[2*d+1] ? 0 : gi[d];
+    bi[d] = user->dyndata.bbox[2*d  ] ? user->nboundaryzones[2*d  ] : gi[d];
+    ei[d] = user->dyndata.bbox[2*d+1] ? user->nboundaryzones[2*d+1] : gi[d];
     mi[d] = ni[d]-bi[d]-ei[d];
     
     /* intermediate storage */
-    i1[d] = i0[d] + (!user->dyndata.bbox[2*d] && user->solvebnds[2*d]) * gi[d];
+    i1[d] = i0[d] + (!user->dyndata.bbox[2*d]
+                     ? gi[d] - user->nboundaryzones[2*d] : 0);
     assert (i1[d]>=0);
     
     /* Global Cactus boundaries */
     NI[d] = (user->dyndata.gsh[d]
-	     - (!user->solvebnds[2*d] + !user->solvebnds[2*d+1]) * gi[d]);
+	     - (user->nboundaryzones[2*d] + user->nboundaryzones[2*d+1]));
   }
   
   for (d=user->dyndata.dim; d<DIM; ++d) {
