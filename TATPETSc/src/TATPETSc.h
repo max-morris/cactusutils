@@ -36,8 +36,8 @@ typedef struct {
   int *val;
   int solvebnds[2*DIM];
   cGroupDynamicData dyndata;
-  int (*fun) (cGH *cctkGH, void *data);
-  int (*bnd) (cGH *cctkGH, void *data);
+  int (*fun) (cGH *cctkGH, int options_table, void *data);
+  int (*bnd) (cGH *cctkGH, int options_table, void *data);
   int (*jac) (cGH *cctkGH, Mat *J, Mat *B, MatStructure *flag, void *data);
   void *data;
   int funcall_count;
@@ -62,8 +62,8 @@ int TATPETSc_error_handler (int line, char *fun, char *file, char *dir, int n, i
 int TATPETSc_solve (cGH *cctkGH,
 		    const int *var, const int *val, int nvars,
 		    int options_table,
-		    int (*fun) (cGH *cctkGH, void *data),
-		    int (*bnd) (cGH *cctkGH, void *data),
+		    int (*fun) (cGH *cctkGH, int options_table, void *data),
+		    int (*bnd) (cGH *cctkGH, int options_table, void *data),
 		    void *data);
 
 

@@ -36,8 +36,8 @@ int TATPETSc_function (SNES snes, Vec x, Vec f, void *userptr)
   ++user->funcall_count;
   
   TATPETSc_copy (x, userptr, TATcopyout, TATcopyvars);
-  ierr = (user->bnd) (cctkGH, user->data);
-  ierr2 = (user->fun) (cctkGH, user->data);
+  ierr = (user->bnd) (cctkGH, -1, user->data);
+  ierr2 = (user->fun) (cctkGH, -1, user->data);
   if (!ierr) ierr = ierr2;
   TATPETSc_copy (f, userptr, TATcopyin, TATcopyvals);
   
