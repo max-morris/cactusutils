@@ -37,6 +37,7 @@ typedef struct {
   int solvebnds[2*DIM];
   cGroupDynamicData dyndata;
   int (*fun) (const cGH *cctkGH, void *data);
+  int (*bnd) (const cGH *cctkGH, void *data);
   int (*jac) (const cGH *cctkGH, Mat *J, Mat *B, MatStructure *flag,
 	      void *data);
   void *data;
@@ -61,6 +62,7 @@ int TATPETSc_solve (const cGH *cctkGH,
 		    const int *var, const int *val, int nvars,
 		    int options_table,
 		    int (*fun) (const cGH *cctkGH, void *data),
+		    int (*bnd) (const cGH *cctkGH, void *data),
 		    void *data);
 
 

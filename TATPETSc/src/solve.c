@@ -30,6 +30,7 @@ int TATPETSc_solve (const cGH *cctkGH,
 		    const int *var, const int *val, int nvars,
 		    int options_table,
 		    int (*fun) (const cGH *cctkGH, void *data),
+		    int (*bnd) (const cGH *cctkGH, void *data),
 		    void *data)
 {
   DECLARE_CCTK_PARAMETERS
@@ -232,6 +233,8 @@ int TATPETSc_solve (const cGH *cctkGH,
   
   assert (fun);
   user.fun = fun;
+  assert (bnd);
+  user.bnd = bnd;
   user.jac = jac;
   user.data = data;
   user.funcall_count = 0;
