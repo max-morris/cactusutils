@@ -500,7 +500,7 @@ static void PrintWarning (const char *error_type,
                 "%s caught in %svariable '%s'",
                 error_type, complex_part, fullname);
   }
-  else
+  else if (verbose)
   {
     /* assume max. 10 characters per index number and 40 characters per
        coordinate value (including separators) */
@@ -527,24 +527,21 @@ static void PrintWarning (const char *error_type,
       }
     }
 
-    if (verbose)
+    if (coords)
     {
-      if (coords)
-      {
-        CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
-                    "%s caught in %svariable '%s' at index (%s) with coordinates "
-                    "(%s)", error_type, complex_part, fullname, index_string,
-                    coord_string);
-      }
-      else
-      {
-        CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
-                    "%s caught in %svariable '%s' at (%s)",
-                    error_type, complex_part, fullname, index_string);
-      }
-
-      free (index_string);
+      CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "%s caught in %svariable '%s' at index (%s) with coordinates "
+                  "(%s)", error_type, complex_part, fullname, index_string,
+                  coord_string);
     }
+    else
+    {
+      CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "%s caught in %svariable '%s' at (%s)",
+                  error_type, complex_part, fullname, index_string);
+    }
+
+    free (index_string);
   }
 }
 
