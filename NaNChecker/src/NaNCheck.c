@@ -227,7 +227,7 @@ void NaNChecker_TakeAction (CCTK_ARGUMENTS)
     /* prevent downsampling -- only if PUGH is active, because this is
        a non-standard option */
     CCTK_OutputVarAsByMethod (cctkGH,
-                              "NaNChecker::NaNmask[downsample={1 1 1}]",
+                              "NaNChecker::NaNmask{downsample={1 1 1}}",
                               "IOHDF5", "NaNmask");
   }
   else
