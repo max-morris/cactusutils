@@ -141,3 +141,25 @@ void TimerReport_Output(CCTK_ARGUMENTS)
 
   return;
 }
+
+ /*@@
+   @routine    TimerReport_Checkpoint
+   @date       April 10 2004
+   @author     Erik Schnetter
+   @desc
+   Output the timer table if before_checkpoint is set
+   @enddesc
+   @calls      
+@@*/
+void TimerReport_Checkpoint(CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS
+  DECLARE_CCTK_PARAMETERS
+
+  if (before_checkpoint)
+  {
+    CCTK_SchedulePrintTimes(NULL);
+  }
+
+  return;
+}

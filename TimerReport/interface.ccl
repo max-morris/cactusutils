@@ -8,6 +8,5 @@ private:
 
 int triggergroup type=SCALAR
 {
-triggervar
+  triggervar
 } "For triggering output"
-
