@@ -16,6 +16,7 @@
 int NaNChecker_CheckVarsForNaN (const cGH *GH,
                                 int report_max,
                                 const char *vars,
+                                const char *check_for,
                                 const char *action_if_found);
 int NaNChecker_SetVarsToNaN (const cGH *GH,
                              const char *vars);

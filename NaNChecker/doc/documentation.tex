@@ -45,17 +45,18 @@ respectively).
 
 The NaNChecker then registers a routine at {\bf CCTK\_POSTSTEP} which checks
 at every {\tt NanChecker::check\_every} iteration all the variables listed in
-{\tt NaNChecker::check\_vars} and -- in the case a NaN is found -- performs an
+{\tt NaNChecker::check\_vars} for NaN or infinite values (depending on {\tt
+NaNChecker::check\_for}) and -- if such a value is found -- performs an
 action as specified in {\tt NaNChecker::action\_if\_found}.\\
 
 Currently these actions can be to
 \begin{itemize}
  \item{\tt just\_warn} (the default) 
 
-   just print a level 1 warning message telling you where NaNs were found
+   just print a level 1 warning message telling you where NaNs/Infs were found
    and how many (for grid array variables).\\
    For grid arrays it will also print level 2 warnings with the array index
-   (in fortran order) for all NaN elements. You can limit the number of
+   (in fortran order) for all NaN/Inf elements. You can limit the number of
    such warnings by setting the {\tt NanChecker::report\_max} parameter.
 
  \item{\tt terminate} 
@@ -84,8 +85,8 @@ of the variable grid::x, timelevel 1 of {\tt grid::y} and timelevel 2 of
 \section{NaNChecker API}
 %
 Thorn NaNChecker also provides a function API which can be used by other code
-to invoke the NaNChecker routines to test for NaN values or to set NaN values
-for a list of variables:
+to invoke the NaNChecker routines to test for NaN/Inf values or to set NaN
+values for a list of variables:
 
 \vskip .2cm
 \noindent{\bf C API}
@@ -94,6 +95,7 @@ for a list of variables:
   int NaNChecker_CheckVarsForNaN (const cGH *cctkGH,
                                   int report_max,
                                   const char *vars,
+                                  const char *check_for,
                                   const char *action_if_found);
 
   int NaNChecker_SetVarsToNaN (const cGH *cctkGH,
@@ -106,12 +108,13 @@ for a list of variables:
 
 \begin{verbatim}
   call NaNChecker_CheckVarsForNaN (ierror, cctkGH, report_max,
-                                   vars, action_if_found)
+                                   vars, check_for, action_if_found)
 
                                    integer ierror
                                    CCTK_POINTER cctkGH
                                    integer report_max
                                    character*(*) vars
+                                   character*(*) check_for
                                    character*(*) action_if_found
 
   call NaNChecker_SetVarsToNaN (ierror, cctkGH, vars)
@@ -121,14 +124,14 @@ for a list of variables:
                                 character*(*) vars
 \end{verbatim}
 
-The {\tt report\_max, check\_vars,} and {\tt action\_if\_found} arguments
-have the same semantics as their parameter counterparts.\\
+The {\tt report\_max, check\_vars, check\_for} and {\tt action\_if\_found}
+arguments have the same semantics as their parameter counterparts.\\
 If {\tt action\_if\_found} is given as a NULL pointer (C API) or as an empty
 string (Fortran API) the routine will be quiet and just return the number of
 NaN values found.\\
 
 The C function {\tt NaNChecker\_CheckVarsForNaN()} returns the total number of
-NaN values found, {\tt NaNChecker\_SetToNaN()} returns the total number of
+NaN/Inf values found, {\tt NaNChecker\_SetToNaN()} returns the total number of
 variables set to NaN; this return value is stored in the {\tt ierror} argument
 for the corresponding fortran wrapper routines.
 %

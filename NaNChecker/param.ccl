@@ -23,6 +23,13 @@ STRING check_vars "Groups and/or variables to check for NaN's" STEERABLE = ALWAY
   .* :: "List of full group and/or variable names, or 'all' for everything"
 } ""
 
+KEYWORD check_for "Check for NaN's and/or infinite numbers (only evaluated if finite(3) is available)" STEERABLE = ALWAYS
+{
+  "NaN"  :: "Check only for NaN's"
+  "Inf"  :: "Check only for infinite numbers"
+  "both" :: "Check for both NaN's and infinite numbers"
+} "both"
+
 KEYWORD action_if_found "What to do if a NaN was found" STEERABLE = ALWAYS
 {
   "just warn" :: "Just print a level 1 warning"

@@ -40,7 +40,7 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                            (int *ierror,
                             const cGH *GH,
                             const int *report_max,
-                            TWO_FORTSTRING_ARG);
+                            THREE_FORTSTRING_ARG);
 void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
                            (int *ierror,
                             const cGH *GH,
@@ -68,6 +68,9 @@ typedef struct
   int report_max;
   const char *action_if_found;
   int count;
+#ifdef HAVE_FINITE
+  enum {CHECK_FOR_NAN = 0, CHECK_FOR_INF = 1, CHECK_FOR_BOTH = 2} check_for;
+#endif
 } t_nanchecker_info;
 
 
@@ -106,6 +109,20 @@ int NaNChecker_NaNCheck (const cGH *GH)
     info.GH = GH;
     info.report_max = report_max;
     info.action_if_found = action_if_found;
+#ifdef HAVE_FINITE
+    if (CCTK_Equals (check_for, "NaN"))
+    {
+      info.check_for = CHECK_FOR_NAN;
+    }
+    else if (CCTK_Equals (check_for, "Inf"))
+    {
+      info.check_for = CHECK_FOR_INF;
+    }
+    else
+    {
+      info.check_for = CHECK_FOR_BOTH;
+    }
+#endif
     retval = CCTK_TraverseString (check_vars, CheckForNaN, &info,
                                   CCTK_GROUP_OR_VAR);
   }
@@ -144,6 +161,12 @@ int NaNChecker_NaNCheck (const cGH *GH)
    @vtype      const char *
    @vio        in
    @endvar
+   @var        check_for
+   @vdesc      Whether to check for NaN's and/or infinite numbers
+               This is only evaluated if finite(3) is available.
+   @vtype      const char *
+   @vio        in
+   @endvar
    @var        action_if_found
    @vdesc      What do do if a NaN was found
                This is treated the same as the KEYWORD parameter
@@ -165,6 +188,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
 int NaNChecker_CheckVarsForNaN (const cGH *GH,
                                 int report_max,
                                 const char *vars,
+                                const char *check_for,
                                 const char *action_if_found)
 {
   t_nanchecker_info info;
@@ -191,6 +215,20 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
   info.report_max = report_max;
   info.action_if_found = action_if_found;
   info.count = 0;
+#ifdef HAVE_FINITE
+  if (CCTK_Equals (check_for, "NaN"))
+  {
+    info.check_for = CHECK_FOR_NAN;
+  }
+  else if (CCTK_Equals (check_for, "Inf"))
+  {
+    info.check_for = CHECK_FOR_INF;
+  }
+  else
+  {
+    info.check_for = CHECK_FOR_BOTH;
+  }
+#endif
   if (CCTK_TraverseString (vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR) < 0)
   {
     CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
@@ -205,12 +243,13 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                            (int *ierror,
                             const cGH *GH,
                             const int *report_max,
-                            TWO_FORTSTRING_ARG)
+                            THREE_FORTSTRING_ARG)
 {
-  TWO_FORTSTRING_CREATE (vars, action_if_found);
-  *ierror = NaNChecker_CheckVarsForNaN (GH, *report_max, vars,
+  THREE_FORTSTRING_CREATE (vars, check_for, action_if_found);
+  *ierror = NaNChecker_CheckVarsForNaN (GH, *report_max, vars, check_for,
                                      *action_if_found ? action_if_found : NULL);
   free (vars);
+  free (check_for);
   free (action_if_found);
 }
 
@@ -422,19 +461,20 @@ static void PrintWarning (const char *error_type,
 #define CHECK_DATA(cctk_type)                                                 \
 {                                                                             \
   int _i;                                                                     \
-  const cctk_type *_typed_data = (const cctk_type *) data;                    \
+  const cctk_type *_data = (const cctk_type *) data;                          \
                                                                               \
                                                                               \
   /* now loop over all elements and check against NaN's */                    \
   for (_i = 0; _i < nelems; _i++)                                             \
   {                                                                           \
-    if (! finite ((double) _typed_data[_i]))                                  \
+    if (! finite ((double) _data[_i]) && (info->check_for == CHECK_FOR_BOTH ||\
+        ((isnan ((double) _data[_i]) & 1) ^ info->check_for)))                \
     {                                                                         \
       nans_found++;                                                           \
       if (info->action_if_found &&                                            \
           (info->report_max < 0 || nans_found <= info->report_max))           \
       {                                                                       \
-        PrintWarning (isnan ((double) _typed_data[_i]) ? "NaN" : "Inf",       \
+        PrintWarning (isnan ((double) _data[_i]) ? "NaN" : "Inf",             \
                       _i, fp_type, coords, fullname, &gdata);                 \
       }                                                                       \
     }                                                                         \
@@ -446,13 +486,13 @@ static void PrintWarning (const char *error_type,
 #define CHECK_DATA(cctk_type)                                                 \
 {                                                                             \
   int _i;                                                                     \
-  const cctk_type *_typed_data = (const cctk_type *) data;                    \
+  const cctk_type *_data = (const cctk_type *) data;                          \
                                                                               \
                                                                               \
   /* now loop over all elements and check against NaN's */                    \
   for (_i = 0; _i < nelems; _i++)                                             \
   {                                                                           \
-    if (isnan ((double) _typed_data[_i]))                                     \
+    if (isnan ((double) _data[_i]))                                           \
     {                                                                         \
       nans_found++;                                                           \
       if (info->action_if_found &&                                            \
