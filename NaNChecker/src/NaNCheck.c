@@ -4,7 +4,7 @@
    @author    Thomas Radke
    @desc
               Routines to check CCTK real and complex variables
-              against Not-a-Number values
+              against Not-a-Number values.
    @enddesc
    @version   $Id$
  @@*/
@@ -19,6 +19,9 @@
 #include "cctk_Termination.h"
 #include "cctk_FortranString.h"
 
+#include "NaNCheck.h"
+
+
 /* the rcsid and the macro to use it */
 static const char *rcsid = "$Header$";
 CCTK_FILEVERSION(CactusUtils_NaNChecker_NaNCheck_c)
@@ -27,22 +30,28 @@ CCTK_FILEVERSION(CactusUtils_NaNChecker_NaNCheck_c)
 /********************************************************************
  ********************    External Routines   ************************
  ********************************************************************/
-int NaNChecker_NaNCheckVars (const cGH *GH,
-                             int report_max,
-                             const char *check_vars,
-                             const char *action_if_found);
-void CCTK_FCALL CCTK_FNAME (NaNChecker_NaNCheckVars)
+int NaNChecker_NaNCheck (const cGH *GH);
+
+
+/********************************************************************
+ ********************    Fortran Wrappers    ************************
+ ********************************************************************/
+void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                            (const cGH *GH,
                             int *ierror,
                             const int *report_max,
                             TWO_FORTSTRING_ARG);
-int NaNChecker_NaNCheck (const cGH *GH);
+void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
+                           (const cGH *GH,
+                            int *ierror,
+                            ONE_FORTSTRING_ARG);
 
 
 /********************************************************************
  ********************    Internal Routines   ************************
  ********************************************************************/
-static void NaNCheck (int vindex, const char *optstring, void *arg);
+static void CheckForNaN (int vindex, const char *optstring, void *arg);
+static void SetToNaN (int vindex, const char *optstring, void *arg);
 static void PrintWarning (const char *error_type,
                           int linear_index,
                           int fp_type,
@@ -58,7 +67,7 @@ typedef struct
   const cGH *GH;
   int report_max;
   const char *action_if_found;
-  int nans_found;
+  int count;
 } t_nanchecker_info;
 
 
@@ -71,7 +80,7 @@ typedef struct
                for NaN values
    @enddesc
    @calls      CCTK_TraverseString
-               NaNCheck
+               CheckForNaN
 
    @var        GH
    @vdesc      Pointer to CCTK GH
@@ -97,7 +106,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
     info.GH = GH;
     info.report_max = report_max;
     info.action_if_found = action_if_found;
-    retval = CCTK_TraverseString (check_vars, NaNCheck, &info,
+    retval = CCTK_TraverseString (check_vars, CheckForNaN, &info,
                                   CCTK_GROUP_OR_VAR);
   }
   else
@@ -110,7 +119,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
 
 
  /*@@
-   @routine    NaNChecker_NaNCheckVars
+   @routine    NaNChecker_CheckVarsForNaN
    @author     Thomas Radke
    @date       Wed 5 Dec 2001
    @desc
@@ -118,7 +127,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
                in CCTK grid variables.
    @enddesc
    @calls      CCTK_TraverseString
-               NaNCheck
+               CheckForNaN
 
    @var        GH
    @vdesc      Pointer to CCTK GH
@@ -130,7 +139,7 @@ int NaNChecker_NaNCheck (const cGH *GH)
    @vtype      int
    @vio        in
    @endvar
-   @var        check_vars
+   @var        vars
    @vdesc      Groups and/or variables to check for NaN's
    @vtype      const char *
    @vio        in
@@ -148,23 +157,23 @@ int NaNChecker_NaNCheck (const cGH *GH)
    @returntype int
    @returndesc
                the total number of NaN values found, or<BR>
-               -1 if a NULL pointer was passed for 'GH' and/or check_vars',<BR>
+               -1 if a NULL pointer was passed for 'GH' and/or 'vars',<BR>
                -2 if an unknow keyword was passed in 'action_if_found',<BR>
-               -3 if the 'check_vars' string couldn't be parsed
+               -3 if the 'vars' string couldn't be parsed
    @endreturndesc
 @@*/
-int NaNChecker_NaNCheckVars (const cGH *GH,
-                             int report_max,
-                             const char *check_vars,
-                             const char *action_if_found)
+int NaNChecker_CheckVarsForNaN (const cGH *GH,
+                                int report_max,
+                                const char *vars,
+                                const char *action_if_found)
 {
   t_nanchecker_info info;
 
 
-  if (GH == NULL || check_vars == NULL)
+  if (GH == NULL || vars == NULL)
   {
     CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                "NULL pointer passed for 'GH' and/or 'check_vars' argument");
+                "NULL pointer passed for 'GH' and/or 'vars' argument");
     return (-1);
   }
 
@@ -181,28 +190,92 @@ int NaNChecker_NaNCheckVars (const cGH *GH,
   info.GH = GH;
   info.report_max = report_max;
   info.action_if_found = action_if_found;
-  info.nans_found = 0;
-  if (CCTK_TraverseString (check_vars, NaNCheck, &info, CCTK_GROUP_OR_VAR) < 0)
+  info.count = 0;
+  if (CCTK_TraverseString (vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR) < 0)
   {
     CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                "Couldn't traverse 'check_vars' string '%s'", check_vars);
+                "Couldn't traverse 'vars' string '%s'", vars);
     return (-3);
   }
 
-  return (info.nans_found);
+  return (info.count);
 }
 
-void CCTK_FCALL CCTK_FNAME (NaNChecker_NaNCheckVars)
+void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                            (const cGH *GH,
                             int *ierror,
                             const int *report_max,
                             TWO_FORTSTRING_ARG)
 {
-  TWO_FORTSTRING_CREATE (check_vars, action_if_found);
-  *ierror = NaNChecker_NaNCheckVars (GH, *report_max, check_vars,
+  TWO_FORTSTRING_CREATE (vars, action_if_found);
+  *ierror = NaNChecker_CheckVarsForNaN (GH, *report_max, vars,
                                      *action_if_found ? action_if_found : NULL);
-  free (check_vars);
+  free (vars);
   free (action_if_found);
+}
+
+
+ /*@@
+   @routine    NaNChecker_SetVarsToNaN
+   @author     Thomas Radke
+   @date       Sun 9 Dec 2001
+   @desc
+               User-callable routine to set CCTK grid variables to NaN values.
+   @enddesc
+   @calls      CCTK_TraverseString
+               SetToNaN
+
+   @var        GH
+   @vdesc      Pointer to CCTK GH
+   @vtype      const cGH *
+   @vio        in
+   @endvar
+   @var        vars
+   @vdesc      Groups and/or variables to set to NaN's
+   @vtype      const char *
+   @vio        in
+   @endvar
+
+   @returntype int
+   @returndesc
+                0 for success, or<BR>
+               -1 if a NULL pointer was passed for 'GH' and/or 'vars',<BR>
+               -2 if the 'vars' string couldn't be parsed
+   @endreturndesc
+@@*/
+int NaNChecker_SetVarsToNaN (const cGH *GH,
+                             const char *vars)
+{
+  t_nanchecker_info info;
+
+
+  if (GH == NULL || vars == NULL)
+  {
+    CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "NULL pointer passed for 'GH' and/or 'vars' argument");
+    return (-1);
+  }
+
+  info.GH = GH;
+  info.count = 0;
+  if (CCTK_TraverseString (vars, SetToNaN, &info, CCTK_GROUP_OR_VAR) < 0)
+  {
+    CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "Couldn't traverse 'vars' string '%s'", vars);
+    return (-2);
+  }
+
+  return (info.count);
+}
+
+void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
+                           (const cGH *GH,
+                            int *ierror,
+                            ONE_FORTSTRING_ARG)
+{
+  ONE_FORTSTRING_CREATE (vars);
+  *ierror = NaNChecker_SetVarsToNaN (GH, vars);
+  free (vars);
 }
 
 
@@ -395,7 +468,7 @@ static void PrintWarning (const char *error_type,
 
 
  /*@@
-   @routine    NaNCheck
+   @routine    CheckForNaN
    @date       Sat 21 Apr 2001
    @author     Thomas Radke
    @desc
@@ -415,8 +488,8 @@ static void PrintWarning (const char *error_type,
    @vio        in
    @endvar
    @var        optstring
-   @vdesc      optional string appended to the group/variable name
-   @vtype      unused
+   @vdesc      optional timelevel string appended to the group/variable name
+   @vtype      const char *
    @vio        in
    @endvar
    @var        _info
@@ -425,21 +498,18 @@ static void PrintWarning (const char *error_type,
    @vio        in
    @endvar
 @@*/
-static void NaNCheck (int vindex, const char *optstring, void *_info)
+static void CheckForNaN (int vindex, const char *optstring, void *_info)
 {
   t_nanchecker_info *info;
-  int i, fp_type, nans_found;
-  int vtype, gtype, gindex, nelems;
-  char *fullname;
+  int i, nans_found;
+  int timelevel, fp_type, vtype, gtype, gindex, nelems;
+  char *fullname, *endptr;
   const char *vtypename;
   char coord_system_name[10];
   const CCTK_REAL **coords;
   cGroupDynamicData gdata;
   const void *data;
 
-
-  /* avoid compiler warning about unused parameters */
-  optstring = optstring;
 
   info = (t_nanchecker_info *) _info;
 
@@ -450,141 +520,280 @@ static void NaNCheck (int vindex, const char *optstring, void *_info)
   vtypename = CCTK_VarTypeName (vtype);
   if (strncmp (vtypename, "CCTK_VARIABLE_REAL", 18) == 0)
   {
-    fp_type = 1;
+    fp_type = nelems = 1;
   }
   else if (strncmp (vtypename, "CCTK_VARIABLE_COMPLEX", 22) == 0)
   {
-    fp_type = 2;
-  }
-  else
-  {
-    fp_type = 0;
-  }
-
-  if (fp_type)
-  {
-    gindex = CCTK_GroupIndexFromVarI (vindex);
-
-    /* check if variable has storage assigned */
-    if (CCTK_QueryGroupStorageI (info->GH, gindex))
-    {
-      /* get the number of elements to check for this variable */
-      nelems = 1;
-      gdata.dim = 0;
-      coords = NULL;
-      gtype = CCTK_GroupTypeI (gindex);
-      if (gtype != CCTK_SCALAR)
-      {
-        CCTK_GroupDynamicData (info->GH, gindex, &gdata);
-        if (gtype == CCTK_GF)
-        {
-          sprintf (coord_system_name, "cart%dd", gdata.dim);
-          if (CCTK_CoordSystemHandle (coord_system_name) >= 0)
-          {
-            coords = (const CCTK_REAL **)
-                     malloc (gdata.dim * sizeof (const CCTK_REAL *));
-          }
-        }
-        for (i = 0; i < gdata.dim; i++)
-        {
-          nelems *= gdata.lsh[i];
-          if (coords)
-          {
-            coords[i] = (const CCTK_REAL *) CCTK_VarDataPtrI (info->GH, 0,
-                        CCTK_CoordIndex (i + 1, NULL, coord_system_name));
-            if (! coords[i]) 
-            {
-              free (coords);
-              coords = NULL;
-            }
-          }
-        }
-      }
-
-      /* simply double the number of elements for a CCTK_COMPLEX variable */
-      if (fp_type == 2)
-      {
-        nelems *= 2;
-      }
-
-      /* get the pointer to the data (current time level) */
-      data = CCTK_VarDataPtrI (info->GH, 0, vindex);
-
-      /* do the checking according to the variable's type */
-      nans_found = 0;
-      if (vtype == CCTK_VARIABLE_REAL || CCTK_VARIABLE_COMPLEX)
-      {
-        CHECK_DATA (CCTK_REAL);
-      }
-#ifdef CCTK_REAL4
-      else if (vtype == CCTK_VARIABLE_REAL4 || CCTK_VARIABLE_COMPLEX8)
-      {
-        CHECK_DATA (CCTK_REAL4);
-      }
-#endif
-#ifdef CCTK_REAL8
-      else if (vtype == CCTK_VARIABLE_REAL8 || CCTK_VARIABLE_COMPLEX16)
-      {
-        CHECK_DATA (CCTK_REAL8);
-      }
-#endif
-#ifdef CCTK_REAL16
-      else if (vtype == CCTK_VARIABLE_REAL16 || CCTK_VARIABLE_COMPLEX32)
-      {
-        CHECK_DATA (CCTK_REAL16);
-      }
-#endif
-      else
-      {
-        CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                    "NanCheck: Unknown variable type '%s' for variable '%s'",
-                    vtypename, fullname);
-      }
-
-      /* Do more than just print a warning ? */
-      if (nans_found > 0 && info->action_if_found)
-      {
-        if (gdata.dim > 0)
-        {
-          CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                      "There were %d NaN/Inf value(s) found in variable '%s'",
-                      nans_found, fullname);
-        }
-
-        if (CCTK_Equals (info->action_if_found, "terminate"))
-        {
-          CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                      "\"action_if_found\" parameter is set to \"terminate\" - "
-                      "scheduling graceful termination of Cactus");
-          CCTK_TerminateNext (NULL);
-        }
-        else if (CCTK_Equals (info->action_if_found, "abort"))
-        {
-          CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                      "\"action_if_found\" parameter is set to \"abort\" - "
-                      "aborting Cactus now");
-          CCTK_Abort (NULL, 0);
-        }
-      }
-      info->nans_found += nans_found;
-
-      if (coords)
-      {
-        free (coords);
-      }
-    }
-    else
-    {
-      CCTK_VWarn (3, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "NaNCheck: Ignoring variable '%s' (no storage)", fullname);
-    }
+    fp_type = nelems = 2;
   }
   else
   {
     CCTK_VWarn (9, __LINE__, __FILE__, CCTK_THORNSTRING,
-                "NaNCheck: Ignoring variable '%s' "
+                "CheckForNaN: Ignoring variable '%s' "
                 "(not a floating-point variable)", fullname);
+    free (fullname);
+    return;
   }
 
+  /* check if variable has storage assigned */
+  gindex = CCTK_GroupIndexFromVarI (vindex);
+  if (CCTK_QueryGroupStorageI (info->GH, gindex))
+  {
+    CCTK_VWarn (3, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "CheckForNaN: Ignoring variable '%s' (no storage)", fullname);
+    free (fullname);
+    return;
+  }
+
+  /* get the timelevel to check */
+  if (optstring)
+  {
+    if (strncmp (optstring, "timelevel=", 10))
+    {
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "CheckForNaN: Invalid option string '%s' given for variable "
+                  "'%s'", fullname);
+      free (fullname);
+      return;
+    }
+    else
+    {
+      timelevel = strtol (optstring + 10, &endptr, 10);
+      if (*endptr != ']' ||
+          timelevel < 0 || timelevel >= CCTK_NumTimeLevelsFromVarI (vindex))
+      {
+        CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                    "CheckForNaN: Invalid timelevel '%s' given for variable "
+                    "'%s'", optstring + 10, fullname);
+        free (fullname);
+        return;
+      }
+    }
+  }
+  else
+  {
+    /* default timelevel */
+    timelevel = 0;
+  }
+
+  /* get the number of elements to check for this variable */
+  gdata.dim = 0;
+  coords = NULL;
+  gtype = CCTK_GroupTypeI (gindex);
+  if (gtype != CCTK_SCALAR)
+  {
+    CCTK_GroupDynamicData (info->GH, gindex, &gdata);
+    if (gtype == CCTK_GF)
+    {
+      sprintf (coord_system_name, "cart%dd", gdata.dim);
+      if (CCTK_CoordSystemHandle (coord_system_name) >= 0)
+      {
+        coords = (const CCTK_REAL **)
+                 malloc (gdata.dim * sizeof (const CCTK_REAL *));
+      }
+    }
+    for (i = 0; i < gdata.dim; i++)
+    {
+      nelems *= gdata.lsh[i];
+      if (coords)
+      {
+        coords[i] = (const CCTK_REAL *) CCTK_VarDataPtrI (info->GH, 0,
+                    CCTK_CoordIndex (i + 1, NULL, coord_system_name));
+        if (! coords[i]) 
+        {
+          free (coords);
+          coords = NULL;
+        }
+      }
+    }
+  }
+
+  /* get the pointer to the data (current time level) */
+  data = CCTK_VarDataPtrI (info->GH, timelevel, vindex);
+
+  /* do the checking according to the variable's type */
+  nans_found = 0;
+  if (vtype == CCTK_VARIABLE_REAL || CCTK_VARIABLE_COMPLEX)
+  {
+    CHECK_DATA (CCTK_REAL);
+  }
+#ifdef CCTK_REAL4
+  else if (vtype == CCTK_VARIABLE_REAL4 || CCTK_VARIABLE_COMPLEX8)
+  {
+    CHECK_DATA (CCTK_REAL4);
+  }
+#endif
+#ifdef CCTK_REAL8
+  else if (vtype == CCTK_VARIABLE_REAL8 || CCTK_VARIABLE_COMPLEX16)
+  {
+    CHECK_DATA (CCTK_REAL8);
+  }
+#endif
+#ifdef CCTK_REAL16
+  else if (vtype == CCTK_VARIABLE_REAL16 || CCTK_VARIABLE_COMPLEX32)
+  {
+    CHECK_DATA (CCTK_REAL16);
+  }
+#endif
+  else
+  {
+    CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "NanCheck: Unknown variable type '%s' for variable '%s'",
+                vtypename, fullname);
+  }
+
+  /* Do more than just print a warning ? */
+  if (nans_found > 0 && info->action_if_found)
+  {
+    if (gdata.dim > 0)
+    {
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "There were %d NaN/Inf value(s) found in variable '%s'",
+                  nans_found, fullname);
+    }
+
+    if (CCTK_Equals (info->action_if_found, "terminate"))
+    {
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "\"action_if_found\" parameter is set to \"terminate\" - "
+                  "scheduling graceful termination of Cactus");
+      CCTK_TerminateNext (NULL);
+    }
+    else if (CCTK_Equals (info->action_if_found, "abort"))
+    {
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "\"action_if_found\" parameter is set to \"abort\" - "
+                  "aborting Cactus now");
+      CCTK_Abort (NULL, 0);
+    }
+  }
+  info->count += nans_found;
+
+  if (coords)
+  {
+    free (coords);
+  }
+  free (fullname);
+}
+
+
+ /*@@
+   @routine    SetToNaN
+   @date       Sun 9 Dec 2001
+   @author     Thomas Radke
+   @desc
+               Initializes a CCTK variable given by its index to all NaN's.
+               Note that only floating point typed variables are initialized.
+               <BR>
+               This routine is called as a callback via CCTK_TraverseString().
+   @enddesc
+
+   @var        vindex
+   @vdesc      index of variable to initialize
+   @vtype      int
+   @vio        in
+   @endvar
+   @var        optstring
+   @vdesc      optional timelevel string appended to the group/variable name
+   @vtype      const char *
+   @vio        in
+   @endvar
+   @var        _info
+   @vdesc      Pointer to NaNChecker info structure
+   @vtype      void *
+   @vio        in
+   @endvar
+@@*/
+static void SetToNaN (int vindex, const char *optstring, void *_info)
+{
+  t_nanchecker_info *info;
+  int i, timelevel, vtype, gindex, nelems;
+  const char *vtypename;
+  char *fullname, *endptr;
+  cGroupDynamicData gdata;
+
+
+  info = (t_nanchecker_info *) _info;
+
+  vtype = CCTK_VarTypeI (vindex);
+  fullname = CCTK_FullName (vindex);
+
+  /* check if the variable type is some floating point */
+  vtypename = CCTK_VarTypeName (vtype);
+  if (strncmp (vtypename, "CCTK_VARIABLE_REAL", 18) == 0)
+  {
+    nelems = 1;
+  }
+  else if (strncmp (vtypename, "CCTK_VARIABLE_COMPLEX", 22) == 0)
+  {
+    nelems = 2;
+  }
+  else
+  {
+    CCTK_VWarn (9, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "SetToNaN: Ignoring variable '%s' "
+                "(not a floating-point variable)", fullname);
+    free (fullname);
+    return;
+  }
+
+  /* check if variable has storage assigned */
+  gindex = CCTK_GroupIndexFromVarI (vindex);
+  if (CCTK_QueryGroupStorageI (info->GH, gindex))
+  {
+    CCTK_VWarn (3, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "SetToNaN: Ignoring variable '%s' (no storage)", fullname);
+    free (fullname);
+    return;
+  }
+
+  /* get the timelevel to initialize */
+  if (optstring)
+  {
+    if (strncmp (optstring, "timelevel=", 10))
+    {
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "SetToNaN: Invalid option string '%s' given for variable "
+                  "'%s'", fullname);
+      free (fullname);
+      return;
+    }
+    else
+    {
+      timelevel = strtol (optstring + 10, &endptr, 10);
+      if (timelevel < 0 || timelevel >= CCTK_NumTimeLevelsFromVarI (vindex))
+      {
+        CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                    "SetToNaN: Invalid timelevel '%s' given for variable "
+                    "'%s'", optstring + 10, fullname);
+        free (fullname);
+        return;
+      }
+    }
+  }
+  else
+  {
+    /* default timelevel */
+    timelevel = 0;
+  }
+
+  /* get the number of elements to initialize for this variable */
+  if (CCTK_GroupTypeI (gindex) != CCTK_SCALAR)
+  {
+    CCTK_GroupDynamicData (info->GH, gindex, &gdata);
+    for (i = 0; i < gdata.dim; i++)
+    {
+      nelems *= gdata.lsh[i];
+    }
+  }
+
+  /* do the initialization */
+  memset (CCTK_VarDataPtrI (info->GH, timelevel, vindex),
+          -1, CCTK_VarTypeSize (vtype) * nelems);
+
+  /* count up the total number of variables initialized */
+  info->count++;
+
+  /* clean up */
   free (fullname);
 }

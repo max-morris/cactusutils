@@ -34,30 +34,45 @@ Currently these actions can be to
  \item print the warning message(s) and immediately terminate Cactus
    by a call to {\tt CCTK\_Abort()}
 \end{itemize}
+
+By default, the current timelevel of the variables given in
+{\tt NaNChecker::check\_vars} will be checked. This can be overwritten by
+an optional string {\tt [timelevel=<timelevel>]} appended to the
+variable/group name.
 %
 \section{NaNChecker API}
 %
 Thorn NaNChecker also provides a function API which can be used by other code
-to invoke the NaNChecker routine directly:
+to invoke the NaNChecker routines to test for NaN values or to set NaN values
+for a list of variables:
 
 \begin{itemize}
   \item{\bf C API}
 \begin{verbatim}
-  int NaNChecker_NaNCheckVars (const cGH *cctkGH,
-                               int report_max,
-                               const char *check_vars,
-                               const char *action_if_found);
+  int NaNChecker_CheckVarsForNaN (const cGH *cctkGH,
+                                  int report_max,
+                                  const char *vars,
+                                  const char *action_if_found);
+
+  int NaNChecker_SetVarsToNaN (const cGH *cctkGH,
+                               const char *vars);
 \end{verbatim}
   \item{\bf Fortran API}
 \begin{verbatim}
-  call NaNChecker_NaNCheckVars (ierror, cctkGH, report_max,
-                                check_vars, action_if_found)
+  call NaNChecker_CheckVarsForNaN (ierror, cctkGH, report_max,
+                                   vars, action_if_found)
+
+                                   integer ierror
+                                   CCTK_POINTER cctkGH
+                                   integer report_max
+                                   character*(*) vars
+                                   character*(*) action_if_found
+
+  call NaNChecker_SetVarsToNaN (ierror, cctkGH, vars)
 
                                 integer ierror
                                 CCTK_POINTER cctkGH
-                                integer report_max
-                                character*(*) check_vars
-                                character*(*) action_if_found
+                                character*(*) vars
 \end{verbatim}
 \end{itemize}
 
@@ -67,9 +82,10 @@ If {\tt action\_if\_found} is given as a NULL pointer (C API) or as an empty
 string (Fortran API) the routine will be quiet and just return the number of
 NaN values found.\\
 
-The C function {\tt NaNChecker\_NaNCheckVars} returns the total number of NaN
-values found; this value is stored in the {\tt ierror} argument for the
-fortran wrapper routine.
+The C function {\tt NaNChecker\_CheckVarsForNaN()} returns the total number of
+NaN values found, {\tt NaNChecker\_SetToNaN()} returns the total number of
+variables set to NaN; this return value is stored in the {\tt ierror} argument
+for the corresponding fortran wrapper routines.
 %
 % Automatically created from the ccl files 
 % Do not worry for now.
