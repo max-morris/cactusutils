@@ -1,0 +1,8 @@
+# Configuration definitions for thorn NaNChecker
+# $Header$
+
+PROVIDES NaNChecker
+{
+  SCRIPT
+  LANG
+}
