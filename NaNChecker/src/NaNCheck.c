@@ -226,6 +226,12 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
   }
   else
   {
+    if (! CCTK_Equals (check_for, "both"))
+    {
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "Invalid value '%s' passed for 'check_for' parameter. "
+                  "Defaulting to 'both' instead.", check_for);
+    }
     info.check_for = CHECK_FOR_BOTH;
   }
 #endif
