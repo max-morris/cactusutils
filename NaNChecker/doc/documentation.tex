@@ -51,15 +51,16 @@ Periodic testing of variables can easily be achieved by adding NaNChecker
 to the {\tt ActiveThorns} parameter, and setting the parameters 
 
 \noindent
-{\tt NaNChecker::check\_every} and {\tt NaNChecker::check\_vars} 
+{\tt NaNChecker::check\_every, NaNChecker::check\_after,} and {\tt NaNChecker::check\_vars} 
 
 \noindent
 to the required
-values. (For most testing purposes these can be set to {\tt 1} and {"all"} 
+values. (For most testing purposes these can be set to {\tt 1, 0,} and {"all"} 
 respectively).
 
 The NaNChecker then registers a routine at {\bf CCTK\_POSTSTEP} which checks
-at every {\tt NanChecker::check\_every} iteration all the variables listed in
+at every {\tt NanChecker::check\_every} iteration -- starting at iteration
+number {\tt NaNChecker::check\_after} -- all the variables listed in
 {\tt NaNChecker::check\_vars} for NaN or infinite values (depending on {\tt
 NaNChecker::check\_for}) and --- if such a value is found --- performs an
 action as specified in {\tt NaNChecker::action\_if\_found}.\\

@@ -6,28 +6,33 @@
 #############################################################################
 private:
 
-INT check_every "How often to check for NaN's" STEERABLE = ALWAYS
+INT check_every "How often to check for NaNs" STEERABLE = ALWAYS
 {
   0   :: "Never (default)"
   1:* :: "Every so many iterations"
 } 0
 
-INT report_max "How many NaN's to report for a single variable" STEERABLE = ALWAYS
+INT check_after "Start checking for NaNs after so many iterations" STEERABLE = ALWAYS
+{
+  0:* :: "Any valid iteration number"
+} 0
+
+INT report_max "How many NaNs to report for a single variable" STEERABLE = ALWAYS
 {
   -1   :: "Report all (default)"
-   0:* :: "Do not report more than report_max number of NaN's"
+   0:* :: "Do not report more than report_max number of NaNs"
 } -1
 
-STRING check_vars "Groups and/or variables to check for NaN's" STEERABLE = ALWAYS
+STRING check_vars "Groups and/or variables to check for NaNs" STEERABLE = ALWAYS
 {
   .* :: "List of full group and/or variable names, or 'all' for everything"
 } ""
 
-KEYWORD check_for "Check for NaN's and/or infinite numbers (only evaluated if finite(3) is available)" STEERABLE = ALWAYS
+KEYWORD check_for "Check for NaNs and/or infinite numbers (only evaluated if finite(3) is available)" STEERABLE = ALWAYS
 {
-  "NaN"  :: "Check only for NaN's"
+  "NaN"  :: "Check only for NaNs"
   "Inf"  :: "Check only for infinite numbers"
-  "both" :: "Check for both NaN's and infinite numbers"
+  "both" :: "Check for both NaNs and infinite numbers"
 } "both"
 
 BOOLEAN out_NaNmask "Dump the NaN grid function mask into an HDF5 file" STEERABLE = ALWAYS
