@@ -27,9 +27,8 @@ int TATPETSc_error_handler (int line, char *fun, char *file, char *dir, int n, i
 
 
 
-void TATPETSc_initialize (CCTK_ARGUMENTS)
+void TATPETSc_initialize (void)
 {
-  DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
   
   /* world communicator */

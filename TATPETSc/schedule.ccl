@@ -3,7 +3,7 @@
 
 
 
-SCHEDULE TATPETSc_initialize AT basegrid
+SCHEDULE TATPETSc_initialize AT startup AFTER Driver_Startup
 {
   LANG: C
 } "Initialise PETSc"
