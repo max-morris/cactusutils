@@ -38,6 +38,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   CCTK_INT periodic[DIM];
   CCTK_INT solvebnds[2*DIM];
   CCTK_INT sw;
+  CCTK_FN_POINTER ptmp;
   int (*jac) (const cGH *cctkGH, Mat *J, Mat *B,
 	      MatStructure *flag, void *data);
   int (*get_coloring)(DA da, ISColoring *iscoloring,
@@ -208,19 +209,21 @@ int TATPETSc_solve (const cGH *cctkGH,
   }
   assert (ierr == 1);
   
-  ierr = Util_TableGetFnPointer (options_table, &jac, "jacobian");
+  ierr = Util_TableGetFnPointer (options_table, &ptmp, "jacobian");
   if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
-    jac = 0;
+    ptmp = 0;
     ierr = 1;
   }
   assert (ierr == 1);
+  jac = ptmp;
   
-  ierr = Util_TableGetFnPointer (options_table, &get_coloring, "get_coloring");
+  ierr = Util_TableGetFnPointer (options_table, &ptmp, "get_coloring");
   if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
-    get_coloring = 0;
+    ptmp = 0;
     ierr = 1;
   }
   assert (ierr == 1);
+  get_coloring = ptmp;
   
   assert (solvebnds);
   for (d=0; d<2*user.dyndata.dim; ++d) {

@@ -104,6 +104,6 @@ void TATPETSc_initialize (CCTK_ARGUMENTS)
   
   
   /* Register the solver */
-  ierr = TATelliptic_RegisterSolver (TATPETSc_solve, "PETSc");
+  ierr = TATelliptic_RegisterSolver (TATPETSc_solve, "TATPETSc");
   assert (!ierr);
 }
