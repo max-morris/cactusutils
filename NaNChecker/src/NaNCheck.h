@@ -12,6 +12,11 @@
 #ifndef NANCHECKER_NANCHECK_H
 #define NANCHECKER_NANCHECK_H 1
 
+#ifdef  __cplusplus
+extern "C"
+{
+#endif
+
 /* prototypes of exported functions */
 int NaNChecker_CheckVarsForNaN (const cGH *GH,
                                 int report_max,
@@ -20,5 +25,9 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
                                 const char *action_if_found);
 int NaNChecker_SetVarsToNaN (const cGH *GH,
                              const char *vars);
+
+#ifdef  __cplusplus
+}
+#endif
 
 #endif /* NANCHECKER_NANCHECK_H */
