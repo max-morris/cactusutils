@@ -10,28 +10,58 @@
 \abstract{Thorn NaNChecker reports NaN values found in variables.}
 
 \section{Purpose}
-%
-This thorn can be used to analyze CCTK variables of real or complex data type
-for NaN (Not-a-Number) and (on availability of {\tt finite(3)}) infinite
-values.\\
-It does this by registering a routine at {\bf CCTK\_POSTSTEP} which checks
+
+The NaNChecker thorn can be used to analyze Cactus grid variables (that is grid
+functions, arrays or scalars) of real or complex data type for NaN
+(Not-a-Number) and (on availability of {\tt finite(3)}) infinite
+values. Grid variables can be periodically checked, or a call can 
+be inserted into a thorn to check at a specific point.
+
+This thorn is a utility thorn, designed to be used for debugging and
+testing code for uninitialised variables, or for variables which 
+become corrupted during a simulation, for example following a division
+by zero or illegal memory usage.
+
+On many architectures, uninitialised variables will be given the value
+zero, and simulations using such variables will seeming run perfectly 
+well. However, not only is it dubious programming practise to assume such
+behaviour, but also moving to a new machine may well cause pathalogical 
+problems (for example, with Alpha processors used in Compaq or Cray machines).
+It is thus recommended to test codes periodically with the NaNChecker, 
+and to fix any problems as soon as they are seen.
+
+\section{Periodic Testing}
+
+Periodic testing of variables can easily be achieved by adding NaNChecker
+to the {\tt ActiveThorns} parameter, and setting the parameters {\tt 
+NaNChecker::check\_every} and {\tt NaNChecker::check\_vars} to the required
+values. (For most testing purposes these can be set to {\tt 1} and {``all''} 
+respectively).
+
+The NaNChecker then registers a routine at {\bf CCTK\_POSTSTEP} which checks
 at every {\tt NanChecker::check\_every} iteration all the variables listed in
-{\tt NaNChecker::check\_vars} and -- in case a NaN was found -- performs an
+{\tt NaNChecker::check\_vars} and -- in the case a NaN is found -- performs an
 action as specified in {\tt NaNChecker::action\_if\_found}.\\
 
 Currently these actions can be to
 \begin{itemize}
- \item just print a level 1 warning message telling you where NaNs were found
+ \item{\tt just\_warn} (the default) 
+
+   just print a level 1 warning message telling you where NaNs were found
    and how many (for grid array variables).\\
    For grid arrays it will also print level 2 warnings with the array index
    (in fortran order) for all NaN elements. You can limit the number of
    such warnings by setting the {\tt NanChecker::report\_max} parameter.
 
- \item also set the CCTK termination flag so that Cactus will stop the evolution
+ \item{\tt terminate} 
+
+also set the CCTK termination flag so that Cactus will stop the evolution
    loop and gracefully terminate at the next time possible (giving you the
    choice of outputting the data from the last evolution timestep),
 
- \item print the warning message(s) and immediately terminate Cactus
+ \item{\tt abort} 
+
+print the warning message(s) and immediately terminate Cactus
    by a call to {\tt CCTK\_Abort()}
 \end{itemize}
 
