@@ -27,13 +27,13 @@
 \section{Introduction}
 
 PETSc (``The Portable, Extensible Toolkit for Scientific
-Computation'') \cite{petsc} is a library that, among other things,
-solves nonlinear elliptic equations.  It is highly configurable, and
-using it is a nontrivial exercise.  It is therefore convenient to
-create wrappers for this library that handle the more common cases.
-Although this introduces a layer that is a black box to the PETSc
-novice, it at the same time enables this PETSc novice to use this
-library, which would otherwise not be possible.
+Computation'') \cite{TAT_TATPETSc_petsc} is a library that, among
+other things, solves nonlinear elliptic equations.  It is highly
+configurable, and using it is a nontrivial exercise.  It is therefore
+convenient to create wrappers for this library that handle the more
+common cases.  Although this introduces a layer that is a black box to
+the PETSc novice, it at the same time enables this PETSc novice to use
+this library, which would otherwise not be possible.
 
 At the moment there exist three wrapper routines.  Two of them handle
 initialisation and shutting down the library at programme startup and
@@ -309,7 +309,8 @@ manually will override the other options.
 Do not forget to activate MPI.  PETSc needs MPI to run.
 
 \begin{thebibliography}{99}
-\bibitem{petsc} PETSc: \verb+http://www-fp.mcs.anl.gov/petsc/+
+   \bibitem{TAT_TATPETSc_petsc} PETSc:
+   \verb+http://www-fp.mcs.anl.gov/petsc/+
 \end{thebibliography}
 
 \end{document}
