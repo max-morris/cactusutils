@@ -15,6 +15,7 @@
 
 #include "cctk.h"
 #include "cctk_WarnLevel.h"
+#include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 #include "cctk_Termination.h"
 #include "cctk_FortranString.h"
@@ -30,9 +31,9 @@ CCTK_FILEVERSION(CactusUtils_NaNChecker_NaNCheck_c)
 /********************************************************************
  ********************    External Routines   ************************
  ********************************************************************/
-int NaNChecker_ResetCounter (const cGH *GH);
-int NaNChecker_NaNCheck (const cGH *GH);
-int NaNChecker_TakeAction (const cGH *GH);
+void NaNChecker_ResetCounter (CCTK_ARGUMENTS);
+void NaNChecker_NaNCheck (CCTK_ARGUMENTS);
+void NaNChecker_TakeAction (CCTK_ARGUMENTS);
 
 
 /********************************************************************
@@ -99,21 +100,12 @@ static int last_iteration_output = -1;
    @vtype      const cGH *
    @vio        in
    @endvar
-
-   @returntype int
-   @returndesc
-               0 for success
-   @endreturndesc
 @@*/
-int NaNChecker_ResetCounter (const cGH *GH)
+void NaNChecker_ResetCounter (CCTK_ARGUMENTS)
 {
-  CCTK_INT *NaNsFound;
+  DECLARE_CCTK_ARGUMENTS;
 
-
-  NaNsFound = CCTK_VarDataPtr (GH, 0, "NaNChecker:NaNsFound");
   *NaNsFound = 0;
-
-  return (0);
 }
 
 
@@ -133,49 +125,41 @@ int NaNChecker_ResetCounter (const cGH *GH)
    @vtype      const cGH *
    @vio        in
    @endvar
-
-   @returntype int
-   @returndesc
-               0 if checking was not done during current iteration, or
-               return code of @seeroutine CCTK_TraverseString otherwise
-   @endreturndesc
 @@*/
-int NaNChecker_NaNCheck (const cGH *GH)
+void NaNChecker_NaNCheck (CCTK_ARGUMENTS)
 {
-  int i, nelems, sum_handle, retval;
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+  int i, nelems, sum_handle;
   t_nanchecker_info info;
-  CCTK_INT *NaNsFound;
-  DECLARE_CCTK_PARAMETERS
 
 
-  if (GH->cctk_iteration < check_after || GH->cctk_iteration % check_every)
+  if (cctk_iteration < check_after || cctk_iteration % check_every)
   {
-    return (0);
+    return;
   }
 
-  NaNsFound = CCTK_VarDataPtr (GH, 0, "NaNChecker:NaNsFound");
-  info.GH = GH;
+  info.GH = cctkGH;
   info.count = *NaNsFound = 0;
   info.bitmask = 0;
   info.report_max = report_max;
   info.action_if_found = action_if_found;
   info.verbose = CCTK_Equals (verbose, "all");
 
-  info.NaNmask = out_NaNmask ?
-                 CCTK_VarDataPtr (GH, 0, "NaNChecker::NaNmask") : NULL;
+  info.NaNmask = out_NaNmask ? NaNmask : NULL;
   if (info.NaNmask)
   {
     /* NaNmask can only be output once per iteration */
-    if (GH->cctk_iteration == last_iteration_output)
+    if (cctk_iteration == last_iteration_output)
     {
       CCTK_WARN (2, "Already output NaNmask at this iteration");
-      return (0);
+      return;
     }
 
     /* zero out the NaN mask */
-    for (i = 0, nelems = 1; i < GH->cctk_dim; i++)
+    for (i = 0, nelems = 1; i < cctk_dim; i++)
     {
-      nelems *= GH->cctk_lsh[i];
+      nelems *= cctk_lsh[i];
     }
     memset (info.NaNmask, 0, nelems * sizeof (CCTK_INT));
   }
@@ -195,17 +179,14 @@ int NaNChecker_NaNCheck (const cGH *GH)
   }
 #endif
 
-  retval = CCTK_TraverseString (check_vars, CheckForNaN, &info,
-                                CCTK_GROUP_OR_VAR);
+  CCTK_TraverseString (check_vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR);
 
   if (info.NaNmask && info.bitmask)
   {
     sum_handle = CCTK_ReductionHandle ("sum");
-    CCTK_ReduceLocalScalar (GH, -1, sum_handle, &info.count, NaNsFound,
+    CCTK_ReduceLocalScalar (cctkGH, -1, sum_handle, &info.count, NaNsFound,
                             CCTK_VARIABLE_INT);
   }
-
-  return (retval);
 }
 
 
@@ -223,23 +204,17 @@ int NaNChecker_NaNCheck (const cGH *GH)
    @vtype      const cGH *
    @vio        in
    @endvar
-
-   @returntype int
-   @returndesc
-               0 for success
-   @endreturndesc
 @@*/
-int NaNChecker_TakeAction (const cGH *GH)
+void NaNChecker_TakeAction (CCTK_ARGUMENTS)
 {
-  const CCTK_INT *NaNsFound;
-  DECLARE_CCTK_PARAMETERS
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
 
 
   /* if no NaNs were found then this routine doesn't do anything */
-  NaNsFound = CCTK_VarDataPtr (GH, 0, "NaNChecker::NaNsFound");
   if (! *NaNsFound)
   {
-    return (0);
+    return;
   }
 
   /* output NaN mask with the 'IOHDF5' I/O method */
@@ -247,26 +222,24 @@ int NaNChecker_TakeAction (const cGH *GH)
   {
     CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
   }
-  CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
+  CCTK_OutputVarAsByMethod (cctkGH, "NaNChecker::NaNmask[downsample={1 1 1}]",
                             "IOHDF5", "NaNmask");
 
   /* save the iteration of the last NaNmask output */
-  last_iteration_output = GH->cctk_iteration;
+  last_iteration_output = cctk_iteration;
 
   if (CCTK_Equals (action_if_found, "terminate"))
   {
     CCTK_WARN (1, "'action_if_found' parameter is set to 'terminate' - "
                   "scheduling graceful termination of Cactus");
-    CCTK_TerminateNext (GH);
+    CCTK_TerminateNext (cctkGH);
   }
   else if (CCTK_Equals (action_if_found, "abort"))
   {
     CCTK_WARN (1, "'action_if_found' parameter is set to 'abort' - "
                   "aborting Cactus now");
-    CCTK_Abort (NULL, 0);
+    CCTK_Abort (cctkGH, 0);
   }
-
-  return (0);
 }
 
 
@@ -337,7 +310,7 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
     return (-2);
   }
 #if 0
-  if (GH->cctk_iteration == last_iteration_output)
+  if (cctk_iteration == last_iteration_output)
   {
     CCTK_WARN (2, "Already called NaNChecker I/O method at this iteration");
     return (-1);
