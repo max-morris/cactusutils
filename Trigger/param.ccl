@@ -1,0 +1,44 @@
+# Parameter definitions for thorn Nice
+
+CCTK_INT Trigger_Number "Number of triggers"
+{
+  0:10 :: "The number of triggers that are defined"
+} 0
+
+STRING Trigger_Checked_Variable[10] "variable to be checked for"
+{
+  ".+" :: "fully qualified variable name"
+  "^$" :: "An empty string to trigger nothing"     
+} ""
+
+STRING Trigger_Relation[10] "relation operator for checked variable"
+{
+  ".+" :: "some relations"
+} ">"
+
+CCTK_REAL Trigger_Checked_Value[10] "triggered value for checked variable"
+{
+  :: "value to be triggered for"
+} 1.0
+
+STRING Trigger_Reduction[10] "valid reduction method"
+{
+  ".+" :: "some relations"
+} "norm2"
+
+STRING Trigger_Output_Method[10] "IO-output method for this trigger"
+{
+  ".+" :: "a enabled IO-method"
+} "1D"
+
+STRING Trigger_Output_Variables[10] "variable to be put out"
+{
+  ".+" :: "Space-separated list of fully qualified variable name"
+  "^$" :: "An empty string to trigger nothing"     
+} ""
+
+CCTK_INT Trigger_Debug "turnes on debug messages"
+{
+   0:1 :: "Only 0 (off, default) or 1 (on)"
+} 0
+

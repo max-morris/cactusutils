@@ -1,0 +1,6 @@
+# Schedule definitions for thorn Trigger
+schedule Trigger_Startup at STARTUP
+{
+    LANG: C
+}   "Startup Routine"
+
