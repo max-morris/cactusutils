@@ -17,8 +17,9 @@
 #include "cctk_WarnLevel.h"
 #include "cctk_Parameters.h"
 #include "cctk_Termination.h"
+
 /* the rcsid and the macro to use it */
-static char *rcsid = "$Header$";
+static const char *rcsid = "$Header$";
 CCTK_FILEVERSION(CactusUtils_NaNChecker_NaNCheck_c)
 
 
