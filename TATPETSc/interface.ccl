@@ -1,0 +1,8 @@
+# Interface definition for thorn TATPETSc
+# $Header$
+
+IMPLEMENTS: TATPETSc
+
+INHERITS: TATelliptic
+
+USES INCLUDE HEADER: TATelliptic.h

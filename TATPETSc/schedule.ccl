@@ -1,0 +1,14 @@
+# Schedule definitions for thorn TATPETSc
+# $Header$
+
+
+
+SCHEDULE TATPETSc_initialize AT basegrid
+{
+  LANG: C
+} "Initialise PETSc"
+
+SCHEDULE TATPETSc_finalize AT terminate BEFORE Driver_Terminate
+{
+  LANG: C
+} "Finalise PETSc"
