@@ -1,0 +1,4 @@
+# Interface definition for thorn Nice
+
+implements: nice
+

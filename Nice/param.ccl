@@ -1,0 +1,7 @@
+# Parameter definitions for thorn Nice
+
+CCTK_INT Nice_nice "Nice level"
+{
+-20:19 :: "The range for the nice is from -20 to 19, but only root can use negative values, default is 19."
+} 19
+

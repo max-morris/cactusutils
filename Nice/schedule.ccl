@@ -1,0 +1,6 @@
+# Schedule definitions for thorn Nice
+schedule Nice_Renice at CCTK_STARTUP
+{
+    LANG: C
+}   "Renice the process"
+

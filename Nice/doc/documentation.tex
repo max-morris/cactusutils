@@ -1,0 +1,54 @@
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../doc/ThornGuide/cactus}
+
+\begin{document}
+
+\title{Nice}
+\author{Frank L\"offler (knarf@aei.mpg.de)}
+\date{$ $Date$ $}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+\begin{abstract}
+Simple tool for using a (configurable) nice level for all processes.
+\end{abstract}
+
+\section{Comments}
+
+This thorn tries to renice all processes of Cactus to a given nice level.\\
+To renice a process means to change its nice level after the start. The nice
+level is a way to control the priority of processes for cpu power. It is
+always a good idea to give cpu-intensive jobs (like Cactus runs) a low
+priority if you are using desktop machines, especially if other people are
+using them too.
+
+The nice level has a range of $-20$ to $19$. A higher number means less
+priority. Mostly, normal processes will get $0$ and only the superuser
+(root) can use negative values. Also only root can lower the nice level
+of a process, so if you nice your Cactus Run to 19, you cannot renice it
+later to an lower nice-level. The nice level of single
+processes can be controled by the system commands $nice$ and/or $renice$.
+In the case of Cactus and Lamd this is not possible at startup. Therefore
+this thorn will set the nice level of your processes at CCTK\_PARAMCHECK
+(in the beginning of the calculation).\\
+This thorn has only one parameter:
+\begin{verbatim}
+  CCTK_INT Nice_nice
+\end{verbatim}
+which is by default 19.\\*[1cm]
+Note to developers:\\
+This thorn uses $getpriority()$ and $setpriority()$ and therefore needs
+the includes $<$sys/time.h$>$, $<$errno.h$>$ and $<$sys/resource.h$>$.
+If these are not provided on some platform, please tell me.
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+\end{document}
