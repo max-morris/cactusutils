@@ -428,10 +428,16 @@ static void NaNCheck (int vindex, const char *optstring, void *_GH)
 
         if (CCTK_Equals (action_if_found, "terminate"))
         {
+          CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                      "\"action_if_found\" parameter is set to \"terminate\" - "
+                      "scheduling graceful termination of Cactus");
           CCTK_TerminateNext (NULL);
         }
         else if (CCTK_Equals (action_if_found, "abort"))
         {
+          CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                      "\"action_if_found\" parameter is set to \"abort\" - "
+                      "aborting Cactus now");
           CCTK_Abort (NULL, 0);
         }
       }
