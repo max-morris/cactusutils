@@ -598,7 +598,7 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "CheckForNaN: Invalid option string '%s' given for variable "
-                  "'%s'", fullname);
+                  "'%s'", optstring, fullname);
       free (fullname);
       return;
     }
@@ -800,7 +800,7 @@ static void SetToNaN (int vindex, const char *optstring, void *_info)
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "SetToNaN: Invalid option string '%s' given for variable "
-                  "'%s'", fullname);
+                  "'%s'", optstring, fullname);
       free (fullname);
       return;
     }
