@@ -249,9 +249,9 @@ int NaNChecker_NaNCheck (const cGH *GH)
    @returntype int
    @returndesc
                the total number of NaN values found, or<BR>
-               -1 if a NULL pointer was passed for 'GH' and/or 'vars',<BR>
-               -2 if NaNChecker was already called at this iteration,<BR>
-               -3 if an unknow keyword was passed in 'action_if_found',<BR>
+               -1 if NaNChecker was already called at this iteration,<BR>
+               -2 if a NULL pointer was passed for 'GH' and/or 'vars',<BR>
+               -3 if an unknown keyword was passed in 'action_if_found',<BR>
                -4 if the 'vars' string couldn't be parsed
    @endreturndesc
 @@*/
