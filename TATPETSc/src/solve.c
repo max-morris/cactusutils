@@ -14,7 +14,6 @@
 #include "petscsnes.h"
 
 #include "cctk.h"
-#include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
 #include "util_ErrorCodes.h"
@@ -40,8 +39,8 @@ int TATPETSc_solve (const cGH *cctkGH,
   CCTK_INT nboundaryzones[2*DIM];
   CCTK_INT sw;
   CCTK_FPOINTER ptmp;
-  int (*jac) (const cGH *cctkGH, Mat *J, Mat *B,
-	      MatStructure *flag, void *data);
+  CCTK_INT * restrict jac0;
+  int (*jac) (const cGH *cctkGH, int options_table, void *data);
   int (*get_coloring) (DA da, ISColoring *iscoloring, Mat *J, void *data);
   
   /* world communicator */
@@ -60,6 +59,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   /* matrix coloring */
   ISColoring iscoloring;
   MatFDColoring matfdcoloring;
+  MatStructure flag;
   
   /* vectors */
   Vec x;			/* solution */
@@ -227,6 +227,15 @@ int TATPETSc_solve (const cGH *cctkGH,
   assert (ierr == 1);
   jac = ptmp;
   
+  if (jac) {
+    jac0 = malloc (nvars * sizeof *jac0);
+    assert (jac0);
+    ierr = Util_TableGetIntArray (options_table, nvars, jac0, "jac");
+    assert (ierr == nvars);
+  } else {
+    jac0 = 0;
+  }
+  
   ierr = Util_TableGetFnPointer (options_table, &ptmp, "get_coloring");
   if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
     ptmp = 0;
@@ -244,6 +253,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   assert (bnd);
   user.bnd = bnd;
   user.jac = jac;
+  user.jac0 = jac0;
   user.data = data;
   user.funcall_count = 0;
   user.jaccall_count = 0;
@@ -429,8 +439,13 @@ int TATPETSc_solve (const cGH *cctkGH,
   if (jac) {
     /* Calculate Jacobian directly through a user given function */
     
+    if (veryverbose) CCTK_INFO ("DAGetMatrix");
+    ierr = DAGetMatrix (da, MATAIJ, &J);
+    CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("DAGetColoring");
-    ierr = DAGetColoring (da, IS_COLORING_GHOSTED, &iscoloring);
+    ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
+    CHKERRQ(ierr);
+    ierr = TATPETSc_jacobian (snes, x, &J, &J, &flag, &user);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("SNESSetJacobian");
     ierr = SNESSetJacobian (snes, J, J, TATPETSc_jacobian, &user);
@@ -441,7 +456,8 @@ int TATPETSc_solve (const cGH *cctkGH,
     
     if (!get_coloring) {
       if (veryverbose) CCTK_INFO ("DAGetMatrix");
-      ierr = DAGetMatrix (da, MATMPIAIJ, &J);
+/*       ierr = DAGetMatrix (da, MATMPIAIJ, &J); */
+      ierr = DAGetMatrix (da, MATAIJ, &J);
       CHKERRQ(ierr);
       if (veryverbose) CCTK_INFO ("DAGetColoring");
       ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
@@ -680,6 +696,8 @@ int TATPETSc_solve (const cGH *cctkGH,
   user.var = 0;
   free (user.val);
   user.val = 0;
+  free (user.jac0);
+  user.jac0 = 0;
   
   free (all_lbnd);
   free (all_lsh);

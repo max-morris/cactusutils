@@ -10,7 +10,6 @@
 #include "petscsnes.h"
 
 #include "cctk.h"
-#include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
 #include "TATPETSc.h"
@@ -39,7 +38,10 @@ int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B,
   ++user->jaccall_count;
   
   TATPETSc_copy (x, userptr, TATcopyout, TATcopyvars);
-  ierr = (user->jac) (cctkGH, J, B, flag, user->data);
+  ierr = (user->jac) (cctkGH, -1, user->data);
+  TATPETSc_copyjac (*J, userptr);
+  
+  *flag = SAME_NONZERO_PATTERN;
   
   if (veryverbose) CCTK_INFO ("*** TATPETSc_jacobian done.");
   

@@ -34,11 +34,12 @@ typedef struct {
   int nvars;
   int *var;
   int *val;
+  CCTK_INT * restrict jac0;
   int nboundaryzones[2*DIM];
   cGroupDynamicData dyndata;
   int (*fun) (const cGH *cctkGH, int options_table, void *data);
   int (*bnd) (const cGH *cctkGH, int options_table, void *data);
-  int (*jac) (const cGH *cctkGH, Mat *J, Mat *B, MatStructure *flag, void *data);
+  int (*jac) (const cGH *cctkGH, int options_table, void *data);
   void *data;
   int funcall_count;
   int jaccall_count;
@@ -48,6 +49,7 @@ typedef struct {
 
 /* private functions */
 int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset);
+int TATPETSc_copyjac (Mat J, void *userptr);
 
 int TATPETSc_function (SNES snes, Vec x, Vec f, void *userptr);
 int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B, MatStructure *flag,

@@ -2,7 +2,7 @@
 # $Header$
 
 # Source files in this directory
-SRCS =	copy.c finalize.c function.c initialize.c jacobian.c solve.c
+SRCS =	copy.c copyjac.c finalize.c function.c initialize.c jacobian.c solve.c
 
 # Subdirectories containing source files
 SUBDIRS = 

@@ -1,9 +1,10 @@
-/* (C) 2001-04-18 Erik Schnetter <schnetter@uni-tuebingen.de> */
+/* (C) 2003-11-10 Erik Schnetter <schnetter@aei.mpg.de> */
 /* $Header$ */
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "mpi.h"
 
@@ -20,7 +21,7 @@ static const char *rcsid = "$Header$";
       
       
       
-int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
+int TATPETSc_copyjac (Mat J, void *userptr)
 {
   DECLARE_CCTK_PARAMETERS;
   
@@ -29,17 +30,12 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
   
   const int nvars = user->nvars;
   
-  /* Address of PETSc vector */
-  double *xx;
-  
   /* Cactus variables */
-  CCTK_REAL **var;
+  CCTK_REAL * restrict * restrict var;
   
   /* PETSc grid extent */
   int XM[DIM];			/* global extent */
   int xs[DIM], xm[DIM];		/* offset, local extent */
-  
-  int ylow, yhigh;		/* local ownership of Cactus vector */
   
   /* Cactus grid extent */
   int NI[DIM];			/* global extent */
@@ -52,32 +48,28 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
   /* Intermediate storage (same size as Cactus) */
   int i1[DIM];			/* local-to-global offset */
   
+  AO ao;
+  
+  int * restrict rows;
+  int * restrict cols;
+  PetscScalar * restrict vals;
+  
   int i,j,k;
+  int di,dj,dk;
   int n;
   int d;
-  int ind;
   
   int ierr;
   
   assert (user->magic==MAGIC);
   
-  if (veryverbose) CCTK_INFO ("*** TATPETSc_copy");
-  
-  assert (dir==TATcopyin || dir==TATcopyout);
-  assert (varset==TATcopyvars || varset==TATcopyvals);
-  
-  if (veryverbose) {
-    CCTK_VInfo (CCTK_THORNSTRING, "copy %s %s PETSc",
-		varset==TATcopyvars ? "variables" : "function values",
-		dir==TATcopyin ? "into" : "out of");
-  }
+  if (veryverbose) CCTK_INFO ("*** TATPETSc_copyjac");
   
   
   
   assert (user);
   assert (user->nvars >= 0);
-  assert (user->var);
-  assert (user->val);
+  assert (user->jac);
   
   
   
@@ -163,94 +155,80 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
   
   
   
-  /* Get local PETSc vector */
-  if (veryverbose) CCTK_INFO ("VecGetArray");
-  ierr = VecGetArray (x, &xx);
-  CHKERRQ(ierr);
-  
-  
-  
   /* Get Cactus variable pointers */
   var = malloc(sizeof(*var) * nvars);
   assert (var);
   for (n=0; n<nvars; ++n) {
-    switch (varset) {
-    case TATcopyvars:
-      /* variables */
-      var[n] = CCTK_VarDataPtrI(user->cctkGH, 0, user->var[n]);
-      assert (var[n]);
-      break;
-    case TATcopyvals:
-      /* values */
-      var[n] = CCTK_VarDataPtrI(user->cctkGH, 0, user->val[n]);
-      assert (var[n]);
-      break;
-    default:
-      assert (0);
-    }
+    var[n] = CCTK_VarDataPtrI(user->cctkGH, 0, user->jac0[n]);
+    assert (var[n]);
   }
   
   
   
-  switch (dir) {
-    
-  case TATcopyin:
-    /* copy in */
-    
-    /* Copy Cactus variable into PETSc variable */
-    for (k=0; k<mi[2]; ++k) {
-      for (j=0; j<mi[1]; ++j) {
-	for (i=0; i<mi[0]; ++i) {
-	  for (n=0; n<nvars; ++n) {
-	    ind = bi[0]+i + ni[0]*(bi[1]+j + ni[1]*(bi[2]+k));
-	    xx[n+nvars*(i+mi[0]*(j+mi[1]*k))] = var[n][ind];
-	  }
-	}
+  /* Copy Cactus variable into PETSc variable */
+  ierr = PetscMalloc(nvars*sizeof(int),&rows);CHKERRQ(ierr);
+  ierr = PetscMalloc(27*nvars*sizeof(int),&cols);CHKERRQ(ierr);
+  assert (sizeof(PetscScalar) == sizeof(CCTK_REAL));
+  ierr = PetscMalloc(27*nvars*sizeof(PetscScalar),&vals);CHKERRQ(ierr);
+  ierr = DAGetAO(user->da,&ao);CHKERRQ(ierr);
+  
+  ierr = MatSetOption(J,MAT_ROWS_SORTED);CHKERRQ(ierr);
+  ierr = MatSetOption(J,MAT_COLUMNS_SORTED);CHKERRQ(ierr);
+  
+  assert (nvars==1);
+  
+  for (k=0; k<mi[2]; ++k) {
+    for (j=0; j<mi[1]; ++j) {
+      for (i=0; i<mi[0]; ++i) {
+        
+        for (n=0; n<nvars; ++n) {
+          
+          const int rowind = n + nvars * (i0[0]+i + NI[0] * (i0[1]+j + NI[1] * (i0[2]+k)));
+          rows[n] = rowind;
+          
+          for (dk=-1; dk<=1; ++dk) {
+            for (dj=-1; dj<=1; ++dj) {
+              for (di=-1; di<=1; ++di) {
+                const int m = di+1 + 3*(dj+1 + 3*(dk+1));
+                const int ind = bi[0]+i + ni[0] * (bi[1]+j + ni[1] * (bi[2]+k + ni[2] * m));
+                const int colind = n + nvars * (i0[0]+i+di + NI[0] * (i0[1]+j+dj + NI[1] * (i0[2]+k+dk)));
+                if (i+di>=0 && i+di<mi[0] && j+dj>=0 && j+dj<mi[1] && k+dk>=0 && k+dk<mi[2]) {
+                  cols[n+nvars*m] = colind;
+                  vals[n+nvars*m] = var[n][ind];
+                } else {
+                  assert (var[n][ind] == 0);
+                  cols[n+nvars*m] = -1;
+                  vals[n+nvars*m] = 0;
+                }
+              }
+            }
+          }
+        }
+        
+        ierr = AOApplicationToPetsc(ao,nvars,rows);CHKERRQ(ierr);
+        ierr = AOApplicationToPetsc(ao,27*nvars,cols);CHKERRQ(ierr);
+        ierr = MatSetValues (J,nvars,rows,27*nvars,cols,vals,INSERT_VALUES);CHKERRQ(ierr);
+        
       }
     }
-    
-    break;
-    
-  case TATcopyout:
-    /* copy out */
-    
-    /* Copy Cactus variable */
-    for (k=0; k<mi[2]; ++k) {
-      for (j=0; j<mi[1]; ++j) {
-	for (i=0; i<mi[0]; ++i) {
-	  for (n=0; n<nvars; ++n) {
-	    ind = bi[0]+i + ni[0]*(bi[1]+j + ni[1]*(bi[2]+k));
-	    var[n][ind] = xx[n+nvars*(i+mi[0]*(j+mi[1]*k))];
-	  }
-	}
-      }
-    }
-    
-    /* This loop possibly does too much work: it might synchronise
-       groups several times */
-    for (n=0; n<user->nvars; ++n) {
-      CCTK_SyncGroupWithVarI (cctkGH, user->var[n]);
-    }
-    
-    break;
-    
-  default:
-    assert (0);
   }
+  ierr = MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);  
+  ierr = MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);  
+  ierr = MatSetOption(J,MAT_NO_NEW_NONZERO_LOCATIONS);CHKERRQ(ierr);
+  
+  ierr = PetscFree(vals);CHKERRQ(ierr);
+  ierr = PetscFree(rows);CHKERRQ(ierr);
+  ierr = PetscFree(cols);CHKERRQ(ierr);
   
   
   
   /* Clean up */
-  if (veryverbose) CCTK_INFO ("Destroy");
-  ierr = VecRestoreArray (x, &xx)
-  CHKERRQ(ierr);
-  
   free (var);
   var = 0;
   
   
   
-  if (veryverbose) CCTK_INFO ("*** TATPETSc_copy done.");
+  if (veryverbose) CCTK_INFO ("*** TATPETSc_copyjac done.");
   
   return 0;
 }
