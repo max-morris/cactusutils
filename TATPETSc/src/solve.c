@@ -433,9 +433,9 @@ int TATPETSc_solve (const cGH *cctkGH,
     if (!get_coloring) {
       if (veryverbose) CCTK_INFO ("DAGetMatrix");
       ierr = DAGetMatrix (da, MATMPIAIJ, &J);
-    CHKERRQ(ierr);
+      CHKERRQ(ierr);
       if (veryverbose) CCTK_INFO ("DAGetColoring");
-      ierr = DAGetColoring (da, IS_COLORING_GHOSTED, &iscoloring);
+      ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
       CHKERRQ(ierr);
     } else {
       if (veryverbose) CCTK_INFO ("get_coloring");
