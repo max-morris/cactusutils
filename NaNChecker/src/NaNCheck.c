@@ -119,11 +119,6 @@ int NaNChecker_NaNCheck (const cGH *GH)
   {
     return (0);
   }
-  if (GH->cctk_iteration == last_iteration_output)
-  {
-    CCTK_WARN (2, "Already called NaNChecker I/O method at this iteration");
-    return (0);
-  }
 
   info.GH = GH;
   info.count = 0;
@@ -136,6 +131,13 @@ int NaNChecker_NaNCheck (const cGH *GH)
                  CCTK_VarDataPtr (GH, 0, "NaNChecker::NaNmask") : NULL;
   if (info.NaNmask)
   {
+    /* NaNmask cannot be output only once per iteration */
+    if (GH->cctk_iteration == last_iteration_output)
+    {
+      CCTK_WARN (2, "Already output NaNmask at this iteration");
+      return (0);
+    }
+
     /* zero out the NaN mask */
     for (i = 0, nelems = 1; i < GH->cctk_dim; i++)
     {
@@ -162,9 +164,6 @@ int NaNChecker_NaNCheck (const cGH *GH)
   retval = CCTK_TraverseString (check_vars, CheckForNaN, &info,
                                 CCTK_GROUP_OR_VAR);
 
-  /* save the iteration of the last call */
-  last_iteration_output = GH->cctk_iteration;
-
   if (info.count > 0)
   {
     /* if NaNs were found then output NaN mask with the 'IOHDF5' I/O method */
@@ -176,6 +175,9 @@ int NaNChecker_NaNCheck (const cGH *GH)
       }
       CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
                                 "IOHDF5", "NaNmask");
+
+      /* save the iteration of the last NaNmask output */
+      last_iteration_output = GH->cctk_iteration;
     }
 
     if (CCTK_Equals (info.action_if_found, "terminate"))
@@ -318,17 +320,6 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
 
   if (info.count > 0 && info.action_if_found)
   {
-    /* if NaNs were found then output NaN mask with the 'IOHDF5' I/O method */
-    if (info.NaNmask && info.bitmask)
-    {
-      if (info.verbose)
-      {
-        CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
-      }
-      CCTK_OutputVarAsByMethod (GH, "NaNChecker::NaNmask[downsample={1 1 1}]",
-                                "IOHDF5", "NaNmask");
-    }
-
     if (CCTK_Equals (info.action_if_found, "terminate"))
     {
       CCTK_WARN (1, "'action_if_found' parameter is set to 'terminate' - "
