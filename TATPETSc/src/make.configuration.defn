@@ -1,15 +1,6 @@
 # Main make.code.defn file for thorn TAT/TATPETSc
 # $Header$
 
-
-# check if this was configured with PETSc, bail out if not
-have_petsc := $(shell grep -s '\#define CCTK_PETSC 1' $(CONFIG)/cctk_Extradefs.h)
-
-ifeq ($(strip $(have_petsc)), )
-$(NAME): MissingPETSC
-.pseudo: MissingPETSC
-MissingPETSC:
-	@echo "This configuration wasn't configured to use PETSC"
-	@echo "Please reconfigure with 'PETSC=yes' or remove TATPETSc from your ThornList."
-	exit 2
+ifeq ($(strip $(HAVE_PETSC)), )
+    $(error This configuration was not configured to use PETSc.  Please reconfigure with 'PETSC=yes' or remove TATPETSc from your ThornList)
 endif
