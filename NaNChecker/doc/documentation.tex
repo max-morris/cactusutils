@@ -67,8 +67,9 @@ Currently these actions can be to
 
    just print a level 1 warning message telling you where NaNs/Infs were found
    and how many (for grid array variables).\\
-   For grid arrays it will also print level 2 warnings with the array index
-   (in fortran order) for all NaN/Inf elements. You can limit the number of
+   For grid arrays it will also print information with the array index
+   (in fortran order) for all NaN/Inf elements, depending on the value of
+   the keyword parameter {\tt verbose}. You can limit the number of
    such warnings by setting the {\tt NanChecker::report\_max} parameter.
 
  \item{\tt terminate} 
