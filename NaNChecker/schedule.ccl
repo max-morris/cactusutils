@@ -3,7 +3,7 @@
 
 if (*check_vars && check_every > 0)
 {
-  schedule NaNChecker_NaNCheck at POSTSTEP
+  schedule NaNChecker_NaNCheck at ANALYSIS
   {
     LANG:C
     STORAGE: NaNmask_group

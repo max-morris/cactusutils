@@ -58,7 +58,7 @@ to the required
 values. (For most testing purposes these can be set to {\tt 1, 0,} and {"all"} 
 respectively).
 
-The NaNChecker then registers a routine at {\bf CCTK\_POSTSTEP} which checks
+The NaNChecker then registers a routine at {\bf CCTK\_ANALYSIS} which checks
 at every {\tt NanChecker::check\_every} iteration -- starting at iteration
 number {\tt NaNChecker::check\_after} -- all the variables listed in
 {\tt NaNChecker::check\_vars} for NaN or infinite values (depending on {\tt
