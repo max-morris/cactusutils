@@ -1,0 +1,13 @@
+# Interface definition for thorn TimerReport
+# $Header$
+
+implements: timerreport
+inherits:
+
+private:
+
+int triggergroup type=SCALAR
+{
+triggervar
+} "For triggering output"
+

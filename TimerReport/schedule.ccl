@@ -1,0 +1,22 @@
+# Schedule definitions for thorn TimerReport
+# $Header$
+
+
+SCHEDULE TimerReport_Startup AT CCTK_STARTUP
+{
+  LANG: C
+} "Startup routine"
+
+SCHEDULE TimerReport_Output AT CCTK_ANALYSIS
+{
+  LANG: C
+  TRIGGERS: triggergroup
+} "Print the timer report"
+
+if (before_checkpoint)
+{
+  SCHEDULE TimerReport_Output AT CCTK_CHECKPOINT
+  {
+    LANG: C
+  } "Print the timer report"
+} 

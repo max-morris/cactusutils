@@ -1,0 +1,25 @@
+# Parameter definitions for thorn TimerReport
+# $Header$
+
+private:
+
+INT out_every "How often to output timer report to screen" STEERABLE=ALWAYS
+{
+  0   :: "Never (default)"
+  1:* :: "Every so many iterations"
+} 0
+
+INT out_at "Output timer information at a given iteration" STEERABLE=ALWAYS
+{
+  -1   :: "Never (default)"
+  0:*  :: "At this iteration"
+} -1
+
+BOOLEAN before_checkpoint "Before a checkpoint" STEERABLE=ALWAYS
+{
+} "no"
+
+BOOLEAN next "On next iteration" STEERABLE=ALWAYS
+{
+} "no"
+
