@@ -1,9 +1,0 @@
-# make.configuration.defn for NaNChecker
-
-# make sure that isnan(3) is available on this architecture
-
-HAVE_ISNAN := $(shell grep HAVE_ISNAN $(CONFIG)/cctk_Config.h)
-
-ifneq (define, $(findstring define,$(HAVE_ISNAN)))
-    $(error "Thorn NaNChecker requires isnan(3), which is not available on this architecture.  Please remove NaNChecker from your ThornList.")
-endif

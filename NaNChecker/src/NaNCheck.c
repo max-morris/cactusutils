@@ -574,6 +574,8 @@ static void PrintWarning (const char *error_type,
    @vio        in
    @endvar
 @@*/
+#ifdef HAVE_ISNAN
+
 #ifdef HAVE_FINITE
 
 #define CHECK_DATA(cctk_type)                                                 \
@@ -603,7 +605,7 @@ static void PrintWarning (const char *error_type,
   }                                                                           \
 }
 
-#else
+#else /* ! HAVE_FINITE */
 
 #define CHECK_DATA(cctk_type)                                                 \
 {                                                                             \
@@ -631,7 +633,17 @@ static void PrintWarning (const char *error_type,
   }                                                                           \
 }
 
-#endif /* HAVE_FINITE */
+#endif /* ! HAVE_FINITE */
+
+#else /* ! HAVE_ISNAN */
+
+/* Do nothing because isnan() is not available */
+#define CHECK_DATA(cctk_type)                                                 \
+{                                                                             \
+}
+
+#endif /* ! HAVE_ISNAN */
+
 
 
  /*@@
