@@ -186,7 +186,7 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
       assert (var[n]);
       break;
     default:
-      abort();
+      assert (0);
     }
   }
   
@@ -235,7 +235,7 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
     break;
     
   default:
-    abort();
+    assert (0);
   }
   
   

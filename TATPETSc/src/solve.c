@@ -377,7 +377,7 @@ int TATPETSc_solve (cGH *cctkGH,
     CHKERRQ(ierr);
     break;
   default:
-    abort();
+    assert (0);
   }
   user.da = da;
   
