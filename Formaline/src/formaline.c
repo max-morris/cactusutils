@@ -1,10 +1,14 @@
 /* $Header$ */
 
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "cctk.h"
 #include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
+#include "cctk_Version.h"
+#include "util_Network.h"
 
 
 
@@ -94,15 +98,43 @@ Formaline (CCTK_ARGUMENTS)
     for (n = 0; n < argc; ++ n)
     {
       char buffer [1000];
-      snprintf (sizeof buffer, buffer, "argv[%d]", n);
+      snprintf (buffer, sizeof buffer, "argv[%d]", n);
       StoreStringKey (buffer, argv[n]);
     }
   }
   
   {
-    char parameter_file_name [10000];
-    CCTK_ParameterFilename (sizeof parameter_file_name, parameter_file_name);
-    StoreStringKey ("parameter file name", parameter_file_name);
+    char parameter_filename [10000];
+    CCTK_ParameterFilename (sizeof parameter_filename, parameter_filename);
+    StoreStringKey ("parameter filename", parameter_filename);
+  }
+  
+  {
+    char parameter_filename [10000];
+    char parameter_file [1000000];
+    size_t count;
+    FILE * file;
+    CCTK_ParameterFilename (sizeof parameter_filename, parameter_filename);
+    file = fopen (parameter_filename, "r");
+    count = fread (parameter_file, 1, sizeof parameter_file - 1, file);
+    fclose (file);
+    assert (count < sizeof parameter_file - 1);
+    parameter_file [count] = '\0';
+    StoreStringKey ("parameter file", parameter_file);
+  }
+  
+  {
+    char const * out_dir;
+    int type;
+    out_dir = CCTK_ParameterGet ("out_dir", "IO", & type);
+    assert (type == CCTK_VARIABLE_STRING);
+    StoreStringKey ("out dir", out_dir);
+  }
+  
+  {
+    int nprocs;
+    nprocs = CCTK_nProcs (cctkGH);
+    StoreIntKey ("nprocs", nprocs);
   }
 }
 
