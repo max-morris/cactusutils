@@ -23,3 +23,6 @@ BOOLEAN next "On next iteration" STEERABLE=ALWAYS
 {
 } "no"
 
+shares: IO
+
+USES INT checkpoint_every

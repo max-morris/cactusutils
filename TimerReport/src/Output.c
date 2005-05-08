@@ -60,7 +60,9 @@ void TimerReport_Output(CCTK_ARGUMENTS)
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  if (next || out_at == cctk_iteration || (out_every && cctk_iteration%out_every == 0))
+  if (next ||
+      out_at == cctk_iteration ||
+      (out_every && cctk_iteration%out_every == 0))
   {
 
     CCTK_VInfo(CCTK_THORNSTRING,
@@ -89,12 +91,15 @@ void TimerReport_Checkpoint(CCTK_ARGUMENTS)
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  if (before_checkpoint)
+  if (before_checkpoint &&
+      (checkpoint_every && cctk_iteration%checkpoint_every == 0))
   {
+    
     CCTK_VInfo(CCTK_THORNSTRING,
                "Timer Report before checkpointing at iteration %d, time %g",
                cctk_iteration, (double)cctk_time);
     CCTK_SchedulePrintTimes(NULL);
+    
   }
 }
 
