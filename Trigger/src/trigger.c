@@ -156,7 +156,8 @@ int Trigger_TimeForOutput(const cGH *GH, int varindex)
 
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
   /* loop over all triggers */
-  for (i=my_GH->number-1; i>=0; i--)
+  /* for (i=my_GH->number-1; i>=0; i--) */
+  for (i=0; i<my_GH->number; i++)
   {
     /* loop over all output variables of one trigger */
     for (j=my_GH->output_variables_number[i]-1; j>=0; j--)
@@ -332,6 +333,10 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
                            calloc(Trigger_Number,sizeof(const char *));
   my_GH->checked_value   = (CCTK_REAL*)  
                            calloc(Trigger_Number,sizeof(CCTK_REAL));
+  my_GH->checked_parameter_thorn = (const char**)
+                           calloc(Trigger_Number,sizeof(const char *));
+  my_GH->checked_parameter_name = (const char**)
+                           calloc(Trigger_Number,sizeof(const char *));
   my_GH->output_method   = (const char**)
                            calloc(Trigger_Number,sizeof(const char *));
 
