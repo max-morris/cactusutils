@@ -6,5 +6,6 @@ implements: trigger
 CCTK_REAL Trigger_Vars DISTRIB=CONSTANT
 {
   trigger_cctk_iteration
+  trigger_cctk_time
 } "Scalars for the triggers"
 

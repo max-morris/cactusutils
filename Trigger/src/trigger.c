@@ -231,6 +231,7 @@ void Trigger_Check(CCTK_ARGUMENTS)
     printf("Testing triggers\n");
   /* refresh internal variables */
   trigger_cctk_iteration[0]=(CCTK_REAL)cctk_iteration;
+  trigger_cctk_time[0]=(CCTK_REAL)cctk_time;
   ret=0;
   /* loop over all variables */ 
   for (varindex = CCTK_NumVars()-1; varindex >= 0; varindex--)
