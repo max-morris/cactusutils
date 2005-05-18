@@ -1,2 +1,23 @@
 # Parameter definitions for thorn Formaline
 # $Header$
+
+
+
+BOOLEAN announce_to_portal "Announce to the portal"
+{
+} yes
+
+STRING portal_hostname "Portal host name"
+{
+  "" :: ""
+} "portal.cct.lsu.edu"
+
+INT portal_port "Portal port"
+{
+  1:65535 :: ""
+} 9296
+
+STRING portal_username "User name on the portal"
+{
+  "" :: ""
+} ""
