@@ -1,7 +1,20 @@
 # Schedule definitions for thorn Formaline
 # $Header$
 
-SCHEDULE Formaline AT wragh
+if (output_source)
 {
-  LANG: C
-} "Put some meta information about the current run into permanent storage"
+  SCHEDULE Formaline_OutputSource AT wragh
+  {
+    LANG: C
+  } "Output Cactus source tree"
+}
+
+
+
+if (announce_to_portal)
+{
+  SCHEDULE Formaline_Portal AT wragh
+  {
+    LANG: C
+  } "Put some meta information about the current run into permanent storage"
+}

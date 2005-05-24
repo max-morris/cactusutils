@@ -21,3 +21,13 @@ STRING portal_username "User name on the portal"
 {
   "" :: ""
 } ""
+
+
+
+BOOLEAN output_source "Output a tarball with the cactus source tree"
+{
+} yes
+
+SHARES: IO
+
+USES STRING out_dir

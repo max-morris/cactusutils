@@ -11,3 +11,9 @@ Send meta information about a run to a server, so that it is kept
 there forever.  The information sent is e.g. the parameter file, date,
 time, machine, and user id of the run, location of the output data,
 number of iterations, an efficiency summary, etc.
+
+
+
+TODO:
+
+unique IDs for all output files

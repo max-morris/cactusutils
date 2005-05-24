@@ -40,6 +40,7 @@ main (int argc, char * * argv)
     
     if (feof (stdin)) break;
   }
+  ++ metacount;
   
   
   
@@ -53,10 +54,10 @@ main (int argc, char * * argv)
   fprintf (metafile, "  size_t * length;\n");
   fprintf (metafile, "};\n");
   fprintf (metafile, "\n");
-  for (count = 0; count <= metacount; ++ count)
+  for (count = 0; count < metacount; ++ count)
   {
     fprintf (metafile, "extern char const cactus_source_%08lu [];\n", count);
-    fprintf (metafile, "extern size_t cactus_source_length_%08lu [];\n", count);
+    fprintf (metafile, "extern size_t cactus_source_length_%08lu;\n", count);
   }
   fprintf (metafile, "\n");
   fprintf (metafile, "struct chunkinfo cactus_source_chunks [] = {");
@@ -70,7 +71,7 @@ main (int argc, char * * argv)
   }
   fprintf (metafile, "\n");
   fprintf (metafile, "};\n");
-  fprintf (metafile, "size_t cactus_source_chunks_length = %lu;\n", metacount + 1);
+  fprintf (metafile, "size_t cactus_source_chunks_length = %lu;\n", metacount);
   fclose (metafile);
   
   return 0;
