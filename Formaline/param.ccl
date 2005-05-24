@@ -5,7 +5,7 @@
 
 BOOLEAN announce_to_portal "Announce to the portal"
 {
-} yes
+} no
 
 STRING portal_hostname "Portal host name"
 {
