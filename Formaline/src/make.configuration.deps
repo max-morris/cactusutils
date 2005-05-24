@@ -1,0 +1,35 @@
+# make.configuration.deps file for thorn Formaline   -*-Makefile-*-
+# $Header$
+
+
+
+# Create a tarball of the source code whenever this thorn is linked
+# into an executable
+$(EXEDIR)$(DIRSEP)$(EXE): make-tarball
+
+CACTUSLIBLINKLINE += $(SCRATCH_BUILD)/cactus-source.a
+
+
+
+.PHONY: make-tarball
+make-tarball:
+	@echo "Creating source tarball..." && \
+	cd $(CCTK_HOME) && \
+	files="CONTRIBUTORS COPYRIGHT Makefile" && \
+	dirs="lib src" && \
+	thorns="$(THORNS:%=arrangements/%)" && \
+	filelist=$(SCRATCH_BUILD)/source-file-list && \
+	find $$files $$dirs $$thorns -path 'arrangements/*/*/doc' -prune -o -path 'arrangements/*/*/test' -prune -o -print > $$filelist && \
+	echo "Adding" `cat $$filelist | wc -l` "files..." && \
+	tar czf "$(SCRATCH_BUILD)/cactus-source.tar.gz" --no-recursion -T $$filelist && \
+	echo "Created tarball with" `cat $(SCRATCH_BUILD)/cactus-source.tar.gz | wc -c` "bytes..." && \
+	cd $(SCRATCH_BUILD) && \
+	rm -rf cactus-source && \
+	mkdir cactus-source && \
+	cd cactus-source && \
+	../makeblob < ../cactus-source.tar.gz && \
+	$(CC) $(CFLAGS) -c *.c && \
+	cd .. && \
+	$(AR) $(ARFLAGS) cactus-source.a cactus-source/*.o && \
+	echo "Added tarball to executable." && \
+	echo $(DIVIDER)

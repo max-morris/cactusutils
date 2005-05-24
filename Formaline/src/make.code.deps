@@ -1,0 +1,10 @@
+# make.code.deps file for thorn Formaline   -*-Makefile-*-
+# $Header$
+
+$(CCTK_TARGET): $(SCRATCH_BUILD)/makeblob
+
+$(SCRATCH_BUILD)/makeblob: $(SCRATCH_BUILD)/makeblob.o
+	cd $(SCRATCH_BUILD) && $(LD) $(LDFLAGS) -o $@ $^
+
+$(SCRATCH_BUILD)/makeblob.o: $(SRCDIR)/util/makeblob.c
+	cd $(SCRATCH_BUILD) && $(CC) $(CFLAGS) -c $^

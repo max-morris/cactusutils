@@ -1,8 +1,8 @@
-# Main make.code.defn file for thorn Formaline
+# Main make.code.defn file for thorn Formaline   -*-Makefile-*-
 # $Header$
 
 # Source files in this directory
-SRCS = formaline.c
+SRCS = connection.cc output_source.c portal.cc
 
 # Subdirectories containing source files
 SUBDIRS = 
