@@ -39,10 +39,12 @@ Formaline_Portal (CCTK_ARGUMENTS)
   
   /* Compiling */
   
+#if 0
   {
     char const * const compile_user = CCTK_CompileUser();
     conn.store ("compile user", compile_user);
   }
+#endif
   
   {
     char const * const compile_date = CCTK_CompileDate();
@@ -58,10 +60,17 @@ Formaline_Portal (CCTK_ARGUMENTS)
   
   /* Running */
   
+#if 0
   {
     char const * const run_user = CCTK_RunUser();
     conn.store ("run user", run_user);
   }
+#else
+  {
+    char const * const run_user = getenv ("USER");
+    conn.store ("run user", run_user);
+  }
+#endif
   
   {
     char run_date [1000];
