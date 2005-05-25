@@ -16,6 +16,7 @@ $(EXEDIR)$(DIRSEP)$(EXE): $(TARBALL_DIR)/cactus-source.a
 
 $(TARBALL_DIR)/cactus-source.a: $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DIR)/cactus-flesh-source.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.o,$(notdir $(THORNS)))
 	$(AR) $(ARFLAGS) $@ $^
+	@echo $(DIVIDER)
 
 ## Cache optimisation:
 ## Build the thorns' tarballs already while the thorns are compiled
@@ -37,7 +38,7 @@ $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(pats
 # Flesh
 
 $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
-	@echo "Creating tarball for flesh"
+	@echo "Creating tarball for the flesh"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz
