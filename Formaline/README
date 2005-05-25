@@ -18,13 +18,11 @@ TODO:
 
 unique IDs for all output files
 
-
-
 BSD tar: read files from file: -I filename
-
-don't use -z; use tar and gzip
-
-
+tar: don't use -z; use tar and gzip
 
 IOUtil should not depend on anything
-MoL should not depend on NaNChecker
+(MoL should not depend on NaNChecker)
+
+use a configuration script to amend all thorns' make.code.deps files
+to create the tarballs when the thorns are compiled
