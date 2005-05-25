@@ -37,6 +37,7 @@ $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(pats
 # Flesh
 
 $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
+	@echo "Creating tarball for flesh"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz
