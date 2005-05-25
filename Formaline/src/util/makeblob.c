@@ -1,78 +1,58 @@
 /* $Header$ */
 
+#include <assert.h>
 #include <stdio.h>
 
 int
 main (int argc, char * * argv)
 {
-  FILE * metafile;
-  unsigned long metacount;
-  char filename [100];
-  FILE * file;
+  char const * arrangement;
+  char const * thorn;
   unsigned long count;
   
-  for (metacount = 0; ; ++ metacount)
+  assert (argc == 3);
+  arrangement = argv[1];
+  thorn = argv[2];
+  assert (arrangement);
+  assert (thorn);
+  
+  printf ("/* This is an auto-generated file -- do not edit */\n");
+  printf ("\n");
+  printf ("#include <stddef.h>\n");
+  printf ("\n");
+  printf ("struct sourceinfo\n");
+  printf ("{\n");
+  printf ("  char const * data;\n");
+  printf ("  size_t length;\n");
+  printf ("  char const * arrangement;\n");
+  printf ("  char const * thorn;\n");
+  printf ("};\n");
+  printf ("\n");
+  printf ("static char const data [] = {");
+  for (count = 0; ; ++ count)
   {
-    sprintf (filename, "cactus-source-%08lu.c", metacount);
-    file = fopen (filename, "w");
-    fprintf (file, "/* This is an auto-generated file -- do not edit */\n");
-    fprintf (file, "#include <stddef.h>\n");
-    fprintf (file, "\n");
-    fprintf (file, "char const cactus_source_%08lu [] = {", metacount);
-    for (count = 0; count < 1000000; ++ count)
-    {
-      int const ch = getc (stdin);
-      if (feof (stdin)) break;
-      if (ferror (stdin)) return 1;
-      if (count != 0) {
-        fprintf (file, ",");
-      }
-      if (count % 16 == 0)
-      {
-        fprintf (file, "\n");
-      }
-      fprintf (file, "%3d", ch);
-    }
-    fprintf (file, "\n");
-    fprintf (file, "};\n");
-    fprintf (file, "size_t const cactus_source_length_%08lu = %lu;\n", metacount, count);
-    fclose (file);
-    
+    int const ch = getc (stdin);
     if (feof (stdin)) break;
-  }
-  ++ metacount;
-  
-  
-  
-  metafile = fopen ("cactus-source.c", "w");
-  fprintf (metafile, "/* This is an auto-generated file -- do not edit */\n");
-  fprintf (metafile, "#include <stddef.h>\n");
-  fprintf (metafile, "\n");
-  fprintf (metafile, "struct chunkinfo\n");
-  fprintf (metafile, "{\n");
-  fprintf (metafile, "  char const * data;\n");
-  fprintf (metafile, "  size_t * length;\n");
-  fprintf (metafile, "};\n");
-  fprintf (metafile, "\n");
-  for (count = 0; count < metacount; ++ count)
-  {
-    fprintf (metafile, "extern char const cactus_source_%08lu [];\n", count);
-    fprintf (metafile, "extern size_t cactus_source_length_%08lu;\n", count);
-  }
-  fprintf (metafile, "\n");
-  fprintf (metafile, "struct chunkinfo cactus_source_chunks [] = {");
-  for (count = 0; count < metacount; ++ count)
-  {
+    if (ferror (stdin)) return 1;
     if (count != 0) {
-      fprintf (metafile, ",");
+      printf (",");
     }
-    fprintf (metafile, "\n");
-    fprintf (metafile, "{ cactus_source_%08lu, & cactus_source_length_%08lu }", count, count);
+    if (count % 16 == 0)
+    {
+      printf ("\n");
+    }
+    printf ("%3d", ch);
   }
-  fprintf (metafile, "\n");
-  fprintf (metafile, "};\n");
-  fprintf (metafile, "size_t cactus_source_chunks_length = %lu;\n", metacount);
-  fclose (metafile);
+  printf ("\n");
+  printf ("};\n");
+  printf ("\n");
+  printf ("struct sourceinfo const cactus_source_%s =\n", thorn);
+  printf ("{\n");
+  printf ("  data,\n");
+  printf ("  %lu,\n", count);
+  printf ("  \"%s\",\n", arrangement);
+  printf ("  \"%s\"\n", thorn);
+  printf ("};\n");
   
   return 0;
 }

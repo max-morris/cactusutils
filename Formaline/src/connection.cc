@@ -33,7 +33,8 @@ connection (char const * const id)
   addr.sin_port = portal_port;
   addr.sin_addr = * (struct in_addr *) hostinfo->h_addr;
   
-  int const ierr = connect (sock, & addr, sizeof addr);
+  int const ierr
+    = connect (sock, (struct sockaddr const *) (& addr), sizeof addr);
 #warning "TODO: handle errors"
   assert (! ERROR_CHECK (ierr));
   

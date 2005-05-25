@@ -1,13 +1,29 @@
 # make.code.deps file for thorn Formaline   -*-Makefile-*-
 # $Header$
 
-# Create the "makeblob" utility whenever this thorn is compiled
-# Store it in the scratch directory of this configuration
+# Create the "makeblob" utility whenever this thorn is compiled.
+# Store it in the scratch directory of this configuration.
 
-$(CCTK_TARGET): $(SCRATCH_BUILD)/makeblob
+# This has to live here in the file make.code.deps instead of in the
+# file make.configuration.deps because only here the location of the
+# source file makeblob.c is known.
 
-$(SCRATCH_BUILD)/makeblob: $(SCRATCH_BUILD)/makeblob.o
-	cd $(SCRATCH_BUILD) && $(LD) $(LDFLAGS) -o $@ $^
+TARBALL_DIR = $(SCRATCH_BUILD)
 
-$(SCRATCH_BUILD)/makeblob.o: $(SRCDIR)/util/makeblob.c
-	cd $(SCRATCH_BUILD) && $(CC) $(CFLAGS) -c $^
+$(CCTK_TARGET): $(TARBALL_DIR)/makeblob $(TARBALL_DIR)/makemetablob
+
+
+
+$(TARBALL_DIR)/makeblob: $(TARBALL_DIR)/makeblob.o
+	cd $(TARBALL_DIR) && $(LD) $(LDFLAGS) -o $@ $^
+
+$(TARBALL_DIR)/makeblob.o: $(SRCDIR)/util/makeblob.c
+	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c $^
+
+
+
+$(TARBALL_DIR)/makemetablob: $(TARBALL_DIR)/makemetablob.o
+	cd $(TARBALL_DIR) && $(LD) $(LDFLAGS) -o $@ $^
+
+$(TARBALL_DIR)/makemetablob.o: $(SRCDIR)/util/makemetablob.c
+	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c $^

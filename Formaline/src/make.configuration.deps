@@ -6,42 +6,128 @@
 # Create a tarball of the source code whenever this thorn is linked
 # into an executable
 
-$(EXEDIR)$(DIRSEP)$(EXE): make-tarball
-
-CACTUSLIBLINKLINE += $(SCRATCH_BUILD)/cactus-source.a
+TARBALL_DIR = $(SCRATCH_BUILD)
 
 
 
-# 1. Create a list of files that should be in the tarball
-# 2. Create the tarball
-# 3. Use the makeblob utility (from this thorn; see make.code.deps)
-#    to create C source code from the tarball
-# 4. Compile C code and create an archive
+CACTUSLIBLINKLINE += $(TARBALL_DIR)/cactus-source.a
 
-.PHONY: make-tarball
-make-tarball:
-	@echo "Creating source tarball..." && \
+$(EXEDIR)$(DIRSEP)$(EXE): $(TARBALL_DIR)/cactus-source.a
+
+$(TARBALL_DIR)/cactus-source.a: $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DIR)/cactus-flesh-source.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.o,$(notdir $(THORNS)))
+	$(AR) $(ARFLAGS) $@ $^
+
+## Cache optimisation:
+## Build the thorns' tarballs already while the thorns are compiled
+## (does not work)
+#
+#$(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX): $(TARBALL_DIR)/cactus-thorn-source-%.o
+
+
+
+# Meta information
+$(TARBALL_DIR)/cactus-meta-source.o: $(TARBALL_DIR)/cactus-meta-source.c
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+$(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.c,$(notdir $(THORNS)))
+	$(TARBALL_DIR)/makemetablob Cactus $(notdir $(THORNS)) > $@
+
+
+
+# Flesh
+
+$(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+$(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz
+	$(TARBALL_DIR)/makeblob '' Cactus < $< > $@
+
+#$(TARBALL_DIR)/cactus-flesh-source.d: $(TARBALL_DIR)/cactus-flesh-source.files
+#	echo "$(@:%.d=%.c):" `cat $^` > $@
+#-include $(TARBALL_DIR)/cactus-flesh-source.d
+
+$(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
 	cd $(CCTK_HOME) && \
-	files="CONTRIBUTORS COPYRIGHT Makefile" && \
-	dirs="lib src" && \
-	thorns="$(THORNS:%=arrangements/%)" && \
-	filelist=$(SCRATCH_BUILD)/source-file-list && \
-	find $$files $$dirs $$thorns \
-		-path 'arrangements/*/*/doc' -prune \
-		-o -path 'arrangements/*/*/test' -prune \
-		-o -path 'arrangements/*/*/par' -prune \
-		-o -print > $$filelist && \
-	echo "Adding" `cat $$filelist | wc -l` "files..." && \
-	tar czf "$(SCRATCH_BUILD)/cactus-source.tar.gz" \
-		--no-recursion -T $$filelist && \
-	echo "Created tarball with" `cat $(SCRATCH_BUILD)/cactus-source.tar.gz | wc -c` "bytes..." && \
-	cd $(SCRATCH_BUILD) && \
-	rm -rf cactus-source && \
-	mkdir cactus-source && \
-	cd cactus-source && \
-	../makeblob < ../cactus-source.tar.gz && \
-	$(CC) $(CFLAGS) -c *.c && \
-	cd .. && \
-	$(AR) $(ARFLAGS) cactus-source.a cactus-source/*.o && \
-	echo "Added tarball to executable." && \
-	echo $(DIVIDER)
+	tar czf $@ -T $<
+
+# This dependency means that the tarball for a thorn is only updated
+# if the thorn is actually recompiled.  This does not catch changes to
+# files that do not influence the executable, but that is okay.
+$(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Cactus$(LIBNAME_SUFFIX)
+	cd $(CCTK_HOME) && \
+	find CONTRIBUTORS COPYRIGHT Makefile lib src \
+		configs/$(notdir $(TOP))/config-info \
+		configs/$(notdir $(TOP))/ThornList \
+		-name '.*' -prune -o \
+		-name '*~' -prune -o \
+		-not -type d \
+		-print > $@
+
+
+
+# Thorns
+
+$(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
+	@echo "Creating tarball for thorn $(@:$(TARBALL_DIR)/cactus-thorn-source-%.o=%)"
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+$(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz
+	$(TARBALL_DIR)/makeblob $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) < $< > $@
+
+#$(TARBALL_DIR)/cactus-thorn-source-%.d: $(TARBALL_DIR)/cactus-thorn-source-%.files
+#	echo "$(@:%.d=%.c):" `cat $^` > $@
+#-include $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.d,$(notdir $(THORNS)))
+
+$(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
+	cd $(CCTK_HOME) && \
+	tar czf $@ -T $<
+
+# This dependency means that the tarball for a thorn is only updated
+# if the thorn is actually recompiled.  This does not catch changes to
+# files that do not influence the executable, but that is okay.
+$(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX)
+	cd $(CCTK_HOME) && \
+	find arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.files=%),$(THORNS)) \
+		-path 'arrangements/*/*/doc' -prune -o \
+		-path 'arrangements/*/*/par' -prune -o \
+		-path 'arrangements/*/*/test' -prune -o \
+		-name '.*' -prune -o \
+		-name '*~' -prune -o \
+		-not -type d \
+		-print > $@
+
+
+
+## 1. Create a list of files that should be in the tarball
+## 2. Create the tarball
+## 3. Use the makeblob utility (from this thorn; see make.code.deps)
+##    to create C source code from the tarball
+## 4. Compile C code and create an archive
+#
+#.PHONY: make-tarball
+#make-tarball:
+#	@echo "Creating source tarball..." && \
+#	cd $(CCTK_HOME) && \
+#	files="CONTRIBUTORS COPYRIGHT Makefile" && \
+#	dirs="lib src" && \
+#	thorns="$(THORNS:%=arrangements/%)" && \
+#	filelist=$(TARBALL_DIR)/source-file-list && \
+#	find $$files $$dirs $$thorns \
+#		-path 'arrangements/*/*/doc' -prune \
+#		-o -path 'arrangements/*/*/test' -prune \
+#		-o -path 'arrangements/*/*/par' -prune \
+#		-o -print > $$filelist && \
+#	echo "Adding" `cat $$filelist | wc -l` "files..." && \
+#	tar czf "$(TARBALL_DIR)/cactus-source.tar.gz" \
+#		--no-recursion -T $$filelist && \
+#	echo "Created tarball with" `cat $(TARBALL_DIR)/cactus-source.tar.gz | wc -c` "bytes..." && \
+#	cd $(TARBALL_DIR) && \
+#	rm -rf cactus-source && \
+#	mkdir cactus-source && \
+#	cd cactus-source && \
+#	../makeblob < ../cactus-source.tar.gz && \
+#	$(CC) $(CFLAGS) -c *.c && \
+#	cd .. && \
+#	$(AR) $(ARFLAGS) cactus-source.a cactus-source/*.o && \
+#	echo "Added tarball to executable." && \
+#	echo $(DIVIDER)

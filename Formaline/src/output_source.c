@@ -12,49 +12,75 @@
 
 
 
-struct chunkinfo
+struct sourceinfo
 {
   char const * data;
-  size_t const * length;
+  size_t length;
+  char const * arrangement;
+  char const * thorn;
 };
 
-extern struct chunkinfo cactus_source_chunks [];
-extern size_t cactus_source_chunks_length;
+extern struct sourceinfo const * const cactus_source [];
+extern size_t const cactus_source_length;
 
 
 
-void
-Formaline_OutputSource (CCTK_ARGUMENTS)
+int
+Formaline_OutputSource ()
 {
-  DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
   
-  char const sourcename [] = "cactus-source.tar.gz";
-  size_t filenamelength;
-  char * filename;
+  char filename [10000];
   FILE * file;
-  size_t chunk;
+  int count;
   
-  if (CCTK_MyProc (cctkGH) != 0) return;
+  if (CCTK_MyProc (0) != 0) return;
   
-  filenamelength = strlen (out_dir) + strlen (sourcename) + 2;
-  filename = malloc (filenamelength);
-  assert (filename);
-  sprintf (filename, "%s/%s", out_dir, sourcename);
-  
+  { CCTK_PRINTSEPARATOR }
   CCTK_VInfo (CCTK_THORNSTRING,
-              "Writing tarball with Cactus sources to file \"%s\"", filename);
+              "Writing tarballs with the Cactus sources into the directory \"%s\"", out_dir);
   
+  CCTK_CreateDirectory (0755, out_dir);
+  
+  /* Output all thorns' tarballs */
+  for (count = 0; count < cactus_source_length; ++ count)
+  {
+    snprintf (filename, sizeof filename,
+              "%s/cactus-source-%s.tar.gz",
+              out_dir, cactus_source[count]->thorn);
+    file = fopen (filename, "w");
+    assert (file);
+    fwrite (cactus_source[count]->data,
+            sizeof * cactus_source[count]->data,
+            cactus_source[count]->length,
+            file);
+    fclose (file);
+  }
+  
+  /* Add a README */
+  snprintf (filename, sizeof filename, "%s/README", out_dir);
   file = fopen (filename, "w");
   assert (file);
-  for (chunk = 0; chunk < cactus_source_chunks_length; ++ chunk)
-  {
-    fwrite (cactus_source_chunks[chunk].data,
-            sizeof * cactus_source_chunks[chunk].data,
-            * cactus_source_chunks[chunk].length,
-            file);
-  }
+  fprintf (file,
+"README for the Cactus source tree\n"
+"\n"
+"This directory contains a complete Cactus source tree in several tarballs.\n"
+"(A tarball is a file with a suffix like \".tar.gz\".)\n"
+"The tarballs were created by the thorn AEIThorns/Formaline when the\n"
+"corresponding executable was produced, and were stored in the executable.\n"
+"The parameter file in this directory was used to extract the tarballs\n"
+"from the executable.\n"
+"Thorn AEIThorns/Formaline contains more information about this feature.\n"
+"\n"
+"In order to fully recreate the Cactus source tree, unpack all tarballs\n"
+"in this directory, e.g. with commands like\n"
+"\ttar xzf cactus-source-Cactus.tar.gz\n"
+"for all tarballs.  All tarballs should be unpacked into the same directory.\n"
+"\n"
+"The files \"config-info\" and \"ThornList\" that were used to build the\n"
+"executable can then be found in the \"configs\" subdirectory.\n"
+           );
   fclose (file);
   
-  free (filename);
+  return 0;
 }
