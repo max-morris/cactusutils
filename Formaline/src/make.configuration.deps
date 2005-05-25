@@ -5,11 +5,18 @@
 
 # Create a tarball of the source code whenever this thorn is linked
 # into an executable
+
 $(EXEDIR)$(DIRSEP)$(EXE): make-tarball
 
 CACTUSLIBLINKLINE += $(SCRATCH_BUILD)/cactus-source.a
 
 
+
+# 1. Create a list of files that should be in the tarball
+# 2. Create the tarball
+# 3. Use the makeblob utility (from this thorn; see make.code.deps)
+#    to create C source code from the tarball
+# 4. Compile C code and create an archive
 
 .PHONY: make-tarball
 make-tarball:
@@ -19,9 +26,14 @@ make-tarball:
 	dirs="lib src" && \
 	thorns="$(THORNS:%=arrangements/%)" && \
 	filelist=$(SCRATCH_BUILD)/source-file-list && \
-	find $$files $$dirs $$thorns -path 'arrangements/*/*/doc' -prune -o -path 'arrangements/*/*/test' -prune -o -print > $$filelist && \
+	find $$files $$dirs $$thorns \
+		-path 'arrangements/*/*/doc' -prune \
+		-o -path 'arrangements/*/*/test' -prune \
+		-o -path 'arrangements/*/*/par' -prune \
+		-o -print > $$filelist && \
 	echo "Adding" `cat $$filelist | wc -l` "files..." && \
-	tar czf "$(SCRATCH_BUILD)/cactus-source.tar.gz" --no-recursion -T $$filelist && \
+	tar czf "$(SCRATCH_BUILD)/cactus-source.tar.gz" \
+		--no-recursion -T $$filelist && \
 	echo "Created tarball with" `cat $(SCRATCH_BUILD)/cactus-source.tar.gz | wc -c` "bytes..." && \
 	cd $(SCRATCH_BUILD) && \
 	rm -rf cactus-source && \

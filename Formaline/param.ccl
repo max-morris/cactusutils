@@ -3,6 +3,9 @@
 
 
 
+# Parameters for announcing to the portal
+# (does not work yet properly)
+
 BOOLEAN announce_to_portal "Announce to the portal"
 {
 } no
@@ -23,6 +26,8 @@ STRING portal_username "User name on the portal"
 } ""
 
 
+
+# Parameters for storing the source tree in the executable
 
 BOOLEAN output_source "Output a tarball with the cactus source tree"
 {

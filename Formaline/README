@@ -17,3 +17,14 @@ number of iterations, an efficiency summary, etc.
 TODO:
 
 unique IDs for all output files
+store ThornList and config-info as well
+
+
+
+BSD tar: nonrecursive: 
+        read files from file: -I filename
+
+don't use -z; use tar and gzip
+
+find: don't emit directories
+find: quote ! character

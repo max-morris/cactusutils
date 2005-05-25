@@ -1,6 +1,9 @@
 # make.code.deps file for thorn Formaline   -*-Makefile-*-
 # $Header$
 
+# Create the "makeblob" utility whenever this thorn is compiled
+# Store it in the scratch directory of this configuration
+
 $(CCTK_TARGET): $(SCRATCH_BUILD)/makeblob
 
 $(SCRATCH_BUILD)/makeblob: $(SCRATCH_BUILD)/makeblob.o

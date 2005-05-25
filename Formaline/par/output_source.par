@@ -1,5 +1,6 @@
 # $Header$
 
+Cactus::cctk_run_title = "Write out the stored source tree"
 Cactus::cctk_itlast = 0
 
 ActiveThorns = "Formaline"
