@@ -44,10 +44,6 @@ $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
 $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz
 	$(TARBALL_DIR)/makeblob '' Cactus < $< > $@
 
-#$(TARBALL_DIR)/cactus-flesh-source.d: $(TARBALL_DIR)/cactus-flesh-source.files
-#	echo "$(@:%.d=%.c):" `cat $^` > $@
-#-include $(TARBALL_DIR)/cactus-flesh-source.d
-
 $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
 	cd $(CCTK_HOME) && \
 	tar czf $@ -T $<
@@ -75,10 +71,6 @@ $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
 
 $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz
 	$(TARBALL_DIR)/makeblob $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) < $< > $@
-
-#$(TARBALL_DIR)/cactus-thorn-source-%.d: $(TARBALL_DIR)/cactus-thorn-source-%.files
-#	echo "$(@:%.d=%.c):" `cat $^` > $@
-#-include $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.d,$(notdir $(THORNS)))
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
 	cd $(CCTK_HOME) && \
