@@ -2,7 +2,7 @@
 # $Header$
 
 # Source files in this directory
-SRCS = connection.cc output_source.c portal.cc
+SRCS = announce.cc file.cc multistorage.cc output_source.c portal.cc storage.cc
 
 # Subdirectories containing source files
 SUBDIRS = 

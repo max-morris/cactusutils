@@ -1,5 +1,10 @@
 // $Header$
 
+#ifndef PORTAL_HH
+#define PORTAL_HH
+
+
+
 #include <string>
 
 #ifdef HAVE_UNISTD_H
@@ -44,28 +49,26 @@
 #  define CLOSESOCKET(a) close(a)
 #endif
 
+#include "storage.hh"
 
 
-class connection
+
+class portal : public storage
 {
   SOCKET sock;
   
 public:
-  connection (char const * id);
+  portal (char const * id);
   
-  ~ connection ();
+  virtual
+  ~ portal ();
   
-  template<typename T>
-  void
-  store (char const * const key,
-         T const value);
+protected:
   
-private:
-  
-  void
+  virtual void
   write (std::string const & msg);
-  
-  std::string
-  clean (std::string const & txt)
-    const;
 };
+
+
+
+#endif // ifndef PORTAL_HH

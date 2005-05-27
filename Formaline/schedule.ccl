@@ -11,10 +11,7 @@ if (output_source)
 
 
 
-if (announce_to_portal)
+SCHEDULE Formaline_Announce AT wragh
 {
-  SCHEDULE Formaline_Portal AT wragh
-  {
-    LANG: C
-  } "Put some meta information about the current run into permanent storage"
-}
+  LANG: C
+} "Put some meta information about the current run into permanent storage"

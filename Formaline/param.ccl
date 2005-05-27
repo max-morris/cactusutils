@@ -3,10 +3,10 @@
 
 
 
-# Parameters for announcing to the portal
+# Parameters for announcing meta information to the portal
 # (does not work yet properly)
 
-BOOLEAN announce_to_portal "Announce to the portal"
+BOOLEAN announce_to_portal "Announce meta information to the portal"
 {
 } no
 
@@ -27,11 +27,31 @@ STRING portal_username "User name on the portal"
 
 
 
+# Parameters for storing meta information in a file
+
+BOOLEAN store_into_file "Store meta information in a file"
+{
+} yes
+
+STRING storage_filename "File name for meta information"
+{
+  "" :: ""
+} "formaline-jar.txt"
+
+
+
 # Parameters for storing the source tree in the executable
 
 BOOLEAN output_source "Output a tarball with the cactus source tree"
 {
 } yes
+
+STRING output_source_subdirectory "Subdirectory, relative to IO::out_dir, for the Cactus source tarballs"
+{
+  "" :: ""
+} "cactus-source"
+
+
 
 SHARES: IO
 

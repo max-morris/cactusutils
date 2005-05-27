@@ -38,16 +38,20 @@ Formaline_OutputSource ()
   
   { CCTK_PRINTSEPARATOR }
   CCTK_VInfo (CCTK_THORNSTRING,
-              "Writing tarballs with the Cactus sources into the directory \"%s\"", out_dir);
+              "Writing tarballs with the Cactus sources into the directory \"%s/%s\"",
+              out_dir, output_source_subdirectory);
   
-  CCTK_CreateDirectory (0755, out_dir);
+  snprintf (filename, sizeof filename,
+            "%s/%s", out_dir, output_source_subdirectory);
+  CCTK_CreateDirectory (0755, filename);
   
   /* Output all thorns' tarballs */
   for (count = 0; count < cactus_source_length; ++ count)
   {
     snprintf (filename, sizeof filename,
-              "%s/cactus-source-%s.tar.gz",
-              out_dir, cactus_source[count]->thorn);
+              "%s/%s/Cactus-source-%s.tar.gz",
+              out_dir, output_source_subdirectory,
+              cactus_source[count]->thorn);
     file = fopen (filename, "w");
     assert (file);
     fwrite (cactus_source[count]->data,
@@ -58,7 +62,8 @@ Formaline_OutputSource ()
   }
   
   /* Add a README */
-  snprintf (filename, sizeof filename, "%s/README", out_dir);
+  snprintf (filename, sizeof filename,
+            "%s/%s/README", out_dir, output_source_subdirectory);
   file = fopen (filename, "w");
   assert (file);
   fprintf (file,
@@ -68,8 +73,6 @@ Formaline_OutputSource ()
 "(A tarball is a file with a suffix like \".tar.gz\".)\n"
 "The tarballs were created by the thorn AEIThorns/Formaline when the\n"
 "corresponding executable was produced, and were stored in the executable.\n"
-"The parameter file in this directory was used to extract the tarballs\n"
-"from the executable.\n"
 "Thorn AEIThorns/Formaline contains more information about this feature.\n"
 "\n"
 "In order to fully recreate the Cactus source tree, unpack all tarballs\n"
