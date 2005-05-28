@@ -1,0 +1,26 @@
+# $Header$
+
+Cactus::cctk_run_title = "Announce in the various ways"
+
+Cactus::cctk_show_banners  = no
+Cactus::cctk_show_schedule = no
+
+Cactus::cctk_itlast = 0
+
+ActiveThorns = "CoordBase"
+
+ActiveThorns = "IOUtil"
+IOUtil::parfile_write = no
+
+ActiveThorns = "PUGH"
+
+ActiveThorns = "Formaline"
+Formaline::announce_to_portal = yes
+Formaline::store_into_file    = yes
+Formaline::output_source = no
+
+ActiveThorns = "HTTPD Socket"
+
+#ActiveThorns = "Announce"
+#Announce::portal_username = eschnett
+#Announce::app_visibility  = public
