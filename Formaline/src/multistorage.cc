@@ -58,6 +58,20 @@ store (char const * const key, int const value)
 
 
 void multistorage::
+store (char const * const key, double const value)
+  const
+{
+  for (list<storage *>::const_iterator it = stores.begin();
+       it != stores.end();
+       ++ it)
+  {
+    (* it)->store (key, value);
+  }
+}
+
+
+
+void multistorage::
 store (char const * const key, char const * const value)
   const
 {

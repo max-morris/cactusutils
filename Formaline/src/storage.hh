@@ -1,7 +1,5 @@
 // $Header$
 
-
-
 #ifndef STORAGE_HH
 #define STORAGE_HH
 
@@ -11,27 +9,37 @@ class storage
 {
 public:
   
+  enum state { initial, update, final };
+  
+private:
+  
+  enum state m_state;
+  
+public:
+  
+  storage (enum state);
+  
   virtual
   ~ storage ();
   
-  virtual void
-  store (char const * key,
-         int value);
-  
-  virtual void
-  store (char const * key,
-         char const * value);
-  
-protected:
-  
-  virtual void
-  write (std::string const & msg)
-    = 0;
-  
-  virtual std::string
-  clean (std::string const & txt)
+  enum state
+  get_state ()
     const;
   
+  virtual void
+  store (char const * key,
+         int value)
+    = 0;
+  
+  virtual void
+  store (char const * key,
+         double value)
+    = 0;
+  
+  virtual void
+  store (char const * key,
+         char const * value)
+    = 0;
 };
 
 

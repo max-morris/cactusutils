@@ -38,6 +38,10 @@ public:
     const;
   
   void
+  store (char const * key, double value)
+    const;
+  
+  void
   store (char const * key, char const * value)
     const;
 };

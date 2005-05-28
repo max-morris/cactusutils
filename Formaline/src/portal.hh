@@ -5,6 +5,7 @@
 
 
 
+#include <sstream>
 #include <string>
 
 #ifdef HAVE_UNISTD_H
@@ -55,18 +56,41 @@
 
 class portal : public storage
 {
+  
   SOCKET sock;
   
+  std::ostringstream msgbuf;
+  
+  int errorcount;
+  
 public:
-  portal (char const * id);
+  
+  portal (char const * id,
+          enum state st);
   
   virtual
   ~ portal ();
   
-protected:
+  virtual void
+  store (char const * key,
+         int value);
   
   virtual void
+  store (char const * key,
+         double value);
+  
+  virtual void
+  store (char const * key,
+         char const * value);
+  
+private:
+  
+  void
   write (std::string const & msg);
+  
+  std::string
+  clean (std::string const & txt)
+    const;
 };
 
 

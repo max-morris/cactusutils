@@ -2,3 +2,6 @@
 # $Header$
 
 IMPLEMENTS: Formaline
+
+# for HTTP_Port()
+USES INCLUDE HEADER: http_Content.h

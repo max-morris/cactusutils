@@ -17,15 +17,33 @@ class file : public storage
   ofstream fil;
   
 public:
-  file (char const * id);
+  
+  file (char const * id,
+        enum state st);
   
   virtual
   ~ file ();
   
-protected:
+  virtual void
+  store (char const * key,
+         int value);
   
   virtual void
+  store (char const * key,
+         double value);
+  
+  virtual void
+  store (char const * key,
+         char const * value);
+  
+private:
+  
+  void
   write (std::string const & msg);
+  
+  std::string
+  clean (std::string const & txt)
+    const;
 };
 
 
