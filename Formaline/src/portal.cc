@@ -236,22 +236,33 @@ write (string const & msg0)
     
     if (nelems == len) return;
     
-    assert (nelems < len);
-    msg = msg.substr (nelems);
-    
     // Wait until can write
     fd_set fds;
     FD_ZERO (& fds);
     assert (sock >= 0 and sock < FD_SETSIZE);
     FD_SET (sock, & fds);
+    struct timeval timeout;
+    timeout.tv_sec  = 10;       // wait no more than ten seconds
+    timeout.tv_usec = 0;
     // TODO: Make sure that we don't wait forever here.
-    int const ierr = select (FD_SETSIZE, 0, & fds, 0, 0);
-    if (ierr < 0)
+    int const icnt = select (FD_SETSIZE, 0, & fds, 0, & timeout);
+    if (icnt == 0)
     {
+      // There was a timeout
+      CCTK_WARN (1, "Timeout: could not send message");
+      return;
+    }
+    else if (icnt < 0)
+    {
+      // There was an error
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "%s", strerror (errno));
       return;
     }
+    
+    // Remove the characters that have been sent
+    assert (nelems < len);
+    msg = msg.substr (nelems);
     
   }
 }
