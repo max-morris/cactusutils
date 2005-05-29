@@ -1,13 +1,17 @@
 // $Header$
 
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <iomanip>
+#include <list>
 #include <sstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -17,6 +21,7 @@
 #include "cctk_Parameters.h"
 #include "cctk_Version.h"
 #include "util_Network.h"
+#include "util_String.h"
 
 #include "http_Content.h"
 
@@ -305,8 +310,8 @@ Formaline_AnnounceInitial (CCTK_ARGUMENTS)
     stores.store ("parameter filename", parameter_filename);
   }
   
-#if 0
   // This is superfluous, and it does not look nice
+#if 0
   {
     char parameter_filename [10000];
     char parameter_file [1000000];
@@ -339,7 +344,6 @@ Formaline_AnnounceInitial (CCTK_ARGUMENTS)
   
   
   
-#if 0
   // All Cactus thorns
   
   {
@@ -369,8 +373,12 @@ Formaline_AnnounceInitial (CCTK_ARGUMENTS)
   // All Cactus parameters
   
   {
-    int first = 1;
-    for (;;)
+    typedef pair<string, cParamData const *> param;
+    
+    // Collect all parameters into a list
+    // (A list allows efficient inserting)
+    list<param> paramlist;
+    for (int first = 1; ; first = 0)
     {
       cParamData const * parameter_data;
       char * parameter_fullname;
@@ -381,6 +389,33 @@ Formaline_AnnounceInitial (CCTK_ARGUMENTS)
       if (ierr > 0) break;
       assert (ierr >= 0);
       
+      // Skip parameters that belong to inactive thorns
+      if (CCTK_IsThornActive (parameter_data->thorn))
+      {
+        paramlist.push_back (param (string (parameter_fullname),
+                                    parameter_data));
+      }
+      
+      free (parameter_fullname);
+    }
+    
+    // Copy the list into a vector
+    // (A vector allows efficient sorting)
+    vector<param> paramvector;
+    paramvector.insert (paramvector.begin(),
+                        paramlist.begin(), paramlist.end());
+    
+    // Sort the parameters
+    sort (paramvector.begin(), paramvector.end());
+    
+    // Store the parameters
+    for (vector<param>::const_iterator parameter = paramvector.begin();
+         parameter != paramvector.end();
+         ++ parameter)
+    {
+      char const * const parameter_fullname = parameter->first.c_str();
+      cParamData const * const parameter_data = parameter->second;
+      
       ostringstream keybuf;
       keybuf << "parameters/" << parameter_fullname;
       string const keystr = keybuf.str();
@@ -390,44 +425,91 @@ Formaline_AnnounceInitial (CCTK_ARGUMENTS)
       void const * const parameter_value
         = CCTK_ParameterGet (parameter_data->name, parameter_data->thorn,
                              & type);
-      assert (type == parameter_data->type);
       assert (parameter_value != 0);
+      assert (type == parameter_data->type);
+      
+      int const times_set
+        = CCTK_ParameterQueryTimesSet (parameter_data->name,
+                                       parameter_data->thorn);
       
       switch (type)
       {
       case PARAMETER_BOOLEAN:
-      case PARAMETER_INT:
         {
+          CCTK_INT default_value;
+          int const ierr
+            = CCTK_SetBoolean (& default_value, parameter_data->defval);
+          assert (! ierr);
           CCTK_INT const value
             = * static_cast<CCTK_INT const *> (parameter_value);
-          stores.store (key, value);
+          if (times_set > 0 or value != default_value)
+          {
+            stores.store (key, value);
+          }
+        }
+        break;
+      case PARAMETER_INT:
+        {
+          CCTK_INT const default_value
+            = strtol (parameter_data->defval, 0, 0);
+          CCTK_INT const value
+            = * static_cast<CCTK_INT const *> (parameter_value);
+          if (times_set > 0 or value != default_value)
+          {
+            stores.store (key, value);
+          }
         }
         break;
       case PARAMETER_REAL:
         {
+          char * const default_string = strdup (parameter_data->defval);
+          assert (default_string);
+          // Convert "d" and "D" to "e" and "E", because this is what
+          // strtod expects
+          for (char * p = default_string; * p; ++ p)
+          {
+            switch (* p)
+            {
+            case 'd': * p = 'e'; break;
+            case 'D': * p = 'E'; break;
+            }
+          }
+          CCTK_INT const default_value = strtod (default_string, 0);
+          free (default_string);
           CCTK_REAL const value
             = * static_cast<CCTK_REAL const *> (parameter_value);
-          stores.store (key, value);
+          if (times_set > 0 or value != default_value)
+          {
+            stores.store (key, value);
+          }
         }
         break;
       case PARAMETER_KEYWORD:
+        {
+          char const * const value
+            = * static_cast<char const * const *> (parameter_value);
+          if (times_set > 0
+              or Util_StrCmpi (parameter_data->defval, value) != 0)
+          {
+            stores.store (key, value);
+          }
+        }
+        break;
       case PARAMETER_STRING:
         {
           char const * const value
             = * static_cast<char const * const *> (parameter_value);
-          stores.store (key, value);
+          if (times_set > 0 or strcmp (parameter_data->defval, value) != 0)
+          {
+            stores.store (key, value);
+          }
         }
         break;
       default:
         assert (0);
       }
-      
-      free (parameter_fullname);
-      
-      first = 0;
-    }
+    } // for all parameters
   }
-#endif
   
   
   
@@ -472,6 +554,7 @@ Formaline_AnnounceUpdate (CCTK_ARGUMENTS)
   
   {
     stores.store ("cctk_iteration", cctk_iteration);
+    stores.store ("cctk_time", cctk_time);
   }
 }
 
