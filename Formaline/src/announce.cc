@@ -33,6 +33,10 @@ using namespace std;
 
 
 
+extern "C" char const * Formaline_BuildID ();
+
+
+
 static char * jobid = 0;
 
 
@@ -45,6 +49,7 @@ create_jobid (CCTK_ARGUMENTS)
   DECLARE_CCTK_PARAMETERS;
   
   ostringstream jobidbuf;
+  jobidbuf << "job-";
   
   char run_host [1000];
   Util_GetHostName (run_host, sizeof run_host);
@@ -224,6 +229,11 @@ Formaline_AnnounceInitial (CCTK_ARGUMENTS)
   
   
   // Compiling
+  
+  {
+    char const * const build_id = Formaline_BuildID();
+    stores.store ("build id", build_id);
+  }
   
 #if 0
   {

@@ -16,7 +16,7 @@ number of iterations, an efficiency summary, etc.
 
 TODO:
 
-unique IDs for all output files
+put unique job IDs into all output files
 
 BSD tar: read files from file: -I filename
 tar: don't use -z; use tar and gzip
@@ -33,3 +33,6 @@ announce: maybe use <array> for parameter arrays
           maybe use <bool> for booleans
           maybe use <dateTime.iso8601>20100302T00:00:00</dateTime.iso8601>
                 for dates and times
+
+put the output files into the build directory instead of the scratch
+directory

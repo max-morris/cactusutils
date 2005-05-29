@@ -14,7 +14,7 @@ CACTUSLIBLINKLINE += $(TARBALL_DIR)/cactus-source.a
 
 $(EXEDIR)$(DIRSEP)$(EXE): $(TARBALL_DIR)/cactus-source.a
 
-$(TARBALL_DIR)/cactus-source.a: $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DIR)/cactus-flesh-source.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.o,$(notdir $(THORNS)))
+$(TARBALL_DIR)/cactus-source.a: $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DIR)/build-id.o $(TARBALL_DIR)/cactus-flesh-source.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.o,$(notdir $(THORNS)))
 	$(AR) $(ARFLAGS) $@ $^
 	@echo $(DIVIDER)
 
@@ -23,6 +23,29 @@ $(TARBALL_DIR)/cactus-source.a: $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DI
 ## (does not work)
 #
 #$(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX): $(TARBALL_DIR)/cactus-thorn-source-%.o
+
+
+
+# Unique ID for the build
+$(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+# (force a new to be created every time)
+.PHONY: $(TARBALL_DIR)/build-id.c
+$(TARBALL_DIR)/build-id.c:
+	{ \
+	echo '/* This is an auto-generated file -- do not edit */'; \
+	hostname=`hostname`; \
+	user="$$USER"; \
+	timestamp=`date +%Y%m%d-%H%M%S`; \
+	pid="$$$$"; \
+	id="build-$$hostname-$$USER-$$timestamp-$$pid"; \
+	echo 'static char const build_id[] = "'$id'";'; \
+	echo 'char const * Formaline_BuildID (void)'; \
+	echo '{'; \
+	echo '  return build_id;'; \
+	echo '}'; \
+	} > $@
 
 
 
