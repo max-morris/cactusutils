@@ -50,6 +50,25 @@ file::
 
 void file::
 store (char const * const key,
+       bool const value)
+{
+  assert (key);
+  
+  ostringstream keybuf;
+  keybuf << key;
+  ostringstream valuebuf;
+  valuebuf << (value ? "yes" : "no");
+  
+  ostringstream buf;
+  buf << clean (keybuf.str()) << "=" << clean (valuebuf.str()) << endl;
+  
+  write (buf.str());
+}
+
+
+
+void file::
+store (char const * const key,
        int const value)
 {
   assert (key);

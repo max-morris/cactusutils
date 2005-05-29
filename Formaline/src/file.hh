@@ -26,6 +26,10 @@ public:
   
   virtual void
   store (char const * key,
+         bool value);
+  
+  virtual void
+  store (char const * key,
          int value);
   
   virtual void

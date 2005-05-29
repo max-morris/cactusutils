@@ -444,7 +444,7 @@ Formaline_AnnounceInitial (CCTK_ARGUMENTS)
             = * static_cast<CCTK_INT const *> (parameter_value);
           if (times_set > 0 or value != default_value)
           {
-            stores.store (key, value);
+            stores.store (key, (bool) value);
           }
         }
         break;

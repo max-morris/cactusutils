@@ -125,6 +125,25 @@ portal::
 
 void portal::
 store (char const * const key,
+       bool const value)
+{
+  assert (key);
+  
+  ostringstream keybuf;
+  keybuf << key;
+  ostringstream valuebuf;
+  valuebuf << (value ? "true" : "false");
+  
+  msgbuf << "<member>"
+         << "<name>" << clean (keybuf.str()) << "</name>"
+         << "<value><boolean>" << clean (valuebuf.str()) << "</boolean></value>"
+         << "</member>";
+}
+
+
+
+void portal::
+store (char const * const key,
        int const value)
 {
   assert (key);
