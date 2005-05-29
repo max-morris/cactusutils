@@ -40,7 +40,7 @@ $(TARBALL_DIR)/build-id.c:
 	timestamp=`date +%Y%m%d-%H%M%S`; \
 	pid="$$$$"; \
 	id="build-$$hostname-$$USER-$$timestamp-$$pid"; \
-	echo 'static char const build_id[] = "'$id'";'; \
+	echo 'static char const build_id[] = "'$$id'";'; \
 	echo 'char const * Formaline_BuildID (void)'; \
 	echo '{'; \
 	echo '  return build_id;'; \
