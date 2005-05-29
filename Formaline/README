@@ -36,3 +36,9 @@ announce: maybe use <array> for parameter arrays
 
 put the output files into the build directory instead of the scratch
 directory
+
+output grid variables
+register as output method
+implement reductions
+implement missing data types
+output only if value has changed

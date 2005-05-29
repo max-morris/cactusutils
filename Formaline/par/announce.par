@@ -18,9 +18,3 @@ ActiveThorns = "Formaline"
 Formaline::announce_to_portal = yes
 Formaline::store_into_file    = yes
 Formaline::output_source = no
-
-ActiveThorns = "HTTPD Socket"
-
-#ActiveThorns = "Announce"
-#Announce::portal_username = eschnett
-#Announce::app_visibility  = public

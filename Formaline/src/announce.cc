@@ -566,6 +566,110 @@ Formaline_AnnounceUpdate (CCTK_ARGUMENTS)
     stores.store ("cctk_iteration", cctk_iteration);
     stores.store ("cctk_time", cctk_time);
   }
+  
+  
+  
+  // Groups and variables
+  
+  {
+    struct args {
+      cGH * cctkGH;
+      multistorage * stores;
+      char const * reductions;
+      
+      static void
+      output_variable (int const varindex,
+                       char const * const options,
+                       void * const theargs0)
+      {
+        args * const theargs = (args *) theargs0;
+        cGH * const cctkGH = theargs->cctkGH;
+        multistorage & stores = * theargs->stores;
+        char const * const reductions = theargs->reductions;
+        
+        int const groupindex = CCTK_GroupIndexFromVarI (varindex);
+        assert (groupindex >= 0);
+        cGroup group;
+        int const ierr = CCTK_GroupData (groupindex, & group);
+        assert (! ierr);
+        
+        ostringstream keybuf, valbuf;
+        char * const fullname = CCTK_FullName (varindex);
+        assert (fullname);
+        keybuf << "variables/" << fullname;
+        free (fullname);
+        string const keystr = keybuf.str();
+        char const * const key = keystr.c_str();
+        
+        void const * const varptr
+          = CCTK_VarDataPtrI (cctkGH, 0, varindex);
+        if (! varptr) {
+          // No storage -- do nothing
+          // TODO: output warning
+          return;
+        }
+        
+        switch (group.grouptype)
+        {
+        case CCTK_SCALAR:
+          switch (group.vartype)
+          {
+          case CCTK_VARIABLE_INT:
+            {
+              CCTK_INT const val = * (CCTK_INT const *) varptr;
+              stores.store (key, val);
+            }
+            break;
+          case CCTK_VARIABLE_REAL:
+            {
+              CCTK_REAL const val = * (CCTK_REAL const *) varptr;
+              stores.store (key, val);
+            }
+            break;
+          case CCTK_VARIABLE_COMPLEX:
+            {
+              CCTK_COMPLEX const val = * (CCTK_COMPLEX const *) varptr;
+              {
+                ostringstream keyrebuf;
+                keyrebuf << key << ".Re";
+                string const keyrestr = keyrebuf.str();
+                char const * const keyre = keyrestr.c_str();
+                stores.store (keyre, val.Re);
+              }
+              {
+                ostringstream keyimbuf;
+                keyimbuf << key << ".Im";
+                string const keyimstr = keyimbuf.str();
+                char const * const keyim = keyimstr.c_str();
+                stores.store (keyim, val.Im);
+              }
+            }
+            break;
+          default:
+            ;
+            // not supported yet
+            // TODO: output warning
+          }
+          break;
+        case CCTK_ARRAY:
+        case CCTK_GF:
+          // not supported yet
+          // TODO: output warning
+          break;
+        default:
+          CCTK_WARN (0, "internal error");
+        }
+      }
+    } theargs;
+    
+    theargs.cctkGH = cctkGH;
+    theargs.stores = & stores;
+    theargs.reductions = out_reductions;
+    
+    int const ierr
+      = CCTK_TraverseString (out_vars, theargs.output_variable, & theargs,
+                             CCTK_GROUP_OR_VAR);
+  }
 }
 
 
