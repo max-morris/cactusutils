@@ -34,6 +34,10 @@ public:
     const;
   
   void
+  store (char const * key, bool value)
+    const;
+  
+  void
   store (char const * key, int value)
     const;
   

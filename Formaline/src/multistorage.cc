@@ -44,6 +44,20 @@ num_storages ()
 
 
 void multistorage::
+store (char const * const key, bool const value)
+  const
+{
+  for (list<storage *>::const_iterator it = stores.begin();
+       it != stores.end();
+       ++ it)
+  {
+    (* it)->store (key, value);
+  }
+}
+
+
+
+void multistorage::
 store (char const * const key, int const value)
   const
 {

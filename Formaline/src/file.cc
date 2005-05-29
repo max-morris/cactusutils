@@ -30,7 +30,7 @@ file (char const * const id,
   
   if (get_state() == initial)
   {
-    store ("jobid", id);
+    store ("simulation id", id);
   }
 }
 
