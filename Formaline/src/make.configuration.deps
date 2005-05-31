@@ -16,6 +16,7 @@ $(EXEDIR)$(DIRSEP)$(EXE): $(TARBALL_DIR)/cactus-source.a
 
 $(TARBALL_DIR)/cactus-source.a: $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DIR)/build-id.o $(TARBALL_DIR)/cactus-flesh-source.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.o,$(notdir $(THORNS)))
 	$(AR) $(ARFLAGS) $@ $^
+	if test "x$(USE_RANLIB)" = "xyes" ; then $(RANLIB) $(RANLIBFLAGS) $@ ; fi
 	@echo $(DIVIDER)
 
 ## Cache optimisation:
