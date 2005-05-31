@@ -1,5 +1,6 @@
 // $Header$
 
+#include <cassert>
 #include <iomanip>
 #include <ios>
 #include <sstream>
