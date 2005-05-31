@@ -26,7 +26,12 @@ extern size_t const cactus_source_length;
 
 
 int
-Formaline_OutputSource ()
+Formaline_OutputSource (void);
+
+
+
+int
+Formaline_OutputSource (void)
 {
   DECLARE_CCTK_PARAMETERS;
   
@@ -34,7 +39,7 @@ Formaline_OutputSource ()
   FILE * file;
   int count;
   
-  if (CCTK_MyProc (0) != 0) return;
+  if (CCTK_MyProc (0) != 0) return 0;
   
   { CCTK_PRINTSEPARATOR }
   CCTK_VInfo (CCTK_THORNSTRING,

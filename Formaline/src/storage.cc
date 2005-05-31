@@ -4,29 +4,37 @@
 
 #include "storage.hh"
 
-using namespace std;
 
 
-
-storage::
-storage (enum state const st)
-  : m_state (st)
+namespace Formaline
 {
-}
+
+  using namespace std;
 
 
 
-storage::
-~ storage ()
-{
-}
+  storage::
+  storage (enum state const st)
+    : m_state (st)
+  {
+  }
 
 
 
-enum storage::state storage::
-get_state ()
-  const
-{
-  return m_state;
-}
+  storage::
+  ~ storage ()
+  {
+  }
 
+
+
+  enum storage::state storage::
+  get_state ()
+    const
+  {
+    return m_state;
+  }
+
+
+
+} // namespace Formaline

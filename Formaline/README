@@ -42,3 +42,7 @@ register as output method
 implement reductions
 implement missing data types
 output only if value has changed
+
+put stuff into namespace
+        (move from C to C++?)
+rename "file", "storage" do something more unique
