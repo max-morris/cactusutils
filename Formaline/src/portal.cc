@@ -16,14 +16,16 @@
 
 
 
+#ifndef MSG_NOSIGNAL
+#  define MSG_NOSIGNAL 0
+#endif
+
+
+
 namespace Formaline
 {
 
   using namespace std;
-
-
-
-  extern "C" int h_errno;
 
 
 
