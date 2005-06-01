@@ -20,6 +20,7 @@ put unique job IDs into all output files
 
 BSD tar: read files from file: -I filename
 tar: don't use -z; use tar and gzip
+AIX: tar is GNU tar, but uses -L instead of -T
 
 IOUtil should not depend on anything
 (MoL should not depend on NaNChecker)
@@ -46,3 +47,34 @@ output only if value has changed
 put stuff into namespace
         (move from C to C++?)
 rename "file", "storage" do something more unique
+
+
+
+Here is a suggestion for handling sockets in perl.
+This is from "http://www.infocopter.com/perl/socket-server.htm".
+
+#!/usr/bin/perl -w
+use strict;
+################################################
+# Socket Client
+# (c) retoh :)
+################################################
+use Socket;
+
+my $host = 'localhost';
+my $port = 7890;
+
+my $proto = getprotobyname('tcp');
+socket(my $FS, PF_INET, SOCK_STREAM, $proto);
+my $sin = sockaddr_in($port, inet_aton($host));
+connect($FS, $sin) || exit -1;
+
+my $old_fh = select($FS); $| = 1; select($old_fh);
+
+print $FS "Hello at ", scalar localtime(), "\n\n";
+
+while(<$FS>) {
+        print;
+}
+
+close $FS;
