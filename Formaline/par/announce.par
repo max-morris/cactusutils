@@ -10,6 +10,7 @@ Cactus::cctk_itlast = 0
 ActiveThorns = "CoordBase"
 
 ActiveThorns = "IOUtil"
+IO::out_dir = $parfile
 IOUtil::parfile_write = no
 
 ActiveThorns = "PUGH"
@@ -17,4 +18,3 @@ ActiveThorns = "PUGH"
 ActiveThorns = "Formaline"
 Formaline::announce_to_portal = yes
 Formaline::store_into_file    = yes
-Formaline::output_source = no
