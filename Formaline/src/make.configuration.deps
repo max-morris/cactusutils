@@ -32,7 +32,7 @@ $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source$(L
 $(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
-# (force a new to be created every time)
+# (force a new ID to be created every time)
 .PHONY: $(TARBALL_DIR)/build-id.c
 $(TARBALL_DIR)/build-id.c:
 	{ \
@@ -41,7 +41,7 @@ $(TARBALL_DIR)/build-id.c:
 	user="$$USER"; \
 	timestamp=`date +%Y%m%d-%H%M%S`; \
 	pid="$$$$"; \
-	id="build-$$hostname-$$USER-$$timestamp-$$pid"; \
+	id="build-$$hostname-$$user-$$timestamp-$$pid"; \
 	echo 'char const build_id[] = "'$$id'";'; \
 	} > $@
 
@@ -71,8 +71,9 @@ $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.fi
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
-# files that do not influence the executable, but that is okay.
-$(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Cactus$(LIBNAME_SUFFIX)
+# files that do not influence the executable.
+# Update the tarball also when the CST stage is rerun.
+$(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(BINDINGSLIB)$(LIBNAME_SUFFIX) 
 	cd $(CCTK_HOME) && \
 	find CONTRIBUTORS COPYRIGHT Makefile lib src \
 		configs/$(notdir $(TOP))/config-info \
@@ -99,8 +100,9 @@ $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
-# files that do not influence the executable, but that is okay.
-$(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX)
+# files that do not influence the executable.
+# Update the tarball also when the CST stage is rerun.
+$(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX) $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(BINDINGSLIB)$(LIBNAME_SUFFIX) 
 	cd $(CCTK_HOME) && \
 	find arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.files=%),$(THORNS)) \
 		-path 'arrangements/*/*/doc' -prune -o \

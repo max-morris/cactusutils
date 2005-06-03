@@ -48,6 +48,10 @@ put stuff into namespace
         (move from C to C++?)
 rename "file", "storage" do something more unique
 
+update the source tarballs not only when the thorn library changes,
+but also when a *.ccl or make.* file changes.
+do not necessarily update them all when the bindings change.
+
 
 
 Here is a suggestion for handling sockets in perl.
