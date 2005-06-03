@@ -3,7 +3,9 @@
 #include <cassert>
 #include <cerrno>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -13,12 +15,6 @@
 #include "cctk_Parameters.h"
 
 #include "portal.hh"
-
-
-
-#ifndef MSG_NOSIGNAL
-#  define MSG_NOSIGNAL 0
-#endif
 
 
 
@@ -32,55 +28,10 @@ namespace Formaline
   portal::
   portal (char const * const id,
           enum state const st)
-    : storage (st),
-      errorcount (0)
+    : storage (st)
   {
     DECLARE_CCTK_PARAMETERS;
-  
-    sock = socket (PF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
-    {
-      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "%s", strerror (errno));
-    }
-  
-    struct hostent * hostinfo;
-    hostinfo = gethostbyname (portal_hostname);
-    if (hostinfo == 0)
-    {
-      switch (h_errno)
-      {
-      case HOST_NOT_FOUND:
-        CCTK_WARN (1, "The specified host is unknown.");
-        break;
-      case NO_ADDRESS:
-        // case NO_DATA:
-        CCTK_WARN (1, "The requested name is valid but does not have an IP address.");
-        break;
-      case NO_RECOVERY:
-        CCTK_WARN (1, "A non-recoverable name server error occurred.");
-        break;
-      case TRY_AGAIN:
-        CCTK_WARN (1, "A temporary error occurred on an authoritative name server.  Try again later.");
-        break;
-      default:
-        CCTK_WARN (1, "unknown error");
-      }
-    }
-  
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons (portal_port);
-    addr.sin_addr = * (struct in_addr *) hostinfo->h_addr;
-  
-    int const ierr
-      = connect (sock, (struct sockaddr const *) (& addr), sizeof addr);
-    if (ierr < 0)
-    {
-      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "%s", strerror (errno));
-    }
-  
+    
     msgbuf << "<?xml version='1.0' ?>"
            << "<methodCall><methodName>";
     switch (get_state())
@@ -110,20 +61,107 @@ namespace Formaline
   portal::
   ~ portal ()
   {
+    DECLARE_CCTK_PARAMETERS;
+    
+    string const socket_script = "socket-client.pl";
+    string const socket_data = "socket-data";
+    
+    
+    
+    // Write the data
     msgbuf << "</struct></value></param></params>";
     msgbuf << "</methodCall>";
     string const msgstr = msgbuf.str();
-  
-    ostringstream buf;
-    buf << "POST HTTP/1.0 200\r\n"
-        << "Content-Type: text/xml\r\n"
-        << "Content-Length: " << msgstr.length() << "\r\n"
-        << "\r\n"
-        << msgstr << "\r\n"
-        << "\r\n";
-    write (buf.str());
-  
-    CLOSESOCKET (sock);
+    
+    ostringstream databuf;
+    databuf << "POST HTTP/1.0 200\r\n"
+            << "Content-Type: text/xml\r\n"
+            << "Content-Length: " << msgstr.length() << "\r\n"
+            << "\r\n"
+            << msgstr
+            << "\r\n"
+            << "\r\n";
+    string const datastr = databuf.str();
+    
+    ostringstream datafilenamebuf;
+    datafilenamebuf << out_dir << "/" << socket_data;
+    string const datafilenamestr = datafilenamebuf.str();
+    char const * const datafilename = datafilenamestr.c_str();
+    
+    ofstream datafile;
+    datafile.open (datafilename, ios::out);
+    datafile << datastr;
+    datafile.close ();
+    
+    
+    
+    // Write the script
+    ostringstream scriptbuf;
+    scriptbuf
+<< "#! /usr/bin/perl -w" << endl
+<< endl
+<< "use strict;" << endl
+<< "use Socket;" << endl
+<< endl
+<< "my $input = '" << datafilename << "';" << endl
+<< "my $host = '" << portal_hostname << "';" << endl
+<< "my $port = '" << portal_port << "';" << endl
+<< endl
+<< "open (my $FH, '<' . $input);" << endl
+<< endl
+<< "socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
+<< "my $sin = sockaddr_in ($port, inet_aton ($host));" << endl
+<< "connect ($SH, $sin) || exit -1;" << endl
+<< endl
+<< "while (my $line = <$FH>)" << endl
+<< "{" << endl
+<< "  print $SH $line;" << endl
+<< "}" << endl
+<< endl
+<< "close $SH;" << endl;
+    string const scriptstr = scriptbuf.str();
+    
+    ostringstream scriptfilenamebuf;
+    scriptfilenamebuf << out_dir << "/" << socket_script;
+    string const scriptfilenamestr = scriptfilenamebuf.str();
+    char const * const scriptfilename = scriptfilenamestr.c_str();
+    
+    ofstream scriptfile;
+    scriptfile.open (scriptfilename, ios::out);
+    scriptfile << scriptstr;
+    scriptfile.close ();
+    
+    
+    
+    // Make the script executable
+    ostringstream chmodbuf;
+    chmodbuf << "chmod a+x '" << scriptfilenamestr << "'"
+             << " < /dev/null > /dev/null 2> /dev/null";
+    string const chmodstr = chmodbuf.str();
+    char const * const chmod = chmodstr.c_str();
+    system (chmod);
+    
+    
+    
+    // Send the data
+    ostringstream cmdbuf;
+    cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null";
+    string const cmdstr = cmdbuf.str();
+    char const * const cmd = cmdstr.c_str();
+    
+    int const ierr = system (cmd);
+    if (ierr != 0)
+    {
+      static bool did_complain = false;
+      if (! did_complain)
+      {
+        CCTK_WARN (1, "Failed to send data to the portal");
+        did_complain = true;
+      }
+    }
+    
+    remove (datafilename);
+    remove (scriptfilename);
   }
 
 
@@ -200,95 +238,6 @@ namespace Formaline
            << "<name>" << clean (keybuf.str()) << "</name>"
            << "<value><string>" << clean (valuebuf.str()) << "</string></value>"
            << "</member>";
-  }
-
-
-
-  void portal::  
-  write (string const & msg0)
-  {
-    // cout << "[" << msg0 << "]" << endl;
-    string msg = msg0;
-    for (;;)
-    {
-    
-      char const * const cmsg = msg.c_str();
-      size_t const len = msg.length();
-    
-      // TODO: Make sure that we don't wait forever here.  Maybe use
-      // MSG_DONTWAIT.
-      ssize_t const nelems = send (sock, cmsg, len, MSG_NOSIGNAL);
-      if (nelems < 0)
-      {
-#ifdef EMSGSIZE
-        if (nelems == EMSGSIZE)
-        {
-          // The socket type requires that message be sent atomically,
-          // and the size of the message to be sent made this
-          // impossible.
-          // Try to send the message as two smaller messages.
-          if (len > 0)
-          {
-            string const msg1 = msg.substr (0, len/2);
-            string const msg2 = msg.substr (len/2);
-            write (msg1);
-            write (msg2);
-          }
-          else
-          {
-            // There is a limit.  In order to not be too inefficient,
-            // just do nothing if even small messages cannot be sent.
-          }
-        }
-        else
-#endif
-        {
-          int const maxerrors = 10;
-          ++ errorcount;
-          if (errorcount <= maxerrors)
-          {
-            CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                        "%s", strerror (errno));
-            if (errorcount == maxerrors)
-            {
-              CCTK_WARN (1, "Too many errors.  Suppressing further error messages.");
-            }
-          }
-        }
-        return;
-      }
-    
-      if (nelems == len) return;
-    
-      // Wait until can write
-      fd_set fds;
-      FD_ZERO (& fds);
-      assert (sock >= 0 and sock < FD_SETSIZE);
-      FD_SET (sock, & fds);
-      struct timeval timeout;
-      timeout.tv_sec  = 10;       // wait no more than ten seconds
-      timeout.tv_usec = 0;
-      // TODO: Make sure that we don't wait forever here.
-      int const icnt = select (FD_SETSIZE, 0, & fds, 0, & timeout);
-      if (icnt == 0)
-      {
-        // There was a timeout
-        CCTK_WARN (1, "Timeout: could not send message");
-        return;
-      }
-      else if (icnt < 0)
-      {
-        // There was an error
-        CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                    "%s", strerror (errno));
-        return;
-      }
-    
-      // Remove the characters that have been sent
-      assert (nelems < len);
-      msg = msg.substr (nelems);
-    
-    }
   }
 
 
