@@ -49,7 +49,7 @@ main (int argc, char * * argv)
   printf ("struct sourceinfo const cactus_source_%s =\n", thorn);
   printf ("{\n");
   printf ("  data,\n");
-  printf ("  %lu,\n", count);
+  printf ("  %luUL,\n", count);
   printf ("  \"%s\",\n", arrangement);
   printf ("  \"%s\"\n", thorn);
   printf ("};\n");
