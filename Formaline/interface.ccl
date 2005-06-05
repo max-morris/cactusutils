@@ -5,3 +5,14 @@ IMPLEMENTS: Formaline
 
 # for HTTP_Port()
 USES INCLUDE HEADER: http_Content.h
+
+
+
+# Return a pointer to an unmodifiable C string
+# which contains a unique ID for this simulation
+CCTK_POINTER_TO_CONST \
+FUNCTION UniqueSimulationID (CCTK_POINTER_TO_CONST IN  cctkGH)
+
+PROVIDES FUNCTION UniqueSimulationID \
+    WITH Formaline_UniqueSimulationID \
+    LANGUAGE C

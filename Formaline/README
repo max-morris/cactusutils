@@ -17,6 +17,8 @@ number of iterations, an efficiency summary, etc.
 TODO:
 
 put unique job IDs into all output files
+        done for Carpet output
+        but not yet after restarting
 
 BSD tar: read files from file: -I filename
 tar: don't use -z; use tar and gzip
@@ -31,7 +33,6 @@ to create the tarballs when the thorns are compiled
 use perl instead of C for makeblob and makemetablob
 
 announce: maybe use <array> for parameter arrays
-          maybe use <bool> for booleans
           maybe use <dateTime.iso8601>20100302T00:00:00</dateTime.iso8601>
                 for dates and times
 

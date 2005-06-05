@@ -58,41 +58,40 @@ namespace Formaline
   extern "C" char const build_id[];
   
   // Unique job ID
-  static char * jobid = 0;
-
-  // Time of late update
-  static CCTK_REAL last_update_time = 0;
+  static char * job_id = 0;
 
 
 
   // Create a unique job id
   static void
-  create_jobid (CCTK_ARGUMENTS)
+  create_job_id (CCTK_ARGUMENTS)
   {
     DECLARE_CCTK_ARGUMENTS;
     DECLARE_CCTK_PARAMETERS;
-  
-    ostringstream jobidbuf;
-    jobidbuf << "job-";
+    
+    if (job_id != 0) return;
+    
+    ostringstream job_idbuf;
+    job_idbuf << "job-";
   
     char run_host [1000];
     Util_GetHostName (run_host, sizeof run_host);
-    jobidbuf << run_host;
+    job_idbuf << run_host;
   
-    jobidbuf << "-";
+    job_idbuf << "-";
   
 #if 0
     char const * const run_user = CCTK_RunUser();
 #else
     char const * const run_user = getenv ("USER");
 #endif
-    jobidbuf << run_user;
+    job_idbuf << run_user;
   
-    jobidbuf << "-";
+    job_idbuf << "-";
   
     time_t const tim = time (0);
     struct tm * const ptm = gmtime (& tim);
-    jobidbuf << setfill ('0')
+    job_idbuf << setfill ('0')
              << setw(4) << ptm->tm_year
              << setw(2) << ptm->tm_mon
              << setw(2) << ptm->tm_mday
@@ -101,16 +100,29 @@ namespace Formaline
              << setw(2) << ptm->tm_min
              << setw(2) << ptm->tm_sec;
   
-    jobidbuf << "-";
+    job_idbuf << "-";
   
     pid_t const pid = getpid();
-    jobidbuf << pid;
+    job_idbuf << pid;
   
-    string const jobidstr = jobidbuf.str();
-    jobid = strdup (jobidstr.c_str());
+    string const job_idstr = job_idbuf.str();
+    job_id = strdup (job_idstr.c_str());
+  }
+  
+  
+  
+  extern "C" CCTK_POINTER_TO_CONST
+  Formaline_UniqueSimulationID (CCTK_POINTER_TO_CONST const cctkGH_)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    create_job_id (const_cast<cGH *> (cctkGH));
+    return static_cast<CCTK_POINTER_TO_CONST> (job_id);
   }
 
 
+
+  // Time of late update
+  static CCTK_REAL last_update_time = 0;
 
   // Get current time
   static CCTK_REAL
@@ -139,7 +151,7 @@ namespace Formaline
 
     if (verbose) CCTK_INFO ("Announcing initial meta information");
   
-    create_jobid (cctkGH);
+    create_job_id (cctkGH);
   
     // Announce
     {
@@ -148,12 +160,12 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (jobid, storage::initial));
+        stores.add_storage (new portal (job_id, storage::initial));
       }
   
       if (store_into_file)
       {
-        stores.add_storage (new file (jobid, storage::initial));
+        stores.add_storage (new file (job_id, storage::initial));
       }
   
       if (stores.num_storages() == 0) return;
@@ -161,6 +173,7 @@ namespace Formaline
   
   
       // Information in the Portal/Announce format
+      
       {
         // Don't know what this is for
         stores.store ("jobtype", "default");
@@ -329,7 +342,8 @@ namespace Formaline
         void const * const ptr
           = CCTK_ParameterGet ("cctk_run_title", "Cactus", & type);
         assert (type == PARAMETER_STRING);
-        char const * const run_title = * static_cast<char const * const *> (ptr);
+        char const * const run_title
+          = * static_cast<char const * const *> (ptr);
         stores.store ("run title", run_title);
       }
   
@@ -590,18 +604,34 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (jobid, storage::update));
+        stores.add_storage (new portal (job_id, storage::update));
       }
   
       if (store_into_file)
       {
-        stores.add_storage (new file (jobid, storage::update));
+        stores.add_storage (new file (job_id, storage::update));
       }
   
       if (stores.num_storages() == 0) return;
   
   
   
+      // Running
+  
+      {
+        char run_date [1000];
+        Util_CurrentDate (sizeof run_date, run_date);
+        stores.store ("run date", run_date);
+      }
+  
+      {
+        char run_time [1000];
+        Util_CurrentTime (sizeof run_time, run_time);
+        stores.store ("run time", run_time);
+      }
+      
+      
+      
       // Simulation state
   
       {
@@ -615,7 +645,7 @@ namespace Formaline
   
       {
         struct args {
-          cGH * cctkGH;
+          cGH const * cctkGH;
           multistorage * stores;
           char const * reductions;
       
@@ -625,7 +655,7 @@ namespace Formaline
                            void * const theargs0)
           {
             args * const theargs = (args *) theargs0;
-            cGH * const cctkGH = theargs->cctkGH;
+            cGH const * const cctkGH = theargs->cctkGH;
             multistorage & stores = * theargs->stores;
             char const * const reductions = theargs->reductions;
         
@@ -763,16 +793,32 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (jobid, storage::final));
+        stores.add_storage (new portal (job_id, storage::final));
       }
   
       if (store_into_file)
       {
-        stores.add_storage (new file (jobid, storage::final));
+        stores.add_storage (new file (job_id, storage::final));
       }
   
       if (stores.num_storages() == 0) return;
   
+  
+  
+      // Running
+  
+      {
+        char run_date [1000];
+        Util_CurrentDate (sizeof run_date, run_date);
+        stores.store ("run date", run_date);
+      }
+  
+      {
+        char run_time [1000];
+        Util_CurrentTime (sizeof run_time, run_time);
+        stores.store ("run time", run_time);
+      }
+      
   
   
       // Simulation state
