@@ -44,8 +44,23 @@ implement reductions
 implement missing data types
 output only if value has changed
 
-rename "file", "storage" do something more unique
-
 update the source tarballs not only when the thorn library changes,
 but also when a *.ccl or make.* file changes.
 do not necessarily update them all when the bindings change.
+
+
+
+RSS: add RSS feed
+see http://blogs.law.harvard.edu/tech/rss for an RSS specification
+a simple example is:
+<rss version="2.0">
+  <channel>
+    <title>...</title>
+    <link>...</link>
+    <description>...</description>
+    <item>
+      <title>...</title>
+      <description>...</description>
+    </item>
+  </channel>
+</rss>

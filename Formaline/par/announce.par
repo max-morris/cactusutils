@@ -17,4 +17,3 @@ ActiveThorns = "PUGH"
 
 ActiveThorns = "Formaline"
 Formaline::announce_to_portal = yes
-Formaline::store_into_file    = yes

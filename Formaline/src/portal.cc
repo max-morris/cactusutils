@@ -1,6 +1,7 @@
 // $Header$
 
 #include <cassert>
+#include <cctype>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -133,9 +134,43 @@ namespace Formaline
     
     
     
+    // Check that the file name is sane
+    for (char const * p = scriptfilename; * p; ++ p)
+    {
+      if (! isalnum (* p))
+      {
+        // Allow only certain characters
+        switch (* p)
+        {
+        case '+':
+        case ',':
+        case '-':
+        case '.':
+        case '/':
+        case ':':
+        case '_':
+        case '~':
+          break;
+        default:
+          // We don't like this character
+          {
+            static bool did_complain = false;
+            if (! did_complain)
+            {
+              did_complain = true;
+              CCTK_WARN (1, "Strange character in file name -- not calling system()");
+              return;
+            }
+          }
+        }
+      }
+    }
+    
+    
+    
     // Make the script executable
     ostringstream chmodbuf;
-    chmodbuf << "chmod a+x '" << scriptfilenamestr << "'"
+    chmodbuf << "chmod a+x " << scriptfilenamestr
              << " < /dev/null > /dev/null 2> /dev/null";
     string const chmodstr = chmodbuf.str();
     char const * const chmod = chmodstr.c_str();
@@ -155,8 +190,8 @@ namespace Formaline
       static bool did_complain = false;
       if (! did_complain)
       {
-        CCTK_WARN (1, "Failed to send data to the portal");
         did_complain = true;
+        CCTK_WARN (1, "Failed to send data to the portal");
       }
     }
     
