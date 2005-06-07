@@ -12,8 +12,11 @@
 #include <string>
 #include <sstream>
 
+#include <unistd.h>
+
 #include "cctk.h"
 #include "cctk_Parameters.h"
+#include "util_Network.h"
 
 #include "portal.hh"
 
@@ -23,9 +26,14 @@ namespace Formaline
 {
 
   using namespace std;
+  
+  
 
-
-
+  static bool
+  is_clean_for_shell (char const * string);
+  
+  
+  
   portal::
   portal (char const * const id,
           enum state const st)
@@ -135,34 +143,14 @@ namespace Formaline
     
     
     // Check that the file name is sane
-    for (char const * p = scriptfilename; * p; ++ p)
+    if (! is_clean_for_shell (scriptfilename))
     {
-      if (! isalnum (* p))
+      static bool did_complain = false;
+      if (! did_complain)
       {
-        // Allow only certain characters
-        switch (* p)
-        {
-        case '+':
-        case ',':
-        case '-':
-        case '.':
-        case '/':
-        case ':':
-        case '_':
-        case '~':
-          break;
-        default:
-          // We don't like this character
-          {
-            static bool did_complain = false;
-            if (! did_complain)
-            {
-              did_complain = true;
-              CCTK_WARN (1, "Strange character in file name -- not calling system()");
-              return;
-            }
-          }
-        }
+        did_complain = true;
+        CCTK_WARN (1, "Strange character in file name -- not calling system()");
+        return;
       }
     }
     
@@ -178,9 +166,120 @@ namespace Formaline
     
     
     
+    bool my_use_relay_host = use_relay_host;
+    char const * my_relay_host = 0;
+    if (my_use_relay_host)
+    {
+      my_relay_host = relay_host;
+      if (strcmp (my_relay_host, "") == 0)
+      {
+        // Determine a good relay host
+        char run_host [1000];
+        Util_GetHostName (run_host, sizeof run_host);
+        if (strncmp (run_host, "ic", 2) == 0 && strlen (run_host) == 6)
+        {
+          // Peyote or Lagavulin
+          int const node = atoi (run_host + 2);
+          if (node < 192)
+          {
+            // Peyote
+            my_relay_host = "peyote";
+          }
+          else
+          {
+            // Lagavulin
+            my_relay_host = "lagavulin";
+          }
+        }
+        else if (strncmp (run_host, "mike", 4) == 0 && strlen (run_host) == 7)
+        {
+          // Supermike
+          my_use_relay_host = false;
+        }
+        else
+        {
+          // Don't know a good relay host; try without
+          my_use_relay_host = false;
+        }
+        
+        if (verbose)
+        {
+          if (my_use_relay_host)
+          {
+            CCTK_VInfo (CCTK_THORNSTRING,
+                        "Using \"%s\" as relay host", my_relay_host);
+          }
+          else
+          {
+            CCTK_INFO ("Announcing without relay host");
+          }
+        }
+      }
+    }
+    
+    if (my_use_relay_host)
+    {
+      // Check that the relay host name is sane
+      if (! is_clean_for_shell (my_relay_host))
+      {
+        static bool did_complain = false;
+        if (! did_complain)
+        {
+          did_complain = true;
+          CCTK_WARN (1, "Strange character in relay host name -- not calling system()");
+          return;
+        }
+      }
+    }
+    
+    
+    
+    char cwd[10000];
+    if (my_use_relay_host)
+    {
+      // Get the current directory
+      char * const cwderr = getcwd (cwd, sizeof cwd);
+      if (cwderr == NULL) {
+        static bool did_complain = false;
+        if (! did_complain)
+        {
+          did_complain = true;
+          CCTK_WARN (1, "Cannot determine current working directory");
+          return;
+        }
+      }
+      
+      // Check that the current directory name is sane
+      if (! is_clean_for_shell (cwd))
+      {
+        static bool did_complain = false;
+        if (! did_complain)
+        {
+          did_complain = true;
+          CCTK_WARN (1, "Strange character in current directory -- not calling system()");
+          return;
+        }
+      }
+    }
+    else
+    {
+      cwd[0] = '\0';
+    }
+    
+    
+    
     // Send the data
     ostringstream cmdbuf;
+    if (my_use_relay_host)
+    {
+      cmdbuf << "ssh " << my_relay_host << " '"
+             << "cd " << cwd << " && ";
+    }
     cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null";
+    if (my_use_relay_host)
+    {
+      cmdbuf << "'";
+    }
     string const cmdstr = cmdbuf.str();
     char const * const cmd = cmdstr.c_str();
     
@@ -294,6 +393,36 @@ namespace Formaline
     }
   
     return buf.str();
+  }
+
+
+  
+  static bool
+  is_clean_for_shell (char const * const string)
+  {
+    for (char const * p = string; * p; ++ p)
+    {
+      if (! isalnum (* p))
+      {
+        // Allow only certain characters
+        switch (* p)
+        {
+        case '+':
+        case ',':
+        case '-':
+        case '.':
+        case '/':
+        case ':':
+        case '_':
+        case '~':
+          break;
+        default:
+          // We don't like this character
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
 

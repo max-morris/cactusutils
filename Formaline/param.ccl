@@ -12,7 +12,7 @@ BOOLEAN verbose "Produce screen output" STEERABLE=always
 REAL update_interval "Update interval for the meta information (in seconds)" STEERABLE=always
 {
   0:* :: ""
-} 60.0
+} 600.0
 
 
 
@@ -35,6 +35,16 @@ INT portal_port "Portal port" STEERABLE=always
 STRING portal_username "User name on the portal" STEERABLE=always
 {
   "" :: ""
+} ""
+
+BOOLEAN use_relay_host "Use a relay host for connecting to the portal" STEERABLE=always
+{
+} yes
+
+STRING relay_host "Relay host for connecting to the portal" STEERABLE=always
+{
+  ".+" :: "host name"
+  ""   :: "try to determine a relay host automatically"
 } ""
 
 
