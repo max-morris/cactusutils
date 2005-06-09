@@ -20,6 +20,6 @@ if (*check_vars && check_every > 0)
   schedule NaNChecker_TakeAction at POSTSTEP after NaNChecker_NaNCheck
   {
     LANG:    C
-    OPTIONS: level
+    OPTIONS: global loop-level
   } "Output NaNChecker::NaNmask and take action according to NaNChecker::action_if_found"
 }
