@@ -94,6 +94,9 @@ namespace Formaline
   store (char const * const key, char const * const value)
     const
   {
+    // Ignore null strings
+    if (value == 0) return;
+    
     for (list<storage *>::const_iterator it = stores.begin();
          it != stores.end();
          ++ it)

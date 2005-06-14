@@ -49,6 +49,10 @@ update the source tarballs not only when the thorn library changes,
 but also when a *.ccl or make.* file changes.
 do not necessarily update them all when the bindings change.
 
+fork (or spawn a thread) before announcing, so that the simulation
+does not have to wait
+        make sure to kill the old spawn before a new is created
+
 
 
 RSS: add RSS feed

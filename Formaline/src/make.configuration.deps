@@ -56,7 +56,9 @@ $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(pats
 
 
 
+###############################################################################
 # Flesh
+###############################################################################
 
 $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
 	@echo "Creating tarball for the flesh"
@@ -72,8 +74,7 @@ $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.fi
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
 # files that do not influence the executable.
-# Update the tarball also when the CST stage is rerun.
-$(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(BINDINGSLIB)$(LIBNAME_SUFFIX) 
+$(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/cactus-flesh-source.ccldeps
 	cd $(CCTK_HOME) && \
 	find CONTRIBUTORS COPYRIGHT Makefile lib src \
 		configs/$(notdir $(TOP))/config-info \
@@ -83,9 +84,23 @@ $(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK
 		-not -type d \
 		-print > $@
 
+-include $(TARBALL_DIR)/cactus-flesh-source.ccldeps
+# Make aborts if these dependencies vanish.  There mention only files
+# here that cannot go away.
+$(TARBALL_DIR)/cactus-flesh-source.ccldeps:
+	{ \
+	        echo "$(@:%.ccldeps=%.files) \\"; \
+	        echo "$@: \\"; \
+	        echo " $(CCTK_HOME)/src/interface.ccl \\"; \
+	        echo " $(CCTK_HOME)/src/param.ccl \\"; \
+	        echo " $(CCTK_HOME)/src/schedule.ccl"; \
+	} > $@
 
 
+
+###############################################################################
 # Thorns
+###############################################################################
 
 $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
 	@echo "Creating tarball for thorn $(@:$(TARBALL_DIR)/cactus-thorn-source-%.o=%)"
@@ -101,8 +116,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
 # files that do not influence the executable.
-# Update the tarball also when the CST stage is rerun.
-$(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX) $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(BINDINGSLIB)$(LIBNAME_SUFFIX) 
+$(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX) $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps
 	cd $(CCTK_HOME) && \
 	find arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.files=%),$(THORNS)) \
 		-path 'arrangements/*/*/doc' -prune -o \
@@ -112,3 +126,15 @@ $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CC
 		-name '*~' -prune -o \
 		-not -type d \
 		-print > $@
+
+-include $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps,$(notdir $(THORNS)))
+# Make aborts if these dependencies vanish.  There mention only files
+# here that cannot go away.
+$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps:
+	{ \
+	        echo "$(@:%.ccldeps=%.files) \\"; \
+	        echo "$@: \\"; \
+	        echo " $(CCTK_HOME)/arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps=%),$(THORNS))/interface.ccl \\"; \
+	        echo " $(CCTK_HOME)/arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps=%),$(THORNS))/param.ccl \\"; \
+	        echo " $(CCTK_HOME)/arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps=%),$(THORNS))/schedule.ccl"; \
+	} > $@

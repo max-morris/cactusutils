@@ -92,13 +92,13 @@ namespace Formaline
     time_t const tim = time (0);
     struct tm * const ptm = gmtime (& tim);
     job_idbuf << setfill ('0')
-             << setw(4) << ptm->tm_year
-             << setw(2) << ptm->tm_mon
-             << setw(2) << ptm->tm_mday
-             << "-"
-             << setw(2) << ptm->tm_hour
-             << setw(2) << ptm->tm_min
-             << setw(2) << ptm->tm_sec;
+              << setw(4) << ptm->tm_year
+              << setw(2) << ptm->tm_mon
+              << setw(2) << ptm->tm_mday
+              << "-"
+              << setw(2) << ptm->tm_hour
+              << setw(2) << ptm->tm_min
+              << setw(2) << ptm->tm_sec;
   
     job_idbuf << "-";
   
@@ -178,6 +178,7 @@ namespace Formaline
         // Don't know what this is for
         stores.store ("jobtype", "default");
       }
+
       {
         int type;
         void const * const ptr
@@ -186,6 +187,7 @@ namespace Formaline
         char const * const run_title = * static_cast<char const * const *> (ptr);
         stores.store ("app_title", run_title);
       }
+
       {
         char run_date [1000];
         Util_CurrentDate (sizeof run_date, run_date);
@@ -196,18 +198,22 @@ namespace Formaline
         string const timestr = timebuf.str();
         stores.store ("start_time", timestr.c_str());
       }
+
       {
         // Don't know what this is for
         stores.store ("project_name", "");
       }
+
       {
         stores.store ("output_files", out_dir);
       }
+
       {
         char run_host [1000];
         Util_GetHostName (run_host, sizeof run_host);
         stores.store ("host", run_host);
       }
+
       {
         unsigned long http_port;
 #ifdef __HTTP_CONTENT_H__
@@ -227,11 +233,16 @@ namespace Formaline
           http_port = 0;
         }
 #endif
-        stores.store ("port", (int) http_port);
+        if (http_port != 0)
+        {
+          stores.store ("port", (int) http_port);
+        }
       }
+
       {
         stores.store ("portal_username", portal_username);
       }
+
       {
 #if 0
         char const * const run_user = CCTK_RunUser();
@@ -240,11 +251,13 @@ namespace Formaline
 #endif
         stores.store ("local_username", run_user);
       }
+
       {
         char parameter_filename [10000];
         CCTK_ParameterFilename (sizeof parameter_filename, parameter_filename);
         stores.store ("parameter_file", parameter_filename);
       }
+
       {
         char ** argv;
         int argc;
@@ -252,23 +265,49 @@ namespace Formaline
         for (argc = 0; argv [argc]; ++ argc);
         stores.store ("executable", argc == 0 ? "" : argv[0]);
       }
+
       {
         // Don't know what this is for
         stores.store ("data_directory", "");
       }
+
       {
         // Could also be "private"
         stores.store ("app_visibility", "public");
       }
+
       {
         // Could apparently be none, register, update, deregister
         stores.store ("notification_reports", "");
       }
+
       {
         // Could apparently be none, email, im, sms
         stores.store ("notification_methods", "");
       }
   
+
+
+      // PBS
+      
+      {
+        // PBS logname
+        char const * const pbs_logname = getenv ("PBS_LOGNAME");
+        stores.store ("PBS logname", pbs_logname);
+      }
+      
+      {
+        // PBS host
+        char const * const pbs_host = getenv ("PBS_HOST");
+        stores.store ("PBS host", pbs_host);
+      }
+      
+      {
+        // PBS workdir
+        char const * const pbs_workdir = getenv ("PBS_WORKDIR");
+        stores.store ("PBS workdir", pbs_workdir);
+      }
+
   
   
       // Cactus
