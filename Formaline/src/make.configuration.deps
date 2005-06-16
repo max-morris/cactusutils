@@ -77,8 +77,9 @@ $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.fi
 $(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/cactus-flesh-source.ccldeps
 	cd $(CCTK_HOME) && \
 	find CONTRIBUTORS COPYRIGHT Makefile lib src \
-		configs/$(notdir $(TOP))/config-info \
 		configs/$(notdir $(TOP))/ThornList \
+		configs/$(notdir $(TOP))/config-data \
+		configs/$(notdir $(TOP))/config-info \
 		-name '.*' -prune -o \
 		-name '*~' -prune -o \
 		-not -type d \
