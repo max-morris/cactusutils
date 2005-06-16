@@ -18,3 +18,4 @@ ActiveThorns = "PUGH"
 
 ActiveThorns = "Formaline"
 Formaline::verbose = yes
+Formaline::announce_to_portal = yes
