@@ -86,7 +86,7 @@ $(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK
 		-print > $@
 
 -include $(TARBALL_DIR)/cactus-flesh-source.ccldeps
-# Make aborts if these dependencies vanish.  There mention only files
+# Make aborts if these dependencies vanish.  Therefore mention only files
 # here that cannot go away.
 $(TARBALL_DIR)/cactus-flesh-source.ccldeps:
 	{ \
@@ -129,7 +129,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CC
 		-print > $@
 
 -include $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps,$(notdir $(THORNS)))
-# Make aborts if these dependencies vanish.  There mention only files
+# Make aborts if these dependencies vanish.  Therefore mention only files
 # here that cannot go away.
 $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps:
 	{ \
