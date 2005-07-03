@@ -3,6 +3,12 @@
 
 
 
+# Some configury magic
+
+TAR = $(shell gtar > /dev/null 2> /dev/null && echo gtar || echo tar)
+
+
+
 # Create a tarball of the source code whenever this thorn is linked
 # into an executable
 
@@ -69,7 +75,7 @@ $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz
 
 $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
 	cd $(CCTK_HOME) && \
-	tar czf $@ -T $<
+	$(TAR) czf $@ -T $<
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
@@ -112,7 +118,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
 	cd $(CCTK_HOME) && \
-	tar czf $@ -T $<
+	$(TAR) czf $@ -T $<
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
