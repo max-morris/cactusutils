@@ -26,6 +26,8 @@ $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source$(L
 	if test "x$(USE_RANLIB)" = "xyes" ; then $(RANLIB) $(RANLIBFLAGS) $@ ; fi
 	@echo $(DIVIDER)
 
+.PRECIOUS: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source$(LIBNAME_SUFFIX)
+
 ## Cache optimisation:
 ## Build the thorns' tarballs already while the thorns are compiled
 ## (does not work)
@@ -51,6 +53,8 @@ $(TARBALL_DIR)/build-id.c:
 	echo 'char const build_id[] = "'$$id'";'; \
 	} > $@
 
+.PRECIOUS: $(TARBALL_DIR)/build-id.c $(TARBALL_DIR)/build-id.o
+
 
 
 # Meta information
@@ -59,6 +63,13 @@ $(TARBALL_DIR)/cactus-meta-source.o: $(TARBALL_DIR)/cactus-meta-source.c
 
 $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.c,$(notdir $(THORNS)))
 	$(TARBALL_DIR)/makemetablob Cactus $(notdir $(THORNS)) > $@
+
+.PRECIOUS: $(TARBALL_DIR)/cactus-meta-source.c $(TARBALL_DIR)/cactus-meta-source.o
+
+
+
+#cleandeps:
+#	rm -rf $(TOP)/scratch/cactus-flesh-source.files $(TOP)/scratch/cactus-flesh-source.ccldeps $(TOP)/scratch/cactus-thorn-source-*.files $(TOP)/scratch/cactus-thorn-source-*.ccldeps
 
 
 
@@ -103,6 +114,8 @@ $(TARBALL_DIR)/cactus-flesh-source.ccldeps:
 	        echo " $(CCTK_HOME)/src/schedule.ccl"; \
 	} > $@
 
+.PRECIOUS: $(TARBALL_DIR)/cactus-flesh-source.ccldeps $(TARBALL_DIR)/cactus-flesh-source.files $(TARBALL_DIR)/cactus-flesh-source.tar.gz $(TARBALL_DIR)/cactus-flesh-source.c $(TARBALL_DIR)/cactus-flesh-source.o
+
 
 
 ###############################################################################
@@ -145,3 +158,5 @@ $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps:
 	        echo " $(CCTK_HOME)/arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps=%),$(THORNS))/param.ccl \\"; \
 	        echo " $(CCTK_HOME)/arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps=%),$(THORNS))/schedule.ccl"; \
 	} > $@
+
+.PRECIOUS: $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps $(TARBALL_DIR)/cactus-thorn-source-%.files $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(TARBALL_DIR)/cactus-thorn-source-%.c $(TARBALL_DIR)/cactus-thorn-source-%.o
