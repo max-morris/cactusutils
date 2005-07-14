@@ -1,8 +1,8 @@
 CVS info   : $Header$
 
 Cactus Code Thorn Formaline
-Thorn Author(s)     : Erik Schnett <schnetter@aei.mgp.de>
-Thorn Maintainer(s) : Erik Schnett <schnetter@aei.mgp.de>
+Thorn Author(s)     : Erik Schnetter <schnetter@aei.mgp.de>
+Thorn Maintainer(s) : Erik Schnetter <schnetter@aei.mgp.de>
 --------------------------------------------------------------------------
 
 Purpose of the thorn:
@@ -23,6 +23,7 @@ put unique job IDs into all output files
 BSD tar: read files from file: -I filename
 tar: don't use -z; use tar and gzip
 AIX: tar is GNU tar, but uses -L instead of -T
+use GNU tar, and autodetect it properly
 
 IOUtil should not depend on anything
 (MoL should not depend on NaNChecker)
