@@ -38,6 +38,10 @@ to create the tarballs when the thorns are compiled
 
 use perl instead of C for makeblob and makemetablob
 
+put arrangement name into thorn source name
+use subdirectories for arrangements
+use strings instead of chars for data
+
 announce: maybe use <array> for parameter arrays
           maybe use <dateTime.iso8601>20100302T00:00:00</dateTime.iso8601>
                 for dates and times
