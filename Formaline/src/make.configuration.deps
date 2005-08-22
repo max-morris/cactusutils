@@ -81,7 +81,7 @@ $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
 	@echo "Creating tarball for the flesh"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
-$(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz
+$(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
 	$(TARBALL_DIR)/makeblob '' Cactus $(@:%.c=%) < $< > $@
 
 $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
@@ -126,7 +126,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
 	@echo "Creating tarball for thorn $(@:$(TARBALL_DIR)/cactus-thorn-source-%.o=%)"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
-$(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz
+$(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
 	$(TARBALL_DIR)/makeblob $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) $(@:%.c=%) < $< > $@
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files

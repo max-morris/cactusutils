@@ -1,0 +1,7 @@
+$Header: /usr/local/svn/cvs-repositories/numrelcvs/AEIThorns/Formaline/src/util/VERSION,v 1.1 2005-08-22 12:22:31 schnetter Exp $
+
+This file marks internal ABI versions of thorn Formaline.
+Each auto-generated file depends on this file.
+Thus, whenever this file changes, all auto-generated files are recreated.
+
+2005-08-22: Change layout of struct sourceinfo
