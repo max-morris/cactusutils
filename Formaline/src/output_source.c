@@ -12,10 +12,16 @@
 
 
 
+struct datainfo
+{
+  unsigned char const * data;
+  size_t length;
+  struct datainfo const * next;
+};
+
 struct sourceinfo
 {
-  char const * data;
-  size_t length;
+  struct datainfo const * first;
   char const * arrangement;
   char const * thorn;
 };
@@ -38,6 +44,7 @@ Formaline_OutputSource (void)
   char filename [10000];
   FILE * file;
   int count;
+  struct datainfo const * datainfo;
   
   if (CCTK_MyProc (0) != 0) return 0;
   
@@ -59,10 +66,13 @@ Formaline_OutputSource (void)
               cactus_source[count]->thorn);
     file = fopen (filename, "w");
     assert (file);
-    fwrite (cactus_source[count]->data,
-            sizeof * cactus_source[count]->data,
-            cactus_source[count]->length,
-            file);
+    for (datainfo = cactus_source[count]->first;
+         datainfo;
+         datainfo = datainfo->next)
+    {
+      fwrite (datainfo->data, sizeof * datainfo->data, datainfo->length,
+              file);
+    }
     fclose (file);
   }
   

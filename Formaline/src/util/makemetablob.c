@@ -11,10 +11,16 @@ main (int argc, char * * argv)
   printf ("\n");
   printf ("#include <stddef.h>\n");
   printf ("\n");
+  printf ("struct datainfo\n");
+  printf ("{\n");
+  printf ("  unsigned char const * data;\n");
+  printf ("  size_t length;\n");
+  printf ("  struct datainfo const * next;\n");
+  printf ("};\n");
+  printf ("\n");
   printf ("struct sourceinfo\n");
   printf ("{\n");
-  printf ("  char const * data;\n");
-  printf ("  size_t length;\n");
+  printf ("  struct datainfo const * first;\n");
   printf ("  char const * arrangement;\n");
   printf ("  char const * thorn;\n");
   printf ("};\n");
@@ -27,7 +33,8 @@ main (int argc, char * * argv)
   printf ("struct sourceinfo const * const cactus_source [] = {");
   for (count = 1; count < argc; ++ count)
   {
-    if (count != 1) {
+    if (count != 1)
+    {
       printf (",");
     }
     printf ("\n");
