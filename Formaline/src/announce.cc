@@ -92,7 +92,7 @@ namespace Formaline
     time_t const tim = time (0);
     struct tm * const ptm = gmtime (& tim);
     job_idbuf << setfill ('0')
-              << setw(4) << ptm->tm_year
+              << setw(4) << 1900 + ptm->tm_year
               << setw(2) << ptm->tm_mon
               << setw(2) << ptm->tm_mday
               << "-"
