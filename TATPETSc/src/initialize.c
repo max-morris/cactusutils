@@ -86,7 +86,11 @@ void TATPETSc_initialize (void)
   
   
   /* Initialise PETSc */
-  comm = MPI_COMM_WORLD;
+  if (CCTK_IsFunctionAliased ("GetMPICommWorld")) {
+    comm = GetMPICommWorld (NULL);
+  } else {
+    comm = MPI_COMM_WORLD;
+  }
   ierr = PetscSetCommWorld (comm);
   CHKERRQ(ierr);
   
