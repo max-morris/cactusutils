@@ -87,7 +87,7 @@ void TATPETSc_initialize (void)
   
   /* Initialise PETSc */
   if (CCTK_IsFunctionAliased ("GetMPICommWorld")) {
-    comm = GetMPICommWorld (NULL);
+    comm = * (MPI_Comm *) GetMPICommWorld (NULL);
   } else {
     comm = MPI_COMM_WORLD;
   }
