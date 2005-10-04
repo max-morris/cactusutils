@@ -9,7 +9,9 @@ main (int argc, char * * argv)
   char const * arrangement;
   char const * thorn;
   char const * output;
+#if 0
   char filename [10000];
+#endif
   FILE * file;
   int fcount;
   int done;
