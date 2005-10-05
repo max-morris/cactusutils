@@ -8,6 +8,7 @@
 #include <ctime>
 #include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <list>
 #include <sstream>
 #include <string>
@@ -59,6 +60,12 @@ namespace Formaline
   
   // Unique job ID
   static char * job_id = 0;
+
+
+
+  // Unique message IDs
+  static int warningID = 0;
+  static int infoID    = 0;
 
 
 
@@ -868,6 +875,187 @@ namespace Formaline
       }
 
     } // announce
+  }
+
+
+
+  void
+  CatchWarning (int level,
+		int line,
+		char const * filename,
+		char const * thorn,
+		char const * message,
+		void * data);
+
+  void
+  CatchInfo (char const * thorn,
+	     char const * message,
+	     void * data);
+
+#if 1
+
+  extern "C"
+  void
+  Formaline_RegisterWarnings (CCTK_ARGUMENTS)
+  {
+    DECLARE_CCTK_ARGUMENTS;
+    DECLARE_CCTK_PARAMETERS;
+
+    int const ierr1
+      = CCTK_WarnCallbackRegister (0, max_warn_level, cctkGH, CatchWarning);
+    assert (! ierr1);
+
+    int const ierr2
+      = CCTK_InfoCallbackRegister (cctkGH, CatchInfo);
+    assert (! ierr2);
+  }
+
+#else
+
+  extern "C"
+  int
+  Formaline_RegisterWarnings ()
+  {
+    DECLARE_CCTK_PARAMETERS;
+
+    int const ierr1
+      = CCTK_WarnCallbackRegister (0, max_warn_level, 0, CatchWarning);
+    assert (! ierr1);
+
+    int const ierr2
+      = CCTK_InfoCallbackRegister (0, CatchInfo);
+    assert (! ierr2);
+
+    // TODO
+    CCTK_WARN (1, "yay!");
+    CCTK_INFO ("zaz!");
+
+    return 0;
+  }
+
+#endif
+
+
+  void
+  CatchWarning (int const level,
+		int const line,
+		char const * const filename,
+		char const * const thorn,
+		char const * const message,
+		void * const data)
+  {
+    cGH * const cctkGH = static_cast<cGH *> (data);
+    DECLARE_CCTK_ARGUMENTS;
+    DECLARE_CCTK_PARAMETERS;
+  
+    // Only store from the root processor
+    if (CCTK_MyProc (cctkGH) != 0) return;
+
+    // Announce
+    multistorage stores;
+
+    if (announce_to_portal)
+    {
+      stores.add_storage (new portal (job_id, storage::update));
+    }
+
+    if (store_into_file)
+    {
+      stores.add_storage (new file (job_id, storage::update));
+    }
+
+    if (stores.num_storages() == 0) return;
+
+    // Message
+    {
+      ostringstream keybuf;
+      keybuf << "warning #" << warningID << "/level";
+      string const keystr = keybuf.str();
+      char const * const key = keystr.c_str();
+      stores.store (key, level);
+    }
+    {
+      ostringstream keybuf;
+      keybuf << "warning #" << warningID << "/line";
+      string const keystr = keybuf.str();
+      char const * const key = keystr.c_str();
+      stores.store (key, line);
+    }
+    {
+      ostringstream keybuf;
+      keybuf << "warning #" << warningID << "/file";
+      string const keystr = keybuf.str();
+      char const * const key = keystr.c_str();
+      stores.store (key, filename);
+    }
+    {
+      ostringstream keybuf;
+      keybuf << "warning #" << warningID << "/thorn";
+      string const keystr = keybuf.str();
+      char const * const key = keystr.c_str();
+      stores.store (key, thorn);
+    }
+    {
+      ostringstream keybuf;
+      keybuf << "warning #" << warningID << "/message";
+      string const keystr = keybuf.str();
+      char const * const key = keystr.c_str();
+      stores.store (key, message);
+      // TODO
+      cout << "XXX:" << key << "=" << message << endl;
+    }
+    
+    ++ warningID;
+  }
+
+
+
+  void
+  CatchInfo (char const * const thorn,
+	     char const * const message,
+	     void * const data)
+  {
+    cGH * const cctkGH = static_cast<cGH *> (data);
+    DECLARE_CCTK_ARGUMENTS;
+    DECLARE_CCTK_PARAMETERS;
+  
+    // Only store from the root processor
+    if (CCTK_MyProc (cctkGH) != 0) return;
+
+    // Announce
+    multistorage stores;
+
+    if (announce_to_portal)
+    {
+      stores.add_storage (new portal (job_id, storage::update));
+    }
+
+    if (store_into_file)
+    {
+      stores.add_storage (new file (job_id, storage::update));
+    }
+
+    if (stores.num_storages() == 0) return;
+
+    // Message
+    {
+      ostringstream keybuf;
+      keybuf << "info #" << infoID << "/thorn";
+      string const keystr = keybuf.str();
+      char const * const key = keystr.c_str();
+      stores.store (key, thorn);
+    }
+    {
+      ostringstream keybuf;
+      keybuf << "info #" << infoID << "/message";
+      string const keystr = keybuf.str();
+      char const * const key = keystr.c_str();
+      stores.store (key, message);
+      // TODO
+      cout << "XXX:" << key << "=" << message << endl;
+    }
+
+    ++ infoID;
   }
 
 

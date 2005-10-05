@@ -11,6 +11,11 @@ if (output_source)
 
 
 
+SCHEDULE Formaline_RegisterWarnings AT wragh
+{
+  LANG: C
+} "Register to receive warnings and info messages from the flesh"
+
 SCHEDULE Formaline_AnnounceInitial AT wragh
 {
   LANG: C

@@ -89,6 +89,19 @@ STRING out_reductions "Reduction operators that should be applied to the output 
 
 
 
+# Parameters for outputting Cactus warnings and info messages
+
+INT max_warn_level "Only output warnings with at most this level of severity"
+{
+  -1:* :: ""
+} 2
+
+BOOLEAN output_info "Output info messages?"
+{
+} "yes"
+
+
+
 SHARES: IO
 
 USES STRING out_dir
