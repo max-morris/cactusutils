@@ -926,10 +926,6 @@ namespace Formaline
       = CCTK_InfoCallbackRegister (0, CatchInfo);
     assert (! ierr2);
 
-    // TODO
-    CCTK_WARN (1, "yay!");
-    CCTK_INFO ("zaz!");
-
     return 0;
   }
 
@@ -1001,8 +997,6 @@ namespace Formaline
       string const keystr = keybuf.str();
       char const * const key = keystr.c_str();
       stores.store (key, message);
-      // TODO
-      cout << "XXX:" << key << "=" << message << endl;
     }
     
     ++ warningID;
@@ -1051,8 +1045,6 @@ namespace Formaline
       string const keystr = keybuf.str();
       char const * const key = keystr.c_str();
       stores.store (key, message);
-      // TODO
-      cout << "XXX:" << key << "=" << message << endl;
     }
 
     ++ infoID;
