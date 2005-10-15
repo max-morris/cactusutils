@@ -901,13 +901,19 @@ namespace Formaline
     DECLARE_CCTK_ARGUMENTS;
     DECLARE_CCTK_PARAMETERS;
 
-    int const ierr1
-      = CCTK_WarnCallbackRegister (0, max_warn_level, cctkGH, CatchWarning);
-    assert (! ierr1);
+    if (max_warn_level >= 0)
+    {
+      int const ierr1
+        = CCTK_WarnCallbackRegister (0, max_warn_level, cctkGH, CatchWarning);
+      assert (! ierr1);
+    }
 
-    int const ierr2
-      = CCTK_InfoCallbackRegister (cctkGH, CatchInfo);
-    assert (! ierr2);
+    if (output_info)
+    {
+      int const ierr2
+        = CCTK_InfoCallbackRegister (cctkGH, CatchInfo);
+      assert (! ierr2);
+    }
   }
 
 #else
@@ -918,13 +924,19 @@ namespace Formaline
   {
     DECLARE_CCTK_PARAMETERS;
 
-    int const ierr1
-      = CCTK_WarnCallbackRegister (0, max_warn_level, 0, CatchWarning);
-    assert (! ierr1);
+    if (max_warn_level >= 0)
+    {
+      int const ierr1
+        = CCTK_WarnCallbackRegister (0, max_warn_level, 0, CatchWarning);
+      assert (! ierr1);
+    }
 
-    int const ierr2
-      = CCTK_InfoCallbackRegister (0, CatchInfo);
-    assert (! ierr2);
+    if (output_info)
+    {
+      int const ierr2
+        = CCTK_InfoCallbackRegister (0, CatchInfo);
+      assert (! ierr2);
+    }
 
     return 0;
   }
