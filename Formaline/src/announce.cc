@@ -1016,6 +1016,8 @@ namespace Formaline
     // Only store from the root processor
     if (CCTK_MyProc (cctkGH) != 0) return;
 
+    create_job_id (cctkGH);
+
     // Announce
     multistorage stores;
 
