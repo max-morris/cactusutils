@@ -63,6 +63,8 @@ fork (or spawn a thread) before announcing, so that the simulation
 does not have to wait
         make sure to kill the old spawn before a new is created
 
+make max_warn_level and output_info steerable
+
 
 
 RSS: add RSS feed
