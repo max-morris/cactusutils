@@ -38,7 +38,9 @@
 #  endif
 #endif
 
-#include <unistd.h>
+#ifdef HAVE_UNISTD_H
+#  include <unistd.h>
+#endif
 
 #include "http_Content.h"
 
@@ -117,6 +119,13 @@ namespace Formaline
   }
   
   
+  
+  extern "C" CCTK_POINTER_TO_CONST
+  Formaline_UniqueBuildID (CCTK_POINTER_TO_CONST const cctkGH_)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    return static_cast<CCTK_POINTER_TO_CONST> (build_id);
+  }
   
   extern "C" CCTK_POINTER_TO_CONST
   Formaline_UniqueSimulationID (CCTK_POINTER_TO_CONST const cctkGH_)
@@ -435,6 +444,13 @@ namespace Formaline
       }
 #endif
   
+      {
+        char cwd [10000];
+        getcwd (cwd, sizeof cwd);
+        cwd [sizeof cwd - 1] = '\0'; // just to be sure
+        stores.store ("current dir", cwd);
+      }
+
       {
         stores.store ("out dir", out_dir);
       }
