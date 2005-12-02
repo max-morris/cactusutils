@@ -156,7 +156,6 @@ int Trigger_TimeForOutput(const cGH *GH, int varindex)
 
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
   /* loop over all triggers */
-  /* for (i=my_GH->number-1; i>=0; i--) */
   for (i=0; i<my_GH->number; i++)
   {
     /* loop over all output variables of one trigger */
@@ -184,7 +183,7 @@ int Trigger_TriggerOutput(const cGH *GH, int varindex)
   if (my_GH->debug)
     printf("Trigger_TriggerOutput, varindex %d\n", varindex);
   /* loop over all triggers */
-  for (i=my_GH->number-1; i>=0; i--)
+  for (i=0; i<my_GH->number; i++)
   {
     /* loop over all io methods */
     for (handle=CCTK_NumIOMethods()-1; handle>=0; handle--)
@@ -242,7 +241,7 @@ void Trigger_Check(CCTK_ARGUMENTS)
       ret++;
   /* check for parameter steering */
   /* loop over all triggers */
-  for (i=my_GH->number-1; i>=0; i--)
+  for (i=0; i<my_GH->number; i++)
   {
     if (CCTK_EQUALS(Trigger_Output_Variables[i],"param"))
     {
