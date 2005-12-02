@@ -5,7 +5,7 @@
 
 # Some configury magic
 
-TAR = $(shell gtar > /dev/null 2> /dev/null && echo gtar || echo tar)
+TAR = $(shell gtar --help > /dev/null 2> /dev/null && echo gtar || echo tar)
 
 
 
