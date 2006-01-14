@@ -6,5 +6,22 @@ CVS info   : $Header$
 Purpose of the thorn:
 
 Switch the FPU into a mode where it catches nans and infinities.
-This works currently on IA32 processors under Linux.
-This thorn does nothing on other architectures.
+Whether this is possible, andor whether this code knows how to do
+that, is hardware and operating system dependent.
+
+
+
+This should work on the following systems:
+
+Systems with a GNU C library (glibc), version 2.2 or later, using
+<fenv.h>.
+
+Linux systems with an IA32 (aka i386) processor, when the compiler is
+GNU or Intel, using <fpu_control.h>.
+
+PowerPC systems with a GNU compiler, using code taken from the GNU C
+library.  (
+
+In cases where the nan-catcher does not work, you will see a warning
+message "NaNCatcher disabled -- no support for your compiler" early at
+run time.
