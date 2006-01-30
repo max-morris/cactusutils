@@ -181,12 +181,10 @@ void NaNChecker_NaNCheck (CCTK_ARGUMENTS)
 #endif
 
   CCTK_TraverseString (check_vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR);
-  if (info.NaNmask && info.bitmask)
-  {
-    sum_handle = CCTK_ReductionHandle ("sum");
-    CCTK_ReduceLocalScalar (cctkGH, -1, sum_handle, &info.count, NaNsFound,
-                            CCTK_VARIABLE_INT);
-  }
+
+  sum_handle = CCTK_ReductionHandle ("sum");
+  CCTK_ReduceLocalScalar (cctkGH, -1, sum_handle, &info.count, NaNsFound,
+                          CCTK_VARIABLE_INT);
 }
 
 
@@ -218,16 +216,19 @@ void NaNChecker_TakeAction (CCTK_ARGUMENTS)
   }
 
   /* output NaN mask with the 'IOHDF5' I/O method */
-  if (CCTK_Equals (verbose, "all"))
+  if (out_NaNmask)
   {
-    CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
-  }
-  CCTK_OutputVarAsByMethod (cctkGH,
-                            "NaNChecker::NaNmask{downsample={1 1 1}}",
-                            "IOHDF5", "NaNmask");
+    if (CCTK_Equals (verbose, "all"))
+    {
+      CCTK_INFO ("Write out NaN mask using the 'IOHDF5' I/O method");
+    }
+    CCTK_OutputVarAsByMethod (cctkGH,
+                              "NaNChecker::NaNmask{downsample={1 1 1}}",
+                              "IOHDF5", "NaNmask");
 
-  /* save the iteration of the last NaNmask output */
-  last_iteration_output = cctk_iteration;
+    /* save the iteration of the last NaNmask output */
+    last_iteration_output = cctk_iteration;
+  }
 
   if (CCTK_Equals (action_if_found, "terminate"))
   {
