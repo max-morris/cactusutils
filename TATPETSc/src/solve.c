@@ -10,8 +10,9 @@
 
 #include "mpi.h"
 
-#include "petscda.h"
-#include "petscsnes.h"
+#include <petscda.h>
+#include <petscsnes.h>
+#include <petscversion.h>
 
 #include "cctk.h"
 #include "cctk_Parameters.h"
@@ -639,7 +640,9 @@ int TATPETSc_solve (const cGH *cctkGH,
   case SNES_DIVERGED_FNORM_NAN:       msg = "FNORM_NAN"; break;
   case SNES_DIVERGED_MAX_IT:          msg = "MAX_IT"; break;
   case SNES_DIVERGED_LS_FAILURE:      msg = "LS_FAILURE"; break;
+#if PETSC_VERSION_MAJOR < 2 || (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR <= 1)
   case SNES_DIVERGED_TR_REDUCTION:    msg = "TR_REDUCTION"; break;
+#endif
   case SNES_DIVERGED_LOCAL_MIN:       msg = "LOCAL_MIN (|| J^T b || is small, implies converged to local minimum of F())"; break;
   case SNES_CONVERGED_ITERATING:      msg = "ITERATING"; break;
   default:                            msg = "(unknown reason)";
