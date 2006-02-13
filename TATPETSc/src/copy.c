@@ -242,7 +242,7 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
   
   /* Clean up */
   if (veryverbose) CCTK_INFO ("Destroy");
-  ierr = VecRestoreArray (x, &xx)
+  ierr = VecRestoreArray (x, &xx);
   CHKERRQ(ierr);
   
   free (var);
