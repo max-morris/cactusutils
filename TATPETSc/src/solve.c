@@ -633,7 +633,9 @@ int TATPETSc_solve (const cGH *cctkGH,
   case SNES_CONVERGED_FNORM_ABS:      msg = "FNORM_ABS (F < F_minabs)"; break;
   case SNES_CONVERGED_FNORM_RELATIVE: msg = "FNORM_RELATIVE (F < F_mintol*F_initial)"; break;
   case SNES_CONVERGED_PNORM_RELATIVE: msg = "PNORM_RELATIVE (step size small)"; break;
+#if PETSC_VERSION_MAJOR < 2 || (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR <= 1)
   case SNES_CONVERGED_GNORM_ABS:      msg = "GNORM_ABS (grad F < grad F_min)"; break;
+#endif
   case SNES_CONVERGED_TR_REDUCTION:   msg = "TR_REDUCTION"; break;
   case SNES_CONVERGED_TR_DELTA:       msg = "TR_DELTA"; break;
   case SNES_DIVERGED_FUNCTION_COUNT:  msg = "FUNCTION_COUNT"; break;
