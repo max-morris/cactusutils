@@ -99,7 +99,7 @@ $(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK
 		configs/$(notdir $(TOP))/config-info \
 		-name '.*' -prune -o \
 		-name '*~' -prune -o \
-		-not -type d \
+		! -type d \
 		-print > $@
 
 -include $(TARBALL_DIR)/cactus-flesh-source.ccldeps
@@ -139,12 +139,12 @@ $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-
 $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX) $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps
 	cd $(CCTK_HOME) && \
 	find arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.files=%),$(THORNS)) \
-		-path 'arrangements/*/*/doc' -prune -o \
-		-path 'arrangements/*/*/par' -prune -o \
-		-path 'arrangements/*/*/test' -prune -o \
+		-name 'doc' -prune -o \
+		-name 'par' -prune -o \
+		-name 'test' -prune -o \
 		-name '.*' -prune -o \
 		-name '*~' -prune -o \
-		-not -type d \
+		! -type d \
 		-print > $@
 
 -include $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps,$(notdir $(THORNS)))
