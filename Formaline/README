@@ -30,6 +30,9 @@ tar: don't use -z; use tar and gzip
 AIX: tar is GNU tar, but uses -L instead of -T
 use GNU tar, and autodetect it properly
 
+follow symbolic links
+(maybe: respect hard links)
+
 IOUtil should not depend on anything
 (MoL should not depend on NaNChecker)
 
