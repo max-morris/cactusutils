@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "petscda.h"
-#include "petscsnes.h"
+#include <petscda.h>
+#include <petscsnes.h>
 
 #include "cctk.h"
 #include "cctk_Parameters.h"

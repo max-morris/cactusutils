@@ -8,7 +8,7 @@
 #include <sys/times.h>
 #include <unistd.h>
 
-#include "mpi.h"
+#include <mpi.h>
 
 #include <petscda.h>
 #include <petscsnes.h>
@@ -48,8 +48,10 @@ int TATPETSc_solve (const cGH *cctkGH,
   MPI_Comm comm;
   int rank, size;
   
+#if 0
   /* multigrid contest */
   DMMG *dmmg;
+#endif
   
   /* nonlinear solver context */
   SNES snes;
@@ -587,27 +589,53 @@ int TATPETSc_solve (const cGH *cctkGH,
   
 #if 1
   if (verbose) CCTK_INFO ("SNESSolve");
-#  if PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 2
+
+#  if PETSC_VERSION_MAJOR < 2 || (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 2)
+
   ierr = SNESSolve (snes, x, &iters);
   CHKERRQ(ierr);
-#  else
+  
+  ierr = SNESGetNumberLinearIterations (snes, &liniters);
+  CHKERRQ(ierr);
+
+#  elif PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR == 2
+
   ierr = SNESSolve (snes, x);
   CHKERRQ(ierr);
-#  endif
-#else
-  if (verbose) CCTK_INFO ("DMMGSolve");
-  ierr = DMMGSolve (dmmg);
-  CHKERRQ(ierr);
-#endif
-  
-  ticks1 = times(&tms_buffer);
-  assert (ticks1!=-1);
-  time1 = tms_buffer.tms_utime + tms_buffer.tms_stime;
   
   ierr = SNESGetIterationNumber (snes, &iters);
   CHKERRQ(ierr);
   ierr = SNESGetNumberLinearIterations (snes, &liniters);
   CHKERRQ(ierr);
+
+#  elif PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR > 2
+
+  ierr = SNESSolve (snes, PETSC_NULL, x);
+  CHKERRQ(ierr);
+  
+  ierr = SNESGetIterationNumber (snes, &iters);
+  CHKERRQ(ierr);
+  ierr = SNESGetNumberLinearIterations (snes, &liniters);
+  CHKERRQ(ierr);
+
+#  endif
+
+#else
+
+  if (verbose) CCTK_INFO ("DMMGSolve");
+  ierr = DMMGSolve (dmmg);
+  CHKERRQ(ierr);
+  
+  ierr = SNESGetIterationNumber (snes, &iters);
+  CHKERRQ(ierr);
+  ierr = SNESGetNumberLinearIterations (snes, &liniters);
+  CHKERRQ(ierr);
+
+#endif
+  
+  ticks1 = times(&tms_buffer);
+  assert (ticks1!=-1);
+  time1 = tms_buffer.tms_utime + tms_buffer.tms_stime;
   
   if (verbose) {
     CCTK_VInfo (CCTK_THORNSTRING, "Number of Newton iterations: %d", iters);

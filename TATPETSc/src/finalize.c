@@ -1,7 +1,7 @@
 /* (C) 2001-04-18 Erik Schnetter <schnetter@uni-tuebingen.de> */
 /* $Header$ */
 
-#include "petsc.h"
+#include <petsc.h>
 
 #include "cctk.h"
 #include "cctk_Parameters.h"

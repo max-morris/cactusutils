@@ -6,10 +6,10 @@
 
 
 
-#include "mpi.h"
+#include <mpi.h>
 
-#include "petscda.h"
-#include "petscsnes.h"
+#include <petscda.h>
+#include <petscsnes.h>
 
 #include "cctk.h"
 

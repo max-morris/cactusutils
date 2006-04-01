@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mpi.h"
+#include <mpi.h>
 
-#include "petscda.h"
+#include <petscda.h>
 
 #include "cctk.h"
 #include "cctk_Parameters.h"
