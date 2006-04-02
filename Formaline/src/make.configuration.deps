@@ -62,7 +62,7 @@ $(TARBALL_DIR)/cactus-meta-source.o: $(TARBALL_DIR)/cactus-meta-source.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.c,$(notdir $(THORNS)))
-	$(TARBALL_DIR)/makemetablob Cactus $(notdir $(THORNS)) > $@
+	$(TARBALL_DIR)/makemetablob.pl Cactus $(notdir $(THORNS)) > $@
 
 .PRECIOUS: $(TARBALL_DIR)/cactus-meta-source.c $(TARBALL_DIR)/cactus-meta-source.o
 
@@ -82,7 +82,7 @@ $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
-	$(TARBALL_DIR)/makeblob '' Cactus $(@:%.c=%) < $< > $@
+	$(TARBALL_DIR)/makeblob.pl '' Cactus $(@:%.c=%) < $< > $@
 
 $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
 	cd $(CCTK_HOME) && \
@@ -127,7 +127,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
-	$(TARBALL_DIR)/makeblob $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) $(@:%.c=%) < $< > $@
+	$(TARBALL_DIR)/makeblob.pl $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) $(@:%.c=%) < $< > $@
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
 	cd $(CCTK_HOME) && \
