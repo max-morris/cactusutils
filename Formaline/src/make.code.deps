@@ -1,0 +1,21 @@
+# make.code.deps file for thorn Formaline   -*-Makefile-*-
+# $Header$
+
+# Store the "makeblob" utilities in the scratch directory of this
+# configuration.
+
+# This has to live here in the file make.code.deps instead of in the
+# file make.configuration.deps because only here the location of the
+# source file makeblob.c is known.
+
+TARBALL_DIR = $(SCRATCH_BUILD)
+
+$(CCTK_TARGET): $(TARBALL_DIR)/makeblob.pl $(TARBALL_DIR)/makemetablob.pl
+
+
+
+$(TARBALL_DIR)/makeblob.pl: $(SRCDIR)/util/makeblob.pl
+	cd $(TARBALL_DIR) && cp $^ $@
+
+$(TARBALL_DIR)/makemetablob.pl: $(SRCDIR)/util/makemetablob.pl
+	cd $(TARBALL_DIR) && cp $^ $@
