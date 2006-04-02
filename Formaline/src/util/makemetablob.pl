@@ -26,19 +26,19 @@ EOF
 
 for (my $count = 0; $count <= $#ARGV; ++ $count)
 {
-    printf ("extern struct sourceinfo cactus_source_%s;\n", $ARGV[$count]);
+    printf "extern struct sourceinfo cactus_source_%s;\n", $ARGV[$count];
 }
-printf ("\n");
-printf ("struct sourceinfo const * const cactus_source [] = {");
+printf "\n";
+printf "struct sourceinfo const * const cactus_source [] = {";
 for (my $count = 0; $count <= $#ARGV; ++ $count)
 {
     if ($count != 0)
     {
-        printf (",");
+        printf ",";
     }
-    printf ("\n");
-    printf ("  & cactus_source_%s", $ARGV[$count]);
+    printf "\n";
+    printf "  & cactus_source_%s", $ARGV[$count];
 }
-printf ("\n");
-printf ("};\n");
-printf ("size_t const cactus_source_length = %d;\n", $#ARGV + 1);
+printf "\n";
+printf "};\n";
+printf "size_t const cactus_source_length = %d;\n", $#ARGV + 1;
