@@ -45,7 +45,7 @@ $(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
 $(TARBALL_DIR)/build-id.c:
 	{ \
 	echo '/* This is an auto-generated file -- do not edit */'; \
-	hostname=`hostname`; \
+	hostname=`$(TARBALL_DIR)/gethostname.pl`; \
 	user="$$USER"; \
 	timestamp=`date +%Y%m%d-%H%M%S`; \
 	pid="$$$$"; \

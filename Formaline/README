@@ -39,8 +39,6 @@ IOUtil should not depend on anything
 use a configuration script to amend all thorns' make.code.deps files
 to create the tarballs when the thorns are compiled
 
-use perl instead of C for makeblob and makemetablob
-
 put arrangement name into thorn source name
 use subdirectories for arrangements
 use strings instead of chars for data
@@ -68,6 +66,19 @@ does not have to wait
 
 make max_warn_level and output_info steerable
 
+register with Portal/Announce as information provider
+[Tom/Ian want to make Announce accept a table instead of XMLRPC]
+
+prevent connecting to the wrong simulation, if a simulation is
+outdated, and a new simulation uses the same hostname/port
+combination: the portal can store the job id, and if there is a new
+port id for the same hostname/port combination, deactivate the old
+link.
+
+Rebuild the flesh tarball when the ThornList changes
+
+factor out relaying into its own class
+
 
 
 RSS: add RSS feed
@@ -84,3 +95,10 @@ a simple example is:
     </item>
   </channel>
 </rss>
+
+
+
+Give each value a type.  The type should describe the content, not the
+presentation.  E.g.: "scalar double value, normal range [0..1]", or
+"keyword", or "keyword, possible values are ...", or "integer value,
+value range is [1..10]".

@@ -6,6 +6,8 @@ IMPLEMENTS: Formaline
 # for HTTP_Port()
 USES INCLUDE HEADER: http_Content.h
 
+USES INCLUDE HEADER: Announce.h
+
 
 
 # Return a pointer to an unmodifiable C string

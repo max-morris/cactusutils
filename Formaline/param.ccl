@@ -16,6 +16,14 @@ REAL update_interval "Update interval for the meta information (in seconds)" STE
 
 
 
+# Parameters for creating files containing the build and job ids
+
+BOOLEAN create_id_files "Create files from the build and job ids"
+{
+} yes
+
+
+
 # Parameters for announcing meta information to the portal
 
 BOOLEAN announce_to_portal "Announce meta information to the portal" STEERABLE=always
@@ -37,15 +45,23 @@ STRING portal_username "User name on the portal" STEERABLE=always
   "" :: ""
 } ""
 
-BOOLEAN use_relay_host "Use a relay host for connecting to the portal" STEERABLE=always
-{
-} yes
 
-STRING relay_host "Relay host for connecting to the portal" STEERABLE=always
+
+# Parameters for storing as RDF
+
+BOOLEAN send_as_rdf "Send meta as RDF to a server" STEERABLE=always
 {
-  ".+" :: "host name"
-  ""   :: "try to determine a relay host automatically"
-} ""
+} no
+
+STRING rdf_hostname "RDF server host name" STEERABLE=always
+{
+  "" :: ""
+} "rdf.cct.lsu.edu"
+
+INT rdf_port "RDF server port" STEERABLE=always
+{
+  1:65535 :: ""
+} 9296
 
 
 
@@ -59,6 +75,20 @@ STRING storage_filename "File name for meta information" STEERABLE=always
 {
   "" :: ""
 } "formaline-jar.txt"
+
+
+
+# Parameters for relaying to remote servers
+
+BOOLEAN use_relay_host "Use a relay host for connecting to the portal" STEERABLE=always
+{
+} yes
+
+STRING relay_host "Relay host for connecting to the portal" STEERABLE=always
+{
+  ".+" :: "host name"
+  ""   :: "try to determine a relay host automatically"
+} ""
 
 
 

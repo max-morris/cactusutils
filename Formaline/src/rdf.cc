@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <list>
 #include <string>
 #include <sstream>
 
@@ -18,7 +19,7 @@
 #include "cctk_Parameters.h"
 #include "util_Network.h"
 
-#include "portal.hh"
+#include "rdf.hh"
 
 
 
@@ -32,43 +33,45 @@ namespace Formaline
   static bool
   is_clean_for_shell (char const * str);
   
+  static list<string>
+  parse (string const str);
   
   
-  portal::
-  portal (char const * const id,
-          enum state const st)
+  
+  rdf::
+  rdf (char const * const id,
+       enum state const st)
     : storage (st)
   {
-    DECLARE_CCTK_PARAMETERS;
-    
-    msgbuf << "<?xml version='1.0' ?>"
-           << "<methodCall><methodName>";
-    switch (get_state())
-    {
-    case initial:
-      msgbuf << "cactus.registerApplication";
-      break;
-    case update:
-      msgbuf << "cactus.updateApplication";
-      break;
-    case final:
-      msgbuf << "cactus.deregisterApplication";
-      break;
-    default:
-      assert (0);
-    }
-    msgbuf << "</methodName>"
-           << "<params><param><value><struct>"
-           << "<member>"
-           << "<name>jobid</name>"
-           << "<value><string>" << clean (id) << "</string></value>"
-           << "</member>";
+    msgbuf
+<< "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl
+<< "<!DOCTYPE owl [" << endl
+<< "  <!ENTITY dc 'http://purl.org/dc/elements/1.1/'>" << endl
+<< "  <!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
+<< "  <!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>" << endl
+<< "  <!ENTITY rdf 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>" << endl
+<< "  <!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>" << endl
+<< "" << endl
+<< "  <!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
+<< "  <!ENTITY form 'http://www.aei.mpg.de/form#'>" << endl
+<< "]>" << endl
+<< "<rdf:RDF" << endl
+<< "    xmlns:dc=\"&dc;\"" << endl
+<< "    xmlns:doap=\"&doap;\"" << endl
+<< "    xmlns:foaf=\"&foaf;\"" << endl
+<< "    xmlns:rdf=\"&rdf;\"" << endl
+<< "    xmlns:rdfs=\"&rdfs;\"" << endl
+<< "    xmlns:cctk=\"&cctk;\"" << endl
+<< "    xmlns:form=\"&form;\"" << endl
+<< ">" << endl
+<< endl
+<< "<form:Simulation>" << endl;
   }
 
 
 
-  portal::
-  ~ portal ()
+  rdf::
+  ~ rdf ()
   {
     DECLARE_CCTK_PARAMETERS;
     
@@ -78,8 +81,8 @@ namespace Formaline
     
     
     // Write the data
-    msgbuf << "</struct></value></param></params>";
-    msgbuf << "</methodCall>";
+    msgbuf
+<< "</form:Simulation" << endl;
     string const msgstr = msgbuf.str();
     
     ostringstream databuf;
@@ -113,8 +116,8 @@ namespace Formaline
 << "use Socket;" << endl
 << endl
 << "my $input = '" << datafilename << "';" << endl
-<< "my $host = '" << portal_hostname << "';" << endl
-<< "my $port = '" << portal_port << "';" << endl
+<< "my $host = '" << rdf_hostname << "';" << endl
+<< "my $port = '" << rdf_port << "';" << endl
 << endl
 << "open (my $FH, '<' . $input);" << endl
 << endl
@@ -290,7 +293,7 @@ namespace Formaline
       if (! did_complain)
       {
         did_complain = true;
-        CCTK_WARN (1, "Failed to send data to the portal");
+        CCTK_WARN (1, "Failed to send data to the rdf");
       }
     }
     
@@ -300,7 +303,7 @@ namespace Formaline
 
 
 
-  void portal::
+  void rdf::
   store (char const * const key,
          bool const value)
   {
@@ -310,16 +313,27 @@ namespace Formaline
     keybuf << key;
     ostringstream valuebuf;
     valuebuf << (value ? "true" : "false");
-  
-    msgbuf << "<member>"
-           << "<name>" << clean (keybuf.str()) << "</name>"
-           << "<value><boolean>" << clean (valuebuf.str()) << "</boolean></value>"
-           << "</member>";
+    
+    list<string> const keys = parse (keybuf.str());
+    
+    msgbuf << "  ";
+    for (list<string>::const_iterator lsi = keys.begin();
+         lsi != keys.end(); ++ lsi)
+    {
+      msgbuf << "<form:" << * lsi << ">";
+    }
+    msgbuf << clean (valuebuf.str());
+    for (list<string>::const_reverse_iterator lsi = keys.rbegin();
+         lsi != keys.rend(); ++ lsi)
+    {
+      msgbuf << "</form:" << * lsi << ">";
+    }
+    msgbuf << endl;
   }
 
 
 
-  void portal::
+  void rdf::
   store (char const * const key,
          int const value)
   {
@@ -329,16 +343,27 @@ namespace Formaline
     keybuf << key;
     ostringstream valuebuf;
     valuebuf << value;
-  
-    msgbuf << "<member>"
-           << "<name>" << clean (keybuf.str()) << "</name>"
-           << "<value><int>" << clean (valuebuf.str()) << "</int></value>"
-           << "</member>";
+    
+    list<string> const keys = parse (keybuf.str());
+    
+    msgbuf << "  ";
+    for (list<string>::const_iterator lsi = keys.begin();
+         lsi != keys.end(); ++ lsi)
+    {
+      msgbuf << "<form:" << * lsi << ">";
+    }
+    msgbuf << clean (valuebuf.str());
+    for (list<string>::const_reverse_iterator lsi = keys.rbegin();
+         lsi != keys.rend(); ++ lsi)
+    {
+      msgbuf << "</form:" << * lsi << ">";
+    }
+    msgbuf << endl;
   }
 
 
 
-  void portal::
+  void rdf::
   store (char const * const key,
          double const value)
   {
@@ -348,16 +373,27 @@ namespace Formaline
     keybuf << key;
     ostringstream valuebuf;
     valuebuf << setprecision(15) << value;
-  
-    msgbuf << "<member>"
-           << "<name>" << clean (keybuf.str()) << "</name>"
-           << "<value><double>" << clean (valuebuf.str()) << "</double></value>"
-           << "</member>";
+    
+    list<string> const keys = parse (keybuf.str());
+    
+    msgbuf << "  ";
+    for (list<string>::const_iterator lsi = keys.begin();
+         lsi != keys.end(); ++ lsi)
+    {
+      msgbuf << "<form:" << * lsi << ">";
+    }
+    msgbuf << clean (valuebuf.str());
+    for (list<string>::const_reverse_iterator lsi = keys.rbegin();
+         lsi != keys.rend(); ++ lsi)
+    {
+      msgbuf << "</form:" << * lsi << ">";
+    }
+    msgbuf << endl;
   }
 
 
 
-  void portal::
+  void rdf::
   store (char const * const key,
          char const * const value)
   {
@@ -367,16 +403,27 @@ namespace Formaline
     keybuf << key;
     ostringstream valuebuf;
     valuebuf << value;
-  
-    msgbuf << "<member>"
-           << "<name>" << clean (keybuf.str()) << "</name>"
-           << "<value><string>" << clean (valuebuf.str()) << "</string></value>"
-           << "</member>";
+    
+    list<string> const keys = parse (keybuf.str());
+    
+    msgbuf << "  ";
+    for (list<string>::const_iterator lsi = keys.begin();
+         lsi != keys.end(); ++ lsi)
+    {
+      msgbuf << "<form:" << * lsi << ">";
+    }
+    msgbuf << clean (valuebuf.str());
+    for (list<string>::const_reverse_iterator lsi = keys.rbegin();
+         lsi != keys.rend(); ++ lsi)
+    {
+      msgbuf << "</form:" << * lsi << ">";
+    }
+    msgbuf << endl;
   }
 
 
 
-  string portal::
+  string rdf::
   clean (string const & txt)
     const
   {
@@ -424,7 +471,24 @@ namespace Formaline
     }
     return true;
   }
-
-
-
+  
+  
+  
+  static list<string>
+  parse (string const str)
+  {
+    list<string> strs;
+    size_t p = 0;
+    for (;;) {
+      size_t const s = str.find ("/", p);
+      if (s == string::npos) break;
+      strs.push_back (str.substr (p, s - p));
+      p = s + 1;
+    }
+    strs.push_back (str.substr (p));
+    return strs;
+  }
+  
+  
+  
 } // namespace Formaline

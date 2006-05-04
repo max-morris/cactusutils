@@ -1,21 +1,47 @@
 # make.code.deps file for thorn Formaline   -*-Makefile-*-
 # $Header$
 
-# Store the "makeblob" utilities in the scratch directory of this
-# configuration.
+# Store the utilities in the scratch directory of this configuration.
 
 # This has to live here in the file make.code.deps instead of in the
 # file make.configuration.deps because only here the location of the
-# source file makeblob.c is known.
+# source directory is known.
 
 TARBALL_DIR = $(SCRATCH_BUILD)
 
-$(CCTK_TARGET): $(TARBALL_DIR)/makeblob.pl $(TARBALL_DIR)/makemetablob.pl
+$(CCTK_TARGET): $(TARBALL_DIR)/gethostname.pl $(TARBALL_DIR)/makeblob.pl $(TARBALL_DIR)/makemetablob.pl
 
 
+
+$(TARBALL_DIR)/gethostname.pl: $(SRCDIR)/util/gethostname.pl
+	cd $(TARBALL_DIR) && cp $^ $@
 
 $(TARBALL_DIR)/makeblob.pl: $(SRCDIR)/util/makeblob.pl
 	cd $(TARBALL_DIR) && cp $^ $@
 
 $(TARBALL_DIR)/makemetablob.pl: $(SRCDIR)/util/makemetablob.pl
 	cd $(TARBALL_DIR) && cp $^ $@
+
+
+
+
+
+
+# Unique ID for the build
+$(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+# (force a new ID to be created every time)
+.PHONY: $(TARBALL_DIR)/build-id.c
+$(TARBALL_DIR)/build-id.c:
+	{ \
+	echo '/* This is an auto-generated file -- do not edit */'; \
+	hostname=`hostname`; \
+	user="$$USER"; \
+	timestamp=`date +%Y%m%d-%H%M%S`; \
+	pid="$$$$"; \
+	id="build-$$hostname-$$user-$$timestamp-$$pid"; \
+	echo 'char const build_id[] = "'$$id'";'; \
+	} > $@
+
+.PRECIOUS: $(TARBALL_DIR)/build-id.c $(TARBALL_DIR)/build-id.o

@@ -47,6 +47,7 @@
 #include "file.hh"
 #include "multistorage.hh"
 #include "portal.hh"
+#include "rdf.hh"
 
 
 
@@ -169,6 +170,29 @@ namespace Formaline
   
     create_job_id (cctkGH);
   
+    if (create_id_files) {
+      // Create files from the build id and job id
+      // (This shows what jobs were run in the output directory)
+      {
+        ostringstream filenamebuf;
+        filenamebuf << out_dir << "/formaline-" << build_id;
+        string const filenamestring = filenamebuf.str();
+        ofstream fil;
+        fil.open (filenamestring.c_str(), ios::trunc);
+        fil << build_id << endl;
+        fil.close ();
+      }
+      {
+        ostringstream filenamebuf;
+        filenamebuf << out_dir << "/formaline-" << job_id;
+        string const filenamestring = filenamebuf.str();
+        ofstream fil;
+        fil.open (filenamestring.c_str(), ios::trunc);
+        fil << job_id << endl;
+        fil.close ();
+      }
+    }
+    
     // Announce
     {
 
@@ -177,6 +201,11 @@ namespace Formaline
       if (announce_to_portal)
       {
         stores.add_storage (new portal (job_id, storage::initial));
+      }
+  
+      if (send_as_rdf)
+      {
+        stores.add_storage (new rdf (job_id, storage::initial));
       }
   
       if (store_into_file)
@@ -309,19 +338,19 @@ namespace Formaline
       {
         // PBS logname
         char const * const pbs_logname = getenv ("PBS_LOGNAME");
-        stores.store ("PBS logname", pbs_logname);
+        stores.store ("PBS_LOGNAME", pbs_logname);
       }
       
       {
         // PBS host
         char const * const pbs_host = getenv ("PBS_HOST");
-        stores.store ("PBS host", pbs_host);
+        stores.store ("PBS_HOST", pbs_host);
       }
       
       {
         // PBS workdir
         char const * const pbs_workdir = getenv ("PBS_WORKDIR");
-        stores.store ("PBS workdir", pbs_workdir);
+        stores.store ("PBS_WORKDIR", pbs_workdir);
       }
 
   
@@ -330,7 +359,7 @@ namespace Formaline
   
       {
         char const * const cactus_version = CCTK_FullVersion();
-        stores.store ("Cactus version", cactus_version);
+        stores.store ("Cactus_version", cactus_version);
       }
   
   
@@ -338,24 +367,24 @@ namespace Formaline
       // Compiling
   
       {
-        stores.store ("build id", build_id);
+        stores.store ("build_id", build_id);
       }
   
 #if 0
       {
         char const * const compile_user = CCTK_CompileUser();
-        stores.store ("compile user", compile_user);
+        stores.store ("compile_user", compile_user);
       }
 #endif
   
       {
         char const * const compile_date = CCTK_CompileDate();
-        stores.store ("compile date", compile_date);
+        stores.store ("compile_date", compile_date);
       }
   
       {
         char const * const compile_time = CCTK_CompileTime();
-        stores.store ("compile time", compile_time);
+        stores.store ("compile_time", compile_time);
       }
   
   
@@ -365,31 +394,31 @@ namespace Formaline
 #if 0
       {
         char const * const run_user = CCTK_RunUser();
-        stores.store ("run user", run_user);
+        stores.store ("run_user", run_user);
       }
 #else
       {
         char const * const run_user = getenv ("USER");
-        stores.store ("run user", run_user);
+        stores.store ("run_user", run_user);
       }
 #endif
   
       {
         char run_date [1000];
         Util_CurrentDate (sizeof run_date, run_date);
-        stores.store ("run date", run_date);
+        stores.store ("run_date", run_date);
       }
   
       {
         char run_time [1000];
         Util_CurrentTime (sizeof run_time, run_time);
-        stores.store ("run time", run_time);
+        stores.store ("run_time", run_time);
       }
   
       {
         char run_host [1000];
         Util_GetHostName (run_host, sizeof run_host);
-        stores.store ("run host", run_host);
+        stores.store ("run_host", run_host);
       }
   
       {
@@ -399,7 +428,7 @@ namespace Formaline
         assert (type == PARAMETER_STRING);
         char const * const run_title
           = * static_cast<char const * const *> (ptr);
-        stores.store ("run title", run_title);
+        stores.store ("run_title", run_title);
       }
   
   
@@ -424,7 +453,7 @@ namespace Formaline
       {
         char parameter_filename [10000];
         CCTK_ParameterFilename (sizeof parameter_filename, parameter_filename);
-        stores.store ("parameter filename", parameter_filename);
+        stores.store ("parameter_filename", parameter_filename);
       }
   
       // This is superfluous, and it does not look nice
@@ -440,7 +469,7 @@ namespace Formaline
         fclose (file);
         assert (count < sizeof parameter_file - 1);
         parameter_file [count] = '\0';
-        stores.store ("parameter file", parameter_file);
+        stores.store ("parameter_file", parameter_file);
       }
 #endif
   
@@ -448,11 +477,11 @@ namespace Formaline
         char cwd [10000];
         getcwd (cwd, sizeof cwd);
         cwd [sizeof cwd - 1] = '\0'; // just to be sure
-        stores.store ("current dir", cwd);
+        stores.store ("current_dir", cwd);
       }
 
       {
-        stores.store ("out dir", out_dir);
+        stores.store ("out_dir", out_dir);
       }
   
       {
@@ -669,6 +698,11 @@ namespace Formaline
         stores.add_storage (new portal (job_id, storage::update));
       }
   
+      if (send_as_rdf)
+      {
+        stores.add_storage (new rdf (job_id, storage::initial));
+      }
+      
       if (store_into_file)
       {
         stores.add_storage (new file (job_id, storage::update));
@@ -683,13 +717,13 @@ namespace Formaline
       {
         char run_date [1000];
         Util_CurrentDate (sizeof run_date, run_date);
-        stores.store ("run date", run_date);
+        stores.store ("run_date", run_date);
       }
   
       {
         char run_time [1000];
         Util_CurrentTime (sizeof run_time, run_time);
-        stores.store ("run time", run_time);
+        stores.store ("run_time", run_time);
       }
       
       
@@ -858,6 +892,11 @@ namespace Formaline
         stores.add_storage (new portal (job_id, storage::final));
       }
   
+      if (send_as_rdf)
+      {
+        stores.add_storage (new rdf (job_id, storage::initial));
+      }
+      
       if (store_into_file)
       {
         stores.add_storage (new file (job_id, storage::final));
@@ -872,13 +911,13 @@ namespace Formaline
       {
         char run_date [1000];
         Util_CurrentDate (sizeof run_date, run_date);
-        stores.store ("run date", run_date);
+        stores.store ("run_date", run_date);
       }
   
       {
         char run_time [1000];
         Util_CurrentTime (sizeof run_time, run_time);
-        stores.store ("run time", run_time);
+        stores.store ("run_time", run_time);
       }
       
   
@@ -982,7 +1021,12 @@ namespace Formaline
     {
       stores.add_storage (new portal (job_id, storage::update));
     }
-
+    
+    if (send_as_rdf)
+    {
+      stores.add_storage (new rdf (job_id, storage::initial));
+    }
+    
     if (store_into_file)
     {
       stores.add_storage (new file (job_id, storage::update));
@@ -1053,7 +1097,12 @@ namespace Formaline
     {
       stores.add_storage (new portal (job_id, storage::update));
     }
-
+    
+    if (send_as_rdf)
+    {
+      stores.add_storage (new rdf (job_id, storage::initial));
+    }
+    
     if (store_into_file)
     {
       stores.add_storage (new file (job_id, storage::update));
