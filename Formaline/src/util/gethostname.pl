@@ -17,13 +17,15 @@ my $hostname = `hostname`;
 chomp $hostname;
 
 # Find its host name and all aliases
-my ($name, $aliases, $addrtype, $length, @addrs) = gethostbyname ($hostname);
-
-# Split the aliases
-my @names = ($name, split (' ', $aliases));
+my ($name, $aliases) = gethostbyname ($hostname);
 
 # Use the host name as fallback
-my $goodname = $name;
+my $goodname = $name ? $name : $hostname;
+
+# Split the aliases
+my @names = ();
+push (@names, $name) if ($name);
+push (@names, split (' ', $aliases)) if ($aliases);
 
 # Search for a name that contains a dot
 foreach my $maybename (@names)
