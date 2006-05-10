@@ -30,12 +30,12 @@ BOOLEAN announce_to_portal "Announce meta information to the portal" STEERABLE=a
 {
 } no
 
-STRING portal_hostname "Portal host name" STEERABLE=always
+STRING portal_hostname[5] "Portal host name" STEERABLE=always
 {
   "" :: ""
-} "portal.cct.lsu.edu"
+} ""
 
-INT portal_port "Portal port" STEERABLE=always
+INT portal_port[5] "Portal port" STEERABLE=always
 {
   1:65535 :: ""
 } 9296

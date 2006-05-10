@@ -113,21 +113,59 @@ namespace Formaline
 << "use Socket;" << endl
 << endl
 << "my $input = '" << datafilename << "';" << endl
-<< "my $host = '" << portal_hostname << "';" << endl
-<< "my $port = '" << portal_port << "';" << endl
+<< "my @hostlist = (";
+
+    // NUM_PORTAL_ENTRIES must match the size of the
+    // Formaline::portal_hostname and Formaline::portal_port parameter arrays
+#define NUM_PORTAL_ENTRIES 5
+
+    // add all array parameters which have been set
+    for (int i = 0; i < NUM_PORTAL_ENTRIES; i++) {
+      if (*portal_hostname[i]) {
+        if (i) scriptbuf << "," << endl << "                ";
+        scriptbuf << "'" << portal_hostname[i] << ":" << portal_port[i] << "'";
+      }
+    }
+    scriptbuf
+<< ");" << endl
 << endl
-<< "open (my $FH, '<' . $input);" << endl
+<< "foreach my $entry (@hostlist) {" << endl
+<< "  next if ($entry !~ /^(.+):(\\d+)$/);" << endl
 << endl
-<< "socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
-<< "my $sin = sockaddr_in ($port, inet_aton ($host));" << endl
-<< "connect ($SH, $sin) || exit -1;" << endl
+<< "  my $host = $1;" << endl
+<< "  my $port = $2;" << endl
 << endl
-<< "while (my $line = <$FH>)" << endl
-<< "{" << endl
-<< "  print $SH $line;" << endl
+<< "  my $SH;" << endl
+<< endl
+<< "  # try to use IO::Socket::INET if the module exists;" << endl
+<< "  # it accepts a timeout for its internal connect call" << endl
+<< "  eval 'use IO::Socket::INET;" << endl
+<< endl
+<< "        $SH = IO::Socket::INET->new (PeerAddr => $host," << endl
+<< "                                     PeerPort => $port," << endl
+<< "                                     Proto    => \\'tcp\\'," << endl
+<< "                                     Type     => SOCK_STREAM," << endl
+<< "                                     Timeout  => 0.2);';" << endl
+<< "  # if that failed, fall back to making the standard socket/connect calls" << endl
+<< "  # (with their built-in fixed timeout)" << endl
+<< "  if ($@) {" << endl
+<< "    my $iaddr = inet_aton ($host);" << endl
+<< "    next if (not $iaddr);" << endl
+<< "" << endl
+<< "    socket ($SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
+<< "    my $sin = sockaddr_in ($port, $iaddr);" << endl
+<< "    connect ($SH, $sin) || next;" << endl
+<< "  }" << endl
+<< endl
+<< "  # send off the data" << endl
+<< "  if (defined $SH) {" << endl
+<< "    open (my $FH, '<' . $input);" << endl
+<< "    print $SH $_ while (<$FH>);" << endl
+<< "    close $FH;" << endl
+<< "    close $SH;" << endl
+<< "  }" << endl
 << "}" << endl
-<< endl
-<< "close $SH;" << endl;
+<< endl;
     string const scriptstr = scriptbuf.str();
     
     ostringstream scriptfilenamebuf;
