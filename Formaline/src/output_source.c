@@ -31,32 +31,55 @@ extern size_t const cactus_source_length;
 
 
 
-int
+void
 Formaline_OutputSource (void);
 
+static void*
+SetupGH (tFleshConfig *config, int convergence_level, cGH *cctkGH);
 
 
-int
+
+/***
+ Originally the routine Formaline_OutputSource() used to output the source
+ tarballs into <IO::out_dir>/<Formaline::output_source_subdirectory> itself.
+
+ With the introduction of the parameter IO::require_empty_output_directory
+ this functionality had to be moved to run _after_ IOUtil's setup routine
+ where the test for an empty output directory is performed.
+ ***/
+void
 Formaline_OutputSource (void)
 {
+  const int extension = CCTK_RegisterGHExtension ("Formaline");
+
+  CCTK_RegisterGHExtensionSetupGH (extension, SetupGH);
+}
+
+static void*
+SetupGH (tFleshConfig *config, int convergence_level, cGH *cctkGH)
+{
   DECLARE_CCTK_PARAMETERS;
-  
+
   char filename [10000];
   FILE * file;
   int count;
   struct datainfo const * datainfo;
-  
-  if (CCTK_MyProc (0) != 0) return 0;
-  
+
+  /* avoid compiler warnings about unused parameters */
+  config = config;
+  convergence_level = convergence_level;
+
+  if (CCTK_MyProc (cctkGH) != 0) return NULL;
+
   { CCTK_PRINTSEPARATOR }
   CCTK_VInfo (CCTK_THORNSTRING,
               "Writing tarballs with the Cactus sources into the directory \"%s/%s\"",
               out_dir, output_source_subdirectory);
-  
+
   snprintf (filename, sizeof filename,
             "%s/%s", out_dir, output_source_subdirectory);
   CCTK_CreateDirectory (0755, filename);
-  
+
   /* Output all thorns' tarballs */
   for (count = 0; count < cactus_source_length; ++ count)
   {
@@ -70,12 +93,11 @@ Formaline_OutputSource (void)
          datainfo;
          datainfo = datainfo->next)
     {
-      fwrite (datainfo->data, sizeof * datainfo->data, datainfo->length,
-              file);
+      fwrite (datainfo->data, sizeof * datainfo->data, datainfo->length, file);
     }
     fclose (file);
   }
-  
+
   /* Add a README */
   snprintf (filename, sizeof filename,
             "%s/%s/README", out_dir, output_source_subdirectory);
@@ -99,6 +121,7 @@ Formaline_OutputSource (void)
 "executable can then be found in the \"configs\" subdirectory.\n"
            );
   fclose (file);
-  
-  return 0;
+
+  /* no need to return a GH extension structure */
+  return NULL;
 }
