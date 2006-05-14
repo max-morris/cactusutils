@@ -42,12 +42,17 @@
 #  include <unistd.h>
 #endif
 
+#ifdef CCTK_MPI
+#  include <mpi.h>
+#endif
+
 #include "http_Content.h"
 
 #include "file.hh"
 #include "multistorage.hh"
 #include "portal.hh"
 #include "rdf.hh"
+#include "thornlist.hh"
 
 
 
@@ -258,6 +263,37 @@ namespace Formaline
         Util_GetHostName (run_host, sizeof run_host);
         stores.store ("host", run_host);
       }
+      
+#if 0
+      {
+        char run_host [1000];
+        char (* run_hosts) [1000] = 0;
+        int const nprocs = CCTK_NumProcs (cctkGH);
+        int n;
+        
+        Util_GetHostName (run_host, sizeof run_host);
+        stores.store ("host", run_host);
+        
+        run_hosts = malloc (nprocs * sizeof * run_hosts);
+#ifdef CCTK_MPI
+        // Note: Only the root processor actually comes here
+        MPI_Gather (run_host, sizeof run_host, MPI_CHAR,
+                    run_hosts, sizeof * run_hosts, MPI_CHAR,
+                    0, MPI_COMM_WORLD);
+#else
+        assert (nprocs == 1);
+        strcpy (run_hosts[0], run_host);
+#endif
+        for (n = 0; n < nprocs; ++ n) {
+          ostringstream namebuf;
+          namebuf << "hosts[" << n << "]";
+          string const namestr = namebuf.str();
+          strcpy (run_host, run_hosts[n]);
+          stores.store (namestr.c_str(), run_host);
+        }
+        free (run_hosts);
+      }
+#endif
 
       {
         unsigned long http_port;
@@ -513,6 +549,28 @@ namespace Formaline
           {
             stores.store (key, "inactive");
           }
+        }
+      }
+      
+      {
+        int const numthorns = ThornList::NumThorns ();
+        char const * const * const thornnames = ThornList::ThornNames ();
+        for (int thorn = 0; thorn < numthorns; ++ thorn)
+        {
+          string const combination = thornnames [thorn];
+          size_t const sep = combination.find ('/');
+          assert (sep != string::npos);
+          string const arrangement = combination.substr (0, sep);
+          string const thornname   = combination.substr (sep + 1);
+          
+          ostringstream keybuf;
+          keybuf << "thorns_arrangement/" << thornname;
+          string const keystr = keybuf.str();
+          char const * const key = keystr.c_str();
+          
+          char const * const value = arrangement.c_str();
+          
+          stores.store (key, value);
         }
       }
   

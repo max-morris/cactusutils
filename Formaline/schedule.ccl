@@ -3,7 +3,7 @@
 
 if (output_source)
 {
-  SCHEDULE Formaline_OutputSource AT startup after IOUtil_Startup
+  SCHEDULE Formaline_OutputSource AT wragh
   {
     LANG: C
   } "Output Cactus source tree"

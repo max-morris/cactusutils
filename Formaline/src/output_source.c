@@ -32,32 +32,9 @@ extern size_t const cactus_source_length;
 
 
 void
-Formaline_OutputSource (void);
-
-static void*
-SetupGH (tFleshConfig *config, int convergence_level, cGH *cctkGH);
-
-
-
-/***
- Originally the routine Formaline_OutputSource() used to output the source
- tarballs into <IO::out_dir>/<Formaline::output_source_subdirectory> itself.
-
- With the introduction of the parameter IO::require_empty_output_directory
- this functionality had to be moved to run _after_ IOUtil's setup routine
- where the test for an empty output directory is performed.
- ***/
-void
-Formaline_OutputSource (void)
+Formaline_OutputSource (CCTK_ARGUMENTS)
 {
-  const int extension = CCTK_RegisterGHExtension ("Formaline");
-
-  CCTK_RegisterGHExtensionSetupGH (extension, SetupGH);
-}
-
-static void*
-SetupGH (tFleshConfig *config, int convergence_level, cGH *cctkGH)
-{
+  DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
   char filename [10000];
@@ -65,11 +42,7 @@ SetupGH (tFleshConfig *config, int convergence_level, cGH *cctkGH)
   int count;
   struct datainfo const * datainfo;
 
-  /* avoid compiler warnings about unused parameters */
-  config = config;
-  convergence_level = convergence_level;
-
-  if (CCTK_MyProc (cctkGH) != 0) return NULL;
+  if (CCTK_MyProc (cctkGH) != 0) return;
 
   { CCTK_PRINTSEPARATOR }
   CCTK_VInfo (CCTK_THORNSTRING,
@@ -121,7 +94,4 @@ SetupGH (tFleshConfig *config, int convergence_level, cGH *cctkGH)
 "executable can then be found in the \"configs\" subdirectory.\n"
            );
   fclose (file);
-
-  /* no need to return a GH extension structure */
-  return NULL;
 }

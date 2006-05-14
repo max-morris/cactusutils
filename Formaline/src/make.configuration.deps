@@ -41,8 +41,10 @@ $(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 # (force a new ID to be created every time)
+# (do this after the thorn's library has been build, so that the
+#  script gethostname.pl has been copied to the scratch directory)
 .PHONY: $(TARBALL_DIR)/build-id.c
-$(TARBALL_DIR)/build-id.c:
+$(TARBALL_DIR)/build-id.c: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
 	{ \
 	echo '/* This is an auto-generated file -- do not edit */'; \
 	hostname=`$(TARBALL_DIR)/gethostname.pl`; \
