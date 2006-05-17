@@ -82,7 +82,7 @@ namespace Formaline
     
     // Write the data
     msgbuf
-<< "</form:Simulation" << endl;
+<< "</form:Simulation>" << endl;
     string const msgstr = msgbuf.str();
     
     ostringstream databuf;
@@ -297,7 +297,7 @@ namespace Formaline
       }
     }
     
-    remove (datafilename);
+//    remove (datafilename);
     remove (scriptfilename);
   }
 
