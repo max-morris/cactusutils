@@ -264,11 +264,16 @@ namespace Formaline
         stores.store ("host", run_host);
       }
       
+      {
+        int const nprocs = CCTK_nProcs (cctkGH);
+        stores.store ("n_procs", nprocs);
+      }
+      
 #if 0
       {
         char run_host [1000];
         char (* run_hosts) [1000] = 0;
-        int const nprocs = CCTK_NumProcs (cctkGH);
+        int const nprocs = CCTK_nProcs (cctkGH);
         int n;
         
         Util_GetHostName (run_host, sizeof run_host);
