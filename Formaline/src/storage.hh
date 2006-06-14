@@ -3,6 +3,8 @@
 #ifndef FORMALINE_STORAGE_HH
 #define FORMALINE_STORAGE_HH
 
+#include "cctk.h"
+
 
 
 namespace Formaline
@@ -38,12 +40,12 @@ namespace Formaline
   
     virtual void
     store (char const * key,
-           int value)
+           CCTK_INT value)
       = 0;
   
     virtual void
     store (char const * key,
-           double value)
+           CCTK_REAL value)
       = 0;
   
     virtual void

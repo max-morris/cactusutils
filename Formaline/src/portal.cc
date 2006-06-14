@@ -359,7 +359,7 @@ namespace Formaline
 
   void portal::
   store (char const * const key,
-         int const value)
+         CCTK_INT const value)
   {
     assert (key);
   
@@ -378,14 +378,24 @@ namespace Formaline
 
   void portal::
   store (char const * const key,
-         double const value)
+         CCTK_REAL const value)
   {
     assert (key);
+    
+#if defined CCTK_REAL_PRECISION_4
+    int const prec = 6;
+#elif defined CCTK_REAL_PRECISION_8
+    int const prec = 15;
+#elif defined CCTK_REAL_PRECISION_16
+    int const prec = 30;
+#else
+    int const prec = 15;
+#endif
   
     ostringstream keybuf;
     keybuf << key;
     ostringstream valuebuf;
-    valuebuf << setprecision(15) << value;
+    valuebuf << setprecision(prec) << value;
   
     msgbuf << "<member>"
            << "<name>" << clean (keybuf.str()) << "</name>"

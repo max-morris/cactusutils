@@ -33,11 +33,11 @@ namespace Formaline
   
     virtual void
     store (char const * key,
-           int value);
+           CCTK_INT value);
   
     virtual void
     store (char const * key,
-           double value);
+           CCTK_REAL value);
   
     virtual void
     store (char const * key,

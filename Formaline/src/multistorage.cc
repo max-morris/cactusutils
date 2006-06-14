@@ -63,7 +63,7 @@ namespace Formaline
 
 
   void multistorage::
-  store (char const * const key, int const value)
+  store (char const * const key, CCTK_INT const value)
     const
   {
     for (list<storage *>::const_iterator it = stores.begin();
@@ -77,7 +77,7 @@ namespace Formaline
 
 
   void multistorage::
-  store (char const * const key, double const value)
+  store (char const * const key, CCTK_REAL const value)
     const
   {
     for (list<storage *>::const_iterator it = stores.begin();
