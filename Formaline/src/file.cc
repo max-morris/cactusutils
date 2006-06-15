@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iomanip>
 #include <ios>
+#include <limits>
 #include <sstream>
 
 #include "cctk_Parameters.h"
@@ -96,15 +97,7 @@ namespace Formaline
   {
     assert (key);
     
-#if defined CCTK_REAL_PRECISION_4
-    int const prec = 6;
-#elif defined CCTK_REAL_PRECISION_8
-    int const prec = 15;
-#elif defined CCTK_REAL_PRECISION_16
-    int const prec = 30;
-#else
-    int const prec = 15;
-#endif
+    int const prec = numeric_limits<CCTK_REAL>::digits10;
     
     ostringstream keybuf;
     keybuf << key;
