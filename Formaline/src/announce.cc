@@ -497,8 +497,6 @@ namespace Formaline
         stores.store ("parameter_filename", parameter_filename);
       }
   
-      // This is superfluous, and it does not look nice
-#if 0
       {
         char parameter_filename [10000];
         char parameter_file [1000000];
@@ -512,8 +510,7 @@ namespace Formaline
         parameter_file [count] = '\0';
         stores.store ("parameter_file", parameter_file);
       }
-#endif
-  
+      
       {
         char cwd [10000];
         getcwd (cwd, sizeof cwd);
