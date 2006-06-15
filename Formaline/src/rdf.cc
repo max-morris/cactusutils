@@ -66,7 +66,7 @@ namespace Formaline
 << ">" << endl
 << endl
 << "<form:Simulation>" << endl
-<< "<form:jobid>" << clean (string (id)) << "</form:jobid>" << endl;
+<< "  <form:jobid>" << clean (string (id)) << "</form:jobid>" << endl;
   }
 
 
