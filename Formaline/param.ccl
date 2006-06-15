@@ -53,12 +53,12 @@ BOOLEAN send_as_rdf "Send meta as RDF to a server" STEERABLE=always
 {
 } no
 
-STRING rdf_hostname "RDF server host name" STEERABLE=always
+STRING rdf_hostname[5] "RDF server host name" STEERABLE=always
 {
   "" :: ""
-} "rdf.cct.lsu.edu"
+} ""
 
-INT rdf_port "RDF server port" STEERABLE=always
+INT rdf_port[5] "RDF server port" STEERABLE=always
 {
   1:65535 :: ""
 } 9296
