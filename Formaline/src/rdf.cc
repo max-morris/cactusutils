@@ -49,22 +49,24 @@ namespace Formaline
     msgbuf
 << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl
 << "<!DOCTYPE owl [" << endl
-<< "  <!ENTITY dc 'http://purl.org/dc/elements/1.1/'>" << endl
-<< "  <!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
-<< "  <!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>" << endl
+// << "  <!ENTITY dc 'http://purl.org/dc/elements/1.1/'>" << endl
+// << "  <!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
+// << "  <!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>" << endl
 << "  <!ENTITY rdf 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>" << endl
-<< "  <!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>" << endl
+<< "  <!ENTITY xsd 'http://www.w3.org/2001/XMLSchema#'>" << endl
+// << "  <!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>" << endl
 << "" << endl
-<< "  <!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
+// << "  <!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
 << "  <!ENTITY form 'http://www.aei.mpg.de/form#'>" << endl
 << "]>" << endl
 << "<rdf:RDF" << endl
-<< "    xmlns:dc=\"&dc;\"" << endl
-<< "    xmlns:doap=\"&doap;\"" << endl
-<< "    xmlns:foaf=\"&foaf;\"" << endl
+// << "    xmlns:dc=\"&dc;\"" << endl
+// << "    xmlns:doap=\"&doap;\"" << endl
+// << "    xmlns:foaf=\"&foaf;\"" << endl
 << "    xmlns:rdf=\"&rdf;\"" << endl
-<< "    xmlns:rdfs=\"&rdfs;\"" << endl
-<< "    xmlns:cctk=\"&cctk;\"" << endl
+<< "    xmlns:xsd=\"&xsd;\"" << endl
+// << "    xmlns:rdfs=\"&rdfs;\"" << endl
+// << "    xmlns:cctk=\"&cctk;\"" << endl
 << "    xmlns:form=\"&form;\"" << endl
 << ">" << endl
 << endl
