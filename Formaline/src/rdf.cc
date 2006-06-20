@@ -23,6 +23,8 @@
 #include "rdf.hh"
 
 
+// number of space chars for indentation
+#define NUM_INDENT_SPACES 2
 
 namespace Formaline
 {
@@ -35,8 +37,8 @@ namespace Formaline
   is_clean_for_shell (char const * str);
   
   static list<string>
-  parse (string const str);
-  
+  parse (char const * const key, string& node);
+
   
   
   rdf::
@@ -349,26 +351,29 @@ namespace Formaline
   store (char const * const key,
          bool const value)
   {
-    assert (key);
-  
-    ostringstream keybuf;
-    keybuf << key;
     ostringstream valuebuf;
     valuebuf << (value ? "true" : "false");
     
-    list<string> const keys = parse (keybuf.str());
-    
-    msgbuf << "  ";
+    string node;
+    list<string> const keys = parse (key, node);
+    string indent_string (NUM_INDENT_SPACES, ' ');
     for (list<string>::const_iterator lsi = keys.begin();
          lsi != keys.end(); ++ lsi)
     {
-      msgbuf << "<form:" << * lsi << ">";
+      msgbuf << indent_string << "<form:" << * lsi << ">" << endl;
+      indent_string.append (NUM_INDENT_SPACES, ' ');
     }
-    msgbuf << clean (valuebuf.str());
+
+    msgbuf << indent_string
+           << "<form:" << node << " rdf:datatype=\"&xsd;boolean\">"
+           << clean (valuebuf.str())
+           << "</form:" << node << ">" << endl;
+
     for (list<string>::const_reverse_iterator lsi = keys.rbegin();
          lsi != keys.rend(); ++ lsi)
     {
-      msgbuf << "</form:" << * lsi << ">";
+      indent_string.erase(0, NUM_INDENT_SPACES);
+      msgbuf << indent_string << "</form:" << * lsi << ">" << endl;
     }
     msgbuf << endl;
   }
@@ -379,26 +384,29 @@ namespace Formaline
   store (char const * const key,
          CCTK_INT const value)
   {
-    assert (key);
-  
-    ostringstream keybuf;
-    keybuf << key;
     ostringstream valuebuf;
     valuebuf << value;
     
-    list<string> const keys = parse (keybuf.str());
-    
-    msgbuf << "  ";
+    string node;
+    list<string> const keys = parse (key, node);
+    string indent_string (NUM_INDENT_SPACES, ' ');
     for (list<string>::const_iterator lsi = keys.begin();
          lsi != keys.end(); ++ lsi)
     {
-      msgbuf << "<form:" << * lsi << ">";
+      msgbuf << indent_string << "<form:" << * lsi << ">" << endl;
+      indent_string.append (NUM_INDENT_SPACES, ' ');
     }
-    msgbuf << clean (valuebuf.str());
+
+    msgbuf << indent_string
+           << "<form:" << node << " rdf:datatype=\"&xsd;integer\">"
+           << clean (valuebuf.str())
+           << "</form:" << node << ">" << endl;
+
     for (list<string>::const_reverse_iterator lsi = keys.rbegin();
          lsi != keys.rend(); ++ lsi)
     {
-      msgbuf << "</form:" << * lsi << ">";
+      indent_string.erase(0, NUM_INDENT_SPACES);
+      msgbuf << indent_string << "</form:" << * lsi << ">" << endl;
     }
     msgbuf << endl;
   }
@@ -409,28 +417,30 @@ namespace Formaline
   store (char const * const key,
          CCTK_REAL const value)
   {
-    assert (key);
-    
     int const prec = numeric_limits<CCTK_REAL>::digits10;
-    
-    ostringstream keybuf;
-    keybuf << key;
     ostringstream valuebuf;
     valuebuf << setprecision(prec) << value;
     
-    list<string> const keys = parse (keybuf.str());
-    
-    msgbuf << "  ";
+    string node;
+    list<string> const keys = parse (key, node);
+    string indent_string (NUM_INDENT_SPACES, ' ');
     for (list<string>::const_iterator lsi = keys.begin();
          lsi != keys.end(); ++ lsi)
     {
-      msgbuf << "<form:" << * lsi << ">";
+      msgbuf << indent_string << "<form:" << * lsi << ">" << endl;
+      indent_string.append (NUM_INDENT_SPACES, ' ');
     }
-    msgbuf << clean (valuebuf.str());
+
+    msgbuf << indent_string
+           << "<form:" << node << " rdf:datatype=\"&xsd;double\">"
+           << clean (valuebuf.str())
+           << "</form:" << node << ">" << endl;
+
     for (list<string>::const_reverse_iterator lsi = keys.rbegin();
          lsi != keys.rend(); ++ lsi)
     {
-      msgbuf << "</form:" << * lsi << ">";
+      indent_string.erase(0, NUM_INDENT_SPACES);
+      msgbuf << indent_string << "</form:" << * lsi << ">" << endl;
     }
     msgbuf << endl;
   }
@@ -441,26 +451,30 @@ namespace Formaline
   store (char const * const key,
          char const * const value)
   {
-    assert (key);
-  
-    ostringstream keybuf;
-    keybuf << key;
     ostringstream valuebuf;
     valuebuf << value;
     
-    list<string> const keys = parse (keybuf.str());
-    
-    msgbuf << "  ";
+    string node;
+    list<string> const keys = parse (key, node);
+    string indent_string (NUM_INDENT_SPACES, ' ');
     for (list<string>::const_iterator lsi = keys.begin();
          lsi != keys.end(); ++ lsi)
     {
-      msgbuf << "<form:" << * lsi << ">";
+      msgbuf << indent_string << "<form:" << * lsi << ">" << endl;
+      indent_string.append (NUM_INDENT_SPACES, ' ');
     }
-    msgbuf << clean (valuebuf.str());
+
+    msgbuf << indent_string
+           // FIXME: is <string> the default datatype for RDF objects ??
+           << "<form:" << node << ">" // " rdf:datatype=\"&xsd;string\">"
+           << clean (valuebuf.str())
+           << "</form:" << node << ">" << endl;
+
     for (list<string>::const_reverse_iterator lsi = keys.rbegin();
          lsi != keys.rend(); ++ lsi)
     {
-      msgbuf << "</form:" << * lsi << ">";
+      indent_string.erase(0, NUM_INDENT_SPACES);
+      msgbuf << indent_string << "</form:" << * lsi << ">" << endl;
     }
     msgbuf << endl;
   }
@@ -519,8 +533,10 @@ namespace Formaline
   
   
   static list<string>
-  parse (string const str)
+  parse (char const * const key, string& node)
   {
+    assert (key);
+    string str(key);
     list<string> strs;
     size_t p = 0;
     for (;;) {
@@ -529,7 +545,7 @@ namespace Formaline
       strs.push_back (str.substr (p, s - p));
       p = s + 1;
     }
-    strs.push_back (str.substr (p));
+    node = str.substr (p);
     return strs;
   }
   
