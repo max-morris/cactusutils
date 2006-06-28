@@ -7,6 +7,6 @@ Thorn Maintainer(s) : Cactus Maintainers <cactusmaint@cactuscode.org>
 
 Purpose of the thorn:
 
-Simplistic additional timer information. This thorn provides timer details
-to screen at different iterations and before checkpoints depending on 
-parameter settings.
+Simplistic additional timer information.  This thorn provides timer
+details to screen at different iterations and before checkpoints
+depending on parameter settings.
