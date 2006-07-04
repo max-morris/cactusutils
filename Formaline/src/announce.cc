@@ -266,7 +266,7 @@ namespace Formaline
       
       {
         int const nprocs = CCTK_nProcs (cctkGH);
-        stores.store ("n_procs", nprocs);
+        stores.store ("nprocs", nprocs);
       }
       
 #if 0
@@ -521,13 +521,6 @@ namespace Formaline
       {
         stores.store ("out_dir", out_dir);
       }
-  
-      {
-        int nprocs;
-        nprocs = CCTK_nProcs (cctkGH);
-        stores.store ("nprocs", nprocs);
-      }
-  
   
   
       // All Cactus thorns
@@ -934,6 +927,7 @@ namespace Formaline
   void
   Formaline_AnnounceFinal (CCTK_ARGUMENTS)
   {
+#if 0
     DECLARE_CCTK_ARGUMENTS;
     DECLARE_CCTK_PARAMETERS;
   
@@ -990,6 +984,7 @@ namespace Formaline
       }
 
     } // announce
+#endif
   }
 
 
