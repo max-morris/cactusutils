@@ -176,6 +176,8 @@ namespace Formaline
 << "<!-- list of parameters and their values                          -->" << endl
 << "<!-- ============================================================ -->" << endl;
 
+    const bool list_all_parameters = CCTK_Equals (out_save_parameters, "all");
+
     for (int thorn = 0; thorn < numthorns; ++ thorn) {
       const char* const thornname = CCTK_CompiledThorn (thorn);
 
@@ -207,103 +209,67 @@ namespace Formaline
             = CCTK_ParameterGet (pdata->name, pdata->thorn, NULL);
           assert (pvalue);
 
-          switch (pdata->type) {
-            case PARAMETER_BOOLEAN:
-            {
-//            CCTK_INT default_value;
-//            const int ierr = CCTK_SetBoolean (&default_value, pdata->defval);
-//            assert (! ierr);
-              const CCTK_INT value = * static_cast<const CCTK_INT*> (pvalue);
-//            if (pdata->n_set > 0 or value != default_value) {
-                parambuf << "<cctk:BooleanParameter rdf:about=\"#Parameters/"
-                         << pdata->thorn << "/" << pdata->name << "\">" << endl
-                         << "\t<cctk:hasName>" << fullname
-                         << "</cctk:hasName>" << endl
-                         << "\t<cctk:hasValue>" << (value ? "true" : "false")
-                         << "</cctk:hasValue>" << endl
-                         << "</cctk:BooleanParameter>" << endl;
+          if (pdata->n_set or list_all_parameters) {
+            const char* paramtype;
+            ostringstream paramvaluebuf;
+
+            switch (pdata->type) {
+              case PARAMETER_BOOLEAN:
+              {
+                paramtype = "BooleanParameter";
+                const CCTK_INT v = *static_cast<const CCTK_INT*> (pvalue);
+                paramvaluebuf << (v ? "true" : "false");
               }
-//          }
-            break;
+              break;
 
-            case PARAMETER_INT:
-            {
-//            const CCTK_INT default_value = strtol (pdata->defval, 0, 0);
-              const CCTK_INT value = *static_cast<const CCTK_INT*> (pvalue);
-//            if (pdata->n_set > 0 or value != default_value) {
-                parambuf << "<cctk:IntegerParameter rdf:about=\"#Parameters/"
-                         << pdata->thorn << "/" << pdata->name << "\">" << endl
-                         << "\t<cctk:hasName>" << fullname
-                         << "</cctk:hasName>" << endl
-                         << "\t<cctk:hasValue>" << value
-                         << "</cctk:hasValue>" << endl
-                         << "</cctk:IntegerParameter>" << endl;
-//            }
-            }
-            break;
+              case PARAMETER_INT:
+              {
+                paramtype = "IntegerParameter";
+                const CCTK_INT v = *static_cast<const CCTK_INT*> (pvalue);
+                paramvaluebuf << v;
+              }
+              break;
 
-            case PARAMETER_REAL:
-            {
-//            char* const default_string = strdup (pdata->defval);
-//            assert (default_string);
-              // Convert "d" and "D" to "e" and "E", because this is what
-              // strtod() expects
-//            for (char* p = default_string; *p; ++p) {
-//              switch (*p) {
-//                case 'd': *p = 'e'; break;
-//                case 'D': *p = 'E'; break;
-//              }
-//            }
-//            CCTK_REAL const default_value = strtod (default_string, 0);
-//            free (default_string);
-              CCTK_REAL const value = *static_cast<CCTK_REAL const *> (pvalue);
-//              if (pdata->n_set > 0 or value != default_value) {
-                parambuf << "<cctk:RealParameter rdf:about=\"#Parameters/"
-                         << pdata->thorn << "/" << pdata->name << "\">" << endl
-                         << "\t<cctk:hasName>" << fullname
-                         << "</cctk:hasName>" << endl
-                         << "\t<cctk:hasValue>" << value
-                         << "</cctk:hasValue>" << endl
-                         << "</cctk:RealParameter>" << endl;
-//            }
-            }
-            break;
+              case PARAMETER_REAL:
+              {
+                paramtype = "RealParameter";
+                CCTK_REAL const v = *static_cast<const CCTK_REAL*> (pvalue);
+                paramvaluebuf << v;
+              }
+              break;
 
-            case PARAMETER_KEYWORD:
-            {
-              const char* const value = *static_cast<const char*const*>(pvalue);
-//            if (pdata->n_set > 0 or Util_StrCmpi (pdata->defval, value)) {
-                parambuf << "<cctk:KeywordParameter rdf:about=\"#Parameters/"
-                         << pdata->thorn << "/" << pdata->name << "\">" << endl
-                         << "\t<cctk:hasName>" << fullname
-                         << "</cctk:hasName>" << endl
-                         << "\t<cctk:hasValue>" << clean (value)
-                         << "</cctk:hasValue>" << endl
-                         << "</cctk:KeywordParameter>" << endl;
-//            }
-            }
-            break;
+              case PARAMETER_KEYWORD:
+              {
+                paramtype = "KeywordParameter";
+                const char* const v = *static_cast<const char* const*> (pvalue);
+                paramvaluebuf << clean (v);
+              }
+              break;
 
-            case PARAMETER_STRING:
-            {
-              const char* const value = *static_cast<const char*const*>(pvalue);
-//            if (pdata->n_set > 0 or strcmp (pdata->defval, value)) {
-                parambuf << "<cctk:StringParameter rdf:about=\"#Parameters/"
-                         << pdata->thorn << "/" << pdata->name << "\">" << endl
-                         << "\t<cctk:hasName>" << fullname
-                         << "</cctk:hasName>" << endl
-                         << "\t<cctk:hasValue>" << clean (value)
-                         << "</cctk:hasValue>" << endl
-                         << "</cctk:StringParameter>" << endl;
-//            }
-            }
-            break;
+              case PARAMETER_STRING:
+              {
+                paramtype = "StringParameter";
+                const char* const v = *static_cast<const char* const*> (pvalue);
+                paramvaluebuf << clean (v);
+              }
+              break;
 
-            default: assert (0 and "invalid parameter type");
+              default: assert (0 and "invalid parameter type");
 
-          } // switch (pdata->type)
+            } // switch (pdata->type)
+
+            parambuf << "<cctk:" << paramtype << " rdf:about=\"#Parameters/"
+                     << pdata->thorn << "/" << pdata->name << "\">" << endl
+                     << "\t<cctk:hasName>" << fullname
+                     << "</cctk:hasName>" << endl
+                     << "\t<cctk:hasValue>" << paramvaluebuf.str()
+                     << "</cctk:hasValue>" << endl
+                     << "</cctk:" << paramtype << "Parameter>" << endl;
+
+          } // if (pdata->n_set or list_all_parameters)
 
           free (fullname);
+
         } // loop over all parameters of this thorn
       } // if (is_active)
 
