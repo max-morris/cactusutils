@@ -134,4 +134,5 @@ BOOLEAN output_info "Output info messages?"
 
 SHARES: IO
 
-USES STRING out_dir
+USES STRING  out_dir
+USES KEYWORD out_save_parameters
