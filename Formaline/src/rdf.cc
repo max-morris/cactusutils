@@ -49,6 +49,62 @@ namespace Formaline
     : storage (st)
   {
     //
+    // RDF/XML document header with some namespace definitions
+    //
+    msgbuf <<
+"<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<!DOCTYPE owl [
+\t<!ENTITY rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
+\t<!ENTITY xsd  'http://www.w3.org/2001/XMLSchema#'>
+\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>
+<!--
+\t<!ENTITY dc   'http://purl.org/dc/elements/1.1/'>
+\t<!ENTITY doap 'http://usefulinc.com/ns/doap#'>
+\t<!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>
+\t<!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>
+\t<!ENTITY form 'http://www.aei.mpg.de/form#'>
+-->
+]>
+<rdf:RDF xmlns:rdf=\"&rdf;\"
+\txmlns:xsd=\"&xsd;\"
+\txmlns:cctk=\"&cctk;\"
+>
+<!--
+\txmlns:dc=\"&dc;\"
+\txmlns:doap=\"&doap;\"
+\txmlns:foaf=\"&foaf;\"
+\txmlns:rdfs=\"&rdfs;\"
+\txmlns:form=\"&form;\"
+-->
+
+<!-- lessons learned so far
+  
+     * although it would be better to use rdf:ID as relative URIs for objects
+       (because they are enforced to be unique), rdf:about must be used instead
+       because the value of a relative rdf:about URI may contain special
+       characters (such as '/') whereas rdf:ID must not
+-->
+" << endl << endl;
+
+    //
+    // document contents
+    //
+    switch (get_state()) {
+      case initial: Initial (id); break;
+//      case update:  Update (id);  break;
+//      case final:   Final (id);   break;
+//      default:      assert (0 && "invalid state");
+    }
+
+    //
+    // close the RDF/XML document
+    //
+    msgbuf << endl << "</rdf:RDF>" << endl;
+  }
+
+  void rdf::Initial (const char* id)
+  {
+    //
     // This code was copied over from function Formaline_AnnounceInitial()
     // in announce.cc and modified here to create a valid RDF/XML (rather then
     // an unstructured plain XML document).
@@ -56,36 +112,11 @@ namespace Formaline
     DECLARE_CCTK_PARAMETERS;
 
     if (verbose) CCTK_INFO ("Announcing initial RDF metadata information");
-
-    //
-    // RDF/XML document header with some namespace definitions
-    //
-    msgbuf
-<< "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl
-<< "<!DOCTYPE owl [" << endl
-// << "\t<!ENTITY dc   'http://purl.org/dc/elements/1.1/'>" << endl
-// << "\t<!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
-// << "\t<!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>" << endl
-<< "\t<!ENTITY rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>" << endl
-<< "\t<!ENTITY xsd  'http://www.w3.org/2001/XMLSchema#'>" << endl
-// << "\t<!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>" << endl
-<< "\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
-// << "\t<!ENTITY form 'http://www.aei.mpg.de/form#'>" << endl
-<< "]>" << endl
-<< "<rdf:RDF xmlns:rdf=\"&rdf;\""
-<< endl << "\txmlns:xsd=\"&xsd;\""
-// << endl << "\txmlns:dc=\"&dc;\""
-// << endl << "\txmlns:doap=\"&doap;\""
-// << endl << "\txmlns:foaf=\"&foaf;\""
-// << endl << "\txmlns:rdfs=\"&rdfs;\""
-<< endl << "\txmlns:cctk=\"&cctk;\""
-// << endl << "\txmlns:form=\"&form;\""
-<< endl << ">" << endl << endl;
+    jobID = clean (string (id));
 
     //
     // general metadata with inlined attribute values
     //
-    const string jobID = clean (string (id));
     char hostbuf[512] = "";
     Util_GetHostName (hostbuf, sizeof (hostbuf));
     const string host = clean (hostbuf);
@@ -264,7 +295,7 @@ namespace Formaline
                      << "</cctk:hasName>" << endl
                      << "\t<cctk:hasValue>" << paramvaluebuf.str()
                      << "</cctk:hasValue>" << endl
-                     << "</cctk:" << paramtype << "Parameter>" << endl;
+                     << "</cctk:" << paramtype << ">" << endl;
 
           } // if (pdata->n_set or list_all_parameters)
 
@@ -279,11 +310,6 @@ namespace Formaline
 
     // FIXME: is there some better method for concatenation ??
     msgbuf << endl << parambuf.str();
-
-    //
-    // close the RDF/XML document
-    //
-    msgbuf << endl << "</rdf:RDF>" << endl;
   }
 
 
@@ -302,13 +328,7 @@ namespace Formaline
     string const msgstr = msgbuf.str();
 
     ostringstream databuf;
-    databuf << "POST HTTP/1.0 200\r\n"
-            << "Content-Type: text/xml\r\n"
-            << "Content-Length: " << msgstr.length() << "\r\n"
-            << "\r\n"
-            << msgstr
-            << "\r\n"
-            << "\r\n";
+    databuf << msgstr;
     string const datastr = databuf.str();
 
     ostringstream datafilenamebuf;
@@ -364,7 +384,8 @@ namespace Formaline
 << "                                     PeerPort => $port," << endl
 << "                                     Proto    => \\'tcp\\'," << endl
 << "                                     Type     => SOCK_STREAM," << endl
-<< "                                     Timeout  => 0.2);';" << endl
+<< "                                     Timeout  => 0.2);" << endl
+<< "  ';" << endl
 << "  # if that failed, fall back to making the standard socket/connect calls" << endl
 << "  # (with their built-in fixed timeout)" << endl
 << "  if ($@) {" << endl
@@ -378,8 +399,20 @@ namespace Formaline
 << endl
 << "  # send off the data" << endl
 << "  if (defined $SH) {" << endl
+// currently the RDF server only understands HTTP PUT
+// << "POST HTTP/1.0 200\r\n"
+<< "    my $header = \"PUT /context/CactusSimulations/" << jobID << " HTTP/1.0\\r\\n\" ." << endl
+<< "                 \"Host: $entry\\r\\n\" ." << endl
+<< "                 \"Content-Type: application/rdf+xml\\r\\n\" ." << endl
+<< "                 \"Content-Length: " << msgstr.length() << "\\r\\n\" ." << endl
+<< "                 \"\\r\\n\";" << endl
+<< "    my $footer = \"\\r\\n\\r\\n\";" << endl
+<< endl
 << "    open (my $FH, '<' . $input);" << endl
+<< "    print $SH $header;" << endl
 << "    print $SH $_ while (<$FH>);" << endl
+<< "    print $SH $footer;" << endl
+<< "    # print $_ while (<$SH>);" << endl
 << "    close $FH;" << endl
 << "    close $SH;" << endl
 << "  }" << endl
@@ -551,7 +584,7 @@ namespace Formaline
       }
     }
 
-//    remove (datafilename);
+    remove (datafilename);
     remove (scriptfilename);
   }
 

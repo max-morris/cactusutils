@@ -46,9 +46,15 @@ namespace Formaline
   
   private:
     
+    std::string jobID;
+
     std::string
     clean (std::string const & txt)
       const;
+
+    void Initial (const char* id);
+    void Update (const char* id);
+    void Final (const char* id);
   };
 
 

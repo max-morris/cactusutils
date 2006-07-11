@@ -753,7 +753,7 @@ namespace Formaline
   
       if (send_as_rdf)
       {
-        stores.add_storage (new rdf (job_id, storage::initial));
+        stores.add_storage (new rdf (job_id, storage::update));
       }
       
       if (store_into_file)
@@ -948,7 +948,7 @@ namespace Formaline
   
       if (send_as_rdf)
       {
-        stores.add_storage (new rdf (job_id, storage::initial));
+        stores.add_storage (new rdf (job_id, storage::final));
       }
       
       if (store_into_file)
