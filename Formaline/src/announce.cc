@@ -210,7 +210,7 @@ namespace Formaline
   
       if (send_as_rdf)
       {
-        stores.add_storage (new rdf (job_id, storage::initial));
+        stores.add_storage (new rdf (job_id, storage::initial, cctkGH));
       }
   
       if (store_into_file)
@@ -753,7 +753,7 @@ namespace Formaline
   
       if (send_as_rdf)
       {
-        stores.add_storage (new rdf (job_id, storage::update));
+        stores.add_storage (new rdf (job_id, storage::update, cctkGH));
       }
       
       if (store_into_file)
@@ -927,7 +927,6 @@ namespace Formaline
   void
   Formaline_AnnounceFinal (CCTK_ARGUMENTS)
   {
-#if 0
     DECLARE_CCTK_ARGUMENTS;
     DECLARE_CCTK_PARAMETERS;
   
@@ -948,7 +947,7 @@ namespace Formaline
   
       if (send_as_rdf)
       {
-        stores.add_storage (new rdf (job_id, storage::final));
+        stores.add_storage (new rdf (job_id, storage::final, cctkGH));
       }
       
       if (store_into_file)
@@ -984,7 +983,6 @@ namespace Formaline
       }
 
     } // announce
-#endif
   }
 
 
@@ -1079,7 +1077,7 @@ namespace Formaline
     
     if (send_as_rdf)
     {
-      stores.add_storage (new rdf (job_id, storage::initial));
+      stores.add_storage (new rdf (job_id, storage::update, cctkGH));
     }
     
     if (store_into_file)
@@ -1155,7 +1153,7 @@ namespace Formaline
     
     if (send_as_rdf)
     {
-      stores.add_storage (new rdf (job_id, storage::initial));
+      stores.add_storage (new rdf (job_id, storage::update, cctkGH));
     }
     
     if (store_into_file)

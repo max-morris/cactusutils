@@ -3,6 +3,8 @@
 #ifndef FORMALINE_RDF_HH
 #define FORMALINE_RDF_HH
 
+#include "cctk_Arguments.h"
+
 #include <sstream>
 #include <string>
 
@@ -23,7 +25,8 @@ namespace Formaline
   public:
   
     rdf (char const * id,
-         enum state st);
+         enum state st,
+         CCTK_ARGUMENTS);
   
     virtual
     ~ rdf ();
@@ -52,9 +55,8 @@ namespace Formaline
     clean (std::string const & txt)
       const;
 
-    void Initial (const char* id);
-    void Update (const char* id);
-    void Final (const char* id);
+    void Initial (void);
+    void Update (CCTK_ARGUMENTS);
   };
 
 

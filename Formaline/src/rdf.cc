@@ -45,7 +45,8 @@ namespace Formaline
 
   rdf::
   rdf (char const * const id,
-       enum state const st)
+       enum state const st,
+       CCTK_ARGUMENTS)
     : storage (st)
   {
     //
@@ -86,14 +87,17 @@ namespace Formaline
 -->
 " << endl << endl;
 
+    // set the unique ID for this simulation
+    jobID = clean (string (id));
+
     //
     // document contents
     //
     switch (get_state()) {
-      case initial: Initial (id); break;
-//      case update:  Update (id);  break;
-//      case final:   Final (id);   break;
-//      default:      assert (0 && "invalid state");
+      case initial: Initial (); break;
+      case update: 
+      case final:   Update (cctkGH); break;
+      default:      assert (0 && "invalid state");
     }
 
     //
@@ -102,7 +106,7 @@ namespace Formaline
     msgbuf << endl << "</rdf:RDF>" << endl;
   }
 
-  void rdf::Initial (const char* id)
+  void rdf::Initial (void)
   {
     //
     // This code was copied over from function Formaline_AnnounceInitial()
@@ -112,7 +116,6 @@ namespace Formaline
     DECLARE_CCTK_PARAMETERS;
 
     if (verbose) CCTK_INFO ("Announcing initial RDF metadata information");
-    jobID = clean (string (id));
 
     //
     // general metadata with inlined attribute values
@@ -312,6 +315,46 @@ namespace Formaline
     msgbuf << endl << parambuf.str();
   }
 
+
+  void rdf::Update (CCTK_ARGUMENTS)
+  {
+    DECLARE_CCTK_ARGUMENTS;
+    DECLARE_CCTK_PARAMETERS;
+
+    if (verbose) {
+      if (get_state() == update) {
+        CCTK_INFO ("Announcing RDF metadata information update");
+      } else {
+        CCTK_INFO ("Announcing final RDF metadata information");
+      }
+    }
+
+    char currentdatebuf[32] = "";
+    char currenttimebuf[32] = "";
+    Util_CurrentDate (sizeof (currentdatebuf), currentdatebuf);
+    Util_CurrentTime (sizeof (currenttimebuf), currenttimebuf);
+    ostringstream currentdate;
+    currentdate << currentdatebuf << " " << currenttimebuf;
+
+    // update counter which is incremented for each Update() call
+    static int update_counter = 0;
+    update_counter++;
+
+    msgbuf
+<< "<cctk:Simulation rdf:about=\"#" << jobID << "\">" << endl
+<< "\t<cctk:updatedInfo rdf:resource=\"#UpdateInfo/" << update_counter << "/\">" << endl
+<< "</cctk:Simulation>" << endl << endl
+<< "<cctk:UpdateInfo rdf:about=\"#UpdateInfo/" << update_counter << "\">" << endl
+<< "\t<cctk:iteration>" << cctk_iteration << "</cctk:iteration>" << endl
+<< "\t<cctk:time>" << cctk_time << "</cctk:time>" << endl
+<< "\t<cctk:datetime>" << clean (currentdate.str()) << "</cctk:datetime>" << endl;
+
+    if (get_state() == final) {
+      msgbuf << "\t<cctk:terminated>yes</cctk:terminated>" << endl;
+    }
+
+    msgbuf << "</cctk:UpdateInfo>" << endl;
+  }
 
 
   rdf::
@@ -584,7 +627,7 @@ namespace Formaline
       }
     }
 
-    remove (datafilename);
+//    remove (datafilename);
     remove (scriptfilename);
   }
 
