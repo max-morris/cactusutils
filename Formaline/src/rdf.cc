@@ -342,7 +342,7 @@ namespace Formaline
 
     msgbuf
 << "<cctk:Simulation rdf:about=\"#" << jobID << "\">" << endl
-<< "\t<cctk:updatedInfo rdf:resource=\"#UpdateInfo/" << update_counter << "/\">" << endl
+<< "\t<cctk:updatedInfo rdf:resource=\"#UpdateInfo/" << update_counter << "\"/>" << endl
 << "</cctk:Simulation>" << endl << endl
 << "<cctk:UpdateInfo rdf:about=\"#UpdateInfo/" << update_counter << "\">" << endl
 << "\t<cctk:iteration>" << cctk_iteration << "</cctk:iteration>" << endl
