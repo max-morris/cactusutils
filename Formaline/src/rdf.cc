@@ -413,52 +413,40 @@ namespace Formaline
 << endl
 << "foreach my $entry (@hostlist) {" << endl
 << "  next if ($entry !~ /^(.+):(\\d+)$/);" << endl
-<< endl
 << "  my $host = $1;" << endl
 << "  my $port = $2;" << endl
 << endl
-<< "  my $SH;" << endl
+<< "  my $iaddr = inet_aton ($host);" << endl
+<< "  next if (not $iaddr);" << endl
+<< "  my $sin = sockaddr_in ($port, $iaddr);" << endl
+<< "  socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
+<< "  next if (not defined $SH);" << endl
 << endl
-<< "  # try to use IO::Socket::INET if the module exists;" << endl
-<< "  # it accepts a timeout for its internal connect call" << endl
-<< "  eval 'use IO::Socket::INET;" << endl
+<< "  # set a timeout for the entire interaction with this server" << endl
+<< "  eval {" << endl
+<< "    local $SIG{ALRM} = sub { die 'timeout' };" << endl
+<< "    alarm " << timeout << ";" << endl
 << endl
-<< "        $SH = IO::Socket::INET->new (PeerAddr => $host," << endl
-<< "                                     PeerPort => $port," << endl
-<< "                                     Proto    => \\'tcp\\'," << endl
-<< "                                     Type     => SOCK_STREAM," << endl
-<< "                                     Timeout  => 0.2);" << endl
-<< "  ';" << endl
-<< "  # if that failed, fall back to making the standard socket/connect calls" << endl
-<< "  # (with their built-in fixed timeout)" << endl
-<< "  if ($@) {" << endl
-<< "    my $iaddr = inet_aton ($host);" << endl
-<< "    next if (not $iaddr);" << endl
-<< "" << endl
-<< "    socket ($SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
-<< "    my $sin = sockaddr_in ($port, $iaddr);" << endl
-<< "    connect ($SH, $sin) || next;" << endl
-<< "  }" << endl
-<< endl
-<< "  # send off the data" << endl
-<< "  if (defined $SH) {" << endl
+<< "    # connect and send off the data" << endl
+<< "    if (connect ($SH, $sin)) {" << endl
 // currently the RDF server only understands HTTP PUT
 // << "POST HTTP/1.0 200\r\n"
-<< "    my $header = \"PUT /context/CactusSimulations/" << jobID << " HTTP/1.0\\r\\n\" ." << endl
-<< "                 \"Host: $entry\\r\\n\" ." << endl
-<< "                 \"Content-Type: application/rdf+xml\\r\\n\" ." << endl
-<< "                 \"Content-Length: " << msgstr.length() << "\\r\\n\" ." << endl
-<< "                 \"\\r\\n\";" << endl
-<< "    my $footer = \"\\r\\n\\r\\n\";" << endl
+<< "      my $header = \"PUT /context/CactusSimulations/" << jobID << " HTTP/1.0\\r\\n\" ." << endl
+<< "                   \"Host: $entry\\r\\n\" ." << endl
+<< "                   \"Content-Type: application/rdf+xml\\r\\n\" ." << endl
+<< "                   \"Content-Length: " << msgstr.length() << "\\r\\n\" ." << endl
+<< "                   \"\\r\\n\";" << endl
+<< "      my $footer = \"\\r\\n\\r\\n\";" << endl
 << endl
-<< "    open (my $FH, '<' . $input);" << endl
-<< "    print $SH $header;" << endl
-<< "    print $SH $_ while (<$FH>);" << endl
-<< "    print $SH $footer;" << endl
-<< "    # print $_ while (<$SH>);" << endl
-<< "    close $FH;" << endl
-<< "    close $SH;" << endl
-<< "  }" << endl
+<< "      open (my $FH, '<' . $input);" << endl
+<< "      print $SH $header;" << endl
+<< "      print $SH $_ while (<$FH>);" << endl
+<< "      print $SH $footer;" << endl
+<< "      # print $_ while (<$SH>);" << endl
+<< "      close $FH;" << endl
+<< "    }" << endl
+<< "  };" << endl
+<< "  close $SH;" << endl
 << "}" << endl
 << endl;
     string const scriptstr = scriptbuf.str();
@@ -627,7 +615,7 @@ namespace Formaline
       }
     }
 
-//    remove (datafilename);
+    remove (datafilename);
     remove (scriptfilename);
   }
 

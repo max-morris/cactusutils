@@ -14,6 +14,11 @@ REAL update_interval "Update interval for the meta information (in seconds)" STE
   0:* :: ""
 } 600.0
 
+INT timeout "Timeout for sending meta information to a server (in seconds)" STEERABLE=always
+{
+  1:* :: "a positive value"
+} 10
+
 
 
 # Parameters for creating files containing the build and job ids
