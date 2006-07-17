@@ -52,40 +52,42 @@ namespace Formaline
     //
     // RDF/XML document header with some namespace definitions
     //
-    msgbuf <<
-"<?xml version=\"1.0\" encoding=\"utf-8\"?>
-<!DOCTYPE owl [
-\t<!ENTITY rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>
-\t<!ENTITY xsd  'http://www.w3.org/2001/XMLSchema#'>
-\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>
-<!--
-\t<!ENTITY dc   'http://purl.org/dc/elements/1.1/'>
-\t<!ENTITY doap 'http://usefulinc.com/ns/doap#'>
-\t<!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>
-\t<!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>
-\t<!ENTITY form 'http://www.aei.mpg.de/form#'>
--->
-]>
-<rdf:RDF xmlns:rdf=\"&rdf;\"
-\txmlns:xsd=\"&xsd;\"
-\txmlns:cctk=\"&cctk;\"
->
-<!--
-\txmlns:dc=\"&dc;\"
-\txmlns:doap=\"&doap;\"
-\txmlns:foaf=\"&foaf;\"
-\txmlns:rdfs=\"&rdfs;\"
-\txmlns:form=\"&form;\"
--->
+    msgbuf
+      << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl
+      << "<!DOCTYPE owl [" << endl
+      << "\t<!ENTITY rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>" << endl
+      << "\t<!ENTITY xsd  'http://www.w3.org/2001/XMLSchema#'>" << endl
+      << "\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
+      << "<!--" << endl
+      << "\t<!ENTITY dc   'http://purl.org/dc/elements/1.1/'>" << endl
+      << "\t<!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
+      << "\t<!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>" << endl
+      << "\t<!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>" << endl
+      << "\t<!ENTITY form 'http://www.aei.mpg.de/form#'>" << endl
+      << "-->" << endl
+      << "]>" << endl
+      << "<rdf:RDF xmlns:rdf=\"&rdf;\"" << endl
+      << "\txmlns:xsd=\"&xsd;\"" << endl
+      << "\txmlns:cctk=\"&cctk;\"" << endl
+      << ">" << endl
+      << "<!--" << endl
+      << "\txmlns:dc=\"&dc;\"" << endl
+      << "\txmlns:doap=\"&doap;\"" << endl
+      << "\txmlns:foaf=\"&foaf;\"" << endl
+      << "\txmlns:rdfs=\"&rdfs;\"" << endl
+      << "\txmlns:form=\"&form;\"" << endl
+      << "-->" << endl
+      << "" << endl
+      << "<!-- lessons learned so far" << endl
+      << "  " << endl
+      << "     * although it would be better to use rdf:ID as relative URIs for objects" << endl
+      << "       (because they are enforced to be unique), rdf:about must be used instead" << endl
+      << "       because the value of a relative rdf:about URI may contain special" << endl
+      << "       characters (such as '/') whereas rdf:ID must not" << endl
+      << "-->" << endl
+      << endl
+      << endl;
 
-<!-- lessons learned so far
-  
-     * although it would be better to use rdf:ID as relative URIs for objects
-       (because they are enforced to be unique), rdf:about must be used instead
-       because the value of a relative rdf:about URI may contain special
-       characters (such as '/') whereas rdf:ID must not
--->
-" << endl << endl;
 
     // set the unique ID for this simulation
     jobID = clean (string (id));
@@ -95,7 +97,7 @@ namespace Formaline
     //
     switch (get_state()) {
       case initial: Initial (); break;
-      case update: 
+      case update:
       case final:   Update (cctkGH); break;
       default:      assert (0 && "invalid state");
     }
