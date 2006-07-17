@@ -418,37 +418,36 @@ namespace Formaline
 << "  my $host = $1;" << endl
 << "  my $port = $2;" << endl
 << endl
-<< "  my $iaddr = inet_aton ($host);" << endl
-<< "  next if (not $iaddr);" << endl
-<< "  my $sin = sockaddr_in ($port, $iaddr);" << endl
-<< "  socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
-<< "  next if (not defined $SH);" << endl
-<< endl
 << "  # set a timeout for the entire interaction with this server" << endl
 << "  eval {" << endl
 << "    local $SIG{ALRM} = sub { die 'timeout' };" << endl
 << "    alarm " << timeout << ";" << endl
 << endl
+<< "    my $iaddr = inet_aton ($host);" << endl
+<< "    die \"Couldn't get IP address for '$host'\" if (not $iaddr);" << endl
+<< "    my $sin = sockaddr_in ($port, $iaddr);" << endl
+<< "    socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
+<< "    die 'Couldn\\'t open TCP socket' if (not defined $SH);" << endl
+<< endl
 << "    # connect and send off the data" << endl
-<< "    if (connect ($SH, $sin)) {" << endl
+<< "    die \"Couldn't connect to '$host:$port'\" if ! connect ($SH, $sin);" << endl
 // currently the RDF server only understands HTTP PUT
 // << "POST HTTP/1.0 200\r\n"
-<< "      my $header = \"PUT /context/CactusSimulations/" << jobID << " HTTP/1.0\\r\\n\" ." << endl
-<< "                   \"Host: $entry\\r\\n\" ." << endl
-<< "                   \"Content-Type: application/rdf+xml\\r\\n\" ." << endl
-<< "                   \"Content-Length: " << msgstr.length() << "\\r\\n\" ." << endl
-<< "                   \"\\r\\n\";" << endl
-<< "      my $footer = \"\\r\\n\\r\\n\";" << endl
+<< "    my $header = \"PUT /context/CactusSimulations/" << jobID << " HTTP/1.0\\r\\n\" ." << endl
+<< "                 \"Host: $entry\\r\\n\" ." << endl
+<< "                 \"Content-Type: application/rdf+xml\\r\\n\" ." << endl
+<< "                 \"Content-Length: " << msgstr.length() << "\\r\\n\" ." << endl
+<< "                 \"\\r\\n\";" << endl
+<< "    my $footer = \"\\r\\n\\r\\n\";" << endl
 << endl
-<< "      open (my $FH, '<' . $input);" << endl
-<< "      print $SH $header;" << endl
-<< "      print $SH $_ while (<$FH>);" << endl
-<< "      print $SH $footer;" << endl
-<< "      # print $_ while (<$SH>);" << endl
-<< "      close $FH;" << endl
-<< "    }" << endl
+<< "    open (my $FH, '<' . $input);" << endl
+<< "    print $SH $header;" << endl
+<< "    print $SH $_ while (<$FH>);" << endl
+<< "    print $SH $footer;" << endl
+<< "    # print $_ while (<$SH>);" << endl
+<< "    close $FH;" << endl
+<< "    close $SH;" << endl
 << "  };" << endl
-<< "  close $SH;" << endl
 << "}" << endl
 << endl;
     string const scriptstr = scriptbuf.str();
@@ -617,8 +616,8 @@ namespace Formaline
       }
     }
 
-    remove (datafilename);
-    remove (scriptfilename);
+//    remove (datafilename);
+//    remove (scriptfilename);
   }
 
 
