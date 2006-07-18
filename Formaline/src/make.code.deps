@@ -21,27 +21,3 @@ $(TARBALL_DIR)/makeblob.pl: $(SRCDIR)/util/makeblob.pl
 
 $(TARBALL_DIR)/makemetablob.pl: $(SRCDIR)/util/makemetablob.pl
 	cd $(TARBALL_DIR) && cp $^ $@
-
-
-
-
-
-
-# Unique ID for the build
-$(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
-	$(CC) $(CFLAGS) -c -o $@ $^
-
-# (force a new ID to be created every time)
-.PHONY: $(TARBALL_DIR)/build-id.c
-$(TARBALL_DIR)/build-id.c:
-	{ \
-	echo '/* This is an auto-generated file -- do not edit */'; \
-	hostname=`hostname`; \
-	user="$$USER"; \
-	timestamp=`date +%Y%m%d-%H%M%S`; \
-	pid="$$$$"; \
-	id="build-$$hostname-$$user-$$timestamp-$$pid"; \
-	echo 'char const build_id[] = "'$$id'";'; \
-	} > $@
-
-.PRECIOUS: $(TARBALL_DIR)/build-id.c $(TARBALL_DIR)/build-id.o
