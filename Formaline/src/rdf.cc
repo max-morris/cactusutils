@@ -27,14 +27,15 @@
 #include "rdf.hh"
 
 
-// number of space chars for indentation
-#define NUM_INDENT_SPACES 2
 
 namespace Formaline
 {
 
   using namespace std;
 
+
+  // number of space chars for indentation
+  int const NUM_INDENT_SPACES = 2;
 
   static bool
   is_clean_for_shell (char const * str);
@@ -48,7 +49,7 @@ namespace Formaline
   rdf::
   rdf (char const * const id,
        enum state const st,
-       CCTK_ARGUMENTS)
+       cGH const * const cctkGH)
     : storage (st)
   {
     //
@@ -320,9 +321,8 @@ namespace Formaline
   }
 
 
-  void rdf::Update (CCTK_ARGUMENTS)
+  void rdf::Update (cGH const * const cctkGH)
   {
-    DECLARE_CCTK_ARGUMENTS;
     DECLARE_CCTK_PARAMETERS;
 
     if (verbose) {
@@ -349,8 +349,8 @@ namespace Formaline
 << "\t<cctk:updatedInfo rdf:resource=\"#UpdateInfo/" << update_counter << "\"/>" << endl
 << "</cctk:Simulation>" << endl << endl
 << "<cctk:UpdateInfo rdf:about=\"#UpdateInfo/" << update_counter << "\">" << endl
-<< "\t<cctk:iteration>" << cctk_iteration << "</cctk:iteration>" << endl
-<< "\t<cctk:time>" << cctk_time << "</cctk:time>" << endl
+<< "\t<cctk:iteration>" << cctkGH->cctk_iteration << "</cctk:iteration>" << endl
+<< "\t<cctk:time>" << cctkGH->cctk_time << "</cctk:time>" << endl
 << "\t<cctk:datetime>" << clean (currentdate.str()) << "</cctk:datetime>" << endl;
 
     if (get_state() == final) {
@@ -608,7 +608,7 @@ namespace Formaline
     ostringstream cmdbuf;
     if (my_use_relay_host)
     {
-      cmdbuf << "ssh " << my_relay_host << " '"
+      cmdbuf << "ssh -x " << my_relay_host << " '"
              << "cd " << cwd << " && ";
     }
     cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null";

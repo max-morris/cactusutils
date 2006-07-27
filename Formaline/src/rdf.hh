@@ -3,7 +3,7 @@
 #ifndef FORMALINE_RDF_HH
 #define FORMALINE_RDF_HH
 
-#include "cctk_Arguments.h"
+#include "cctk.h"
 
 #include <sstream>
 #include <string>
@@ -26,7 +26,7 @@ namespace Formaline
   
     rdf (char const * id,
          enum state st,
-         CCTK_ARGUMENTS);
+         cGH const * cctkGH);
   
     virtual
     ~ rdf ();
@@ -56,7 +56,7 @@ namespace Formaline
       const;
 
     void Initial (void);
-    void Update (CCTK_ARGUMENTS);
+    void Update (cGH const * cctkGH);
   };
 
 
