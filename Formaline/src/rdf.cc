@@ -13,6 +13,7 @@
 #include <list>
 #include <string>
 #include <sstream>
+#include <signal.h>
 
 #include <unistd.h>
 
@@ -395,6 +396,7 @@ namespace Formaline
 << endl
 << "use strict;" << endl
 << "use Socket;" << endl
+<< "use POSIX;"  << endl
 << endl
 << "my $input = '" << datafilename << "';" << endl
 << "my @hostlist = (";
@@ -420,7 +422,18 @@ namespace Formaline
 << endl
 << "  # set a timeout for the entire interaction with this server" << endl
 << "  eval {" << endl
+//
+//      use POSIX::sigaction to bypass the Perl interpreter's signal handling
+//      which uses defered signals effectively ignoring user-defined timeouts
+//      for some I/O functions
+//      (see 'man perlipc' and then grep for 'Interrupting IO')
+//
+#if 1
+<< "    POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { die 'timeout' }))" << endl
+<< "      or die \"Error setting SIGALRM handler: $!\";" << endl
+#else
 << "    local $SIG{ALRM} = sub { die 'timeout' };" << endl
+#endif
 << "    alarm " << timeout << ";" << endl
 << endl
 << "    my $iaddr = inet_aton ($host);" << endl
@@ -608,6 +621,12 @@ namespace Formaline
     int const ierr = system (cmd);
     if (ierr != 0)
     {
+      // system(3) blocks SIGINT which otherwise would interrupt the simulation
+      // make sure that this is still so if a user types CTRL-C
+      if (WIFSIGNALED (ierr) and WTERMSIG (ierr) == SIGINT) {
+        raise (SIGINT);
+      }
+
       static bool did_complain = false;
       if (! did_complain)
       {
