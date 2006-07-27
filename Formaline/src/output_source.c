@@ -39,7 +39,7 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
 
   char filename [10000];
   FILE * file;
-  int count;
+  size_t count;
   struct datainfo const * datainfo;
 
   if (CCTK_MyProc (cctkGH) != 0) return;
