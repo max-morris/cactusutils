@@ -13,8 +13,9 @@
 #include <list>
 #include <string>
 #include <sstream>
-#include <signal.h>
 
+#include <signal.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "cctk.h"
