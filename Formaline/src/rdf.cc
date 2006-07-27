@@ -25,6 +25,7 @@
 #include "util_Network.h"
 
 #include "rdf.hh"
+#include "senddata.hh"
 
 
 
@@ -33,12 +34,16 @@ namespace Formaline
 
   using namespace std;
 
+  
 
-  // number of space chars for indentation
+  // NUM_RDF_ENTRIES must match the size of the
+  // Formaline::rdf_hostname and Formaline::rdf_port parameter arrays
+  int const NUM_RDF_ENTRIES = 5;
+
+  // Number of space chars for indentation
   int const NUM_INDENT_SPACES = 2;
 
-  static bool
-  is_clean_for_shell (char const * str);
+
 
 #if 0
   static list<string>
@@ -365,280 +370,36 @@ namespace Formaline
   ~ rdf ()
   {
     DECLARE_CCTK_PARAMETERS;
-
-    string const socket_script = "socket-client.pl";
-    string const socket_data = "socket-data";
-
-
-
-    // Write the data
+    
+    // Create the data string
     string const msgstr = msgbuf.str();
 
-    ostringstream databuf;
-    databuf << msgstr;
-    string const datastr = databuf.str();
-
-    ostringstream datafilenamebuf;
-    datafilenamebuf << out_dir << "/" << socket_data;
-    string const datafilenamestr = datafilenamebuf.str();
-    char const * const datafilename = datafilenamestr.c_str();
-
-    ofstream datafile;
-    datafile.open (datafilename, ios::out);
-    datafile << datastr;
-    datafile.close ();
-
-
-
-    // Write the script
-    ostringstream scriptbuf;
-    scriptbuf
-<< "#! /usr/bin/perl -w" << endl
-<< endl
-<< "use strict;" << endl
-<< "use Socket;" << endl
-<< "use POSIX;"  << endl
-<< endl
-<< "my $input = '" << datafilename << "';" << endl
-<< "my @hostlist = (";
-
-    // NUM_RDF_ENTRIES must match the size of the
-    // Formaline::rdf_hostname and Formaline::rdf_port parameter arrays
-#define NUM_RDF_ENTRIES 5
-
-    // add all array parameters which have been set
+    // Loop over all destinations
     for (int i = 0; i < NUM_RDF_ENTRIES; i++) {
       if (*rdf_hostname[i]) {
-        if (i) scriptbuf << "," << endl << "                ";
-        scriptbuf << "'" << rdf_hostname[i] << ":" << rdf_port[i] << "'";
+
+        // Create the data
+        ostringstream databuf;
+        databuf
+          // currently the RDF server only understands HTTP PUT
+          // << "POST HTTP/1.0 200\r\n"
+<< "PUT /context/CactusSimulations/" << jobID << " HTTP/1.0\r\n"
+<< "Host: " << rdf_hostname[i] << "\r\n"
+<< "Content-Type: application/rdf+xml\r\n"
+<< "Content-Length: " << msgstr.length() << "\r\n"
+<< "\r\n"
+<< msgstr
+<< "\r\n"
+<< "\r\n";
+        string const datastr = databuf.str();
+
+        // Send the data
+        SendData (rdf_hostname[i], rdf_port[i], datastr);
+        
       }
-    }
-    scriptbuf
-<< ");" << endl
-<< endl
-<< "foreach my $entry (@hostlist) {" << endl
-<< "  next if ($entry !~ /^(.+):(\\d+)$/);" << endl
-<< "  my $host = $1;" << endl
-<< "  my $port = $2;" << endl
-<< endl
-<< "  # set a timeout for the entire interaction with this server" << endl
-<< "  eval {" << endl
-//
-//      use POSIX::sigaction to bypass the Perl interpreter's signal handling
-//      which uses defered signals effectively ignoring user-defined timeouts
-//      for some I/O functions
-//      (see 'man perlipc' and then grep for 'Interrupting IO')
-//
-#if 1
-<< "    POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { die 'timeout' }))" << endl
-<< "      or die \"Error setting SIGALRM handler: $!\";" << endl
-#else
-<< "    local $SIG{ALRM} = sub { die 'timeout' };" << endl
-#endif
-<< "    alarm " << timeout << ";" << endl
-<< endl
-<< "    my $iaddr = inet_aton ($host);" << endl
-<< "    die \"Couldn't get IP address for '$host'\" if (not $iaddr);" << endl
-<< "    my $sin = sockaddr_in ($port, $iaddr);" << endl
-<< "    socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
-<< "    die 'Couldn\\'t open TCP socket' if (not defined $SH);" << endl
-<< endl
-<< "    # connect and send off the data" << endl
-<< "    die \"Couldn't connect to '$host:$port'\" if ! connect ($SH, $sin);" << endl
-// currently the RDF server only understands HTTP PUT
-// << "POST HTTP/1.0 200\r\n"
-<< "    my $header = \"PUT /context/CactusSimulations/" << jobID << " HTTP/1.0\\r\\n\" ." << endl
-<< "                 \"Host: $entry\\r\\n\" ." << endl
-<< "                 \"Content-Type: application/rdf+xml\\r\\n\" ." << endl
-<< "                 \"Content-Length: " << msgstr.length() << "\\r\\n\" ." << endl
-<< "                 \"\\r\\n\";" << endl
-<< "    my $footer = \"\\r\\n\\r\\n\";" << endl
-<< endl
-<< "    open (my $FH, '<' . $input);" << endl
-<< "    print $SH $header;" << endl
-<< "    print $SH $_ while (<$FH>);" << endl
-<< "    print $SH $footer;" << endl
-<< "    # print $_ while (<$SH>);" << endl
-<< "    close $FH;" << endl
-<< "    close $SH;" << endl
-<< "  };" << endl
-<< "}" << endl
-<< endl;
-    string const scriptstr = scriptbuf.str();
-
-    ostringstream scriptfilenamebuf;
-    scriptfilenamebuf << out_dir << "/" << socket_script;
-    string const scriptfilenamestr = scriptfilenamebuf.str();
-    char const * const scriptfilename = scriptfilenamestr.c_str();
-
-    ofstream scriptfile;
-    scriptfile.open (scriptfilename, ios::out);
-    scriptfile << scriptstr;
-    scriptfile.close ();
-
-
-
-    // Check that the file name is sane
-    if (! is_clean_for_shell (scriptfilename))
-    {
-      static bool did_complain = false;
-      if (! did_complain)
-      {
-        did_complain = true;
-        CCTK_WARN (1, "Strange character in file name -- not calling system()");
-        return;
-      }
-    }
-
-
-
-    // Make the script executable
-    ostringstream chmodbuf;
-    chmodbuf << "chmod a+x " << scriptfilenamestr
-             << " < /dev/null > /dev/null 2> /dev/null";
-    string const chmodstr = chmodbuf.str();
-    char const * const chmod = chmodstr.c_str();
-    system (chmod);
-
-
-
-    bool my_use_relay_host = use_relay_host;
-    char const * my_relay_host = 0;
-    if (my_use_relay_host)
-    {
-      my_relay_host = relay_host;
-      if (strcmp (my_relay_host, "") == 0)
-      {
-        // Determine a good relay host
-        char run_host [1000];
-        Util_GetHostName (run_host, sizeof run_host);
-        if (strncmp (run_host, "ic", 2) == 0 && strlen (run_host) == 6)
-        {
-          // Peyote or Lagavulin
-          int const node = atoi (run_host + 2);
-          if (node < 192)
-          {
-            // Peyote
-            my_relay_host = "peyote";
-          }
-          else
-          {
-            // Lagavulin
-            my_relay_host = "lagavulin";
-          }
-        }
-        else if (strncmp (run_host, "mike", 4) == 0 && strlen (run_host) == 7)
-        {
-          // Supermike
-          my_use_relay_host = false;
-        }
-        else
-        {
-          // Don't know a good relay host; try without
-          my_use_relay_host = false;
-        }
-
-        if (verbose)
-        {
-          if (my_use_relay_host)
-          {
-            CCTK_VInfo (CCTK_THORNSTRING,
-                        "Using \"%s\" as relay host", my_relay_host);
-          }
-          else
-          {
-            CCTK_INFO ("Announcing without relay host");
-          }
-        }
-      }
-    }
-
-    if (my_use_relay_host)
-    {
-      // Check that the relay host name is sane
-      if (! is_clean_for_shell (my_relay_host))
-      {
-        static bool did_complain = false;
-        if (! did_complain)
-        {
-          did_complain = true;
-          CCTK_WARN (1, "Strange character in relay host name -- not calling system()");
-          return;
-        }
-      }
-    }
-
-
-
-    char cwd[10000];
-    if (my_use_relay_host)
-    {
-      // Get the current directory
-      char * const cwderr = getcwd (cwd, sizeof cwd);
-      if (cwderr == NULL) {
-        static bool did_complain = false;
-        if (! did_complain)
-        {
-          did_complain = true;
-          CCTK_WARN (1, "Cannot determine current working directory");
-          return;
-        }
-      }
-
-      // Check that the current directory name is sane
-      if (! is_clean_for_shell (cwd))
-      {
-        static bool did_complain = false;
-        if (! did_complain)
-        {
-          did_complain = true;
-          CCTK_WARN (1, "Strange character in current directory -- not calling system()");
-          return;
-        }
-      }
-    }
-    else
-    {
-      cwd[0] = '\0';
-    }
-
-
-
-    // Send the data
-    ostringstream cmdbuf;
-    if (my_use_relay_host)
-    {
-      cmdbuf << "ssh -x " << my_relay_host << " '"
-             << "cd " << cwd << " && ";
-    }
-    cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null";
-    if (my_use_relay_host)
-    {
-      cmdbuf << "'";
-    }
-    string const cmdstr = cmdbuf.str();
-    char const * const cmd = cmdstr.c_str();
-
-    int const ierr = system (cmd);
-    if (ierr != 0)
-    {
-      // system(3) blocks SIGINT which otherwise would interrupt the simulation
-      // make sure that this is still so if a user types CTRL-C
-      if (WIFSIGNALED (ierr) and WTERMSIG (ierr) == SIGINT) {
-        raise (SIGINT);
-      }
-
-      static bool did_complain = false;
-      if (! did_complain)
-      {
-        did_complain = true;
-        CCTK_WARN (1, "Failed to send data to the rdf");
-      }
-    }
-
-//    remove (datafilename);
-//    remove (scriptfilename);
+    } // loop over all destinations
   }
+
 
 
   void rdf::
@@ -805,35 +566,6 @@ namespace Formaline
     return buf.str();
   }
 
-
-
-  static bool
-  is_clean_for_shell (char const * const str)
-  {
-    for (char const * p = str; * p; ++ p)
-    {
-      if (! isalnum (* p))
-      {
-        // Allow only certain characters
-        switch (* p)
-        {
-        case '+':
-        case ',':
-        case '-':
-        case '.':
-        case '/':
-        case ':':
-        case '_':
-        case '~':
-          break;
-        default:
-          // We don't like this character
-          return false;
-        }
-      }
-    }
-    return true;
-  }
 
 
 #if 0
