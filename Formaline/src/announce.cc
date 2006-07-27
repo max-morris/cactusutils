@@ -49,6 +49,7 @@
 #include "http_Content.h"
 
 #include "file.hh"
+#include "id.hh"
 #include "multistorage.hh"
 #include "portal.hh"
 #include "rdf.hh"
@@ -58,88 +59,14 @@
 
 namespace Formaline
 {
-
+  
   using namespace std;
-
-
   
-  // Unique build ID
-  extern "C" char const build_id[];
   
-  // Unique job ID
-  static char * job_id = 0;
-
-
-
+  
   // Unique message IDs
   static int warningID = 0;
   static int infoID    = 0;
-
-
-
-  // Create a unique job id
-  static void
-  create_job_id (CCTK_ARGUMENTS)
-  {
-    DECLARE_CCTK_ARGUMENTS;
-    DECLARE_CCTK_PARAMETERS;
-    
-    if (job_id != 0) return;
-    
-    ostringstream job_idbuf;
-    job_idbuf << "job-";
-  
-    char run_host [1000];
-    Util_GetHostName (run_host, sizeof run_host);
-    job_idbuf << run_host;
-  
-    job_idbuf << "-";
-  
-#if 0
-    char const * const run_user = CCTK_RunUser();
-#else
-    char const * const run_user = getenv ("USER");
-#endif
-    job_idbuf << run_user;
-  
-    job_idbuf << "-";
-  
-    time_t const tim = time (0);
-    struct tm * const ptm = gmtime (& tim);
-    job_idbuf << setfill ('0')
-              << setw(4) << 1900 + ptm->tm_year
-              << setw(2) << ptm->tm_mon + 1
-              << setw(2) << ptm->tm_mday
-              << "-"
-              << setw(2) << ptm->tm_hour
-              << setw(2) << ptm->tm_min
-              << setw(2) << ptm->tm_sec;
-  
-    job_idbuf << "-";
-  
-    pid_t const pid = getpid();
-    job_idbuf << pid;
-  
-    string const job_idstr = job_idbuf.str();
-    job_id = strdup (job_idstr.c_str());
-  }
-  
-  
-  
-  extern "C" CCTK_POINTER_TO_CONST
-  Formaline_UniqueBuildID (CCTK_POINTER_TO_CONST const cctkGH_)
-  {
-    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
-    return static_cast<CCTK_POINTER_TO_CONST> (build_id);
-  }
-  
-  extern "C" CCTK_POINTER_TO_CONST
-  Formaline_UniqueSimulationID (CCTK_POINTER_TO_CONST const cctkGH_)
-  {
-    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
-    create_job_id (const_cast<cGH *> (cctkGH));
-    return static_cast<CCTK_POINTER_TO_CONST> (job_id);
-  }
 
 
 
@@ -173,27 +100,25 @@ namespace Formaline
 
     if (verbose) CCTK_INFO ("Announcing initial meta information");
   
-    create_job_id (cctkGH);
-  
     if (create_id_files) {
       // Create files from the build id and job id
       // (This shows what jobs were run in the output directory)
       {
         ostringstream filenamebuf;
-        filenamebuf << out_dir << "/formaline-" << build_id;
+        filenamebuf << out_dir << "/formaline-" << get_build_id (cctkGH);
         string const filenamestring = filenamebuf.str();
         ofstream fil;
         fil.open (filenamestring.c_str(), ios::trunc);
-        fil << build_id << endl;
+        fil << get_build_id (cctkGH) << endl;
         fil.close ();
       }
       {
         ostringstream filenamebuf;
-        filenamebuf << out_dir << "/formaline-" << job_id;
+        filenamebuf << out_dir << "/formaline-" << get_job_id (cctkGH);
         string const filenamestring = filenamebuf.str();
         ofstream fil;
         fil.open (filenamestring.c_str(), ios::trunc);
-        fil << job_id << endl;
+        fil << get_job_id (cctkGH) << endl;
         fil.close ();
       }
     }
@@ -205,17 +130,18 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (job_id, storage::initial));
+        stores.add_storage (new portal (get_job_id (cctkGH), storage::initial));
       }
   
       if (send_as_rdf)
       {
-        stores.add_storage (new rdf (job_id, storage::initial, cctkGH));
+        stores.add_storage
+          (new rdf (get_job_id (cctkGH), storage::initial, cctkGH));
       }
   
       if (store_into_file)
       {
-        stores.add_storage (new file (job_id, storage::initial));
+        stores.add_storage (new file (get_job_id (cctkGH), storage::initial));
       }
   
       if (stores.num_storages() == 0) return;
@@ -408,7 +334,7 @@ namespace Formaline
       // Compiling
   
       {
-        stores.store ("build_id", build_id);
+        stores.store ("build_id", get_build_id (cctkGH));
       }
   
 #if 0
@@ -748,17 +674,18 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (job_id, storage::update));
+        stores.add_storage (new portal (get_job_id (cctkGH), storage::update));
       }
   
       if (send_as_rdf)
       {
-        stores.add_storage (new rdf (job_id, storage::update, cctkGH));
+        stores.add_storage
+          (new rdf (get_job_id (cctkGH), storage::update, cctkGH));
       }
       
       if (store_into_file)
       {
-        stores.add_storage (new file (job_id, storage::update));
+        stores.add_storage (new file (get_job_id (cctkGH), storage::update));
       }
   
       if (stores.num_storages() == 0) return;
@@ -942,17 +869,18 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (job_id, storage::final));
+        stores.add_storage (new portal (get_job_id (cctkGH), storage::final));
       }
   
       if (send_as_rdf)
       {
-        stores.add_storage (new rdf (job_id, storage::final, cctkGH));
+        stores.add_storage
+          (new rdf (get_job_id (cctkGH), storage::final, cctkGH));
       }
       
       if (store_into_file)
       {
-        stores.add_storage (new file (job_id, storage::final));
+        stores.add_storage (new file (get_job_id (cctkGH), storage::final));
       }
   
       if (stores.num_storages() == 0) return;
@@ -1072,17 +1000,18 @@ namespace Formaline
 
     if (announce_to_portal)
     {
-      stores.add_storage (new portal (job_id, storage::update));
+      stores.add_storage (new portal (get_job_id (cctkGH), storage::update));
     }
     
     if (send_as_rdf)
     {
-      stores.add_storage (new rdf (job_id, storage::update, cctkGH));
+      stores.add_storage
+        (new rdf (get_job_id (cctkGH), storage::update, cctkGH));
     }
     
     if (store_into_file)
     {
-      stores.add_storage (new file (job_id, storage::update));
+      stores.add_storage (new file (get_job_id (cctkGH), storage::update));
     }
 
     if (stores.num_storages() == 0) return;
@@ -1141,24 +1070,23 @@ namespace Formaline
     // Only store from the root processor
     if (CCTK_MyProc (cctkGH) != 0) return;
 
-    create_job_id (cctkGH);
-
     // Announce
     multistorage stores;
 
     if (announce_to_portal)
     {
-      stores.add_storage (new portal (job_id, storage::update));
+      stores.add_storage (new portal (get_job_id (cctkGH), storage::update));
     }
     
     if (send_as_rdf)
     {
-      stores.add_storage (new rdf (job_id, storage::update, cctkGH));
+      stores.add_storage
+        (new rdf (get_job_id (cctkGH), storage::update, cctkGH));
     }
     
     if (store_into_file)
     {
-      stores.add_storage (new file (job_id, storage::update));
+      stores.add_storage (new file (get_job_id (cctkGH), storage::update));
     }
 
     if (stores.num_storages() == 0) return;
