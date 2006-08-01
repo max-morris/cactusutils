@@ -167,8 +167,12 @@ namespace Formaline
 << "\t<cctk:hasVersion>"    << version     << "</cctk:hasVersion>" << endl
 << "\t<cctk:compiledAt>"    << compiled_at << "</cctk:compiledAt>" << endl
 << "\t<cctk:startedAt>"     << started_at  << "</cctk:startedAt>" << endl
-<< "\t<cctk:cwd>"           << cwd         << "</cctk:cwd>" << endl
-<< "</cctk:Simulation>" << endl << endl;
+<< "\t<cctk:cwd>"           << cwd         << "</cctk:cwd>" << endl;
+    const char* const pbsJobID = getenv ("PBS_JOBID");
+    if (pbsJobID) {
+      msgbuf << "\t<cctk:pbsJobID>" << clean (pbsJobID) << "</cctk:pbsJobID>" << endl;
+    }
+    msgbuf << "</cctk:Simulation>" << endl << endl;
 
 
     //
