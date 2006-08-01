@@ -239,8 +239,10 @@ namespace Formaline
           assert (ierr >= 0);
           if (ierr > 0) break;
 
+          // brackets in array parameter names have to be escaped
           msgbuf << "\t<cctk:hasParameter rdf:resource=\"#Parameters/"
-                 << pdata->thorn << "/" << pdata->name << "\"/>" << endl;
+                 << pdata->thorn << "/" << cleanURI (pdata->name) << "\"/>"
+                 << endl;
 
           // get its value
           const void* const pvalue
@@ -296,8 +298,10 @@ namespace Formaline
 
             } // switch (pdata->type)
 
+            // brackets in array parameter names have to be escaped
             parambuf << "<cctk:" << paramtype << " rdf:about=\"#Parameters/"
-                     << pdata->thorn << "/" << pdata->name << "\">" << endl
+                     << pdata->thorn << "/" << cleanURI (pdata->name) << "\">"
+                     << endl
                      << "\t<cctk:hasName>" << fullname
                      << "</cctk:hasName>" << endl
                      << "\t<cctk:hasValue>" << paramvaluebuf.str()
@@ -551,6 +555,27 @@ namespace Formaline
       case '<': buf << "&lt;"; break;
       case '&': buf << "&amp;"; break;
       default: buf << * p;
+      }
+    }
+
+    return buf.str();
+  }
+
+
+  string rdf::
+  cleanURI (string const & uri)
+    const
+  {
+    const string allowed_charset ("-_.!~*'()/");
+    ostringstream buf;
+
+    for (string::const_iterator p = uri.begin(); p != uri.end(); ++ p) {
+      if (isalnum (*p) or allowed_charset.find (*p, 0) != string::npos) {
+        buf << *p;
+      } else if (*p == ' ') {
+        buf << '+';
+      } else {
+        buf << '%' << hex << int (*p);
       }
     }
 

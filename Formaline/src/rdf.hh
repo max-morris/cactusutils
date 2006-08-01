@@ -55,6 +55,10 @@ namespace Formaline
     clean (std::string const & txt)
       const;
 
+    std::string
+    cleanURI (std::string const & uri)
+      const;
+
     void Initial (void);
     void Update (cGH const * cctkGH);
   };
