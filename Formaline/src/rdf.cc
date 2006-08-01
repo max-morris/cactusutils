@@ -147,16 +147,10 @@ namespace Formaline
     CCTK_ParameterFilename (sizeof (parfilebuf), parfilebuf);
     const string parfile = clean (parfilebuf);
     const string version = clean (CCTK_FullVersion ());
-    ostringstream compiled_at_buf;
-    compiled_at_buf << CCTK_CompileDate () << " " << CCTK_CompileTime ();
-    const string compiled_at (clean (compiled_at_buf.str()));
-    char rundatebuf[32] = "";
-    char runtimebuf[32] = "";
-    Util_CurrentDate (sizeof (rundatebuf), rundatebuf);
-    Util_CurrentTime (sizeof (runtimebuf), runtimebuf);
-    ostringstream started_at_buf;
-    started_at_buf << rundatebuf << " " << runtimebuf;
-    const string started_at (clean (started_at_buf.str()));
+    const string compiled_at (clean (CCTK_CompileDateTime ()));
+    char* rundatebuf = Util_CurrentDateTime ();
+    const string started_at (clean (rundatebuf));
+    free (rundatebuf);
     char cwdbuf[512];
     getcwd (cwdbuf, sizeof (cwdbuf));
     const string cwd (clean (cwdbuf));
@@ -338,12 +332,9 @@ namespace Formaline
       }
     }
 
-    char currentdatebuf[32] = "";
-    char currenttimebuf[32] = "";
-    Util_CurrentDate (sizeof (currentdatebuf), currentdatebuf);
-    Util_CurrentTime (sizeof (currenttimebuf), currenttimebuf);
-    ostringstream currentdate;
-    currentdate << currentdatebuf << " " << currenttimebuf;
+    char* currentdatebuf = Util_CurrentDateTime ();
+    const string currentdate (clean (currentdatebuf));
+    free (currentdatebuf);
 
     // update counter which is incremented for each Update() call
     static int update_counter = 0;
@@ -356,7 +347,7 @@ namespace Formaline
 << "<cctk:UpdateInfo rdf:about=\"#UpdateInfo/" << update_counter << "\">" << endl
 << "\t<cctk:iteration>" << cctkGH->cctk_iteration << "</cctk:iteration>" << endl
 << "\t<cctk:time>" << cctkGH->cctk_time << "</cctk:time>" << endl
-<< "\t<cctk:datetime>" << clean (currentdate.str()) << "</cctk:datetime>" << endl;
+<< "\t<cctk:datetime>" << currentdate << "</cctk:datetime>" << endl;
 
     if (get_state() == final) {
       msgbuf << "\t<cctk:terminated>yes</cctk:terminated>" << endl;
