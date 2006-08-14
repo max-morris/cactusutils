@@ -117,11 +117,12 @@ namespace Formaline
   
   
   
-  extern "C" void
+  extern "C" int
   Formaline_PrintIDs ()
   {
-    CCTK_VInfo ("Build id: %s", get_build_id (0));
-    CCTK_VInfo ("Simulation id: %s", get_job_id (0));
+    CCTK_VInfo (CCTK_THORNSTRING, "Build id: %s", get_build_id (0));
+    CCTK_VInfo (CCTK_THORNSTRING, "Simulation id: %s", get_job_id (0));
+    return 0;
   }
   
 } // namespace Formaline
