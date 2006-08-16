@@ -123,8 +123,8 @@ namespace Formaline
     
     // Make the script executable
     ostringstream chmodbuf;
-    chmodbuf << "chmod a+x " << scriptfilenamestr
-             << " < /dev/null > /dev/null 2> /dev/null";
+    chmodbuf << "/bin/sh -c 'chmod a+x " << scriptfilenamestr
+             << " < /dev/null > /dev/null 2> /dev/null'";
     string const chmodstr = chmodbuf.str();
     char const * const chmod = chmodstr.c_str();
     system (chmod);
@@ -238,13 +238,15 @@ namespace Formaline
     ostringstream cmdbuf;
     if (my_use_relay_host)
     {
-      cmdbuf << "ssh -x " << my_relay_host << " '"
+      cmdbuf << "ssh -x " << my_relay_host << " \"/bin/sh -c '"
              << "cd " << cwd << " && ";
+    } else {
+      cmdbuf << "/bin/sh -c '";
     }
-    cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null";
+    cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null'";
     if (my_use_relay_host)
     {
-      cmdbuf << "'";
+      cmdbuf << "\"";
     }
     string const cmdstr = cmdbuf.str();
     char const * const cmd = cmdstr.c_str();
