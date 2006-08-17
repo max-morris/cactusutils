@@ -65,8 +65,10 @@ namespace Formaline
       << "<!DOCTYPE owl [" << endl
       << "\t<!ENTITY rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>" << endl
       << "\t<!ENTITY xsd  'http://www.w3.org/2001/XMLSchema#'>" << endl
-      << "\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
+      << "\t<!ENTITY cctk 'http://www.gac-grid.org/project-products/Software/InformationService/InformationProducer/CactusRDFProducer/2006/08/cctk-schema#'>" << endl
 #if 0
+      << "\t<!ENTITY cctk 'http://www.aei.mpg.de/~tradke/cctk-schema#'>" << endl
+      << "\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
       << "<!--" << endl
       << "\t<!ENTITY dc   'http://purl.org/dc/elements/1.1/'>" << endl
       << "\t<!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
@@ -147,9 +149,6 @@ namespace Formaline
     char** argv;
     CCTK_CommandLine (&argv);
     const string executable = clean (argv[0]);
-    char parfilebuf[512] = "";
-    CCTK_ParameterFilename (sizeof (parfilebuf), parfilebuf);
-    const string parfile = clean (parfilebuf);
     const string version = clean (CCTK_FullVersion ());
     const string compiled_at (clean (CCTK_CompileDateTime ()));
     char* rundatebuf = Util_CurrentDateTime ();
@@ -163,24 +162,27 @@ namespace Formaline
     msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\"" << endl
            << "\tcctk:simulationID=\""  << jobID       << "\"" << endl
            << "\tcctk:host=\""          << host        << "\"" << endl
-           << "\tcctk:nProcs=\""        << nprocs      << "\"" << endl
            << "\tcctk:user=\""          << user        << "\"" << endl
            << "\tcctk:executable=\""    << executable  << "\"" << endl
-           << "\tcctk:parameterFile=\"" << parfile     << "\"" << endl
-           << "\tcctk:hasVersion=\""    << version     << "\"" << endl
-           << "\tcctk:compiledAt=\""    << compiled_at << "\"" << endl
-           << "\tcctk:startedAt=\""     << started_at  << "\"" << endl;
+           << "\tcctk:version=\""       << version     << "\"" << endl;
     const char* const pbsJobID = getenv ("PBS_JOBID");
     if (pbsJobID) {
       msgbuf << "\tcctk:pbsJobID=\"" << clean (pbsJobID) << "\"" << endl;
     }
-    msgbuf << "\tcctk:cwd=\"" << cwd         << "\">" << endl;
+    const char* const pbsJobname = getenv ("PBS_JOBNAME");
+    if (pbsJobname) {
+      msgbuf << "\tcctk:pbsJobname=\"" << clean (pbsJobname) << "\"" << endl;
+    }
+    msgbuf << "\tcctk:cwd=\"" << cwd         << "\">" << endl
+           << "\t<cctk:nProcs rdf:datatype=\"&xsd;integer\">" << nprocs << "</cctk:nProcs>" << endl
+           << "\t<cctk:compiledAt rdf:datatype=\"&xsd;datetime\">" << compiled_at << "</cctk:compiledAt>" << endl
+           << "\t<cctk:startedAt rdf:datatype=\"&xsd;datetime\">" << started_at << "</cctk:startedAt>" << endl;
 
     //
     // metadata as references to other nodes
     //
-    msgbuf << "\t<cctk:hasThornList rdf:resource=\"#ThornList\"/>" << endl
-           << "\t<cctk:hasParameterFile rdf:resource=\"#ParameterFile\"/>" << endl
+    msgbuf << "\t<cctk:thornList rdf:resource=\"#ThornList\"/>" << endl
+           << "\t<cctk:parameterFile rdf:resource=\"#ParameterFile\"/>" << endl
            << "</cctk:Simulation>" << endl << endl;
 
     // store thorn list
@@ -189,13 +191,17 @@ namespace Formaline
     for (int thorn = 0; thorn < numthorns; ++ thorn) {
       const char* const thornname = CCTK_CompiledThorn (thorn);
 
-      msgbuf << "\t<cctk:containsThorn rdf:resource=\"#Thorns/"
+      msgbuf << "\t<cctk:thorn rdf:resource=\"#Thorns/"
              << thornname << "\"/>" << endl;
     }
     msgbuf << "</cctk:ThornList>" << endl << endl;
 
-    // store parameter file contents
-    msgbuf << "<cctk:ParameterFile rdf:about=\"#ParameterFile\">" << endl
+    // store parameter file name and contents
+    char parfilebuf[512] = "";
+    CCTK_ParameterFilename (sizeof (parfilebuf), parfilebuf);
+    const string parfile = clean (parfilebuf);
+    msgbuf << "<cctk:ParameterFile rdf:about=\"#ParameterFile\"" << endl
+           << "\tcctk:name=\"" << parfile     << "\">" << endl
            << "\t<rdf:value>";
     ifstream file (parfile.c_str());
     char c;
@@ -225,14 +231,13 @@ namespace Formaline
 
       msgbuf << "<cctk:Thorn rdf:about=\"#Thorns/"
              << thornname << "\"" << endl;
-      msgbuf << "\tcctk:hasName=\"" << thornname << "\"" << endl;
+      msgbuf << "\tcctk:name=\"" << thornname << "\">" << endl;
 
       // skip parameters that belong to inactive thorns
       const bool is_active = CCTK_IsThornActive (thornname);
-      msgbuf << "\tcctk:isActive=\"" << (is_active ? "true" : "false") << "\"";
+      msgbuf << "\t<cctk:active rdf:datatype=\"&xsd;boolean\">" << (is_active ? "true" : "false") << "</cctk:active>" << endl;
 
       // loop over all parameters of this thorn (if it is active)
-      bool node_contains_urirefs = false;
       if (is_active) {
         for (int first = 1; ; first = 0) {
           char* fullname = NULL;
@@ -243,11 +248,8 @@ namespace Formaline
           assert (ierr >= 0);
           if (ierr > 0) break;
 
-          if (not node_contains_urirefs) msgbuf << ">" << endl;
-          node_contains_urirefs = true;
-
           // brackets in array parameter names have to be escaped
-          msgbuf << "\t<cctk:hasParameter rdf:resource=\"#Parameters/"
+          msgbuf << "\t<cctk:parameter rdf:resource=\"#Parameters/"
                  << pdata->thorn << "/" << cleanURI (pdata->name) << "\"/>"
                  << endl;
 
@@ -258,12 +260,14 @@ namespace Formaline
 
           if (pdata->n_set or list_all_parameters) {
             const char* paramtype;
+            const char* paramdatatype;
             ostringstream paramvaluebuf;
 
             switch (pdata->type) {
               case PARAMETER_BOOLEAN:
               {
                 paramtype = "BooleanParameter";
+                paramdatatype = "boolean";
                 const CCTK_INT v = *static_cast<const CCTK_INT*> (pvalue);
                 paramvaluebuf << (v ? "true" : "false");
               }
@@ -272,6 +276,7 @@ namespace Formaline
               case PARAMETER_INT:
               {
                 paramtype = "IntegerParameter";
+                paramdatatype = "integer";
                 const CCTK_INT v = *static_cast<const CCTK_INT*> (pvalue);
                 paramvaluebuf << v;
               }
@@ -280,6 +285,7 @@ namespace Formaline
               case PARAMETER_REAL:
               {
                 paramtype = "RealParameter";
+                paramdatatype = "double";
                 CCTK_REAL const v = *static_cast<const CCTK_REAL*> (pvalue);
                 paramvaluebuf << v;
               }
@@ -288,6 +294,7 @@ namespace Formaline
               case PARAMETER_KEYWORD:
               {
                 paramtype = "KeywordParameter";
+                paramdatatype = "string";
                 const char* const v = *static_cast<const char* const*> (pvalue);
                 paramvaluebuf << clean (v);
               }
@@ -296,6 +303,7 @@ namespace Formaline
               case PARAMETER_STRING:
               {
                 paramtype = "StringParameter";
+                paramdatatype = "string";
                 const char* const v = *static_cast<const char* const*> (pvalue);
                 paramvaluebuf << clean (v);
               }
@@ -309,9 +317,9 @@ namespace Formaline
             parambuf << "<cctk:" << paramtype << " rdf:about=\"#Parameters/"
                      << pdata->thorn << "/" << cleanURI (pdata->name) << "\""
                      << endl
-                     << "\tcctk:hasName=\"" << fullname <<"\"" << endl
-                     << "\tcctk:hasValue=\"" << paramvaluebuf.str() << "\"/>"
-                     << endl;
+                     << "\tcctk:name=\"" << fullname <<"\">" << endl
+                     << "\t<cctk:value rdf:datatype=\"&xsd;" << paramdatatype <<"\">" << paramvaluebuf.str() << "</cctk:value>" << endl
+                     << "</cctk:" << paramtype << ">" << endl;
           } // if (pdata->n_set or list_all_parameters)
 
           free (fullname);
@@ -319,7 +327,7 @@ namespace Formaline
         } // loop over all parameters of this thorn
       } // if (is_active)
 
-      msgbuf << (node_contains_urirefs ? "</cctk:Thorn>" : "/>") << endl;
+      msgbuf << "</cctk:Thorn>" << endl;
 
     } // loop over all thorns
 
@@ -349,17 +357,17 @@ namespace Formaline
 
     msgbuf
 << "<cctk:Simulation rdf:about=\"#" << jobID << "\">" << endl
-<< "\t<cctk:updatedInfo rdf:resource=\"#UpdateInfo/" << update_counter << "\"/>" << endl
+<< "\t<cctk:updateInfo rdf:resource=\"#UpdateInfo/" << update_counter << "\"/>" << endl
 << "</cctk:Simulation>" << endl << endl
-<< "<cctk:UpdateInfo rdf:about=\"#UpdateInfo/" << update_counter << "\"" << endl
-<< "\tcctk:iteration=\"" << cctkGH->cctk_iteration << "\"" << endl
-<< "\tcctk:time=\"" << cctkGH->cctk_time << "\"" << endl
-<< "\tcctk:datetime=\"" << currentdate << "\"";
+<< "<cctk:UpdateInfo rdf:about=\"#UpdateInfo/" << update_counter << "\">" << endl
+<< "\t<cctk:iteration rdf:datatype=\"&xsd;integer\">" << cctkGH->cctk_iteration << "</cctk:iteration>" << endl
+<< "\t<cctk:time rdf:datatype=\"&xsd;double\">" << cctkGH->cctk_time << "</cctk:time>" << endl
+<< "\t<cctk:datetime rdf:datatype=\"&xsd;datetime\">" << currentdate << "</cctk:datetime>" << endl;
 
     if (get_state() == final) {
-      msgbuf << endl << "\tcctk:terminated=\"yes\"";
+      msgbuf << "\t<cctk:terminated rdf:datatype=\"&xsd;boolean\">yes</cctk:terminated>" << endl;
     }
-    msgbuf << "/>" << endl;
+    msgbuf << "</cctk:UpdateInfo>" << endl;
   }
 
 
