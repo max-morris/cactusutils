@@ -36,7 +36,7 @@ namespace Formaline
     DECLARE_CCTK_PARAMETERS;
     
     string const socket_script = "socket-client.pl";
-    string const socket_data = "socket-data";
+    string const socket_data   = "socket-data";
     
     
     
@@ -57,41 +57,39 @@ namespace Formaline
     ostringstream scriptbuf;
     scriptbuf
 << "#! /usr/bin/perl -w" << endl
-<< endl
+<< "" << endl
 << "use strict;" << endl
 << "use Socket;" << endl
 << "use POSIX;"  << endl
-<< endl
+<< "" << endl
 << "my $input = '" << datafilename << "';" << endl
 << "my $host = '" << hostname << "';" << endl
 << "my $port = " << port << ";" << endl
-<< endl
+<< "" << endl
 << "# Set a timeout for the entire interaction with this server" << endl
-<< "eval {" << endl
 //
-//    Use POSIX::sigaction to bypass the Perl interpreter's signal
-//    handling which uses defered signals effectively ignoring
-//    user-defined timeouts for some I/O functions (see 'man
-//    perlipc' and then grep for 'Interrupting IO')
+// Use POSIX::sigaction to bypass the Perl interpreter's signal
+// handling which uses defered signals effectively ignoring
+// user-defined timeouts for some I/O functions (see 'man perlipc' and
+// then grep for 'Interrupting IO')
 //
-<< "  POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { die 'timeout' }))" << endl
-<< "    or die \"Error setting SIGALRM handler: $!\";" << endl
-<< "  alarm " << timeout << ";" << endl
-<< endl
-<< "  my $iaddr = inet_aton ($host);" << endl
-<< "  die \"Couldn't get IP address for '$host'\" if (not $iaddr);" << endl
-<< "  my $sin = sockaddr_in ($port, $iaddr);" << endl
-<< "  socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
-<< "  die 'Couldn\\'t open TCP socket' if (not defined $SH);" << endl
-<< endl
-<< "  # Connect and send off the data" << endl
-<< "  die \"Couldn't connect to '$host:$port'\" if ! connect ($SH, $sin);" << endl
-<< endl
-<< "  open (my $FH, '<' . $input);" << endl
-<< "  print $SH $_ while (<$FH>);" << endl
-<< "  close $FH;" << endl
-<< "  close $SH;" << endl
-<< "}" << endl;
+<< "POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { die 'timeout' }))" << endl
+<< "  or die \"Error setting SIGALRM handler: $!\";" << endl
+<< "alarm " << timeout << ";" << endl
+<< "" << endl
+<< "my $iaddr = inet_aton ($host);" << endl
+<< "die \"Couldn't get IP address for '$host'\" if (not $iaddr);" << endl
+<< "my $sin = sockaddr_in ($port, $iaddr);" << endl
+<< "socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
+<< "die 'Couldn\\'t open TCP socket' if (not defined $SH);" << endl
+<< "" << endl
+<< "# Connect and send off the data" << endl
+<< "die \"Couldn't connect to '$host:$port'\" if ! connect ($SH, $sin);" << endl
+<< "" << endl
+<< "open (my $FH, '<' . $input);" << endl
+<< "print $SH $_ while (<$FH>);" << endl
+<< "close $FH;" << endl
+<< "close $SH;" << endl;
     string const scriptstr = scriptbuf.str();
     
     // Write the script to a file
@@ -229,6 +227,7 @@ namespace Formaline
     }
     else
     {
+      // cwd is not used below
       strcpy (cwd, "");
     }
     
@@ -243,7 +242,9 @@ namespace Formaline
     } else {
       cmdbuf << "/bin/sh -c '";
     }
-    cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null'";
+    // Do not hide stdout and stderr of the script
+    // cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null'";
+    cmdbuf << scriptfilenamestr << " < /dev/null'";
     if (my_use_relay_host)
     {
       cmdbuf << "\"";
@@ -273,10 +274,8 @@ namespace Formaline
     
     
     // Do not remove the files; leave them around for debugging
-#if 0
-    remove (datafilename);
-    remove (scriptfilename);
-#endif
+    // remove (datafilename);
+    // remove (scriptfilename);
     
     return 0;                   // Success
   }
