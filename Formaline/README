@@ -75,30 +75,6 @@ combination: the portal can store the job id, and if there is a new
 port id for the same hostname/port combination, deactivate the old
 link.
 
-Rebuild the flesh tarball when the ThornList changes
+rebuild the flesh tarball when the ThornList changes
 
-factor out relaying into its own class
-
-
-
-RSS: add RSS feed
-see http://blogs.law.harvard.edu/tech/rss for an RSS specification
-a simple example is:
-<rss version="2.0">
-  <channel>
-    <title>...</title>
-    <link>...</link>
-    <description>...</description>
-    <item>
-      <title>...</title>
-      <description>...</description>
-    </item>
-  </channel>
-</rss>
-
-
-
-Give each value a type.  The type should describe the content, not the
-presentation.  E.g.: "scalar double value, normal range [0..1]", or
-"keyword", or "keyword, possible values are ...", or "integer value,
-value range is [1..10]".
+announce in the background, maybe with a larger timeout
