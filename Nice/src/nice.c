@@ -11,9 +11,8 @@
 #include <errno.h>
 #include <sys/resource.h>
 
-void Nice_Renice(CCTK_ARGUMENTS)
+int Nice_Renice(void)
 {
-    /* do not declare the arguments, it will cause an error */
     DECLARE_CCTK_PARAMETERS
 
     int old_nice, new_nice, nice_return_value;
@@ -51,8 +50,6 @@ void Nice_Renice(CCTK_ARGUMENTS)
                                    errno);
         }
         CCTK_WARN(0, "This should never occur.");
-        /* in case CCTK_WARN did not stop the code */
-        CCTK_Abort(cctkGH, 1);
     }
 
     errno=0;
@@ -90,8 +87,7 @@ void Nice_Renice(CCTK_ARGUMENTS)
                                    "setpriority got undocumented errno %d",
                                    errno);
         }
-        /* in case CCTK_WARN did not stop the code */
-        CCTK_Abort(cctkGH, 1);
+        CCTK_WARN(0, "This should never occur.");
     }
 
     errno=0;
@@ -126,8 +122,6 @@ void Nice_Renice(CCTK_ARGUMENTS)
                                    errno);
         }
         CCTK_WARN(0, "This should never occur.");
-        /* in case CCTK_WARN did not stop the code */
-        CCTK_Abort(cctkGH, 1);
     }
 
     if (new_nice == Nice_nice)
@@ -143,5 +137,6 @@ void Nice_Renice(CCTK_ARGUMENTS)
                    new_nice, Nice_nice);
     }
 
+    return 0;
 }
 
