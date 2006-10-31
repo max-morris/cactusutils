@@ -1,6 +1,5 @@
 /* $Header$ */
 
-#include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,7 +60,11 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
               out_dir, output_source_subdirectory,
               cactus_source[count]->thorn);
     file = fopen (filename, "w");
-    assert (file);
+    if (file == NULL)
+    {
+      CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "Failed to open source file '%s' for writing", filename);
+    }
     for (datainfo = cactus_source[count]->first;
          datainfo;
          datainfo = datainfo->next)
@@ -75,7 +78,11 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
   snprintf (filename, sizeof filename,
             "%s/%s/README", out_dir, output_source_subdirectory);
   file = fopen (filename, "w");
-  assert (file);
+  if (file == NULL)
+  {
+    CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "Failed to open README file '%s' for writing", filename);
+  }
   fprintf (file,
 "README for the Cactus source tree\n"
 "\n"
