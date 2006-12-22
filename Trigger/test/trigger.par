@@ -2,7 +2,7 @@
 
 # Required thorns
 
-ActiveThorns = "time MoL pugh pughreduce pughslab boundary cartgrid3d bssn_mol idanalyticbh ioascii ioutil iobasic admcoupling admbase admmacros coordgauge spacemask staticconformal nanchecker coordbase symbase trigger"
+ActiveThorns = "time MoL pugh pughreduce pughslab boundary cartgrid3d bssn_mol idanalyticbh ioascii ioutil iobasic localreduce admcoupling admbase admmacros coordgauge spacemask staticconformal nanchecker coordbase symbase trigger"
 
 # Grid
 
