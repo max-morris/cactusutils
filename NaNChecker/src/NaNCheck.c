@@ -581,14 +581,14 @@ static void PrintWarning (const char *error_type,
 
     if (coords)
     {
-      CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "%s caught in %svariable '%s' at index (%s) with coordinates "
                   "(%s)", error_type, complex_part, fullname, index_string,
                   coord_string);
     }
     else
     {
-      CCTK_VWarn (2, __LINE__, __FILE__, CCTK_THORNSTRING,
+      CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "%s caught in %svariable '%s' at (%s)",
                   error_type, complex_part, fullname, index_string);
     }
