@@ -63,7 +63,7 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
     if (file == NULL)
     {
       CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "Failed to open source file '%s' for writing", filename);
+                  "Failed to open source file \"%s\" for writing", filename);
     }
     for (datainfo = cactus_source[count]->first;
          datainfo;
@@ -81,7 +81,7 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
   if (file == NULL)
   {
     CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                "Failed to open README file '%s' for writing", filename);
+                "Failed to open README file \"%s\" for writing", filename);
   }
   fprintf (file,
 "README for the Cactus source tree\n"
