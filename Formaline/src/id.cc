@@ -1,3 +1,4 @@
+#include <cctype>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -62,6 +63,32 @@ namespace Formaline
     ostringstream job_idbuf;
     job_idbuf << "job-";
     
+    char cparfilename [10000];
+    CCTK_ParameterFilename (sizeof cparfilename, cparfilename);
+    string parfilename (cparfilename);
+    size_t const last_slash = parfilename.rfind ('/');
+    if (last_slash < string::npos) {
+      parfilename.erase (0, last_slash + 1);
+    }
+    size_t const first_dot = parfilename.find ('.');
+    parfilename.erase (first_dot);
+    {
+      string::iterator it = parfilename.begin();
+      while (it != parfilename.end()) {
+        char const c = *it;
+        if (isalnum (c) or c == '+' or c == '-' or c == '.' or c == '_') {
+          // Allow character
+          ++ it;
+        } else {
+          // Remove character
+          it = parfilename.erase (it);
+        }
+      }
+    }
+    job_idbuf << parfilename;
+    
+    job_idbuf << "-";
+    
     char run_host [1000];
     Util_GetHostName (run_host, sizeof run_host);
     job_idbuf << run_host;
@@ -81,11 +108,15 @@ namespace Formaline
     struct tm * const ptm = gmtime (& tim);
     job_idbuf << setfill ('0')
               << setw(4) << 1900 + ptm->tm_year
+              << "."
               << setw(2) << ptm->tm_mon + 1
+              << "."
               << setw(2) << ptm->tm_mday
               << "-"
               << setw(2) << ptm->tm_hour
+              << "."
               << setw(2) << ptm->tm_min
+              << "."
               << setw(2) << ptm->tm_sec;
     
     job_idbuf << "-";
