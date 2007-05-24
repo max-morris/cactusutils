@@ -3,6 +3,7 @@
 #include <cstring>
 #include <fstream>
 #include <list>
+#include <set>
 #include <sstream>
 #include <string>
 
@@ -34,6 +35,18 @@ namespace Formaline
   SendData (string const hostname, int const port, string const data)
   {
     DECLARE_CCTK_PARAMETERS;
+    
+#if 0
+    // pair<,> is not a standard STL class
+    typedef pair <string, int> destination_t;
+    destination_t const destination (hostname, port);
+#endif
+    typedef string destination_t;
+    ostringstream dest_buffer;
+    dest_buffer << hostname << ":" << port;
+    destination_t const destination = dest_buffer.str();
+    
+    
     
     string const socket_script = "socket-client.pl";
     string const socket_data   = "socket-data";
@@ -122,7 +135,7 @@ namespace Formaline
     // Make the script executable
     ostringstream chmodbuf;
     chmodbuf << "/bin/sh -c 'chmod a+x " << scriptfilenamestr
-             << " < /dev/null > /dev/null 2> /dev/null'";
+             << " < /dev/null'";
     string const chmodstr = chmodbuf.str();
     char const * const chmod = chmodstr.c_str();
     system (chmod);
@@ -171,11 +184,15 @@ namespace Formaline
           if (my_use_relay_host)
           {
             CCTK_VInfo (CCTK_THORNSTRING,
-                        "Using \"%s\" as relay host", my_relay_host);
+                        "Using %s as relay host to announce to %s:%d",
+                        my_relay_host,
+                        hostname.c_str(), port);
           }
           else
           {
-            CCTK_INFO ("Announcing without relay host");
+            CCTK_VInfo (CCTK_THORNSTRING,
+                        "Announcing to %s:%d without relay host",
+                        hostname.c_str(), port);
           }
         }
       }
@@ -186,11 +203,14 @@ namespace Formaline
       // Check that the relay host name is sane
       if (! is_clean_for_shell (my_relay_host))
       {
-        static bool did_complain = false;
-        if (! did_complain)
+        static set <destination_t> did_complain;
+        if (did_complain.count(destination) == 0)
         {
-          did_complain = true;
-          CCTK_WARN (1, "Strange character in relay host name -- not calling system()");
+          did_complain.insert (destination);
+          CCTK_VWarn (CCTK_WARN_ALERT,
+                      __LINE__, __FILE__, CCTK_THORNSTRING,
+                      "Strange character in relay host name \"%s\" -- not calling system()",
+                      hostname.c_str());
           return -2;
         }
       }
@@ -237,13 +257,11 @@ namespace Formaline
     ostringstream cmdbuf;
     if (my_use_relay_host)
     {
-      cmdbuf << "ssh -x " << my_relay_host << " \"/bin/sh -c '"
+      cmdbuf << "env DISPLAY= ssh -x " << my_relay_host << " \"/bin/sh -c '"
              << "cd " << cwd << " && ";
     } else {
       cmdbuf << "/bin/sh -c '";
     }
-    // Do not hide stdout and stderr of the script
-    // cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null'";
     cmdbuf << scriptfilenamestr << " < /dev/null'";
     if (my_use_relay_host)
     {
@@ -262,11 +280,13 @@ namespace Formaline
         raise (SIGINT);
       }
       
-      static bool did_complain = false;
-      if (! did_complain)
+      static set <destination_t> did_complain;
+      if (did_complain.count(destination) == 0)
       {
-        did_complain = true;
-        CCTK_WARN (1, "Failed to send data");
+        did_complain.insert (destination);
+        CCTK_VWarn (CCTK_WARN_ALERT,
+                    __LINE__, __FILE__, CCTK_THORNSTRING,
+                    "Failed to send data to %s:%d", hostname.c_str(), port);
         return -5;
       }
     }
