@@ -311,7 +311,7 @@ namespace Formaline
     ostringstream cmdbuf;
     if (my_use_relay_host)
     {
-      cmdbuf << "ssh -x " << my_relay_host << " '"
+      cmdbuf << "env DISPLAY= ssh -x " << my_relay_host << " '"
              << "cd " << cwd << " && ";
     }
     cmdbuf << scriptfilenamestr << " < /dev/null > /dev/null 2> /dev/null";
