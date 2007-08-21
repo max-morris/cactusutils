@@ -5,7 +5,11 @@
 
 # Some configury magic
 
+# Should we use gtar or tar?
 TAR = $(shell gtar --help > /dev/null 2> /dev/null && echo gtar || echo tar)
+
+# Does tr support -C, or should we use -c instead?
+TR_C = $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
 
 
 
@@ -19,14 +23,21 @@ TARBALL_DIR = $(SCRATCH_BUILD)
 #CACTUSLIBLINKLINE += $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source$(LIBNAME_SUFFIX)
 CACTUSLIBLINKLINE += -l$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source
 
-$(EXEDIR)$(DIRSEP)$(EXE): $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source$(LIBNAME_SUFFIX)
+FRM-LIB = $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source$(LIBNAME_SUFFIX)
 
-$(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source$(LIBNAME_SUFFIX): $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DIR)/build-id.o $(TARBALL_DIR)/cactus-flesh-source.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.o,$(notdir $(THORNS)))
-	$(AR) $(ARFLAGS) $@ $^
+$(EXEDIR)$(DIRSEP)$(EXE): $(FRM-LIB)
+
+FRM-OBJS = $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DIR)/build-id.o $(TARBALL_DIR)/cactus-flesh-source.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.o,$(notdir $(THORNS)))
+
+$(FRM-LIB): $(FRM-OBJS)
+#	$(AR) $(ARFLAGS) $@ $^
+	$(MAKE) -f $(MAKE_DIR)/make.configuration $(FRM-LIB).objectlist
+	xargs -n $(FRM-OBJS-words-max) $(AR) $(ARFLAGS) $@ < $(FRM-LIB).objectlist
+	$(RM) $(FRM-LIB).objectlist
 	if test "x$(USE_RANLIB)" = "xyes" ; then $(RANLIB) $(RANLIBFLAGS) $@ ; fi
 	@echo $(DIVIDER)
 
-.PRECIOUS: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus-source$(LIBNAME_SUFFIX)
+.PRECIOUS: $(FRM-LIB)
 
 ## Cache optimisation:
 ## Build the thorns' tarballs already while the thorns are compiled
@@ -47,11 +58,12 @@ $(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
 $(TARBALL_DIR)/build-id.c: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
 	{ \
 	echo '/* This is an auto-generated file -- do not edit */'; \
+	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'`; \
 	hostname=`$(TARBALL_DIR)/gethostname.pl`; \
 	user="$$USER"; \
-	timestamp=`date +%Y%m%d-%H%M%S`; \
+	timestamp=`date -u +%Y.%m.%d-%H.%M.%S`; \
 	pid="$$$$"; \
-	id="build-$$hostname-$$user-$$timestamp-$$pid"; \
+	id="build-$$config-$$hostname-$$user-$$timestamp-$$pid"; \
 	echo 'char const build_id[] = "'$$id'";'; \
 	} > $@
 
@@ -80,7 +92,7 @@ $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(pats
 ###############################################################################
 
 $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
-	@echo "Creating tarball for the flesh"
+	@echo "Creating Formaline tarball for the flesh"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
@@ -125,7 +137,7 @@ $(TARBALL_DIR)/cactus-flesh-source.ccldeps:
 ###############################################################################
 
 $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
-	@echo "Creating tarball for thorn $(@:$(TARBALL_DIR)/cactus-thorn-source-%.o=%)"
+	@echo "Creating Formaline tarball for thorn $(@:$(TARBALL_DIR)/cactus-thorn-source-%.o=%)"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
@@ -162,3 +174,48 @@ $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps:
 	} > $@
 
 .PRECIOUS: $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps $(TARBALL_DIR)/cactus-thorn-source-%.files $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(TARBALL_DIR)/cactus-thorn-source-%.c $(TARBALL_DIR)/cactus-thorn-source-%.o
+
+
+
+###############################################################################
+# Helpers
+###############################################################################
+
+# Create a file containing the names of all object files.
+
+# Since the list may be too long to be passed to a shell, it is split
+# into a set of rules which add lines to a file.  This file can later
+# be used via xargs.
+
+FRM-OBJS-words = $(words $(FRM-OBJS))
+FRM-OBJS-words-max = 100
+
+ifeq ($(shell test $(FRM-OBJS-words) -le $(FRM-OBJS-words-max) && echo 1), 1)
+
+# The list is short.  Create the file directly, which is faster.
+
+.PHONY: $(FRM-LIB).objectlist
+$(FRM-LIB).objectlist:
+	echo $(FRM-OBJS) > $(FRM-LIB).objectlist
+
+else
+
+# The list is long.  Create the file via a set of rules, one rule per
+# object file.
+
+FRM-OBJS-added = $(FRM-OBJS:%=%.added)
+
+.PHONY: $(FRM-LIB).objectlist
+$(FRM-LIB).objectlist: $(FRM-OBJS-added)
+
+# Truncate the file
+.PHONY: $(FRM-LIB).objectlist.create
+$(FRM-LIB).objectlist.create:
+	: > $(FRM-LIB).objectlist
+
+# Add a line to the file
+.PHONY: $(FRM-OBJS-added)
+$(FRM-OBJS-added): $(FRM-LIB).objectlist.create
+	echo $(@:%.added=%) >> $(FRM-LIB).objectlist
+
+endif
