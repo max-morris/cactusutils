@@ -1,9 +1,12 @@
 #include <cctype>
+#include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <string>
 
 #include "cctk.h"
+#include "cctk_Parameters.h"
 #include "util_Network.h"
 
 // IRIX wants this before <time.h>
@@ -51,17 +54,56 @@ namespace Formaline
   
   
   
-  // Get a unique job id
+  // Get a unique simulation id
   char const *
-  get_job_id (cGH const * const cctkGH)
+  get_simulation_id (cGH const * const cctkGH)
   {
-    // Unique job ID
-    static char * job_id = 0;
+    // Unique simulation ID
+    static char * simulation_id = 0;
     
-    if (job_id != 0) return job_id;
+    if (simulation_id != 0) return simulation_id;
     
-    ostringstream job_idbuf;
-    job_idbuf << "job-";
+    string simulation_id_str;
+    struct not_good { };
+    try {
+      // Expect the simulation ID id a file in the parent directory of
+      // the output directory
+      DECLARE_CCTK_PARAMETERS;
+      string const out_dir_str = string (out_dir);
+      size_t const last_nonslash = out_dir_str.find_last_not_of ("/");
+      if (last_nonslash == string::npos) throw (not_good());
+      size_t const last_slash = out_dir_str.rfind ('/', last_nonslash);
+      size_t const len = last_slash == string::npos ? 0 : last_slash + 1;
+      string const simulation_id_filename =
+        out_dir_str.substr (0, len) + string("SIMULATION_ID");
+      
+      // Open file and read content
+      ifstream simulation_id_file (simulation_id_filename.c_str());
+      if (not simulation_id_file) throw (not_good());
+      getline (simulation_id_file, simulation_id_str);
+      if (simulation_id_str.empty()) throw (not_good());
+    } catch (not_good) {
+      // Use the run ID as fallback if no simulation ID can be found
+      simulation_id_str = string (get_run_id (cctkGH));
+    }
+    
+    simulation_id = strdup (simulation_id_str.c_str());
+    return simulation_id;
+  }
+  
+  
+  
+  // Get a unique run id
+  char const *
+  get_run_id (cGH const * const cctkGH)
+  {
+    // Unique run ID
+    static char * run_id = 0;
+    
+    if (run_id != 0) return run_id;
+    
+    ostringstream run_idbuf;
+    run_idbuf << "run-";
     
     char cparfilename [10000];
     CCTK_ParameterFilename (sizeof cparfilename, cparfilename);
@@ -85,28 +127,28 @@ namespace Formaline
         }
       }
     }
-    job_idbuf << parfilename;
+    run_idbuf << parfilename;
     
-    job_idbuf << "-";
+    run_idbuf << "-";
     
     char run_host [1000];
     Util_GetHostName (run_host, sizeof run_host);
-    job_idbuf << run_host;
+    run_idbuf << run_host;
     
-    job_idbuf << "-";
+    run_idbuf << "-";
     
 #if 0
     char const * const run_user = CCTK_RunUser();
 #else
     char const * const run_user = getenv ("USER");
 #endif
-    job_idbuf << run_user;
+    run_idbuf << run_user;
     
-    job_idbuf << "-";
+    run_idbuf << "-";
     
     time_t const tim = time (0);
     struct tm * const ptm = gmtime (& tim);
-    job_idbuf << setfill ('0')
+    run_idbuf << setfill ('0')
               << setw(4) << 1900 + ptm->tm_year
               << "."
               << setw(2) << ptm->tm_mon + 1
@@ -119,15 +161,15 @@ namespace Formaline
               << "."
               << setw(2) << ptm->tm_sec;
     
-    job_idbuf << "-";
+    run_idbuf << "-";
     
     pid_t const pid = getpid();
-    job_idbuf << pid;
+    run_idbuf << pid;
     
-    string const job_idstr = job_idbuf.str();
-    job_id = strdup (job_idstr.c_str());
+    string const run_idstr = run_idbuf.str();
+    run_id = strdup (run_idstr.c_str());
     
-    return job_id;
+    return run_id;
   }
   
   
@@ -140,10 +182,17 @@ namespace Formaline
   }
   
   extern "C" CCTK_POINTER_TO_CONST
+  Formaline_UniqueRunID (CCTK_POINTER_TO_CONST const cctkGH_)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    return static_cast<CCTK_POINTER_TO_CONST> (get_run_id (cctkGH));
+  }
+  
+  extern "C" CCTK_POINTER_TO_CONST
   Formaline_UniqueSimulationID (CCTK_POINTER_TO_CONST const cctkGH_)
   {
     cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
-    return static_cast<CCTK_POINTER_TO_CONST> (get_job_id (cctkGH));
+    return static_cast<CCTK_POINTER_TO_CONST> (get_simulation_id (cctkGH));
   }
   
   
@@ -152,7 +201,8 @@ namespace Formaline
   Formaline_PrintIDs ()
   {
     CCTK_VInfo (CCTK_THORNSTRING, "Build id: %s", get_build_id (0));
-    CCTK_VInfo (CCTK_THORNSTRING, "Simulation id: %s", get_job_id (0));
+    CCTK_VInfo (CCTK_THORNSTRING, "Simulation id: %s", get_simulation_id (0));
+    CCTK_VInfo (CCTK_THORNSTRING, "Run id: %s", get_run_id (0));
     return 0;
   }
   

@@ -10,9 +10,13 @@ namespace Formaline
   char const *
   get_build_id (cGH const * const cctkGH);
   
-  // Get a unique job id
+  // Get a unique simulation id
   char const *
-  get_job_id (cGH const * const cctkGH);
+  get_simulation_id (cGH const * const cctkGH);
+  
+  // Get a unique run id
+  char const *
+  get_run_id (cGH const * const cctkGH);
   
 } // namespace Formaline
 

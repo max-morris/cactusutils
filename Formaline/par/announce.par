@@ -7,7 +7,7 @@ Cactus::cctk_show_schedule = no
 
 Cactus::cctk_itlast = 0
 
-ActiveThorns = "CoordBase"
+ActiveThorns = "CoordBase InitBase"
 
 ActiveThorns = "IOUtil"
 IO::out_dir = $parfile

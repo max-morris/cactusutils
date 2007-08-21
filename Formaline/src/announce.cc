@@ -101,7 +101,7 @@ namespace Formaline
     if (verbose) CCTK_INFO ("Announcing initial meta information");
   
     if (create_id_files) {
-      // Create files from the build id and job id
+      // Create files from the build, run, and simulation ids
       // (This shows what jobs were run in the output directory)
       {
         ostringstream filenamebuf;
@@ -114,11 +114,20 @@ namespace Formaline
       }
       {
         ostringstream filenamebuf;
-        filenamebuf << out_dir << "/formaline-" << get_job_id (cctkGH);
+        filenamebuf << out_dir << "/formaline-" << get_simulation_id (cctkGH);
         string const filenamestring = filenamebuf.str();
         ofstream fil;
         fil.open (filenamestring.c_str(), ios::trunc);
-        fil << get_job_id (cctkGH) << endl;
+        fil << get_simulation_id (cctkGH) << endl;
+        fil.close ();
+      }
+      {
+        ostringstream filenamebuf;
+        filenamebuf << out_dir << "/formaline-" << get_run_id (cctkGH);
+        string const filenamestring = filenamebuf.str();
+        ofstream fil;
+        fil.open (filenamestring.c_str(), ios::trunc);
+        fil << get_run_id (cctkGH) << endl;
         fil.close ();
       }
     }
@@ -130,18 +139,18 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (get_job_id (cctkGH), storage::initial));
+        stores.add_storage (new portal (get_run_id (cctkGH), storage::initial));
       }
   
       if (send_as_rdf)
       {
         stores.add_storage
-          (new rdf (get_job_id (cctkGH), storage::initial, cctkGH));
+          (new rdf (get_run_id (cctkGH), storage::initial, cctkGH));
       }
   
       if (store_into_file)
       {
-        stores.add_storage (new file (get_job_id (cctkGH), storage::initial));
+        stores.add_storage (new file (get_run_id (cctkGH), storage::initial));
       }
   
       if (stores.num_storages() == 0) return;
@@ -637,18 +646,142 @@ namespace Formaline
           }
         } // for all parameters
       }
-  
-  
-  
+      
+      
+      
+#if 0
       // Simulation state
-  
+      
       {
+        // This information is wrong when recovering
         stores.store ("cctk_iteration", cctk_iteration);
+        stores.store ("cctk_time", cctk_time);
       }
-    
+#endif
+      
     } // announce
-
+    
+#if 0
     last_update_time = get_current_time();
+#endif
+  }
+  
+  
+  
+  class args {
+    cGH const * cctkGH;
+    multistorage & stores;
+    char const * reductions;
+    
+  public:
+    args (cGH const * cctkGH_,
+          multistorage & stores_,
+          char const * reductions_);
+    
+    void
+    output_variable (int varindex,
+                     char const * options)
+      const;
+  };
+  
+  args::args (cGH const * const cctkGH_,
+              multistorage & stores_,
+              char const * const reductions_)
+    : cctkGH (cctkGH_),
+      stores (stores_),
+      reductions (reductions_)
+  {
+  }
+  
+  void
+  args::output_variable (int const varindex,
+                         char const * const options)
+    const
+  {
+    int const groupindex = CCTK_GroupIndexFromVarI (varindex);
+    assert (groupindex >= 0);
+    cGroup group;
+    int const ierr = CCTK_GroupData (groupindex, & group);
+    assert (! ierr);
+    
+    ostringstream keybuf, valbuf;
+    char * const fullname = CCTK_FullName (varindex);
+    assert (fullname);
+    keybuf << "variables/" << fullname;
+    free (fullname);
+    string const keystr = keybuf.str();
+    char const * const key = keystr.c_str();
+    
+    void const * const varptr = CCTK_VarDataPtrI (cctkGH, 0, varindex);
+    if (! varptr) {
+      // No storage -- do nothing
+      // TODO: output warning
+      return;
+    }
+    
+    switch (group.grouptype)
+    {
+    case CCTK_SCALAR:
+      switch (group.vartype)
+      {
+      case CCTK_VARIABLE_INT:
+        {
+          CCTK_INT const val = * (CCTK_INT const *) varptr;
+          stores.store (key, val);
+        }
+        break;
+      case CCTK_VARIABLE_REAL:
+        {
+          CCTK_REAL const val = * (CCTK_REAL const *) varptr;
+          stores.store (key, val);
+        }
+        break;
+      case CCTK_VARIABLE_COMPLEX:
+        {
+          CCTK_COMPLEX const val = * (CCTK_COMPLEX const *) varptr;
+          {
+            ostringstream keyrebuf;
+            keyrebuf << key << ".Re";
+            string const keyrestr = keyrebuf.str();
+            char const * const keyre = keyrestr.c_str();
+            stores.store (keyre, val.Re);
+          }
+          {
+            ostringstream keyimbuf;
+            keyimbuf << key << ".Im";
+            string const keyimstr = keyimbuf.str();
+            char const * const keyim = keyimstr.c_str();
+            stores.store (keyim, val.Im);
+          }
+        }
+        break;
+      default:
+        ;
+        // not supported yet
+        // TODO: output warning
+      }
+      break;
+    case CCTK_ARRAY:
+    case CCTK_GF:
+      // not supported yet
+      // TODO: output warning
+      break;
+    default:
+      CCTK_WARN (0, "internal error");
+    }
+  }
+  
+  // C-style wrapper
+  extern "C" {
+    static
+    void
+    args_output_variable (int const varindex,
+                          char const * const options,
+                          void * const theargs0)
+    {
+      args * const theargs = static_cast <args *> (theargs0);
+      theargs->output_variable (varindex, options);
+    }
   }
 
 
@@ -674,18 +807,18 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (get_job_id (cctkGH), storage::update));
+        stores.add_storage (new portal (get_run_id (cctkGH), storage::update));
       }
   
       if (send_as_rdf)
       {
         stores.add_storage
-          (new rdf (get_job_id (cctkGH), storage::update, cctkGH));
+          (new rdf (get_run_id (cctkGH), storage::update, cctkGH));
       }
       
       if (store_into_file)
       {
-        stores.add_storage (new file (get_job_id (cctkGH), storage::update));
+        stores.add_storage (new file (get_run_id (cctkGH), storage::update));
       }
   
       if (stores.num_storages() == 0) return;
@@ -718,104 +851,12 @@ namespace Formaline
   
   
       // Groups and variables
-  
-      {
-        struct args {
-          cGH const * cctkGH;
-          multistorage * stores;
-          char const * reductions;
       
-          static void
-          output_variable (int const varindex,
-                           char const * const options,
-                           void * const theargs0)
-          {
-            args * const theargs = (args *) theargs0;
-            cGH const * const cctkGH = theargs->cctkGH;
-            multistorage & stores = * theargs->stores;
-            char const * const reductions = theargs->reductions;
+      {
+        args theargs (cctkGH, stores, out_reductions);
         
-            int const groupindex = CCTK_GroupIndexFromVarI (varindex);
-            assert (groupindex >= 0);
-            cGroup group;
-            int const ierr = CCTK_GroupData (groupindex, & group);
-            assert (! ierr);
-        
-            ostringstream keybuf, valbuf;
-            char * const fullname = CCTK_FullName (varindex);
-            assert (fullname);
-            keybuf << "variables/" << fullname;
-            free (fullname);
-            string const keystr = keybuf.str();
-            char const * const key = keystr.c_str();
-        
-            void const * const varptr
-              = CCTK_VarDataPtrI (cctkGH, 0, varindex);
-            if (! varptr) {
-              // No storage -- do nothing
-              // TODO: output warning
-              return;
-            }
-        
-            switch (group.grouptype)
-            {
-            case CCTK_SCALAR:
-              switch (group.vartype)
-              {
-              case CCTK_VARIABLE_INT:
-                {
-                  CCTK_INT const val = * (CCTK_INT const *) varptr;
-                  stores.store (key, val);
-                }
-                break;
-              case CCTK_VARIABLE_REAL:
-                {
-                  CCTK_REAL const val = * (CCTK_REAL const *) varptr;
-                  stores.store (key, val);
-                }
-                break;
-              case CCTK_VARIABLE_COMPLEX:
-                {
-                  CCTK_COMPLEX const val = * (CCTK_COMPLEX const *) varptr;
-                  {
-                    ostringstream keyrebuf;
-                    keyrebuf << key << ".Re";
-                    string const keyrestr = keyrebuf.str();
-                    char const * const keyre = keyrestr.c_str();
-                    stores.store (keyre, val.Re);
-                  }
-                  {
-                    ostringstream keyimbuf;
-                    keyimbuf << key << ".Im";
-                    string const keyimstr = keyimbuf.str();
-                    char const * const keyim = keyimstr.c_str();
-                    stores.store (keyim, val.Im);
-                  }
-                }
-                break;
-              default:
-                ;
-                // not supported yet
-                // TODO: output warning
-              }
-              break;
-            case CCTK_ARRAY:
-            case CCTK_GF:
-              // not supported yet
-              // TODO: output warning
-              break;
-            default:
-              CCTK_WARN (0, "internal error");
-            }
-          }
-        } theargs;
-    
-        theargs.cctkGH = cctkGH;
-        theargs.stores = & stores;
-        theargs.reductions = out_reductions;
-    
         int const icnt
-          = CCTK_TraverseString (out_vars, theargs.output_variable, & theargs,
+          = CCTK_TraverseString (out_vars, args_output_variable, & theargs,
                                  CCTK_GROUP_OR_VAR);
         if (icnt < 0)
         {
@@ -869,18 +910,18 @@ namespace Formaline
   
       if (announce_to_portal)
       {
-        stores.add_storage (new portal (get_job_id (cctkGH), storage::final));
+        stores.add_storage (new portal (get_run_id (cctkGH), storage::final));
       }
   
       if (send_as_rdf)
       {
         stores.add_storage
-          (new rdf (get_job_id (cctkGH), storage::final, cctkGH));
+          (new rdf (get_run_id (cctkGH), storage::final, cctkGH));
       }
       
       if (store_into_file)
       {
-        stores.add_storage (new file (get_job_id (cctkGH), storage::final));
+        stores.add_storage (new file (get_run_id (cctkGH), storage::final));
       }
   
       if (stores.num_storages() == 0) return;
@@ -1000,18 +1041,18 @@ namespace Formaline
 
     if (announce_to_portal)
     {
-      stores.add_storage (new portal (get_job_id (cctkGH), storage::update));
+      stores.add_storage (new portal (get_run_id (cctkGH), storage::update));
     }
     
     if (send_as_rdf)
     {
       stores.add_storage
-        (new rdf (get_job_id (cctkGH), storage::update, cctkGH));
+        (new rdf (get_run_id (cctkGH), storage::update, cctkGH));
     }
     
     if (store_into_file)
     {
-      stores.add_storage (new file (get_job_id (cctkGH), storage::update));
+      stores.add_storage (new file (get_run_id (cctkGH), storage::update));
     }
 
     if (stores.num_storages() == 0) return;
@@ -1075,18 +1116,18 @@ namespace Formaline
 
     if (announce_to_portal)
     {
-      stores.add_storage (new portal (get_job_id (cctkGH), storage::update));
+      stores.add_storage (new portal (get_run_id (cctkGH), storage::update));
     }
     
     if (send_as_rdf)
     {
       stores.add_storage
-        (new rdf (get_job_id (cctkGH), storage::update, cctkGH));
+        (new rdf (get_run_id (cctkGH), storage::update, cctkGH));
     }
     
     if (store_into_file)
     {
-      stores.add_storage (new file (get_job_id (cctkGH), storage::update));
+      stores.add_storage (new file (get_run_id (cctkGH), storage::update));
     }
 
     if (stores.num_storages() == 0) return;
@@ -1108,6 +1149,152 @@ namespace Formaline
     }
 
     ++ infoID;
+  }
+
+
+
+  extern "C"
+  void
+  Formaline_AnnounceBoolean (CCTK_POINTER_TO_CONST const cctkGH_,
+                             CCTK_INT              const value,
+                             CCTK_STRING           const key)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    DECLARE_CCTK_PARAMETERS;
+    
+    // Only store from the root processor
+    if (CCTK_MyProc (cctkGH) != 0) return;
+    
+    // Announce
+    multistorage stores;
+    
+    if (announce_to_portal)
+    {
+      stores.add_storage (new portal (get_run_id (cctkGH), storage::update));
+    }
+    
+    if (send_as_rdf)
+    {
+      stores.add_storage
+        (new rdf (get_run_id (cctkGH), storage::update, cctkGH));
+    }
+    
+    if (store_into_file)
+    {
+      stores.add_storage (new file (get_run_id (cctkGH), storage::update));
+    }
+    
+    if (stores.num_storages() == 0) return;
+    
+    stores.store (key, static_cast <bool> (value));
+  }
+
+  extern "C"
+  void
+  Formaline_AnnounceInt (CCTK_POINTER_TO_CONST const cctkGH_,
+                         CCTK_INT              const value,
+                         CCTK_STRING           const key)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    DECLARE_CCTK_PARAMETERS;
+    
+    // Only store from the root processor
+    if (CCTK_MyProc (cctkGH) != 0) return;
+    
+    // Announce
+    multistorage stores;
+    
+    if (announce_to_portal)
+    {
+      stores.add_storage (new portal (get_run_id (cctkGH), storage::update));
+    }
+    
+    if (send_as_rdf)
+    {
+      stores.add_storage
+        (new rdf (get_run_id (cctkGH), storage::update, cctkGH));
+    }
+    
+    if (store_into_file)
+    {
+      stores.add_storage (new file (get_run_id (cctkGH), storage::update));
+    }
+    
+    if (stores.num_storages() == 0) return;
+    
+    stores.store (key, value);
+  }
+
+  extern "C"
+  void
+  Formaline_AnnounceReal (CCTK_POINTER_TO_CONST const cctkGH_,
+                          CCTK_REAL             const value,
+                          CCTK_STRING           const key)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    DECLARE_CCTK_PARAMETERS;
+    
+    // Only store from the root processor
+    if (CCTK_MyProc (cctkGH) != 0) return;
+    
+    // Announce
+    multistorage stores;
+    
+    if (announce_to_portal)
+    {
+      stores.add_storage (new portal (get_run_id (cctkGH), storage::update));
+    }
+    
+    if (send_as_rdf)
+    {
+      stores.add_storage
+        (new rdf (get_run_id (cctkGH), storage::update, cctkGH));
+    }
+    
+    if (store_into_file)
+    {
+      stores.add_storage (new file (get_run_id (cctkGH), storage::update));
+    }
+    
+    if (stores.num_storages() == 0) return;
+    
+    stores.store (key, value);
+  }
+
+  extern "C"
+  void
+  Formaline_AnnounceString (CCTK_POINTER_TO_CONST const cctkGH_,
+                            CCTK_STRING           const value,
+                            CCTK_STRING           const key)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    DECLARE_CCTK_PARAMETERS;
+    
+    // Only store from the root processor
+    if (CCTK_MyProc (cctkGH) != 0) return;
+    
+    // Announce
+    multistorage stores;
+    
+    if (announce_to_portal)
+    {
+      stores.add_storage (new portal (get_run_id (cctkGH), storage::update));
+    }
+    
+    if (send_as_rdf)
+    {
+      stores.add_storage
+        (new rdf (get_run_id (cctkGH), storage::update, cctkGH));
+    }
+    
+    if (store_into_file)
+    {
+      stores.add_storage (new file (get_run_id (cctkGH), storage::update));
+    }
+    
+    if (stores.num_storages() == 0) return;
+    
+    stores.store (key, value);
   }
 
 

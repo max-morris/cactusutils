@@ -29,3 +29,42 @@ FUNCTION UniqueSimulationID (CCTK_POINTER_TO_CONST IN cctkGH)
 PROVIDES FUNCTION UniqueSimulationID \
     WITH Formaline_UniqueSimulationID \
     LANGUAGE C
+
+
+
+# Return a pointer to an unmodifiable C string
+# which contains a unique ID for this run
+CCTK_POINTER_TO_CONST \
+FUNCTION UniqueRunID (CCTK_POINTER_TO_CONST IN cctkGH)
+
+PROVIDES FUNCTION UniqueRunID \
+    WITH Formaline_UniqueRunID \
+    LANGUAGE C
+
+
+
+# Announce some information
+# Note the order (value, key);
+# this is necessary because string arguments have to be at the end
+# of the argument list.
+void \
+FUNCTION AnnounceBoolean (CCTK_POINTER_TO_CONST IN cctkGH, \
+                          CCTK_INT              IN value, \
+                          CCTK_STRING           IN key)
+void \
+FUNCTION AnnounceInt     (CCTK_POINTER_TO_CONST IN cctkGH, \
+                          CCTK_INT              IN value, \
+                          CCTK_STRING           IN key)
+void \
+FUNCTION AnnounceReal    (CCTK_POINTER_TO_CONST IN cctkGH, \
+                          CCTK_REAL             IN value, \
+                          CCTK_STRING           IN key)
+void \
+FUNCTION AnnounceString  (CCTK_POINTER_TO_CONST IN cctkGH, \
+                          CCTK_STRING           IN value, \
+                          CCTK_STRING           IN key)
+
+PROVIDES FUNCTION AnnounceBoolean WITH Formaline_AnnounceBoolean LANGUAGE C
+PROVIDES FUNCTION AnnounceInt     WITH Formaline_AnnounceInt     LANGUAGE C
+PROVIDES FUNCTION AnnounceReal    WITH Formaline_AnnounceReal    LANGUAGE C
+PROVIDES FUNCTION AnnounceString  WITH Formaline_AnnounceString  LANGUAGE C
