@@ -73,8 +73,9 @@ namespace Formaline
 << "" << endl
 << "use strict;" << endl
 << "use Socket;" << endl
-<< "use POSIX;"  << endl
+<< "use POSIX;" << endl
 << "" << endl
+<< "my $verbose = " << verbose << ";" << endl
 << "my $input = '" << datafilename << "';" << endl
 << "my $host = '" << hostname << "';" << endl
 << "my $port = " << port << ";" << endl
@@ -82,27 +83,41 @@ namespace Formaline
 << "# Set a timeout for the entire interaction with this server" << endl
 //
 // Use POSIX::sigaction to bypass the Perl interpreter's signal
-// handling which uses defered signals effectively ignoring
+// handling which uses deferred signals, effectively ignoring
 // user-defined timeouts for some I/O functions (see 'man perlipc' and
-// then grep for 'Interrupting IO')
+// then look for 'Interrupting IO')
 //
-<< "POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { die 'timeout' }))" << endl
-<< "  or die \"Error setting SIGALRM handler: $!\";" << endl
+// Using { die 'timeout' } or { exit 1 } is not sufficient to exit
+// reliably after a timeout.  Using { POSIX::exit 1 } seems to work.
+// The difference is that the POSIX function does not clean up, but
+// that should be fine.
+//
+<< "POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { POSIX::exit 1; }))" << endl
+<< "    or die \"Error setting SIGALRM handler: $!\";" << endl
 << "alarm " << timeout << ";" << endl
 << "" << endl
+<< "if ($verbose) { print STDERR \"Getting IP address\\n\"; }" << endl
 << "my $iaddr = inet_aton ($host);" << endl
-<< "die \"Couldn't get IP address for '$host'\" if (not $iaddr);" << endl
+<< "$iaddr or die \"Couldn't get IP address for '$host'\";" << endl
+<< "if ($verbose) { print STDERR \"Creating sockaddr_in\\n\"; }" << endl
 << "my $sin = sockaddr_in ($port, $iaddr);" << endl
+<< "if ($verbose) { print STDERR \"Opening socket\\n\"; }" << endl
 << "socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
-<< "die 'Couldn\\'t open TCP socket' if (not defined $SH);" << endl
+<< "defined $SH or die \"Couldn't open TCP socket\";" << endl
 << "" << endl
 << "# Connect and send off the data" << endl
-<< "die \"Couldn't connect to '$host:$port'\" if ! connect ($SH, $sin);" << endl
+<< "if ($verbose) { print STDERR \"Connecting\\n\"; }" << endl
+<< "connect ($SH, $sin) or die \"Couldn't connect to '$host:$port'\";" << endl
 << "" << endl
-<< "open (my $FH, '<' . $input);" << endl
+<< "if ($verbose) { print STDERR \"Opening local data file\\n\"; }" << endl
+<< "open (my $FH, \"< $input\");" << endl
+<< "if ($verbose) { print STDERR \"Sending data\\n\"; }" << endl
 << "print $SH $_ while (<$FH>);" << endl
+<< "if ($verbose) { print STDERR \"Closing local data file\\n\"; }" << endl
 << "close $FH;" << endl
-<< "close $SH;" << endl;
+<< "if ($verbose) { print STDERR \"Shutting down connection\\n\"; }" << endl
+<< "close $SH;" << endl
+<< "if ($verbose) { print STDERR \"Done.\\n\"; }" << endl;
     string const scriptstr = scriptbuf.str();
     
     // Write the script to a file
@@ -258,14 +273,10 @@ namespace Formaline
     if (my_use_relay_host)
     {
       cmdbuf << "env DISPLAY= ssh -x " << my_relay_host << " \"/bin/sh -c '"
-             << "cd " << cwd << " && ";
+             << "cd " << cwd << " && " << scriptfilenamestr << " < /dev/null"
+             << "'\"";
     } else {
-      cmdbuf << "/bin/sh -c '";
-    }
-    cmdbuf << scriptfilenamestr << " < /dev/null'";
-    if (my_use_relay_host)
-    {
-      cmdbuf << "\"";
+      cmdbuf << "/bin/sh -c '" << scriptfilenamestr << " < /dev/null'";
     }
     string const cmdstr = cmdbuf.str();
     char const * const cmd = cmdstr.c_str();
