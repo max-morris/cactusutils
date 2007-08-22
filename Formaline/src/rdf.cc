@@ -384,11 +384,12 @@ namespace Formaline
       if (*rdf_hostname[i]) {
 
         // Create the data
+        // use PUT to create a new context and
+        // POST to add metadata to an existing one
         ostringstream databuf;
         databuf
-          // currently the RDF server only understands HTTP PUT
-          // << "POST HTTP/1.0 200\r\n"
-<< "PUT /context/CactusSimulations/" << jobID << " HTTP/1.0\r\n"
+<< (get_state() == initial ? "PUT" : "POST")
+<< " /context/CactusSimulations/" << jobID << " HTTP/1.0\r\n"
 << "Host: " << rdf_hostname[i] << "\r\n"
 << "Content-Type: application/rdf+xml\r\n"
 << "Content-Length: " << msgstr.length() << "\r\n"
