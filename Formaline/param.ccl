@@ -21,6 +21,14 @@ INT timeout "Timeout for sending meta information to a server (in seconds)" STEE
 
 
 
+# Parameters for collecting metadata
+
+BOOLEAN collect_metadata "Collect metadata and output it in various ways" STEERABLE=always
+{
+} yes
+
+
+
 # Parameters for creating files containing the build and job ids
 
 BOOLEAN create_id_files "Create files from the build and job ids"

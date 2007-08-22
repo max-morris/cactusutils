@@ -11,32 +11,38 @@ if (output_source)
 
 
 
-SCHEDULE Formaline_PrintIDs AT startup
+if (collect_metadata)
 {
-  LANG: C
-  OPTIONS: meta
-} "Print the build and simulation ids"
-
-SCHEDULE Formaline_RegisterWarnings AT wragh
-{
-  LANG: C
-  OPTIONS: meta
-} "Register to receive warnings and info messages from the flesh"
-
-SCHEDULE Formaline_AnnounceInitial AT wragh
-{
-  LANG: C
-  OPTIONS: global
-} "Put some meta information about the current run into permanent storage"
-
-SCHEDULE Formaline_AnnounceUpdate AT analysis
-{
-  LANG: C
-  OPTIONS: global
-} "Put some meta information about the current run into permanent storage"
-
-SCHEDULE Formaline_AnnounceFinal AT terminate
-{
-  LANG: C
-  OPTIONS: global
-} "Put some meta information about the current run into permanent storage"
+  SCHEDULE Formaline_PrintIDs AT startup
+  {
+    LANG: C
+    OPTIONS: meta
+  } "Print the build and simulation ids"
+  
+  
+  
+  SCHEDULE Formaline_RegisterWarnings AT wragh
+  {
+    LANG: C
+    OPTIONS: meta
+  } "Register to receive warnings and info messages from the flesh"
+  
+  SCHEDULE Formaline_AnnounceInitial AT wragh
+  {
+    LANG: C
+    OPTIONS: global
+  } "Put some meta information about the current run into permanent storage"
+  
+  SCHEDULE Formaline_AnnounceUpdate AT analysis
+  {
+    LANG: C
+    OPTIONS: global
+  } "Put some meta information about the current run into permanent storage"
+  
+  SCHEDULE Formaline_AnnounceFinal AT terminate
+  {
+    LANG: C
+    OPTIONS: global
+  } "Put some meta information about the current run into permanent storage"
+  
+}
