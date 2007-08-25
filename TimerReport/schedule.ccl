@@ -8,6 +8,12 @@ SCHEDULE TimerReport_Output AS zzz_TimerReport_Output AT CCTK_ANALYSIS
   OPTIONS: global
 } "Print the timer report"
 
+SCHEDULE TimerReport_Output AS zzz_TimerReport_Output AT CCTK_TERMINATE BEFORE Driver_Terminate
+{
+  LANG: C
+  OPTIONS: global
+} "Print the timer report"
+
 SCHEDULE TimerReport_Checkpoint AS zzz_TimerReport_Checkpoint AT CCTK_CHECKPOINT
 {
   LANG: C

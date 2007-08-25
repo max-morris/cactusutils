@@ -15,6 +15,12 @@ INT out_at "Output timer information at a given iteration" STEERABLE=ALWAYS
   0:*  :: "At this iteration"
 } -1
 
+STRING out_filename "File name for timer reports" STEERABLE=ALWAYS
+{
+  "^$"   :: "empty filename: print to stdout"
+  "^.+$" :: "otherwise: print to that file"
+} ""
+
 BOOLEAN before_checkpoint "Before a checkpoint" STEERABLE=ALWAYS
 {
 } "no"
@@ -24,5 +30,7 @@ BOOLEAN next "On next iteration" STEERABLE=ALWAYS
 } "no"
 
 shares: IO
+
+USES STRING out_dir
 
 USES INT checkpoint_every
