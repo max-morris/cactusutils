@@ -6,7 +6,7 @@ IMPLEMENTS: Formaline
 # for HTTP_Port()
 USES INCLUDE HEADER: http_Content.h
 
-USES INCLUDE HEADER: Announce.h
+USES INCLUDE HEADER: Publish.h
 
 
 
@@ -29,6 +29,108 @@ FUNCTION UniqueSimulationID (CCTK_POINTER_TO_CONST IN cctkGH)
 PROVIDES FUNCTION UniqueSimulationID \
     WITH Formaline_UniqueSimulationID \
     LANGUAGE C
+
+
+#############
+# Publish API
+#############
+CCTK_INT FUNCTION PublishBoolean (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                  CCTK_INT              IN level, \
+                                  CCTK_INT              IN value, \
+                                  CCTK_STRING           IN key, \
+                                  CCTK_STRING           IN name)
+CCTK_INT FUNCTION PublishInt     (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                  CCTK_INT              IN level, \
+                                  CCTK_INT              IN value, \
+                                  CCTK_STRING           IN key, \
+                                  CCTK_STRING           IN name)
+CCTK_INT FUNCTION PublishReal    (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                  CCTK_INT              IN level, \
+                                  CCTK_REAL             IN value, \
+                                  CCTK_STRING           IN key, \
+                                  CCTK_STRING           IN name)
+CCTK_INT FUNCTION PublishString  (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                  CCTK_INT              IN level,  \
+                                  CCTK_STRING           IN value, \
+                                  CCTK_STRING           IN key,  \
+                                  CCTK_STRING           IN name)
+CCTK_INT FUNCTION PublishTable   (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                  CCTK_INT              IN level, \
+                                  CCTK_INT              IN table, \
+                                  CCTK_STRING           IN key, \
+                                  CCTK_STRING           IN name)
+USES FUNCTION PublishBoolean
+USES FUNCTION PublishInt
+USES FUNCTION PublishReal
+USES FUNCTION PublishString
+USES FUNCTION PublishTable
+
+##########################
+# Publish registration API
+##########################
+CCTK_INT FUNCTION PublishBoolean_Register( \
+    CCTK_INT CCTK_FPOINTER IN publish_cb (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                          CCTK_POINTER          IN cb_data, \
+                                          CCTK_INT              IN level, \
+                                          CCTK_INT              IN value, \
+                                          CCTK_STRING           IN key, \
+                                          CCTK_STRING           IN thorn), \
+    CCTK_POINTER IN cb_data, \
+    CCTK_STRING  IN name)
+CCTK_INT FUNCTION PublishInt_Register( \
+    CCTK_INT CCTK_FPOINTER IN publish_cb (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                          CCTK_POINTER          IN cb_data, \
+                                          CCTK_INT              IN level, \
+                                          CCTK_INT              IN value, \
+                                          CCTK_STRING           IN key, \
+                                          CCTK_STRING           IN thorn), \
+    CCTK_POINTER IN cb_data, \
+    CCTK_STRING  IN name)
+CCTK_INT FUNCTION PublishReal_Register( \
+    CCTK_INT CCTK_FPOINTER IN publish_cb (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                          CCTK_POINTER          IN cb_data, \
+                                          CCTK_INT              IN level, \
+                                          CCTK_REAL             IN value, \
+                                          CCTK_STRING           IN key, \
+                                          CCTK_STRING           IN thorn), \
+    CCTK_POINTER IN cb_data, \
+    CCTK_STRING  IN name)
+CCTK_INT FUNCTION PublishString_Register( \
+    CCTK_INT CCTK_FPOINTER IN publish_cb (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                          CCTK_POINTER          IN cb_data, \
+                                          CCTK_INT              IN level,  \
+                                          CCTK_STRING           IN value, \
+                                          CCTK_STRING           IN key,  \
+                                          CCTK_STRING           IN thorn), \
+    CCTK_POINTER IN cb_data, \
+    CCTK_STRING  IN name)
+CCTK_INT FUNCTION PublishTable_Register( \
+    CCTK_INT CCTK_FPOINTER IN publish_cb (CCTK_POINTER_TO_CONST IN cctkGH, \
+                                          CCTK_POINTER          IN cb_data, \
+                                          CCTK_INT              IN level, \
+                                          CCTK_INT              IN table, \
+                                          CCTK_STRING           IN key, \
+                                          CCTK_STRING           IN thorn), \
+    CCTK_POINTER IN cb_data, \
+    CCTK_STRING  IN name)
+
+USES FUNCTION PublishBoolean_Register
+USES FUNCTION PublishInt_Register
+USES FUNCTION PublishReal_Register
+USES FUNCTION PublishString_Register
+USES FUNCTION PublishTable_Register
+
+CCTK_INT FUNCTION PublishBoolean_Unregister (CCTK_STRING IN name)
+CCTK_INT FUNCTION PublishInt_Unregister     (CCTK_STRING IN name)
+CCTK_INT FUNCTION PublishReal_Unregister    (CCTK_STRING IN name)
+CCTK_INT FUNCTION PublishString_Unregister  (CCTK_STRING IN name)
+CCTK_INT FUNCTION PublishTable_Unregister   (CCTK_STRING IN name)
+
+USES FUNCTION PublishBoolean_Unregister
+USES FUNCTION PublishInt_Unregister
+USES FUNCTION PublishReal_Unregister
+USES FUNCTION PublishString_Unregister
+USES FUNCTION PublishTable_Unregister
 
 
 

@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "storage.hh"
 
@@ -14,6 +15,41 @@
 
 namespace Formaline
 {
+
+  typedef struct {
+    std::string type;
+    std::string value;
+  } rdfScalarValue;
+
+  typedef struct {
+    std::string    key;
+    rdfScalarValue value;
+  } rdfTableEntry;
+
+  typedef struct {
+    std::string datetime;
+    bool        hasCCTKinfo;
+    CCTK_REAL   cctk_time;
+    int         cctk_iteration;
+    std::string name;
+    std::string key;
+// classes (with constructors) are not allowed as members of a union
+//    union value {
+      rdfScalarValue             scalar;
+      std::vector<rdfTableEntry> table;
+//    }
+    bool isTable;
+  } rdfPublishItem;
+
+  // buffer to keep RDF metadata until the next Update() call
+  extern std::vector<rdfPublishItem> rdfPublishList;
+
+  // the jobID string
+  extern std::string jobID;
+
+  std::string clean (std::string const & txt);
+
+  std::string cleanURI (std::string const & uri);
 
 
 
@@ -49,18 +85,9 @@ namespace Formaline
   
   private:
     
-    std::string jobID;
-
-    std::string
-    clean (std::string const & txt)
-      const;
-
-    std::string
-    cleanURI (std::string const & uri)
-      const;
-
     void Initial (void);
     void Update (cGH const * cctkGH);
+
   };
 
 

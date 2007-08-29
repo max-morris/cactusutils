@@ -2,7 +2,7 @@
 # $Header$
 
 # Source files in this directory
-SRCS = announce.cc file.cc id.cc multistorage.cc output_source.c portal.cc rdf.cc senddata.cc storage.cc thornlist.cc
+SRCS = announce.cc file.cc id.cc multistorage.cc output_source.c portal.cc rdf.cc rdf_publisher.cc senddata.cc storage.cc thornlist.cc
 
 # Subdirectories containing source files
 SUBDIRS = 

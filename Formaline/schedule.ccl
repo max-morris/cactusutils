@@ -19,8 +19,12 @@ if (collect_metadata)
     OPTIONS: meta
   } "Print the build and simulation ids"
   
-  
-  
+  SCHEDULE Formaline_RegisterPublishRDF_Callbacks IN RegisterPublishCallbacks
+  {
+    LANG: C
+    OPTIONS: meta
+  } "Register RDF callbacks for the Publish API"  
+
   SCHEDULE Formaline_RegisterWarnings AT wragh
   {
     LANG: C
@@ -45,4 +49,10 @@ if (collect_metadata)
     OPTIONS: global
   } "Put some meta information about the current run into permanent storage"
   
+  SCHEDULE Formaline_UnregisterPublishRDF_Callbacks IN UnregisterPublishCallbacks
+  {
+    LANG: C
+    OPTIONS: meta
+  } "Unregister RDF callbacks for the Publish API"
+
 }

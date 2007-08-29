@@ -21,8 +21,10 @@
 #include "cctk.h"
 #include "cctk_Parameters.h"
 #include "cctk_Version.h"
-#include "util_String.h"
 #include "util_Network.h"
+#include "util_String.h"
+
+#include "Publish.h"
 
 #include "rdf.hh"
 #include "senddata.hh"
@@ -31,17 +33,19 @@
 
 namespace Formaline
 {
-
   using namespace std;
 
-  
+  // the jobID is shared between this source file and PublishAsRDF.cc
+  string jobID;
+
+
 
   // NUM_RDF_ENTRIES must match the size of the
   // Formaline::rdf_hostname and Formaline::rdf_port parameter arrays
   int const NUM_RDF_ENTRIES = 5;
 
   // Number of space chars for indentation
-  int const NUM_INDENT_SPACES = 2;
+  // int const NUM_INDENT_SPACES = 2;
 
 
 
@@ -57,52 +61,6 @@ namespace Formaline
        cGH const * const cctkGH)
     : storage (st)
   {
-    //
-    // RDF/XML document header with some namespace definitions
-    //
-    msgbuf
-      << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl
-      << "<!DOCTYPE owl [" << endl
-      << "\t<!ENTITY rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>" << endl
-      << "\t<!ENTITY xsd  'http://www.w3.org/2001/XMLSchema#'>" << endl
-      << "\t<!ENTITY cctk 'http://www.gac-grid.org/project-products/Software/InformationService/InformationProducer/CactusRDFProducer/2006/08/cctk-schema#'>" << endl
-#if 0
-      << "\t<!ENTITY cctk 'http://www.aei.mpg.de/~tradke/cctk-schema#'>" << endl
-      << "\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
-      << "<!--" << endl
-      << "\t<!ENTITY dc   'http://purl.org/dc/elements/1.1/'>" << endl
-      << "\t<!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
-      << "\t<!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>" << endl
-      << "\t<!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>" << endl
-      << "\t<!ENTITY form 'http://www.aei.mpg.de/form#'>" << endl
-      << "-->" << endl
-#endif
-      << "]>" << endl
-      << "<rdf:RDF xmlns:rdf=\"&rdf;\"" << endl
-      << "\txmlns:xsd=\"&xsd;\"" << endl
-      << "\txmlns:cctk=\"&cctk;\"" << endl
-      << ">" << endl
-#if 0
-      << "<!--" << endl
-      << "\txmlns:dc=\"&dc;\"" << endl
-      << "\txmlns:doap=\"&doap;\"" << endl
-      << "\txmlns:foaf=\"&foaf;\"" << endl
-      << "\txmlns:rdfs=\"&rdfs;\"" << endl
-      << "\txmlns:form=\"&form;\"" << endl
-      << "-->" << endl
-      << "" << endl
-      << "<!-- lessons learned so far" << endl
-      << "  " << endl
-      << "     * although it would be better to use rdf:ID as relative URIs for objects" << endl
-      << "       (because they are enforced to be unique), rdf:about must be used instead" << endl
-      << "       because the value of a relative rdf:about URI may contain special" << endl
-      << "       characters (such as '/') whereas rdf:ID must not" << endl
-      << "-->" << endl
-#endif
-      << endl
-      << endl;
-
-
     // set the unique ID for this simulation
     jobID = clean (string (id));
 
@@ -113,13 +71,8 @@ namespace Formaline
       case initial: Initial (); break;
       case update:
       case final:   Update (cctkGH); break;
-      default:      assert (0 && "invalid state");
+      default:      assert (0); // invalid state
     }
-
-    //
-    // close the RDF/XML document
-    //
-    msgbuf << endl << "</rdf:RDF>" << endl;
   }
 
   void rdf::Initial (void)
@@ -173,10 +126,27 @@ namespace Formaline
     if (pbsJobname) {
       msgbuf << "\tcctk:pbsJobname=\"" << clean (pbsJobname) << "\"" << endl;
     }
+    const char* pbsHost = getenv ("PBS_O_HOST");
+    if (pbsHost) {
+      // fix incomplete and/or strange PBS headnode hostnames
+      if (strncmp(pbsHost, "peyote", 6) == 0) {
+        pbsHost = "peyote.aei.mpg.de";
+      } else if (strcmp(pbsHost, "master.ic") == 0) {
+        pbsHost = "belladonna.aei.mpg.de";
+      } else if (strcmp(pbsHost, "damiana.damiana.admin") == 0) {
+        pbsHost = "damiana.aei.mpg.de";
+      }
+      msgbuf << "\tcctk:pbsHost=\"" << clean (pbsHost) << "\"" << endl;
+    }
     msgbuf << "\tcctk:cwd=\"" << cwd         << "\">" << endl
-           << "\t<cctk:nProcs rdf:datatype=\"&xsd;integer\">" << nprocs << "</cctk:nProcs>" << endl
-           << "\t<cctk:compiledAt rdf:datatype=\"&xsd;datetime\">" << compiled_at << "</cctk:compiledAt>" << endl
-           << "\t<cctk:startedAt rdf:datatype=\"&xsd;datetime\">" << started_at << "</cctk:startedAt>" << endl;
+           << "\t<cctk:nProcs rdf:datatype=\"&xsd;integer\">"
+           << nprocs << "</cctk:nProcs>" << endl
+           << "\t<cctk:compiledAt rdf:datatype=\"&xsd;datetime\">"
+           << compiled_at << "</cctk:compiledAt>" << endl
+           << "\t<cctk:startedAt rdf:datatype=\"&xsd;datetime\">"
+           << started_at << "</cctk:startedAt>" << endl
+           << "\t<cctk:lastModified rdf:datatype=\"&xsd;datetime\">"
+           << started_at << "</cctk:lastModified>" << endl;
 
     //
     // metadata as references to other nodes
@@ -235,7 +205,8 @@ namespace Formaline
 
       // skip parameters that belong to inactive thorns
       const bool is_active = CCTK_IsThornActive (thornname);
-      msgbuf << "\t<cctk:active rdf:datatype=\"&xsd;boolean\">" << (is_active ? "true" : "false") << "</cctk:active>" << endl;
+      msgbuf << "\t<cctk:active rdf:datatype=\"&xsd;boolean\">"
+             << (is_active ? "true" : "false") << "</cctk:active>" << endl;
 
       // loop over all parameters of this thorn (if it is active)
       if (is_active) {
@@ -244,7 +215,8 @@ namespace Formaline
           const cParamData* pdata = NULL;
 
           // get the first/next parameter
-          const int ierr = CCTK_ParameterWalk (first, thornname,&fullname,&pdata);
+          const int ierr = CCTK_ParameterWalk (first, thornname,
+                                               &fullname, &pdata);
           assert (ierr >= 0);
           if (ierr > 0) break;
 
@@ -309,7 +281,7 @@ namespace Formaline
               }
               break;
 
-              default: assert (0 and "invalid parameter type");
+              default: assert (0); // invalid parameter type
 
             } // switch (pdata->type)
 
@@ -318,7 +290,8 @@ namespace Formaline
                      << pdata->thorn << "/" << cleanURI (pdata->name) << "\""
                      << endl
                      << "\tcctk:name=\"" << fullname <<"\">" << endl
-                     << "\t<cctk:value rdf:datatype=\"&xsd;" << paramdatatype <<"\">" << paramvaluebuf.str() << "</cctk:value>" << endl
+                     << "\t<cctk:value rdf:datatype=\"&xsd;" << paramdatatype
+                     << "\">" << paramvaluebuf.str() << "</cctk:value>" << endl
                      << "</cctk:" << paramtype << ">" << endl;
           } // if (pdata->n_set or list_all_parameters)
 
@@ -347,27 +320,78 @@ namespace Formaline
       }
     }
 
-    char* currentdatebuf = Util_CurrentDateTime ();
-    const string currentdate (clean (currentdatebuf));
-    free (currentdatebuf);
-
-    // update counter which is incremented for each Update() call
-    static int update_counter = 0;
-    update_counter++;
-
-    msgbuf
-<< "<cctk:Simulation rdf:about=\"#" << jobID << "\">" << endl
-<< "\t<cctk:updateInfo rdf:resource=\"#UpdateInfo/" << update_counter << "\"/>" << endl
-<< "</cctk:Simulation>" << endl << endl
-<< "<cctk:UpdateInfo rdf:about=\"#UpdateInfo/" << update_counter << "\">" << endl
-<< "\t<cctk:iteration rdf:datatype=\"&xsd;integer\">" << cctkGH->cctk_iteration << "</cctk:iteration>" << endl
-<< "\t<cctk:time rdf:datatype=\"&xsd;double\">" << cctkGH->cctk_time << "</cctk:time>" << endl
-<< "\t<cctk:datetime rdf:datatype=\"&xsd;datetime\">" << currentdate << "</cctk:datetime>" << endl;
-
-    if (get_state() == final) {
-      msgbuf << "\t<cctk:terminated rdf:datatype=\"&xsd;boolean\">yes</cctk:terminated>" << endl;
+    if (CCTK_IsFunctionAliased ("PublishBoolean")) {
+#ifndef PUBLISH_LEVEL_NOTICE
+#define PUBLISH_LEVEL_NOTICE 2
+#endif
+      const int retval = PublishBoolean (cctkGH, PUBLISH_LEVEL_NOTICE,
+                                         get_state() == final ? 1 : 0,
+                                         "Finished", "Runtime Info");
+      if (retval < 0) {
+        CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                    "Failed to publish runtime information (error code %d)",
+                    retval);
+      }
     }
-    msgbuf << "</cctk:UpdateInfo>" << endl;
+
+    // check if there was anything published
+    if (rdfPublishList.empty()) return;
+
+    char* rundatebuf = Util_CurrentDateTime ();
+    const string started_at (clean (rundatebuf));
+
+    static int publishedItems = 0;
+    msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\">" << endl
+           << "\t<cctk:lastModified rdf:datatype=\"&xsd;datetime\">"
+           << started_at << "</cctk:lastModified>" << endl;
+    for (size_t i = 0; i < rdfPublishList.size(); i++) {
+      msgbuf << "\t<cctk:publish rdf:resource=\"#Publish/"
+             << (publishedItems + i) << "\"/>" << endl;
+    }
+    msgbuf << "</cctk:Simulation>" << endl << endl;
+    for (size_t i = 0; i < rdfPublishList.size(); i++, publishedItems++) {
+      const rdfPublishItem& item = rdfPublishList[i];
+      msgbuf << "<cctk:Publish rdf:about=\"#Publish/"
+             << publishedItems << "\">" << endl
+             << "\t<cctk:datetime rdf:datatype=\"&xsd;datetime\">"
+             << item.datetime << "</cctk:datetime>" << endl
+             << "\t<cctk:key>" << item.key << "</cctk:key>" << endl;
+      if (not item.name.empty()) {
+        msgbuf << "\t<cctk:name>" << item.name << "</cctk:name>" << endl;
+      }
+      if (item.hasCCTKinfo) {
+        msgbuf << "\t<cctk:time>" << item.cctk_time << "</cctk:time>" << endl;
+        msgbuf << "\t<cctk:iteration>" << item.cctk_iteration
+               << "</cctk:iteration>" << endl;
+      }
+      ostringstream tablebuf;
+      if (item.isTable) {
+        for (size_t j = 0; j < item.table.size(); j++) {
+          const rdfTableEntry& entry = item.table[j];
+          msgbuf << "\t<cctk:tableEntry rdf:resource=\"#Publish/"
+                 << publishedItems << "/" << j << "\"/>" << endl;
+          tablebuf << "<cctk:TableEntry rdf:about=\"#Publish/"
+                   << publishedItems << "/" << j << "\">" << endl
+                   << "\t<cctk:key>" << entry.key << "</cctk:key>" << endl
+                   << "\t<cctk:value";
+          if (not entry.value.type.empty()) {
+            tablebuf << " rdf:datatype=\"&xsd;" << entry.value.type << "\"";
+          }
+          tablebuf << ">" << entry.value.value << "</cctk:value>" << endl
+                   << "</cctk:TableEntry>" << endl;
+        }
+      } else {
+        msgbuf << "\t<cctk:value";
+        if (not item.scalar.type.empty()) {
+          msgbuf << " rdf:datatype=\"&xsd;" << item.scalar.type << "\"";
+        }
+        msgbuf << ">" << item.scalar.value << "</cctk:value>" << endl;
+      }
+      msgbuf << "</cctk:Publish>" << endl;
+      msgbuf << tablebuf.str();
+    }
+
+    rdfPublishList.clear();
   }
 
 
@@ -375,9 +399,57 @@ namespace Formaline
   ~ rdf ()
   {
     DECLARE_CCTK_PARAMETERS;
-    
-    // Create the data string
-    string const msgstr = msgbuf.str();
+
+    // check if anything needs to be done
+    if (msgbuf.str().empty()) return;
+
+    // RDF/XML document header with some namespace definitions
+    const string header =
+"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+"<!DOCTYPE owl [\n"
+"\t<!ENTITY rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>\n"
+"\t<!ENTITY xsd  'http://www.w3.org/2001/XMLSchema#'>\n"
+"\t<!ENTITY cctk 'http://www.gac-grid.org/project-products/Software/InformationService/InformationProducer/CactusRDFProducer/2006/08/cctk-schema#'>\n"
+
+#if 0
+      << "\t<!ENTITY cctk 'http://www.aei.mpg.de/~tradke/cctk-schema#'>" << endl
+      << "\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
+      << "<!--" << endl
+      << "\t<!ENTITY dc   'http://purl.org/dc/elements/1.1/'>" << endl
+      << "\t<!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
+      << "\t<!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>" << endl
+      << "\t<!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>" << endl
+      << "\t<!ENTITY form 'http://www.aei.mpg.de/form#'>" << endl
+      << "-->" << endl
+#endif
+"]>\n"
+"<rdf:RDF xmlns:rdf=\"&rdf;\"\n"
+"\txmlns:xsd=\"&xsd;\"\n"
+"\txmlns:cctk=\"&cctk;\"\n"
+">\n"
+#if 0
+      << "<!--" << endl
+      << "\txmlns:dc=\"&dc;\"" << endl
+      << "\txmlns:doap=\"&doap;\"" << endl
+      << "\txmlns:foaf=\"&foaf;\"" << endl
+      << "\txmlns:rdfs=\"&rdfs;\"" << endl
+      << "\txmlns:form=\"&form;\"" << endl
+      << "-->" << endl
+      << "" << endl
+      << "<!-- lessons learned so far" << endl
+      << "  " << endl
+      << "     * although it would be better to use rdf:ID as relative URIs for objects" << endl
+      << "       (because they are enforced to be unique), rdf:about must be used instead" << endl
+      << "       because the value of a relative rdf:about URI may contain special" << endl
+      << "       characters (such as '/') whereas rdf:ID must not" << endl
+      << "-->" << endl
+#endif
+"\n\n";
+
+    // RDF/XML document footer
+    const string footer = "\n</rdf:RDF>\n";
+
+    const int len = header.length() + msgbuf.str().length() + footer.length();
 
     // Loop over all destinations
     for (int i = 0; i < NUM_RDF_ENTRIES; i++) {
@@ -389,19 +461,17 @@ namespace Formaline
         ostringstream databuf;
         databuf
 << (get_state() == initial ? "PUT" : "POST")
-<< " /context/CactusSimulations/" << jobID << " HTTP/1.0\r\n"
+<< " /context/CactusSimulations/" << jobID;
+//        if (get_state() != initial) databuf << "?action=update";
+        databuf << " HTTP/1.0\r\n"
 << "Host: " << rdf_hostname[i] << "\r\n"
 << "Content-Type: application/rdf+xml\r\n"
-<< "Content-Length: " << msgstr.length() << "\r\n"
-<< "\r\n"
-<< msgstr
-<< "\r\n"
-<< "\r\n";
-        string const datastr = databuf.str();
+<< "Content-Length: " << len << "\r\n\r\n"
+<< header << msgbuf.str() << footer << "\r\n\r\n";
 
         // Send the data
-        SendData (rdf_hostname[i], rdf_port[i], datastr);
-        
+        SendData (rdf_hostname[i], rdf_port[i], databuf.str());
+
       }
     } // loop over all destinations
   }
@@ -412,6 +482,8 @@ namespace Formaline
   store (char const * const key,
          bool const value)
   {
+    const void* dummy = &dummy;
+    dummy = &key; dummy = &value;
 #if 0
     ostringstream valuebuf;
     valuebuf << (value ? "true" : "false");
@@ -447,6 +519,8 @@ namespace Formaline
   store (char const * const key,
          CCTK_INT const value)
   {
+    const void* dummy = &dummy;
+    dummy = &key; dummy = &value;
 #if 0
     ostringstream valuebuf;
     valuebuf << value;
@@ -482,6 +556,8 @@ namespace Formaline
   store (char const * const key,
          CCTK_REAL const value)
   {
+    const void* dummy = &dummy;
+    dummy = &key; dummy = &value;
 #if 0
     int const prec = numeric_limits<CCTK_REAL>::digits10;
     ostringstream valuebuf;
@@ -518,6 +594,8 @@ namespace Formaline
   store (char const * const key,
          char const * const value)
   {
+    const void* dummy = &dummy;
+    dummy = &key; dummy = &value;
 #if 0
     // don't store keys with empty string values
     if (not *value) return;
@@ -552,10 +630,8 @@ namespace Formaline
   }
 
 
-
-  string rdf::
+  string
   clean (string const & txt)
-    const
   {
     ostringstream buf;
 
@@ -573,9 +649,8 @@ namespace Formaline
   }
 
 
-  string rdf::
+  string
   cleanURI (string const & uri)
-    const
   {
     const string allowed_charset ("-_.!~*'()/");
     ostringstream buf;

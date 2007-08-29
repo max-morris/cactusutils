@@ -14,6 +14,11 @@ REAL update_interval "Update interval for the meta information (in seconds)" STE
   0:* :: ""
 } 600.0
 
+INT publish_level "Importance level for meta data to be published via the Publish API" STEERABLE=always
+{
+  0:10 :: "the lower the level the more important the meta data to be published"
+} 1
+
 INT timeout "Timeout for sending meta information to a server (in seconds)" STEERABLE=always
 {
   1:* :: "a positive value"
