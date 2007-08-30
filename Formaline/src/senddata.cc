@@ -188,6 +188,13 @@ namespace Formaline
           // Supermike
           my_use_relay_host = false;
         }
+        else if (strlen (run_host) == 21 &&
+                 strncmp (run_host, "node", 4) == 0 &&
+                 strncmp (run_host + 7, ".damiana.admin", 13) == 0)
+        {
+          // Damiana
+          my_relay_host = "damiana";
+        }
         else
         {
           // Don't know a good relay host; try without
