@@ -64,14 +64,12 @@ namespace Formaline
     if (simulation_id != 0) return simulation_id;
     
     string simulation_id_str;
-    struct not_good { };
-    try {
-      // Expect the simulation ID id a file in the parent directory of
-      // the output directory
-      DECLARE_CCTK_PARAMETERS;
-      string const out_dir_str = string (out_dir);
-      size_t const last_nonslash = out_dir_str.find_last_not_of ("/");
-      if (last_nonslash == string::npos) throw (not_good());
+    // Expect the simulation ID id a file in the parent directory of
+    // the output directory
+    DECLARE_CCTK_PARAMETERS;
+    string const out_dir_str = string (out_dir);
+    size_t const last_nonslash = out_dir_str.find_last_not_of ("/");
+    if (last_nonslash != string::npos) {
       size_t const last_slash = out_dir_str.rfind ('/', last_nonslash);
       size_t const len = last_slash == string::npos ? 0 : last_slash + 1;
       string const simulation_id_filename =
@@ -79,10 +77,12 @@ namespace Formaline
       
       // Open file and read content
       ifstream simulation_id_file (simulation_id_filename.c_str());
-      if (not simulation_id_file) throw (not_good());
-      getline (simulation_id_file, simulation_id_str);
-      if (simulation_id_str.empty()) throw (not_good());
-    } catch (not_good) {
+      if (simulation_id_file) {
+        getline (simulation_id_file, simulation_id_str);
+      }
+    }
+    
+    if (simulation_id_str.empty()) {
       // Use the run ID as fallback if no simulation ID can be found
       simulation_id_str = string (get_run_id (cctkGH));
     }
