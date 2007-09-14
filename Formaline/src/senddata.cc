@@ -88,11 +88,11 @@ namespace Formaline
 // then look for 'Interrupting IO')
 //
 // Using { die 'timeout' } or { exit 1 } is not sufficient to exit
-// reliably after a timeout.  Using { POSIX::exit 1 } seems to work.
+// reliably after a timeout.  Using { POSIX::_exit 1 } seems to work.
 // The difference is that the POSIX function does not clean up, but
 // that should be fine.
 //
-<< "POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { POSIX::exit 1; }))" << endl
+<< "POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { POSIX::_exit 1; }))" << endl
 << "    or die \"Error setting SIGALRM handler: $!\";" << endl
 << "alarm " << timeout << ";" << endl
 << "" << endl
