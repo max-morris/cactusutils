@@ -170,18 +170,8 @@ namespace Formaline
         Util_GetHostName (run_host, sizeof run_host);
         if (strncmp (run_host, "ic", 2) == 0 && strlen (run_host) == 6)
         {
-          // Peyote or Lagavulin
-          int const node = atoi (run_host + 2);
-          if (node < 192)
-          {
-            // Peyote
-            my_relay_host = "peyote";
-          }
-          else
-          {
-            // Lagavulin
-            my_relay_host = "lagavulin";
-          }
+          // Peyote
+          my_relay_host = "peyote";
         }
         else if (strncmp (run_host, "mike", 4) == 0 && strlen (run_host) == 7)
         {
@@ -194,6 +184,13 @@ namespace Formaline
         {
           // Damiana
           my_relay_host = "damiana";
+        }
+        else if (strlen (run_host) == 14 &&
+                 strncmp (run_host, "node", 4) == 0 &&
+                 strncmp (run_host + 8, ".admin", 6) == 0)
+        {
+          // Belladonna
+          my_relay_host = "belladonna";
         }
         else
         {
