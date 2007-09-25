@@ -112,9 +112,11 @@ namespace Formaline
 << "if ($verbose) { print STDERR \"Opening local data file\\n\"; }" << endl
 << "open (my $FH, \"< $input\");" << endl
 << "if ($verbose) { print STDERR \"Sending data\\n\"; }" << endl
-<< "print $SH $_ while (<$FH>);" << endl
+<< "send ($SH, $_, 0) while (<$FH>);" << endl
 << "if ($verbose) { print STDERR \"Closing local data file\\n\"; }" << endl
 << "close $FH;" << endl
+<< "if ($verbose) { print STDERR \"Receiving acknowledgement\\n\"; }" << endl
+<< "recv ($SH, $_, 1, 0);" << endl
 << "if ($verbose) { print STDERR \"Shutting down connection\\n\"; }" << endl
 << "close $SH;" << endl
 << "if ($verbose) { print STDERR \"Done.\\n\"; }" << endl;
