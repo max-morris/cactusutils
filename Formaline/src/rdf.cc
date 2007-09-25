@@ -127,6 +127,15 @@ namespace Formaline
       msgbuf << "\tcctk:pbsJobname=\"" << clean (pbsJobname) << "\"" << endl;
     }
     const char* pbsHost = getenv ("PBS_O_HOST");
+    if (not pbsHost) {
+      // check whether we are running on damiana where the MPI runtime system
+      // doesn't pass on PBS environment settings
+      if (strlen(hostbuf) == 21 &&
+          strncmp(hostbuf, "node", 4) == 0 &&
+          strncmp(hostbuf + 7, ".damiana.admin", 13) == 0) {
+        pbsHost = "damiana.damiana.admin";
+      }
+    }
     if (pbsHost) {
       // fix incomplete and/or strange PBS headnode hostnames
       if (strncmp(pbsHost, "peyote", 6) == 0) {
