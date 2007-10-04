@@ -150,11 +150,11 @@ namespace Formaline
     msgbuf << "\tcctk:cwd=\"" << cwd         << "\">" << endl
            << "\t<cctk:nProcs rdf:datatype=\"&xsd;integer\">"
            << nprocs << "</cctk:nProcs>" << endl
-           << "\t<cctk:compiledAt rdf:datatype=\"&xsd;datetime\">"
+           << "\t<cctk:compiledAt rdf:datatype=\"&xsd:dateTime\">"
            << compiled_at << "</cctk:compiledAt>" << endl
-           << "\t<cctk:startedAt rdf:datatype=\"&xsd;datetime\">"
+           << "\t<cctk:startedAt rdf:datatype=\"&xsd:dateTime\">"
            << started_at << "</cctk:startedAt>" << endl
-           << "\t<cctk:lastModified rdf:datatype=\"&xsd;datetime\">"
+           << "\t<cctk:lastModified rdf:datatype=\"&xsd:dateTime\">"
            << started_at << "</cctk:lastModified>" << endl;
 
     //
@@ -351,7 +351,7 @@ namespace Formaline
 
     static int publishedItems = 0;
     msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\">" << endl
-           << "\t<cctk:lastModified rdf:datatype=\"&xsd;datetime\">"
+           << "\t<cctk:lastModified rdf:datatype=\"&xsd:dateTime\">"
            << started_at << "</cctk:lastModified>" << endl;
     for (size_t i = 0; i < rdfPublishList.size(); i++) {
       msgbuf << "\t<cctk:publish rdf:resource=\"#Publish/"
@@ -362,7 +362,7 @@ namespace Formaline
       const rdfPublishItem& item = rdfPublishList[i];
       msgbuf << "<cctk:Publish rdf:about=\"#Publish/"
              << publishedItems << "\">" << endl
-             << "\t<cctk:datetime rdf:datatype=\"&xsd;datetime\">"
+             << "\t<cctk:datetime rdf:datatype=\"&xsd:dateTime\">"
              << item.datetime << "</cctk:datetime>" << endl
              << "\t<cctk:key>" << item.key << "</cctk:key>" << endl;
       if (not item.name.empty()) {
