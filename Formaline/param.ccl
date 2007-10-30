@@ -24,6 +24,12 @@ INT timeout "Timeout for sending meta information to a server (in seconds)" STEE
   1:* :: "a positive value"
 } 10
 
+INT metadata_lifetime "Lifetime of meta information sent to a server (in hours)" STEERABLE=always
+{
+  0   :: "zero to store the metadata forever"
+  1:* :: "a positive value to limit the lifetime to so many hours"
+} 100
+
 
 
 # Parameters for collecting metadata

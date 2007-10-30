@@ -471,7 +471,9 @@ namespace Formaline
         databuf
 << (get_state() == initial ? "PUT" : "POST")
 << " /context/CactusSimulations/" << jobID;
-//        if (get_state() != initial) databuf << "?action=update";
+        // set a metadata lifetime if requested by the user
+        // (Formaline::time_to_live is hours but the RDF service wants seconds)
+        if (metadata_lifetime) databuf << "?ttl=" << (metadata_lifetime * 3600);
         databuf << " HTTP/1.0\r\n"
 << "Host: " << rdf_hostname[i] << "\r\n"
 << "Content-Type: application/rdf+xml\r\n"
