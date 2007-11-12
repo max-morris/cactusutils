@@ -9,6 +9,14 @@ BOOLEAN verbose "Produce screen output" STEERABLE=always
 {
 } no
 
+
+
+# Parameters for collecting metadata
+
+BOOLEAN collect_metadata "Collect metadata and output it in various ways" STEERABLE=always
+{
+} yes
+
 REAL update_interval "Update interval for the meta information (in seconds)" STEERABLE=always
 {
   0:* :: ""
@@ -30,14 +38,17 @@ INT metadata_lifetime "Lifetime of meta information sent to a server (in hours)"
   1:* :: "a positive value to limit the lifetime to so many hours"
 } 100
 
-
-
-# Parameters for collecting metadata
-
-BOOLEAN collect_metadata "Collect metadata and output it in various ways" STEERABLE=always
+STRING steered_parameters_log_exclusion_list "Parameters for which runtime changes should not be logged" STEERABLE=always
 {
-} yes
+  "" :: "whitespace-separated list of parameter names"
+} "CarpetRegrid::coordinates"
 
+INT nr_of_parameter_changes_to_be_logged "number of parameter changes to be logged" STEERABLE=always
+{
+  -1: :: "log all changes"
+   0: :: "no logs please"
+   1:*:: "log this many changes for a given parameter, then stop logging"
+} -1
 
 
 # Parameters for creating files containing the build and job ids

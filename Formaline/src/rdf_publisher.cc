@@ -1,8 +1,12 @@
 // $Header$
 
+#include <algorithm>
 #include <cassert>
-#include <string>
+#include <cctype>
 #include <iostream>
+#include <map>
+#include <set>
+#include <string>
 
 #include "util_Table.h"
 #include "cctk.h"
@@ -207,15 +211,53 @@ static CCTK_INT PublishTableAsRDF (CCTK_POINTER_TO_CONST cctkGH,
 }
 
 
-static void ParameterSetNotify (void *unused,
+static void ParameterSetNotify (void *,
                                 const char *thorn,
                                 const char *parameter,
                                 const char *new_value)
 {
-  unused = &unused;
+  DECLARE_CCTK_PARAMETERS;
+
+  // should parameter changes be logged at all ?
+  if (nr_of_parameter_changes_to_be_logged == 0) return;
+
+  // reparse the "steered_parameters_log_exclusion_list" if it has changed
+  int timesSet =
+    CCTK_ParameterQueryTimesSet("steered_parameters_log_exclusion_list",
+                                CCTK_THORNSTRING);
+  static int lastTimesSet = -1;
+  static std::set<std::string> exclusionList;
+  if (lastTimesSet != timesSet) {
+    exclusionList.clear();
+    std::string parseString(steered_parameters_log_exclusion_list);
+    const std::string whitespaces(" \t\n");
+    while (1) {
+      std::string::size_type start = parseString.find_first_not_of(whitespaces);
+      if (start == std::string::npos) break;
+      std::string::size_type end = parseString.find_first_of(whitespaces,start);
+      if (end == std::string::npos) end = parseString.length();
+      std::string parameter(parseString, start, end - start);
+      transform(parameter.begin(), parameter.end(), parameter.begin(), tolower);
+      exclusionList.insert(parameter);
+      parseString.erase(0, end);
+    }
+    lastTimesSet = timesSet;
+  }
+
 
   const char *name = "Set Parameter";
   std::string key(thorn); key.append ("::"); key.append (parameter);
+
+  // // do not log steering events for parameters in the log exclusion list
+  std::string lcKey(key);
+  transform(lcKey.begin(), lcKey.end(), lcKey.begin(), tolower);
+  if (exclusionList.find(lcKey) != exclusionList.end()) return;
+
+  // check if the maximum number of parameter change logs has been reached
+  static std::map<std::string, int> logList;
+  logList[lcKey]++;
+  if (nr_of_parameter_changes_to_be_logged > 0 and
+      logList[lcKey] >= nr_of_parameter_changes_to_be_logged) return;
 
   int type;
   const void* data = CCTK_ParameterGet (parameter, thorn, &type);
