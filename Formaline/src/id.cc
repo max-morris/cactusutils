@@ -1,4 +1,5 @@
 #include <cctype>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
