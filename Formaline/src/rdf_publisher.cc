@@ -237,7 +237,8 @@ static void ParameterSetNotify (void *,
       std::string::size_type end = parseString.find_first_of(whitespaces,start);
       if (end == std::string::npos) end = parseString.length();
       std::string parameter(parseString, start, end - start);
-      transform(parameter.begin(), parameter.end(), parameter.begin(), tolower);
+      std::transform(parameter.begin(), parameter.end(), parameter.begin(),
+                     tolower);
       exclusionList.insert(parameter);
       parseString.erase(0, end);
     }
@@ -250,7 +251,7 @@ static void ParameterSetNotify (void *,
 
   // // do not log steering events for parameters in the log exclusion list
   std::string lcKey(key);
-  transform(lcKey.begin(), lcKey.end(), lcKey.begin(), tolower);
+  std::transform(lcKey.begin(), lcKey.end(), lcKey.begin(), tolower);
   if (exclusionList.find(lcKey) != exclusionList.end()) return;
 
   // check if the maximum number of parameter change logs has been reached
