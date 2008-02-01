@@ -107,17 +107,20 @@ namespace Formaline
     char* rundatebuf = Util_CurrentDateTime ();
     const string started_at (clean (rundatebuf));
     free (rundatebuf);
-    char cwdbuf[512];
-    getcwd (cwdbuf, sizeof (cwdbuf));
-    const string cwd (clean (cwdbuf));
-
+    char buf[512] = "";
+    getcwd (buf, sizeof (buf));
+    const string cwd (clean (buf));
+    buf[0] = 0;
+    CCTK_RunTitle (sizeof (buf) - 1, buf);
+    const string title (clean (buf));
 
     msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\"" << endl
            << "\tcctk:simulationID=\""  << jobID       << "\"" << endl
            << "\tcctk:host=\""          << host        << "\"" << endl
            << "\tcctk:user=\""          << user        << "\"" << endl
            << "\tcctk:executable=\""    << executable  << "\"" << endl
-           << "\tcctk:version=\""       << version     << "\"" << endl;
+           << "\tcctk:version=\""       << version     << "\"" << endl
+           << "\tcctk:title=\""         << title       << "\"" << endl;
     const char* const pbsJobID = getenv ("PBS_JOBID");
     if (pbsJobID) {
       msgbuf << "\tcctk:pbsJobID=\"" << clean (pbsJobID) << "\"" << endl;
@@ -126,6 +129,7 @@ namespace Formaline
     if (pbsJobname) {
       msgbuf << "\tcctk:pbsJobname=\"" << clean (pbsJobname) << "\"" << endl;
     }
+#if 0
     const char* pbsHost = getenv ("PBS_O_HOST");
     if (not pbsHost) {
       // check whether we are running on damiana where the MPI runtime system
@@ -147,6 +151,7 @@ namespace Formaline
       }
       msgbuf << "\tcctk:pbsHost=\"" << clean (pbsHost) << "\"" << endl;
     }
+#endif
     msgbuf << "\tcctk:cwd=\"" << cwd         << "\">" << endl
            << "\t<cctk:nProcs rdf:datatype=\"&xsd;integer\">"
            << nprocs << "</cctk:nProcs>" << endl
@@ -154,8 +159,8 @@ namespace Formaline
            << compiled_at << "</cctk:compiledAt>" << endl
            << "\t<cctk:startedAt rdf:datatype=\"&xsd;dateTime\">"
            << started_at << "</cctk:startedAt>" << endl
-           << "\t<cctk:lastModified rdf:datatype=\"&xsd;dateTime\">"
-           << started_at << "</cctk:lastModified>" << endl;
+           << "\t<cctk:lastUpdated rdf:datatype=\"&xsd;dateTime\">"
+           << started_at << "</cctk:lastUpdated>" << endl;
 
     //
     // metadata as references to other nodes
@@ -317,6 +322,24 @@ namespace Formaline
   }
 
 
+  static string AppendToTransaction(const string operation,
+                                    const string& subject,
+                                    const string& predicate,
+                                    const string& object)
+  {
+    ostringstream buf;
+    buf << "<" << operation << ">\n"
+           "  <uri>&simID;" << subject << "</uri>\n"
+           "  <uri>&cctk;" << predicate << "</uri>\n"
+           "  " << object  << "\n"
+           "  <contexts>\n"
+           "    <uri>&context;</uri>\n"
+           "  </contexts>\n"
+           "</" << operation << ">\n\n";
+    return buf.str();
+  }
+
+
   void rdf::Update (cGH const * const cctkGH)
   {
     DECLARE_CCTK_PARAMETERS;
@@ -348,56 +371,68 @@ namespace Formaline
 
     char* rundatebuf = Util_CurrentDateTime ();
     const string started_at (clean (rundatebuf));
+    free (rundatebuf);
 
     static int publishedItems = 0;
-    msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\">" << endl
-           << "\t<cctk:lastModified rdf:datatype=\"&xsd;dateTime\">"
-           << started_at << "</cctk:lastModified>" << endl;
     for (size_t i = 0; i < rdfPublishList.size(); i++) {
-      msgbuf << "\t<cctk:publish rdf:resource=\"#Publish/"
-             << (publishedItems + i) << "\"/>" << endl;
+      ostringstream object;
+      object  << "<uri>&simID;Publish/" << (publishedItems + i) << "</uri>";
+      msgbuf << AppendToTransaction("add", jobID, "publish", object.str());
     }
-    msgbuf << "</cctk:Simulation>" << endl << endl;
     for (size_t i = 0; i < rdfPublishList.size(); i++, publishedItems++) {
       const rdfPublishItem& item = rdfPublishList[i];
-      msgbuf << "<cctk:Publish rdf:about=\"#Publish/"
-             << publishedItems << "\">" << endl
-             << "\t<cctk:datetime rdf:datatype=\"&xsd;dateTime\">"
-             << item.datetime << "</cctk:datetime>" << endl
-             << "\t<cctk:key>" << item.key << "</cctk:key>" << endl;
+      ostringstream subject, object;
+      subject << "Publish/" << publishedItems;
+      object << "<literal datatype=\"&xsd;dateTime\">" << item.datetime << "</literal>";
+      msgbuf << AppendToTransaction("add", subject.str(), "datetime", object.str());
+      object.str("");
+      object << "<literal>" << item.key << "</literal>";
+      msgbuf << AppendToTransaction("add", subject.str(), "key", object.str());
       if (not item.name.empty()) {
-        msgbuf << "\t<cctk:name>" << item.name << "</cctk:name>" << endl;
+        object.str("");
+        object << "<literal>" << item.name << "</literal>";
+        msgbuf << AppendToTransaction("add", subject.str(), "name", object.str());
       }
       if (item.hasCCTKinfo) {
-        msgbuf << "\t<cctk:time>" << item.cctk_time << "</cctk:time>" << endl;
-        msgbuf << "\t<cctk:iteration>" << item.cctk_iteration
-               << "</cctk:iteration>" << endl;
+        object.str("");
+        object << "<literal>" << item.cctk_time << "</literal>";
+        msgbuf << AppendToTransaction("add", subject.str(), "time", object.str());
+        object.str("");
+        object << "<literal>" << item.cctk_iteration << "</literal>";
+        msgbuf << AppendToTransaction("add", subject.str(), "iteration", object.str());
       }
+
       ostringstream tablebuf;
       if (item.isTable) {
         for (size_t j = 0; j < item.table.size(); j++) {
           const rdfTableEntry& entry = item.table[j];
-          msgbuf << "\t<cctk:tableEntry rdf:resource=\"#Publish/"
-                 << publishedItems << "/" << j << "\"/>" << endl;
-          tablebuf << "<cctk:TableEntry rdf:about=\"#Publish/"
-                   << publishedItems << "/" << j << "\">" << endl
-                   << "\t<cctk:key>" << entry.key << "</cctk:key>" << endl
-                   << "\t<cctk:value";
+          subject.str("");
+          subject << "Publish/" << publishedItems;
+          object.str("");
+          object << "<uri>&simID;Publish/" << publishedItems  << "/" << j << "</uri>";
+          msgbuf << AppendToTransaction("add", subject.str(), "tableEntry", object.str());
+          subject.str("");
+          subject << "Publish/" << publishedItems << "/" << j;
+          object.str("");
+          object << "<literal>" << entry.key << "</literal>";
+          msgbuf << AppendToTransaction("add", subject.str(), "key", object.str());
+          object.str("");
+          object << "<literal";
           if (not entry.value.type.empty()) {
-            tablebuf << " rdf:datatype=\"&xsd;" << entry.value.type << "\"";
+            object << " datatype=\"&xsd;" << entry.value.type << "\"";
           }
-          tablebuf << ">" << entry.value.value << "</cctk:value>" << endl
-                   << "</cctk:TableEntry>" << endl;
+          object << ">" << entry.value.value << "</literal>";
+          msgbuf << AppendToTransaction("add", subject.str(), "value", object.str());
         }
       } else {
-        msgbuf << "\t<cctk:value";
+        object.str("");
+        object << "<literal";
         if (not item.scalar.type.empty()) {
-          msgbuf << " rdf:datatype=\"&xsd;" << item.scalar.type << "\"";
+          object << " datatype=\"&xsd;" << item.scalar.type << "\"";
         }
-        msgbuf << ">" << item.scalar.value << "</cctk:value>" << endl;
+        object << ">" << item.scalar.value << "</literal>";
+        msgbuf << AppendToTransaction("add", subject.str(), "value", object.str());
       }
-      msgbuf << "</cctk:Publish>" << endl;
-      msgbuf << tablebuf.str();
     }
 
     rdfPublishList.clear();
@@ -412,51 +447,42 @@ namespace Formaline
     // check if anything needs to be done
     if (msgbuf.str().empty()) return;
 
+    // this simulation's RDF context
+    const string context = "CactusSimulations:" + jobID;
+    const string contextURI = cleanURI("<" + context + ">");
+
     // RDF/XML document header with some namespace definitions
-    const string header =
+    string header =
 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
 "<!DOCTYPE owl [\n"
-"\t<!ENTITY rdf  'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>\n"
-"\t<!ENTITY xsd  'http://www.w3.org/2001/XMLSchema#'>\n"
-"\t<!ENTITY cctk 'http://www.gac-grid.org/project-products/Software/InformationService/InformationProducer/CactusRDFProducer/2006/08/cctk-schema#'>\n"
-
-#if 0
-      << "\t<!ENTITY cctk 'http://www.aei.mpg.de/~tradke/cctk-schema#'>" << endl
-      << "\t<!ENTITY cctk 'http://www.cct.lsu.edu/~dstark/cctk/0.1/'>" << endl
-      << "<!--" << endl
-      << "\t<!ENTITY dc   'http://purl.org/dc/elements/1.1/'>" << endl
-      << "\t<!ENTITY doap 'http://usefulinc.com/ns/doap#'>" << endl
-      << "\t<!ENTITY foaf 'http://xmlns.com/foaf/0.1/'>" << endl
-      << "\t<!ENTITY rdfs 'http://www.w3.org/2000/01/rdf-schema#'>" << endl
-      << "\t<!ENTITY form 'http://www.aei.mpg.de/form#'>" << endl
-      << "-->" << endl
-#endif
-"]>\n"
-"<rdf:RDF xmlns:rdf=\"&rdf;\"\n"
-"\txmlns:xsd=\"&xsd;\"\n"
-"\txmlns:cctk=\"&cctk;\"\n"
-">\n"
-#if 0
-      << "<!--" << endl
-      << "\txmlns:dc=\"&dc;\"" << endl
-      << "\txmlns:doap=\"&doap;\"" << endl
-      << "\txmlns:foaf=\"&foaf;\"" << endl
-      << "\txmlns:rdfs=\"&rdfs;\"" << endl
-      << "\txmlns:form=\"&form;\"" << endl
-      << "-->" << endl
-      << "" << endl
-      << "<!-- lessons learned so far" << endl
-      << "  " << endl
-      << "     * although it would be better to use rdf:ID as relative URIs for objects" << endl
-      << "       (because they are enforced to be unique), rdf:about must be used instead" << endl
-      << "       because the value of a relative rdf:about URI may contain special" << endl
-      << "       characters (such as '/') whereas rdf:ID must not" << endl
-      << "-->" << endl
-#endif
-"\n\n";
+"\t<!ENTITY rdf     'http://www.w3.org/1999/02/22-rdf-syntax-ns#'>\n"
+"\t<!ENTITY xsd     'http://www.w3.org/2001/XMLSchema#'>\n"
+"\t<!ENTITY cctk    'http://www.gac-grid.org/project-products/Software/InformationService/InformationProducer/CactusRDFProducer/2006/08/cctk-schema#'>\n"
+"\t<!ENTITY simID   '" + context + "#'>\n"
+"\t<!ENTITY context '" + context + "'>\n"
+"]>\n\n";
+    if (get_state() == initial) {
+      header += "<rdf:RDF xmlns:rdf=\"&rdf;\"\n"
+                "  xmlns:xsd=\"&xsd;\"\n"
+                "  xmlns:cctk=\"&cctk;\"\n"
+                ">\n\n";
+    } else {
+      header += "<transaction>\n\n";
+    }
 
     // RDF/XML document footer
-    const string footer = "\n</rdf:RDF>\n";
+    const string footer = get_state() == initial ?
+                          "\n</rdf:RDF>\n" : "\n</transaction>\n";
+
+    if (get_state() != initial) {
+      char* dateBuffer = Util_CurrentDateTime();
+      const string lastUpdated = "<literal datatype=\"&xsd;dateTime\">" +
+                                 clean(dateBuffer) + "</literal>";
+      free(dateBuffer);
+
+      msgbuf << AppendToTransaction("remove", jobID, "lastUpdated", "<null/>");
+      msgbuf << AppendToTransaction("add", jobID, "lastUpdated", lastUpdated);
+    }
 
     const int len = header.length() + msgbuf.str().length() + footer.length();
 
@@ -470,13 +496,16 @@ namespace Formaline
         ostringstream databuf;
         databuf
 << (get_state() == initial ? "PUT" : "POST")
-<< " /context/CactusSimulations/" << jobID;
+<< " /openrdf-sesame/repositories/Simulations/statements"
+   "?context=" << contextURI << "&baseURI=" << contextURI;
+//<< " /context/CactusSimulations/" << jobID;
         // set a metadata lifetime if requested by the user
         // (Formaline::time_to_live is hours but the RDF service wants seconds)
-        if (metadata_lifetime) databuf << "?ttl=" << (metadata_lifetime * 3600);
+        // if (metadata_lifetime) databuf << "?ttl=" << (metadata_lifetime * 3600);
         databuf << " HTTP/1.0\r\n"
 << "Host: " << rdf_hostname[i] << "\r\n"
-<< "Content-Type: application/rdf+xml\r\n"
+<< "Content-Type: application/"
+<< (get_state() == initial ? "rdf+xml" : "x-rdftransaction") << "\r\n"
 << "Content-Length: " << len << "\r\n\r\n"
 << header << msgbuf.str() << footer << "\r\n\r\n";
 
