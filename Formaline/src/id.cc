@@ -42,12 +42,24 @@ namespace Formaline
   
   
   
+  // Unique source ID
+  extern "C" char const source_id[];
+  
   // Unique build ID
   extern "C" char const build_id[];
   
   
   
-  // Get a unique build id
+  // Get the unique source id
+  char const *
+  get_source_id (cGH const * const cctkGH)
+  {
+    return source_id;
+  }
+  
+  
+  
+  // Get the unique build id
   char const *
   get_build_id (cGH const * const cctkGH)
   {
@@ -202,6 +214,7 @@ namespace Formaline
   extern "C" int
   Formaline_PrintIDs ()
   {
+    CCTK_VInfo (CCTK_THORNSTRING, "Source id: %s", get_source_id (0));
     CCTK_VInfo (CCTK_THORNSTRING, "Build id: %s", get_build_id (0));
     CCTK_VInfo (CCTK_THORNSTRING, "Simulation id: %s", get_simulation_id (0));
     CCTK_VInfo (CCTK_THORNSTRING, "Run id: %s", get_run_id (0));

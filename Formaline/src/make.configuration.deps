@@ -6,10 +6,14 @@
 # Some configury magic
 
 # Should we use gtar or tar?
-TAR = $(shell gtar --help > /dev/null 2> /dev/null && echo gtar || echo tar)
+TAR := $(shell gtar --help > /dev/null 2> /dev/null && echo gtar || echo tar)
 
 # Does tr support -C, or should we use -c instead?
-TR_C = $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
+TR_C := $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
+
+
+
+################################################################################
 
 
 
@@ -39,6 +43,8 @@ $(FRM-LIB): $(FRM-OBJS)
 
 .PRECIOUS: $(FRM-LIB)
 
+
+
 ## Cache optimisation:
 ## Build the thorns' tarballs already while the thorns are compiled
 ## (does not work)
@@ -48,26 +54,36 @@ $(FRM-LIB): $(FRM-OBJS)
 
 
 # Unique ID for the build
-$(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
-	$(CC) $(CFLAGS) -c -o $@ $^
 
 # (force a new ID to be created every time)
-# (do this after the thorn's library has been build, so that the
+# (do this after the thorn's library has been built, so that the
 #  script gethostname.pl has been copied to the scratch directory)
-.PHONY: $(TARBALL_DIR)/build-id.c
-$(TARBALL_DIR)/build-id.c: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
-	{ \
-	echo '/* This is an auto-generated file -- do not edit */'; \
+.PHONY: $(TOP)/BUILD-ID
+.PRECIOUS: $(TOP)/BUILD-ID
+$(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
 	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'`; \
 	hostname=`$(TARBALL_DIR)/gethostname.pl`; \
 	user="$$USER"; \
 	timestamp=`date -u +%Y.%m.%d-%H.%M.%S`; \
 	pid="$$$$"; \
 	id="build-$$config-$$hostname-$$user-$$timestamp-$$pid"; \
-	echo 'char const build_id[] = "'$$id'";'; \
-	} > $@
+	echo "$$id" > $@
 
-.PRECIOUS: $(TARBALL_DIR)/build-id.c $(TARBALL_DIR)/build-id.o
+
+
+.PRECIOUS: $(TARBALL_DIR)/build-id.o
+$(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+.PRECIOUS: $(TARBALL_DIR)/build-id.c
+$(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID $(TOP)/GIT-COMMIT-ID
+	{ \
+	echo '/* This is an auto-generated file -- do not edit */'; \
+	build_id="$$(cat $(TOP)/BUILD-ID)"; \
+	echo 'char const build_id[] = "'$$build_id'";'; \
+	git_commit_id="$$(cat $(TOP)/GIT-COMMIT-ID)"; \
+	echo 'char const source_id[] = "git-'$$git_commit_id'";'; \
+	} > $@
 
 
 
@@ -139,7 +155,7 @@ $(TARBALL_DIR)/cactus-flesh-source.ccldeps:
 ###############################################################################
 
 $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
-	@echo "Creating Formaline tarball for thorn $(@:$(TARBALL_DIR)/cactus-thorn-source-%.o=%)"
+	@echo "Creating Formaline tarball for thorn $*"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
@@ -154,7 +170,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-
 # files that do not influence the executable.
 $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX) $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps
 	cd $(CCTK_HOME) && \
-	find arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.files=%),$(THORNS)) \
+	find arrangements/$(filter %/$*,$(THORNS)) \
 		-name 'doc' -prune -o \
 		-name 'par' -prune -o \
 		-name 'test' -prune -o \
@@ -170,9 +186,9 @@ $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps:
 	{ \
 	        echo "$(@:%.ccldeps=%.files) \\"; \
 	        echo "$@: \\"; \
-	        echo " $(CCTK_HOME)/arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps=%),$(THORNS))/interface.ccl \\"; \
-	        echo " $(CCTK_HOME)/arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps=%),$(THORNS))/param.ccl \\"; \
-	        echo " $(CCTK_HOME)/arrangements/$(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps=%),$(THORNS))/schedule.ccl"; \
+	        echo " $(CCTK_HOME)/arrangements/$(filter %/$*,$(THORNS))/interface.ccl \\"; \
+	        echo " $(CCTK_HOME)/arrangements/$(filter %/$*,$(THORNS))/param.ccl \\"; \
+	        echo " $(CCTK_HOME)/arrangements/$(filter %/$*,$(THORNS))/schedule.ccl"; \
 	} > $@
 
 .PRECIOUS: $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps $(TARBALL_DIR)/cactus-thorn-source-%.files $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(TARBALL_DIR)/cactus-thorn-source-%.c $(TARBALL_DIR)/cactus-thorn-source-%.o
@@ -221,3 +237,83 @@ $(FRM-OBJS-added): $(FRM-LIB).objectlist.create
 	echo $(@:%.added=%) >> $(FRM-LIB).objectlist
 
 endif
+
+
+
+###############################################################################
+# Git repository of source code
+###############################################################################
+
+
+
+# Does git exist, or should we do nothing instead?
+GIT-REPO = $(CCTK_HOME)
+GIT-DIR = $(CCTK_HOME)/.git
+HAVE-GIT := $(shell env PATH=$$PATH:$$HOME/git/bin git --version > /dev/null 2>&1 && echo 'true' || echo 'false')
+GIT := $(shell $(HAVE-GIT) && echo 'env PATH=$$PATH:$$HOME/git/bin git' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
+
+
+
+$(EXEDIR)$(DIRSEP)$(EXE): git-commit
+
+.PHONY: git-commit
+git-commit: $(TOP)/GIT-COMMIT-ID
+
+.PRECIOUS: $(TOP)/GIT-COMMIT-ID
+$(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.files,$(notdir $(THORNS)))
+	if $(HAVE-GIT); then \
+	cd $(GIT-REPO) && \
+	true "Ensure that the git repository exists" && \
+	if ! test -e $(GIT-DIR) -a -e $(GIT-DIR)/HEAD; then \
+		mkdir -p $(GIT-DIR) && \
+		echo "Formaline: Creating new git repository..." && \
+		$(GIT) init && \
+		true "Add a root commit to please some tools" && \
+		: >> README && \
+		$(GIT) add README && \
+		$(GIT) commit -m 'README'; \
+	fi && \
+	true "Remove all staged files" && \
+	echo "Formaline: Preparing git repository..." && \
+	$(GIT) rm --cached -r . > /dev/null 2>&1 || true && \
+	echo "Formaline: Adding flesh to git repository..." && \
+	cat $(TARBALL_DIR)/cactus-flesh-source.files | xargs $(GIT) add; \
+	for thorn in $(notdir $(THORNS)); do \
+		echo "Formaline: Adding thorn $$thorn to git repository..." && \
+		cat $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files | xargs $(GIT) add; \
+	done && \
+	true "Write source tree and create a commit" && \
+	echo "Formaline: Committing source tree to git repository..." && \
+	$(GIT) add configs/$(notdir $(TOP))/BUILD-ID && \
+	$(GIT) write-tree > $(TARBALL_DIR)/GIT-TREE-ID && \
+	true "Try to use the previous commit as parent, if possible" && \
+	if test -e $@ -a -n "$$(cat $@)"; then \
+		$(GIT) commit-tree $$(cat $(TARBALL_DIR)/GIT-TREE-ID) -p "$$(cat $@)" < $(TOP)/BUILD-ID > $@.new || \
+		$(GIT) commit-tree $$(cat $(TARBALL_DIR)/GIT-TREE-ID)                 < $(TOP)/BUILD-ID > $@.new; \
+	else \
+		$(GIT) commit-tree $$(cat $(TARBALL_DIR)/GIT-TREE-ID)                 < $(TOP)/BUILD-ID > $@.new; \
+	fi && \
+	mv $@.new $@ && \
+	true "Remember the commit id" && \
+	mkdir -p $(CCTK_HOME)/GIT-COMMIT-IDS && \
+	cp $@ $(CCTK_HOME)/GIT-COMMIT-IDS/$$(cat $@) && \
+	echo "Formaline: Git commit id is $$(cat $@)" && \
+	true "Update branch" && \
+	$(GIT) branch -f $(EXE:cactus_%=%) $$(cat $@) && \
+	echo "Formaline: Cleaning up git repository..." && \
+	$(GIT) rm --cached -r . > /dev/null 2>&1 || true; \
+	true "Call git-gc for good measure" && \
+	echo "Formaline: Optimising git repository (slow only the first time)..." && \
+	$(GIT) gc > /dev/null 2>&1; \
+	fi
+
+
+
+# TODO:
+# 1. Remember git-archive to get a tarball
+# 2. Don't create a version history; instead, leave all commits independent
+# 3. Push the commits automatically to a central (write-only?) repository
+# 4. What if the Cactus directory is alread the root of a git repository?
+
+# git-archive --prefix=Cactus/ wavetoy | gzip > wavetoy.tar.gz
+# git-archive --prefix=Cactus/ wavetoy | { cd /somewhere && tar xf -; }
