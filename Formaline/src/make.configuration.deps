@@ -60,13 +60,16 @@ $(FRM-LIB): $(FRM-OBJS)
 .PHONY: $(TOP)/BUILD-ID
 .PRECIOUS: $(TOP)/BUILD-ID
 $(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
-	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'`; \
-	hostname=`$(TARBALL_DIR)/gethostname.pl`; \
-	user="$$USER"; \
-	timestamp=`date -u +%Y.%m.%d-%H.%M.%S`; \
-	pid="$$$$"; \
-	id="build-$$config-$$hostname-$$user-$$timestamp-$$pid"; \
-	echo "$$id" > $@
+	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'` && \
+	hostname=`$(TARBALL_DIR)/gethostname.pl` && \
+	user="$$USER" && \
+	dirname=`echo "$(subst /,-,$(CCTK_HOME:/%=%))" | $(TR_C) -d '[:alnum:]+-._]'` && \
+	timestamp=`date -u +%Y.%m.%d-%H.%M.%S` && \
+	pid="$$$$" && \
+	build_id="build-$$config-$$hostname-$$user-$$timestamp-$$pid" && \
+	echo "$$build_id" > $@ && \
+	config_id="config-$$config-$$hostname-$$dirname" && \
+	echo "$$config_id" > $(TOP)/CONFIG-ID
 
 
 
@@ -77,11 +80,13 @@ $(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
 .PRECIOUS: $(TARBALL_DIR)/build-id.c
 $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID $(TOP)/GIT-COMMIT-ID
 	{ \
-	echo '/* This is an auto-generated file -- do not edit */'; \
-	build_id="$$(cat $(TOP)/BUILD-ID)"; \
-	echo 'char const build_id[] = "'$$build_id'";'; \
-	git_commit_id="$$(cat $(TOP)/GIT-COMMIT-ID)"; \
-	echo 'char const source_id[] = "git-'$$git_commit_id'";'; \
+	echo '/* This is an auto-generated file -- do not edit */' && \
+	build_id="$$(cat $(TOP)/BUILD-ID)" && \
+	echo 'char const build_id[] = "'$$build_id'";' && \
+	git_commit_id="$$(cat $(TOP)/GIT-COMMIT-ID)" && \
+	echo 'char const source_id[] = "git-'$$git_commit_id'";' && \
+	config_id="$$(cat $(TOP)/CONFIG-ID)" && \
+	echo 'char const config_id[] = "'config_id'";'; \
 	} > $@
 
 
@@ -298,7 +303,8 @@ $(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $
 	cp $@ $(CCTK_HOME)/GIT-COMMIT-IDS/$$(cat $@) && \
 	echo "Formaline: Git commit id is $$(cat $@)" && \
 	true "Update branch" && \
-	$(GIT) branch -f $(EXE:cactus_%=%) $$(cat $@) && \
+	config_id=$$(cat $(TOP)/CONFIG-ID) && \
+	$(GIT) branch -f $$config_id $$(cat $@) && \
 	echo "Formaline: Cleaning up git repository..." && \
 	$(GIT) rm --cached -r . > /dev/null 2>&1 || true; \
 	true "Call git-gc for good measure" && \
