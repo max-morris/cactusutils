@@ -45,7 +45,7 @@ namespace Formaline
   // Configuration ID
   extern "C" char const config_id[];
   
-  // Unique source ID
+  // Unique source tree ID
   extern "C" char const source_id[];
   
   // Unique build ID
@@ -199,6 +199,20 @@ namespace Formaline
   }
   
   
+  
+  extern "C" CCTK_POINTER_TO_CONST
+  Formaline_UniqueConfigID (CCTK_POINTER_TO_CONST const cctkGH_)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    return static_cast<CCTK_POINTER_TO_CONST> (get_config_id (cctkGH));
+  }
+  
+  extern "C" CCTK_POINTER_TO_CONST
+  Formaline_UniqueSourceID (CCTK_POINTER_TO_CONST const cctkGH_)
+  {
+    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
+    return static_cast<CCTK_POINTER_TO_CONST> (get_source_id (cctkGH));
+  }
   
   extern "C" CCTK_POINTER_TO_CONST
   Formaline_UniqueBuildID (CCTK_POINTER_TO_CONST const cctkGH_)

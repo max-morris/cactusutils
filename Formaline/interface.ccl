@@ -10,6 +10,28 @@ USES INCLUDE HEADER: Publish.h
 
 
 # Return a pointer to an unmodifiable C string
+# which contains a unique ID for this configuration
+CCTK_POINTER_TO_CONST \
+FUNCTION UniqueConfigID (CCTK_POINTER_TO_CONST IN cctkGH)
+
+PROVIDES FUNCTION UniqueConfigID \
+    WITH Formaline_UniqueConfigID \
+    LANGUAGE C
+
+
+
+# Return a pointer to an unmodifiable C string
+# which contains a unique ID for this source tree
+CCTK_POINTER_TO_CONST \
+FUNCTION UniqueSourceID (CCTK_POINTER_TO_CONST IN cctkGH)
+
+PROVIDES FUNCTION UniqueSourceID \
+    WITH Formaline_UniqueSourceID \
+    LANGUAGE C
+
+
+
+# Return a pointer to an unmodifiable C string
 # which contains a unique ID for this build
 CCTK_POINTER_TO_CONST \
 FUNCTION UniqueBuildID (CCTK_POINTER_TO_CONST IN cctkGH)
@@ -28,6 +50,18 @@ FUNCTION UniqueSimulationID (CCTK_POINTER_TO_CONST IN cctkGH)
 PROVIDES FUNCTION UniqueSimulationID \
     WITH Formaline_UniqueSimulationID \
     LANGUAGE C
+
+
+
+# Return a pointer to an unmodifiable C string
+# which contains a unique ID for this run
+CCTK_POINTER_TO_CONST \
+FUNCTION UniqueRunID (CCTK_POINTER_TO_CONST IN cctkGH)
+
+PROVIDES FUNCTION UniqueRunID \
+    WITH Formaline_UniqueRunID \
+    LANGUAGE C
+
 
 
 #############
@@ -130,14 +164,3 @@ USES FUNCTION PublishInt_Unregister
 USES FUNCTION PublishReal_Unregister
 USES FUNCTION PublishString_Unregister
 USES FUNCTION PublishTable_Unregister
-
-
-
-# Return a pointer to an unmodifiable C string
-# which contains a unique ID for this run
-CCTK_POINTER_TO_CONST \
-FUNCTION UniqueRunID (CCTK_POINTER_TO_CONST IN cctkGH)
-
-PROVIDES FUNCTION UniqueRunID \
-    WITH Formaline_UniqueRunID \
-    LANGUAGE C
