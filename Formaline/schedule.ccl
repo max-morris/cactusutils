@@ -1,5 +1,4 @@
 # Schedule definitions for thorn Formaline
-# $Header$
 
 if (output_source)
 {

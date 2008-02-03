@@ -1,5 +1,3 @@
-// $Header$
-
 #include "thornlist.hh"
 
 namespace Formaline

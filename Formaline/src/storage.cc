@@ -1,5 +1,3 @@
-// $Header$
-
 #include <sstream>
 
 #include "storage.hh"

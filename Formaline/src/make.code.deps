@@ -1,5 +1,4 @@
 # make.code.deps file for thorn Formaline   -*-Makefile-*-
-# $Header$
 
 # Store the utilities in the scratch directory of this configuration.
 

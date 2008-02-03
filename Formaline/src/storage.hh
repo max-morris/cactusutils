@@ -1,5 +1,3 @@
-// $Header$
-
 #ifndef FORMALINE_STORAGE_HH
 #define FORMALINE_STORAGE_HH
 

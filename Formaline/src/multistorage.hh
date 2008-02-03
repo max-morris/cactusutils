@@ -1,5 +1,3 @@
-// $Header$
-
 #ifndef FORMALINE_MULTISTORAGE_HH
 #define FORMALINE_MULTISTORAGE_HH
 

@@ -1,5 +1,3 @@
-// $Header$
-
 #ifndef FORMALINE_RDF_HH
 #define FORMALINE_RDF_HH
 

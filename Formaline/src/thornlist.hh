@@ -1,5 +1,3 @@
-// $Header$
-
 #ifndef FORMALINE_THORNLIST_HH
 #define FORMALINE_THORNLIST_HH
 

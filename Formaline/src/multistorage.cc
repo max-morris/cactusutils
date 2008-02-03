@@ -1,5 +1,3 @@
-// $Header$
-
 #include "multistorage.hh"
 
 
