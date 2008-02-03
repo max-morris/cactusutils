@@ -99,8 +99,27 @@ namespace Formaline
     if (verbose) CCTK_INFO ("Announcing initial meta information");
   
     if (create_id_files) {
-      // Create files from the build, run, and simulation ids
+      // Create files from the configuration, source, build, run, and
+      // simulation ids
       // (This shows what jobs were run in the output directory)
+      {
+        ostringstream filenamebuf;
+        filenamebuf << out_dir << "/formaline-" << get_config_id (cctkGH);
+        string const filenamestring = filenamebuf.str();
+        ofstream fil;
+        fil.open (filenamestring.c_str(), ios::trunc);
+        fil << get_config_id (cctkGH) << endl;
+        fil.close ();
+      }
+      {
+        ostringstream filenamebuf;
+        filenamebuf << out_dir << "/formaline-" << get_source_id (cctkGH);
+        string const filenamestring = filenamebuf.str();
+        ofstream fil;
+        fil.open (filenamestring.c_str(), ios::trunc);
+        fil << get_source_id (cctkGH) << endl;
+        fil.close ();
+      }
       {
         ostringstream filenamebuf;
         filenamebuf << out_dir << "/formaline-" << get_build_id (cctkGH);
@@ -341,6 +360,14 @@ namespace Formaline
       // Compiling
   
       {
+        stores.store ("config_id", get_config_id (cctkGH));
+      }
+  
+      {
+        stores.store ("source_id", get_source_id (cctkGH));
+      }
+  
+      {
         stores.store ("build_id", get_build_id (cctkGH));
       }
   
@@ -364,6 +391,14 @@ namespace Formaline
   
   
       // Running
+  
+      {
+        stores.store ("simulation_id", get_simulation_id (cctkGH));
+      }
+  
+      {
+        stores.store ("run_id", get_run_id (cctkGH));
+      }
   
 #if 0
       {
