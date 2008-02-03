@@ -309,7 +309,8 @@ $(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $
 	$(GIT) rm --cached -r . > /dev/null 2>&1 || true; \
 	true "Call git-gc for good measure" && \
 	echo "Formaline: Optimising git repository (slow only the first time)..." && \
-	$(GIT) gc > /dev/null 2>&1; \
+	$(GIT) gc > /dev/null 2>&1 && \
+	echo "Formaline: Done."; \
 	fi
 
 
