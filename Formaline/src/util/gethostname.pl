@@ -12,6 +12,14 @@
 
 use strict;
 
+# Get the user's idea of this system's host name
+my $userhostname = `cat ~/.hostname 2> /dev/null`;
+chomp $userhostname;
+if ($userhostname ne '') {
+    print "$userhostname\n";
+    exit 0;
+}
+
 # Get the system's idea of its host name
 my $hostname = `hostname`;
 chomp $hostname;
