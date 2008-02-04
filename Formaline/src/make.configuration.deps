@@ -83,9 +83,9 @@ $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID $(TOP)/GIT-COMMIT-ID
 	echo '/* This is an auto-generated file -- do not edit */' && \
 	build_id="$$(cat $(TOP)/BUILD-ID)" && \
 	echo 'char const build_id[] = "'$$build_id'";' && \
-	git_commit_id="$$(cat $(TOP)/GIT-COMMIT-ID)" && \
+	git_commit_id="$$(cat $(TOP)/GIT-COMMIT-ID || echo 'NO-GIT-ID')" && \
 	echo 'char const source_id[] = "git-'$$git_commit_id'";' && \
-	config_id="$$(cat $(TOP)/CONFIG-ID)" && \
+	config_id="$$(cat $(TOP)/CONFIG-ID || echo 'NO-CONFIG-ID')" && \
 	echo 'char const config_id[] = "'config_id'";'; \
 	} > $@
 
