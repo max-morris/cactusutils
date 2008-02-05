@@ -1,4 +1,4 @@
-Cactus::cctk_run_title = "Announce in the various ways"
+Cactus::cctk_run_title = "Announce to a portal"
 
 Cactus::cctk_show_banners  = no
 Cactus::cctk_show_schedule = no
