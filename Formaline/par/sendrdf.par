@@ -1,0 +1,20 @@
+Cactus::cctk_run_title = "Announce to an RDF metadata server"
+
+Cactus::cctk_show_banners  = no
+Cactus::cctk_show_schedule = no
+
+Cactus::cctk_itlast = 0
+
+ActiveThorns = "CoordBase InitBase"
+
+ActiveThorns = "IOUtil"
+IO::out_dir = $parfile
+IOUtil::parfile_write = no
+
+ActiveThorns = "PUGH"
+
+ActiveThorns = "Formaline"
+Formaline::verbose = yes
+Formaline::send_as_rdf     = yes
+Formaline::rdf_hostname[0] = "buran.aei.mpg.de"
+Formaline::rdf_port    [0] = 24997
