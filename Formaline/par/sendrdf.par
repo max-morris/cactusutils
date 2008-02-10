@@ -14,7 +14,8 @@ IOUtil::parfile_write = no
 ActiveThorns = "PUGH"
 
 ActiveThorns = "Formaline"
-Formaline::verbose = yes
+Formaline::verbose         = yes
+Formaline::publish_level   = 2
 Formaline::send_as_rdf     = yes
 Formaline::rdf_hostname[0] = "buran.aei.mpg.de"
 Formaline::rdf_port    [0] = 24997
