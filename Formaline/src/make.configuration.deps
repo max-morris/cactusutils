@@ -57,7 +57,6 @@ $(FRM-LIB): $(FRM-OBJS)
 # (force a new ID to be created every time)
 # (do this after the thorn's library has been built, so that the
 #  script gethostname.pl has been copied to the scratch directory)
-.PHONY: $(TOP)/BUILD-ID
 .PRECIOUS: $(TOP)/BUILD-ID
 $(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
 	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'` && \
@@ -86,7 +85,7 @@ $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID $(TOP)/GIT-COMMIT-ID
 	git_commit_id="$$(cat $(TOP)/GIT-COMMIT-ID || echo 'NO-GIT-ID')" && \
 	echo 'char const source_id[] = "git-'$$git_commit_id'";' && \
 	config_id="$$(cat $(TOP)/CONFIG-ID || echo 'NO-CONFIG-ID')" && \
-	echo 'char const config_id[] = "'config_id'";'; \
+	echo 'char const config_id[] = "'$$config_id'";'; \
 	} > $@
 
 
@@ -263,9 +262,10 @@ $(EXEDIR)$(DIRSEP)$(EXE): git-commit
 .PHONY: git-commit
 git-commit: $(TOP)/GIT-COMMIT-ID
 
+ifeq ($(HAVE-GIT),true)
+
 .PRECIOUS: $(TOP)/GIT-COMMIT-ID
 $(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.files,$(notdir $(THORNS)))
-	if $(HAVE-GIT); then \
 	cd $(GIT-REPO) && \
 	true "Ensure that the git repository exists" && \
 	if ! test -e $(GIT-DIR) -a -e $(GIT-DIR)/HEAD; then \
@@ -279,7 +279,7 @@ $(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $
 	fi && \
 	true "Remove all staged files" && \
 	echo "Formaline: Preparing git repository..." && \
-	$(GIT) rm --cached -r . > /dev/null 2>&1 || true && \
+	$(GIT) rm --cached -r . > /dev/null 2>&1; \
 	echo "Formaline: Adding flesh to git repository..." && \
 	cat $(TARBALL_DIR)/cactus-flesh-source.files | xargs $(GIT) add; \
 	for thorn in $(notdir $(THORNS)); do \
@@ -306,12 +306,19 @@ $(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $
 	config_id=$$(cat $(TOP)/CONFIG-ID) && \
 	$(GIT) branch -f $$config_id $$(cat $@) && \
 	echo "Formaline: Cleaning up git repository..." && \
-	$(GIT) rm --cached -r . > /dev/null 2>&1 || true; \
+	$(GIT) rm --cached -r . > /dev/null 2>&1; \
 	true "Call git-gc for good measure" && \
 	echo "Formaline: Optimising git repository (slow only the first time)..." && \
 	$(GIT) gc > /dev/null 2>&1 && \
 	echo "Formaline: Done."; \
-	fi
+
+else
+
+.PRECIOUS: $(TOP)/GIT-COMMIT-ID
+$(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.files,$(notdir $(THORNS)))
+	echo 'NO-GIT-ID' > $(TOP)/GIT-COMMIT-ID
+
+endif
 
 
 
@@ -320,6 +327,9 @@ $(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $
 # 2. Don't create a version history; instead, leave all commits independent
 # 3. Push the commits automatically to a central (write-only?) repository
 # 4. What if the Cactus directory is alread the root of a git repository?
+# 5. Place the .git repository into the config subdirectory
+# 6. Push it automatically into a subdirectory of the main Cactus directory
+# 7. Figure out how to handle conflicting branch names
 
 # git-archive --prefix=Cactus/ wavetoy | gzip > wavetoy.tar.gz
 # git-archive --prefix=Cactus/ wavetoy | { cd /somewhere && tar xf -; }
