@@ -19,7 +19,7 @@ BOOLEAN collect_metadata "Collect metadata and output it in various ways" STEERA
 REAL update_interval "Update interval for the meta information (in seconds)" STEERABLE=always
 {
   0:* :: ""
-} 600.0
+} 3600.0
 
 INT publish_level "Importance level for meta data to be published via the Publish API" STEERABLE=always
 {
