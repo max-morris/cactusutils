@@ -281,10 +281,18 @@ $(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $
 	echo "Formaline: Preparing git repository..." && \
 	$(GIT) rm --cached -r . > /dev/null 2>&1; \
 	echo "Formaline: Adding flesh to git repository..." && \
-	cat $(TARBALL_DIR)/cactus-flesh-source.files | xargs -n 1 $(GIT) add; \
+	xargs ls < $(TARBALL_DIR)/cactus-flesh-source.files \
+		> $(TARBALL_DIR)/cactus-flesh-source.files2 2> /dev/null; \
+	xargs $(GIT) add < $(TARBALL_DIR)/cactus-flesh-source.files2 && \
+	rm $(TARBALL_DIR)/cactus-flesh-source.files2 && \
 	for thorn in $(notdir $(THORNS)); do \
 		echo "Formaline: Adding thorn $$thorn to git repository..." && \
-		cat $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files | xargs -n 1 $(GIT) add; \
+		xargs ls < $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files \
+			> $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files2 \
+			2> /dev/null; \
+		xargs $(GIT) add \
+			< $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files2 && \
+		rm $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files2; \
 	done && \
 	true "Write source tree and create a commit" && \
 	echo "Formaline: Committing source tree to git repository..." && \
