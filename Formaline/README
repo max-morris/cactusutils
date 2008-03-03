@@ -17,6 +17,11 @@ biological specimen.  It is pronounced "fOrmaleen".
 
 
 
+How to get a stored source tree out of a git repository:
+git checkout GIT-COMMIT-ID
+
+
+
 TODO:
 
 put unique job IDs into all output files
