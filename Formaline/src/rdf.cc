@@ -393,10 +393,10 @@ namespace Formaline
       }
       if (item.hasCCTKinfo) {
         object.str("");
-        object << "<literal>" << item.cctk_time << "</literal>";
+        object << "<literal datatype=\"&xsd;double\">" << item.cctk_time << "</literal>";
         msgbuf << AppendToTransaction("add", subject.str(), "time", object.str());
         object.str("");
-        object << "<literal>" << item.cctk_iteration << "</literal>";
+        object << "<literal datatype=\"&xsd;int\">" << item.cctk_iteration << "</literal>";
         msgbuf << AppendToTransaction("add", subject.str(), "iteration", object.str());
       }
 
