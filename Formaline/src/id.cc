@@ -43,13 +43,13 @@ namespace Formaline
   
   
   // Configuration ID
-  extern "C" char const config_id[];
+  extern "C" char const * const config_id;
   
   // Unique source tree ID
-  extern "C" char const source_id[];
+  extern "C" char const * const source_id;
   
   // Unique build ID
-  extern "C" char const build_id[];
+  extern "C" char const * const build_id;
   
   
   
@@ -131,7 +131,7 @@ namespace Formaline
     ostringstream run_idbuf;
     run_idbuf << "run-";
     
-    char cparfilename [10000];
+    char cparfilename [1000];
     CCTK_ParameterFilename (sizeof cparfilename, cparfilename);
     string parfilename (cparfilename);
     size_t const last_slash = parfilename.rfind ('/');

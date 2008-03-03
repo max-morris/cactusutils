@@ -81,11 +81,11 @@ $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID $(TOP)/GIT-COMMIT-ID
 	{ \
 	echo '/* This is an auto-generated file -- do not edit */' && \
 	build_id="$$(cat $(TOP)/BUILD-ID)" && \
-	echo 'char const build_id[] = "'$$build_id'";' && \
+	echo 'char const * const build_id = "'$$build_id'";' && \
 	git_commit_id="$$(cat $(TOP)/GIT-COMMIT-ID || echo 'NO-GIT-ID')" && \
-	echo 'char const source_id[] = "git-'$$git_commit_id'";' && \
+	echo 'char const * const source_id = "git-'$$git_commit_id'";' && \
 	config_id="$$(cat $(TOP)/CONFIG-ID || echo 'NO-CONFIG-ID')" && \
-	echo 'char const config_id[] = "'$$config_id'";'; \
+	echo 'char const * const config_id = "'$$config_id'";'; \
 	} > $@
 
 
@@ -266,6 +266,12 @@ ifeq ($(HAVE-GIT),true)
 
 .PRECIOUS: $(TOP)/GIT-COMMIT-ID
 $(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.files,$(notdir $(THORNS)))
+	$(TARBALL_DIR)/git-commit.pl --git='$(GIT)' --git-repo='$(GIT-REPO)' \
+		--CCTK_HOME='$(CCTK_HOME)' --TOP='$(TOP)' \
+		--TARBALL_DIR='$(TARBALL_DIR)' \
+		$(notdir $(THORNS))
+
+unused-$(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.files,$(notdir $(THORNS)))
 	cd $(GIT-REPO) && \
 	true "Ensure that the git repository exists" && \
 	if ! test -e $(GIT-DIR) -a -e $(GIT-DIR)/HEAD; then \
