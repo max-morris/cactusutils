@@ -244,7 +244,7 @@ static void ParameterSetNotify (void *,
   }
 
 
-  const char *name = "Set Parameter";
+  const char *name = "Steer parameter";
   std::string key(thorn); key.append ("::"); key.append (parameter);
 
   // // do not log steering events for parameters in the log exclusion list

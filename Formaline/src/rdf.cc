@@ -351,12 +351,10 @@ namespace Formaline
     }
 
     if (CCTK_IsFunctionAliased ("PublishBoolean")) {
-#ifndef PUBLISH_LEVEL_NOTICE
-#define PUBLISH_LEVEL_NOTICE 2
-#endif
-      const int retval = PublishBoolean (cctkGH, PUBLISH_LEVEL_NOTICE,
+      const int retval = PublishBoolean (cctkGH, get_state() == final ? 1 : 2,
                                          get_state() == final ? 1 : 0,
-                                         "Finished", "Runtime Info");
+                                         "Simulation finished ?",
+                                         CCTK_THORNSTRING " runtime info");
       if (retval < 0) {
         CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                     "Failed to publish runtime information (error code %d)",
