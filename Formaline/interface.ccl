@@ -17,6 +17,7 @@ FUNCTION UniqueConfigID (CCTK_POINTER_TO_CONST IN cctkGH)
 PROVIDES FUNCTION UniqueConfigID \
     WITH Formaline_UniqueConfigID \
     LANGUAGE C
+USES FUNCTION UniqueConfigID
 
 
 
@@ -28,6 +29,7 @@ FUNCTION UniqueSourceID (CCTK_POINTER_TO_CONST IN cctkGH)
 PROVIDES FUNCTION UniqueSourceID \
     WITH Formaline_UniqueSourceID \
     LANGUAGE C
+USES FUNCTION UniqueSourceID
 
 
 
@@ -39,6 +41,7 @@ FUNCTION UniqueBuildID (CCTK_POINTER_TO_CONST IN cctkGH)
 PROVIDES FUNCTION UniqueBuildID \
     WITH Formaline_UniqueBuildID \
     LANGUAGE C
+USES FUNCTION UniqueBuildID
 
 
 
@@ -50,6 +53,7 @@ FUNCTION UniqueSimulationID (CCTK_POINTER_TO_CONST IN cctkGH)
 PROVIDES FUNCTION UniqueSimulationID \
     WITH Formaline_UniqueSimulationID \
     LANGUAGE C
+USES FUNCTION UniqueSimulationID
 
 
 
@@ -61,6 +65,7 @@ FUNCTION UniqueRunID (CCTK_POINTER_TO_CONST IN cctkGH)
 PROVIDES FUNCTION UniqueRunID \
     WITH Formaline_UniqueRunID \
     LANGUAGE C
+USES FUNCTION UniqueRunID
 
 
 

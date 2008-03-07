@@ -110,15 +110,23 @@ namespace Formaline
     const string cwd (clean (buf));
     buf[0] = 0;
     CCTK_RunTitle (sizeof (buf) - 1, buf);
-    const string title (clean (buf));
+    const string title(clean(buf));
+    const string configID(clean(static_cast<const char *> (UniqueConfigID(0))));
+    const string buildID(clean(static_cast<const char *> (UniqueBuildID(0))));
+    const string sourceID(clean(static_cast<const char *> (UniqueSourceID(0))));
+    const string runID(clean(static_cast<const char *> (UniqueRunID(0))));
 
     msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\"" << endl
-           << "\tcctk:simulationID=\""  << jobID       << "\"" << endl
-           << "\tcctk:host=\""          << host        << "\"" << endl
-           << "\tcctk:user=\""          << user        << "\"" << endl
-           << "\tcctk:executable=\""    << executable  << "\"" << endl
-           << "\tcctk:version=\""       << version     << "\"" << endl
-           << "\tcctk:title=\""         << title       << "\"" << endl;
+           << "\tcctk:simulationID=\""  << jobID      << "\"" << endl
+           << "\tcctk:host=\""          << host       << "\"" << endl
+           << "\tcctk:user=\""          << user       << "\"" << endl
+           << "\tcctk:executable=\""    << executable << "\"" << endl
+           << "\tcctk:version=\""       << version    << "\"" << endl
+           << "\tcctk:title=\""         << title      << "\"" << endl
+           << "\tcctk:configID=\""      << configID   << "\"" << endl
+           << "\tcctk:buildID=\""       << buildID    << "\"" << endl
+           << "\tcctk:sourceID=\""      << sourceID   << "\"" << endl
+           << "\tcctk:runID=\""         << runID      << "\"" << endl;
     const char* const pbsJobID = getenv ("PBS_JOBID");
     if (pbsJobID) {
       msgbuf << "\tcctk:pbsJobID=\"" << clean (pbsJobID) << "\"" << endl;
