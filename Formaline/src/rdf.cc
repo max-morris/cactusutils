@@ -175,6 +175,7 @@ namespace Formaline
            << "\t<cctk:parameterFile rdf:resource=\"#ParameterFile\"/>" << endl
            << "</cctk:Simulation>" << endl << endl;
 
+#ifdef ALSO_STORE_THORNLIST_AND_PARAMETERS
     // store thorn list
     msgbuf << "<cctk:ThornList rdf:about=\"#ThornList\">" << endl;
     const int numthorns = CCTK_NumCompiledThorns ();
@@ -185,6 +186,7 @@ namespace Formaline
              << thornname << "\"/>" << endl;
     }
     msgbuf << "</cctk:ThornList>" << endl << endl;
+#endif
 
     // store parameter file name and contents
     char parfilebuf[512] = "";
@@ -203,6 +205,7 @@ namespace Formaline
     msgbuf << "</rdf:value>" << endl
            << "</cctk:ParameterFile>" << endl << endl;
 
+#ifdef ALSO_STORE_THORNLIST_AND_PARAMETERS
     // store all parameters which have been set in the parfile
     msgbuf
 << "<!-- ============================================================ -->" << endl
@@ -325,6 +328,7 @@ namespace Formaline
     } // loop over all thorns
 
     msgbuf << endl << parambuf.str();
+#endif
   }
 
 
