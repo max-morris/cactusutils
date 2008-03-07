@@ -113,7 +113,7 @@ namespace Formaline
     const string title(clean(buf));
     const string configID(clean(static_cast<const char *> (UniqueConfigID(0))));
     const string buildID(clean(static_cast<const char *> (UniqueBuildID(0))));
-    const string sourceID(clean(static_cast<const char *> (UniqueSourceID(0))));
+    const string bbhID(clean(static_cast<const char *> (UniqueSimulationID(0))));
     const string runID(clean(static_cast<const char *> (UniqueRunID(0))));
 
     msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\"" << endl
@@ -125,7 +125,7 @@ namespace Formaline
            << "\tcctk:title=\""         << title      << "\"" << endl
            << "\tcctk:configID=\""      << configID   << "\"" << endl
            << "\tcctk:buildID=\""       << buildID    << "\"" << endl
-           << "\tcctk:sourceID=\""      << sourceID   << "\"" << endl
+           << "\tcctk:bbhID=\""         << bbhID      << "\"" << endl
            << "\tcctk:runID=\""         << runID      << "\"" << endl;
     const char* const pbsJobID = getenv ("PBS_JOBID");
     if (pbsJobID) {
