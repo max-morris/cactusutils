@@ -57,6 +57,7 @@ $(FRM-LIB): $(FRM-OBJS)
 # (force a new ID to be created every time)
 # (do this after the thorn's library has been built, so that the
 #  script gethostname.pl has been copied to the scratch directory)
+# (generates also $(TOP)/CONFIG-ID)
 .PRECIOUS: $(TOP)/BUILD-ID
 $(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
 	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'` && \
@@ -77,13 +78,11 @@ $(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 .PRECIOUS: $(TARBALL_DIR)/build-id.c
-$(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID $(TOP)/GIT-COMMIT-ID
+$(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID
 	{ \
 	echo '/* This is an auto-generated file -- do not edit */' && \
 	build_id="$$(cat $(TOP)/BUILD-ID)" && \
 	echo 'char const * const build_id = "'$$build_id'";' && \
-	git_commit_id="$$(cat $(TOP)/GIT-COMMIT-ID || echo 'NO-GIT-ID')" && \
-	echo 'char const * const source_id = "git-'$$git_commit_id'";' && \
 	config_id="$$(cat $(TOP)/CONFIG-ID || echo 'NO-CONFIG-ID')" && \
 	echo 'char const * const config_id = "'$$config_id'";'; \
 	} > $@
@@ -249,101 +248,148 @@ endif
 
 
 
+# Suppress all output from git commands
+#GIT-SILENT = > /dev/null 2>&1
+
 # Does git exist, or should we do nothing instead?
-GIT-REPO = $(CCTK_HOME)
-GIT-DIR = $(CCTK_HOME)/.git
-HAVE-GIT := $(shell env PATH=$$PATH:$$HOME/git/bin git --version > /dev/null 2>&1 && echo 'true' || echo 'false')
-GIT := $(shell $(HAVE-GIT) && echo 'env PATH=$$PATH:$$HOME/git/bin git' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
+GIT-CMD := $(shell env PATH=$$PATH:$$HOME/git/bin which git)
+HAVE-GIT := $(shell '$(GIT-CMD)' --version > /dev/null 2>&1 && echo 'true' || echo 'false')
+GIT := $(shell $(HAVE-GIT) && echo '$(SCRATCH_BUILD)/git-lock.pl $(GIT-CMD) $(GIT-SILENT)' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
 
 
-
-$(EXEDIR)$(DIRSEP)$(EXE): git-commit
-
-.PHONY: git-commit
-git-commit: $(TOP)/GIT-COMMIT-ID
 
 ifeq ($(HAVE-GIT),true)
 
-.PRECIOUS: $(TOP)/GIT-COMMIT-ID
-$(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.files,$(notdir $(THORNS)))
-	$(TARBALL_DIR)/git-commit.pl --git='$(GIT)' --git-repo='$(GIT-REPO)' \
-		--CCTK_HOME='$(CCTK_HOME)' --TOP='$(TOP)' \
-		--TARBALL_DIR='$(TARBALL_DIR)' \
-		$(notdir $(THORNS))
+main: git-store-source
 
-unused-$(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.files,$(notdir $(THORNS)))
-	cd $(GIT-REPO) && \
-	true "Ensure that the git repository exists" && \
-	if ! test -e $(GIT-DIR) -a -e $(GIT-DIR)/HEAD; then \
-		mkdir -p $(GIT-DIR) && \
-		echo "Formaline: Creating new git repository..." && \
-		$(GIT) init && \
-		true "Add a root commit to please some tools" && \
-		: >> README && \
-		$(GIT) add README && \
-		$(GIT) commit -m 'README'; \
+.PHONY: git-store-source
+git-store-source: git-commit-everything git-push-everything
+	echo "Formaline: Done."
+
+GIT-ROOT        = $(CCTK_HOME)
+GIT-REPO        = $(TOP)/configjar.git
+GIT-MASTER-REPO = $(CCTK_HOME)/cactusjar.git
+
+GIT-THORNS      = $(notdir $(THORNS))
+
+BUILD-ID-FILE   = $(TOP)/BUILD-ID
+CONFIG-ID-FILE  = $(TOP)/CONFIG-ID
+
+define GIT-INIT-MASTER-REPO
+	if [ ! -e $(GIT-MASTER-REPO)/.git/HEAD ]; then \
+		echo "Formaline: Creating master git repository..." && \
+		mkdir -p $(GIT-MASTER-REPO) && \
+		cd $(GIT-MASTER-REPO) && \
+		$(GIT) init-db; \
+	fi
+endef
+
+define GIT-INIT-REPO
+	if [ ! -e $(GIT-REPO)/.git/HEAD ]; then \
+		echo "Formaline: Creating git repository..." && \
+		mkdir -p $(GIT-REPO) && \
+		cd $(GIT-REPO) && \
+		$(GIT) init-db; \
+	fi
+endef
+
+.PHONY: git-push-everything
+git-push-everything: git-commit-everything $(BUILD-ID-FILE)
+	$(GIT-INIT-MASTER-REPO)
+	echo "Formaline: Pushing source tree to master git repository..." && \
+	cd $(GIT-ROOT) && \
+	export GIT_DIR=$(GIT-REPO)/.git && \
+	build_id=$$(cat $(BUILD-ID-FILE)) && \
+	$(GIT) push -f $(GIT-MASTER-REPO) "$$build_id" && \
+	config_id=$$(cat $(CONFIG-ID-FILE)) && \
+	$(GIT) push -f $(GIT-MASTER-REPO) "$$config_id"
+	cd $(GIT-ROOT) && \
+	export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
+	echo "Formaline: Optimising master git repository..." && \
+	$(GIT) gc
+	if [ -e "$(CCTK_HOME)/cactus.config" ]; then \
+		source "$(CCTK_HOME)/cactus.config"; \
 	fi && \
-	true "Remove all staged files" && \
-	echo "Formaline: Preparing git repository..." && \
-	$(GIT) rm --cached -r . > /dev/null 2>&1; \
+	if [ -n "$$CACTUS_CENTRAL_GIT_REPO" ]; then \
+		cd $(GIT-ROOT) && \
+		export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
+		echo "Formaline: Pushing to central repository $$CACTUS_CENTRAL_GIT_REPO..." && \
+		config_id=$$(cat $(CONFIG-ID-FILE)) && \
+		{ $(GIT) tag -l && echo "$$config_id"; } | \
+		xargs $(GIT) push -f "$$CACTUS_CENTRAL_GIT_REPO"; \
+	fi
+
+# Try to use the previous commit as parent, if possible
+.PHONY: git-commit-everything
+git-commit-everything: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag $(GIT-THORNS:%=$(SCRATCH_BUILD)/cactus-thorn-%.git-tag) $(BUILD-ID-FILE)
+	echo "Formaline: Committing source tree to git repository..." && \
+	cd $(GIT-ROOT) && \
+	export GIT_DIR=$(GIT-REPO)/.git && \
+	build_id="$$(cat $(BUILD-ID-FILE))" && \
+	{ $(GIT) commit -m "$$build_id" || true; } && \
+	$(GIT) tag -f "$$build_id" && \
+	echo "Formaline: Created git tag $$build_id" && \
+	config_id="$$(cat $(CONFIG-ID-FILE))" && \
+	$(GIT) branch -f "$$config_id" && \
+	echo "Formaline: Updated git branch $$config_id" && \
+	echo "Formaline: Optimising git repository (slow only the first time)..." && \
+	$(GIT) gc
+
+.PRECIOUS: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag
+$(SCRATCH_BUILD)/cactus-flesh-source.git-tag: $(TARBALL_DIR)/cactus-flesh-source.files
+	$(GIT-INIT-REPO)
 	echo "Formaline: Adding flesh to git repository..." && \
+	cd $(GIT-ROOT) && \
+	export GIT_DIR=$(GIT-REPO)/.git && \
+	{ $(GIT) rm --cached -r CONTRIBUTORS COPYRIGHT Makefile lib src configs > /dev/null 2>&1 || true; } && \
 	xargs ls < $(TARBALL_DIR)/cactus-flesh-source.files \
 		> $(TARBALL_DIR)/cactus-flesh-source.files2 2> /dev/null; \
 	xargs $(GIT) add < $(TARBALL_DIR)/cactus-flesh-source.files2 && \
 	rm $(TARBALL_DIR)/cactus-flesh-source.files2 && \
-	for thorn in $(notdir $(THORNS)); do \
-		echo "Formaline: Adding thorn $$thorn to git repository..." && \
-		xargs ls < $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files \
-			> $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files2 \
-			2> /dev/null; \
-		xargs $(GIT) add \
-			< $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files2 && \
-		rm $(TARBALL_DIR)/cactus-thorn-source-$$thorn.files2; \
-	done && \
-	true "Write source tree and create a commit" && \
-	echo "Formaline: Committing source tree to git repository..." && \
-	$(GIT) add configs/$(notdir $(TOP))/BUILD-ID && \
-	$(GIT) write-tree > $(TARBALL_DIR)/GIT-TREE-ID && \
-	true "Try to use the previous commit as parent, if possible" && \
-	if test -e $@ -a -n "$$(cat $@)"; then \
-		$(GIT) commit-tree $$(cat $(TARBALL_DIR)/GIT-TREE-ID) -p "$$(cat $@)" < $(TOP)/BUILD-ID > $@.new || \
-		$(GIT) commit-tree $$(cat $(TARBALL_DIR)/GIT-TREE-ID)                 < $(TOP)/BUILD-ID > $@.new; \
-	else \
-		$(GIT) commit-tree $$(cat $(TARBALL_DIR)/GIT-TREE-ID)                 < $(TOP)/BUILD-ID > $@.new; \
-	fi && \
-	mv $@.new $@ && \
-	true "Remember the commit id" && \
-	mkdir -p $(CCTK_HOME)/GIT-COMMIT-IDS && \
-	cp $@ $(CCTK_HOME)/GIT-COMMIT-IDS/$$(cat $@) && \
-	echo "Formaline: Git commit id is $$(cat $@)" && \
-	true "Update branch" && \
-	config_id=$$(cat $(TOP)/CONFIG-ID) && \
-	$(GIT) branch -f $$config_id $$(cat $@) && \
-	echo "Formaline: Cleaning up git repository..." && \
-	$(GIT) rm --cached -r . > /dev/null 2>&1; \
-	true "Call git-gc for good measure" && \
-	echo "Formaline: Optimising git repository (slow only the first time)..." && \
-	$(GIT) gc > /dev/null 2>&1 && \
-	echo "Formaline: Done."; \
+	: > $@
 
-else
-
-.PRECIOUS: $(TOP)/GIT-COMMIT-ID
-$(TOP)/GIT-COMMIT-ID: $(TOP)/BUILD-ID $(TARBALL_DIR)/cactus-flesh-source.files $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.files,$(notdir $(THORNS)))
-	echo 'NO-GIT-ID' > $(TOP)/GIT-COMMIT-ID
+.PRECIOUS: $(SCRATCH_BUILD)/cactus-thorn-%.git-tag
+$(SCRATCH_BUILD)/cactus-thorn-%.git-tag: $(TARBALL_DIR)/cactus-thorn-source-%.files
+	$(GIT-INIT-REPO)
+	echo "Formaline: Adding thorn $* to git repository..." && \
+	cd $(GIT-ROOT) && \
+	export GIT_DIR=$(GIT-REPO)/.git && \
+	{ $(GIT) rm --cached -r arrangements/*/$* > /dev/null 2>&1 || true; } &&\
+	xargs ls < $(TARBALL_DIR)/cactus-thorn-source-$*.files \
+		> $(TARBALL_DIR)/cactus-thorn-source-$*.files2 2> /dev/null; \
+	xargs $(GIT) add < $(TARBALL_DIR)/cactus-thorn-source-$*.files2 && \
+	rm $(TARBALL_DIR)/cactus-thorn-source-$*.files2 && \
+	: > $@
 
 endif
 
 
 
+# NOTE:
+
+# Define environment variable CACTUS_CENTRAL_GIT_REPO where the source trees
+# are automatically pushed
+
+# git-archive --prefix=Cactus/ wavetoy | gzip > wavetoy.tar.gz
+# git-archive --prefix=Cactus/ wavetoy | { cd /somewhere && tar xf -; }
+
+# git init
+# git pull <repo> <branch>
+
+# git clone <repo>
+# git checkout <tag>
+
+
+
 # TODO:
-# 1. Remember git-archive to get a tarball
-# 2. Don't create a version history; instead, leave all commits independent
 # 3. Push the commits automatically to a central (write-only?) repository
+
+# DONE:
+# 1. Remember git-archive to get a tarball
 # 4. What if the Cactus directory is alread the root of a git repository?
 # 5. Place the .git repository into the config subdirectory
 # 6. Push it automatically into a subdirectory of the main Cactus directory
 # 7. Figure out how to handle conflicting branch names
 
-# git-archive --prefix=Cactus/ wavetoy | gzip > wavetoy.tar.gz
-# git-archive --prefix=Cactus/ wavetoy | { cd /somewhere && tar xf -; }
+# WONT:
+# 2. Don't create a version history; instead, leave all commits independent

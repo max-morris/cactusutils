@@ -8,7 +8,7 @@
 
 TARBALL_DIR = $(SCRATCH_BUILD)
 
-$(CCTK_TARGET): $(TARBALL_DIR)/gethostname.pl $(TARBALL_DIR)/makeblob.pl $(TARBALL_DIR)/makemetablob.pl $(TARBALL_DIR)/git-commit.pl
+$(CCTK_TARGET): $(TARBALL_DIR)/gethostname.pl $(TARBALL_DIR)/makeblob.pl $(TARBALL_DIR)/makemetablob.pl $(SCRATCH_BUILD)/git-lock.pl
 
 
 
@@ -21,5 +21,5 @@ $(TARBALL_DIR)/makeblob.pl: $(SRCDIR)/util/makeblob.pl
 $(TARBALL_DIR)/makemetablob.pl: $(SRCDIR)/util/makemetablob.pl
 	cd $(TARBALL_DIR) && cp $^ $@
 
-$(TARBALL_DIR)/git-commit.pl: $(SRCDIR)/util/git-commit.pl
-	cd $(TARBALL_DIR) && cp $^ $@
+$(SCRATCH_BUILD)/git-lock.pl: $(SRCDIR)/util/git-lock.pl
+	cd $(SCRATCH_BUILD) && cp $^ $@
