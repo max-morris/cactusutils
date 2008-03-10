@@ -45,9 +45,6 @@ namespace Formaline
   // Configuration ID
   extern "C" char const * const config_id;
   
-  // Unique source tree ID
-  extern "C" char const * const source_id;
-  
   // Unique build ID
   extern "C" char const * const build_id;
   
@@ -58,15 +55,6 @@ namespace Formaline
   get_config_id (cGH const * const cctkGH)
   {
     return config_id;
-  }
-  
-  
-  
-  // Get the unique source id
-  char const *
-  get_source_id (cGH const * const cctkGH)
-  {
-    return source_id;
   }
   
   
@@ -208,13 +196,6 @@ namespace Formaline
   }
   
   extern "C" CCTK_POINTER_TO_CONST
-  Formaline_UniqueSourceID (CCTK_POINTER_TO_CONST const cctkGH_)
-  {
-    cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
-    return static_cast<CCTK_POINTER_TO_CONST> (get_source_id (cctkGH));
-  }
-  
-  extern "C" CCTK_POINTER_TO_CONST
   Formaline_UniqueBuildID (CCTK_POINTER_TO_CONST const cctkGH_)
   {
     cGH const * const cctkGH = static_cast<cGH const *> (cctkGH_);
@@ -241,7 +222,6 @@ namespace Formaline
   Formaline_PrintIDs ()
   {
     CCTK_VInfo (CCTK_THORNSTRING, "Configuration id: %s", get_config_id (0));
-    CCTK_VInfo (CCTK_THORNSTRING, "Source id: %s", get_source_id (0));
     CCTK_VInfo (CCTK_THORNSTRING, "Build id: %s", get_build_id (0));
     CCTK_VInfo (CCTK_THORNSTRING, "Simulation id: %s", get_simulation_id (0));
     CCTK_VInfo (CCTK_THORNSTRING, "Run id: %s", get_run_id (0));

@@ -22,18 +22,6 @@ USES FUNCTION UniqueConfigID
 
 
 # Return a pointer to an unmodifiable C string
-# which contains a unique ID for this source tree
-CCTK_POINTER_TO_CONST \
-FUNCTION UniqueSourceID (CCTK_POINTER_TO_CONST IN cctkGH)
-
-PROVIDES FUNCTION UniqueSourceID \
-    WITH Formaline_UniqueSourceID \
-    LANGUAGE C
-USES FUNCTION UniqueSourceID
-
-
-
-# Return a pointer to an unmodifiable C string
 # which contains a unique ID for this build
 CCTK_POINTER_TO_CONST \
 FUNCTION UniqueBuildID (CCTK_POINTER_TO_CONST IN cctkGH)

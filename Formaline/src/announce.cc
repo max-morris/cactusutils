@@ -113,15 +113,6 @@ namespace Formaline
       }
       {
         ostringstream filenamebuf;
-        filenamebuf << out_dir << "/formaline-" << get_source_id (cctkGH);
-        string const filenamestring = filenamebuf.str();
-        ofstream fil;
-        fil.open (filenamestring.c_str(), ios::trunc);
-        fil << get_source_id (cctkGH) << endl;
-        fil.close ();
-      }
-      {
-        ostringstream filenamebuf;
         filenamebuf << out_dir << "/formaline-" << get_build_id (cctkGH);
         string const filenamestring = filenamebuf.str();
         ofstream fil;
@@ -361,10 +352,6 @@ namespace Formaline
   
       {
         stores.store ("config_id", get_config_id (cctkGH));
-      }
-  
-      {
-        stores.store ("source_id", get_source_id (cctkGH));
       }
   
       {

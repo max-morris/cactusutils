@@ -10,10 +10,6 @@ namespace Formaline
   char const *
   get_config_id (cGH const * const cctkGH);
   
-  // Get the unique source tree id
-  char const *
-  get_source_id (cGH const * const cctkGH);
-  
   // Get the unique build id
   char const *
   get_build_id (cGH const * const cctkGH);
