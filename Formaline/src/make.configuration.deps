@@ -59,6 +59,7 @@ $(FRM-LIB): $(FRM-OBJS)
 #  script gethostname.pl has been copied to the scratch directory)
 # (generates also $(TOP)/CONFIG-ID)
 .PRECIOUS: $(TOP)/BUILD-ID
+.PHONY: $(TOP)/BUILD-ID
 $(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
 	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'` && \
 	hostname=`$(TARBALL_DIR)/gethostname.pl` && \
@@ -276,37 +277,72 @@ BUILD-ID-FILE   = $(TOP)/BUILD-ID
 CONFIG-ID-FILE  = $(TOP)/CONFIG-ID
 
 define GIT-INIT-MASTER-REPO
+	{ \
 	if [ ! -e $(GIT-MASTER-REPO)/.git/HEAD ]; then \
 		echo "Formaline: Creating master git repository..." && \
 		mkdir -p $(GIT-MASTER-REPO) && \
 		cd $(GIT-MASTER-REPO) && \
 		$(GIT) init-db; \
-	fi
+	fi && \
+	if [ ! -e $(GIT-MASTER-REPO)/README ]; then \
+		{ \
+		echo "This directory $$(pwd)" && \
+		echo "is not empty -- it contains a git repository with the Cactus source" && \
+		echo "trees of all previous builds, starting on $$(date)." && \
+		echo "" && \
+		echo "You can use the command \"git branch\" to list all configurations that" && \
+		echo "are stored in this repository.  The history of each branch is the" && \
+		echo "sequence in which the configuration was built.  The most recent build" && \
+		echo "is stored in the branch head, as usual.  In order to check out a" && \
+		echo "certain branch into a directory <name>, issue the following commands:" && \
+		echo "        cd <somewhere_else>" && \
+		echo "        mkdir <name>" && \
+		echo "        cd <name>" && \
+		echo "        git init" && \
+		echo "        git pull $$(pwd) <branch>" && \
+		echo "" && \
+		echo "You can also use the command \"git tag -l\" to list all builds that are" && \
+		echo "stored in this repository.  This keeps the source tree for each build" && \
+		echo "directly accessible.  In order to check out a certain tag into a" && \
+		echo "directory <name>, issue the following commands:" && \
+		echo "        cd <somewhere_else>" && \
+		echo "        git clone -o <name> $$(pwd)" && \
+		echo "        git checkout <tag>"; \
+		} > $(GIT-MASTER-REPO)/README; \
+	fi; \
+	} || echo "WARNING: Error while handling git repository"
 endef
 
 define GIT-INIT-REPO
+	{ \
 	if [ ! -e $(GIT-REPO)/.git/HEAD ]; then \
 		echo "Formaline: Creating git repository..." && \
 		mkdir -p $(GIT-REPO) && \
 		cd $(GIT-REPO) && \
 		$(GIT) init-db; \
-	fi
+	fi; \
+	} || echo "WARNING: Error while handling git repository"
 endef
 
 .PHONY: git-push-everything
 git-push-everything: git-commit-everything $(BUILD-ID-FILE)
 	$(GIT-INIT-MASTER-REPO)
+	{ \
 	echo "Formaline: Pushing source tree to master git repository..." && \
 	cd $(GIT-ROOT) && \
 	export GIT_DIR=$(GIT-REPO)/.git && \
 	build_id=$$(cat $(BUILD-ID-FILE)) && \
 	$(GIT) push -f $(GIT-MASTER-REPO) "$$build_id" && \
 	config_id=$$(cat $(CONFIG-ID-FILE)) && \
-	$(GIT) push -f $(GIT-MASTER-REPO) "$$config_id"
+	$(GIT) push -f $(GIT-MASTER-REPO) "$$config_id"; \
+	} || echo "WARNING: Error while handling git repository"
+	{ \
 	cd $(GIT-ROOT) && \
 	export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
 	echo "Formaline: Optimising master git repository..." && \
-	$(GIT) gc
+	$(GIT) gc; \
+	} || echo "WARNING: Error while handling git repository"
+	{ \
 	if [ -e "$(CCTK_HOME)/cactus.config" ]; then \
 		source "$(CCTK_HOME)/cactus.config"; \
 	fi && \
@@ -317,11 +353,13 @@ git-push-everything: git-commit-everything $(BUILD-ID-FILE)
 		config_id=$$(cat $(CONFIG-ID-FILE)) && \
 		{ $(GIT) tag -l && echo "$$config_id"; } | \
 		xargs $(GIT) push -f "$$CACTUS_CENTRAL_GIT_REPO"; \
-	fi
+	fi; \
+	} || echo "WARNING: Error while handling git repository"
 
 # Try to use the previous commit as parent, if possible
 .PHONY: git-commit-everything
 git-commit-everything: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag $(GIT-THORNS:%=$(SCRATCH_BUILD)/cactus-thorn-%.git-tag) $(BUILD-ID-FILE)
+	{ \
 	echo "Formaline: Committing source tree to git repository..." && \
 	cd $(GIT-ROOT) && \
 	export GIT_DIR=$(GIT-REPO)/.git && \
@@ -333,11 +371,13 @@ git-commit-everything: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag $(GIT-THORNS
 	$(GIT) branch -f "$$config_id" && \
 	echo "Formaline: Updated git branch $$config_id" && \
 	echo "Formaline: Optimising git repository (slow only the first time)..." && \
-	$(GIT) gc
+	$(GIT) gc; \
+	} || echo "WARNING: Error while handling git repository"
 
 .PRECIOUS: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag
 $(SCRATCH_BUILD)/cactus-flesh-source.git-tag: $(TARBALL_DIR)/cactus-flesh-source.files
 	$(GIT-INIT-REPO)
+	{ \
 	echo "Formaline: Adding flesh to git repository..." && \
 	cd $(GIT-ROOT) && \
 	export GIT_DIR=$(GIT-REPO)/.git && \
@@ -346,11 +386,13 @@ $(SCRATCH_BUILD)/cactus-flesh-source.git-tag: $(TARBALL_DIR)/cactus-flesh-source
 		> $(TARBALL_DIR)/cactus-flesh-source.files2 2> /dev/null; \
 	xargs $(GIT) add < $(TARBALL_DIR)/cactus-flesh-source.files2 && \
 	rm $(TARBALL_DIR)/cactus-flesh-source.files2 && \
-	: > $@
+	: > $@; \
+	} || echo "WARNING: Error while handling git repository"
 
 .PRECIOUS: $(SCRATCH_BUILD)/cactus-thorn-%.git-tag
 $(SCRATCH_BUILD)/cactus-thorn-%.git-tag: $(TARBALL_DIR)/cactus-thorn-source-%.files
 	$(GIT-INIT-REPO)
+	{ \
 	echo "Formaline: Adding thorn $* to git repository..." && \
 	cd $(GIT-ROOT) && \
 	export GIT_DIR=$(GIT-REPO)/.git && \
@@ -359,7 +401,8 @@ $(SCRATCH_BUILD)/cactus-thorn-%.git-tag: $(TARBALL_DIR)/cactus-thorn-source-%.fi
 		> $(TARBALL_DIR)/cactus-thorn-source-$*.files2 2> /dev/null; \
 	xargs $(GIT) add < $(TARBALL_DIR)/cactus-thorn-source-$*.files2 && \
 	rm $(TARBALL_DIR)/cactus-thorn-source-$*.files2 && \
-	: > $@
+	: > $@; \
+	} || echo "WARNING: Error while handling git repository"
 
 endif
 
@@ -382,10 +425,10 @@ endif
 
 
 # TODO:
-# 3. Push the commits automatically to a central (write-only?) repository
 
 # DONE:
 # 1. Remember git-archive to get a tarball
+# 3. Push the commits automatically to a central (write-only?) repository
 # 4. What if the Cactus directory is alread the root of a git repository?
 # 5. Place the .git repository into the config subdirectory
 # 6. Push it automatically into a subdirectory of the main Cactus directory
