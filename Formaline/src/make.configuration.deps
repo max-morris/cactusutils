@@ -132,6 +132,7 @@ $(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK
 		configs/$(notdir $(TOP))/ThornList \
 		configs/$(notdir $(TOP))/config-data \
 		configs/$(notdir $(TOP))/config-info \
+		-name 'CVS' -prune -o \
 		-name '.*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
@@ -177,6 +178,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CC
 		-name 'doc' -prune -o \
 		-name 'par' -prune -o \
 		-name 'test' -prune -o \
+		-name 'CVS' -prune -o \
 		-name '.*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
@@ -250,7 +252,7 @@ endif
 
 
 # Suppress all output from git commands
-#GIT-SILENT = > /dev/null 2>&1
+GIT-SILENT = > /dev/null 2>&1
 
 # Does git exist, or should we do nothing instead?
 GIT-CMD := $(shell env PATH=$$PATH:$$HOME/git/bin which git)
