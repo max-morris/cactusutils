@@ -257,6 +257,7 @@ GIT-SILENT = > /dev/null 2>&1
 # Does git exist, or should we do nothing instead?
 GIT-CMD := $(shell env PATH=$$PATH:$$HOME/git/bin which git)
 HAVE-GIT := $(shell '$(GIT-CMD)' --version > /dev/null 2>&1 && echo 'true' || echo 'false')
+GIT1 := $(shell $(HAVE-GIT) && echo '$(SCRATCH_BUILD)/git-lock.pl $(GIT-CMD)' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
 GIT := $(shell $(HAVE-GIT) && echo '$(SCRATCH_BUILD)/git-lock.pl $(GIT-CMD) $(GIT-SILENT)' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
 
 
@@ -326,6 +327,25 @@ define GIT-INIT-REPO
 	} || echo "WARNING: Error while handling git repository"
 endef
 
+# Call git-gc if the repository has grown in size by more than a
+# factor of 10.  This macro needs to be called in the directory where
+# the .git subdirectory lives.
+define GIT-COMPACT-REPO
+	{ \
+	if [ ! -e .oldreposize ]; then \
+		echo 0 > .oldreposize; \
+	fi && \
+	oldreposize=$$(cat .oldreposize) && \
+	maxreposize=$$((oldreposize * 10)) && \
+	reposize=$$(du -s .git | awk '{ print $$1; }') && \
+	if [ $$reposize -gt $$maxreposize ]; then \
+		$(GIT) gc && \
+		reposize=$$(du -s .git | awk '{ print $$1; }') && \
+		echo $$reposize > .oldreposize; \
+	fi; \
+	} || echo "WARNING: Error while handling git repository"
+endef
+
 .PHONY: git-push-everything
 git-push-everything: git-commit-everything $(BUILD-ID-FILE)
 	$(GIT-INIT-MASTER-REPO)
@@ -338,11 +358,18 @@ git-push-everything: git-commit-everything $(BUILD-ID-FILE)
 	config_id=$$(cat $(CONFIG-ID-FILE)) && \
 	$(GIT) push -f $(GIT-MASTER-REPO) "$$config_id"; \
 	} || echo "WARNING: Error while handling git repository"
-	{ \
+	true || { \
 	cd $(GIT-ROOT) && \
 	export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
 	echo "Formaline: Optimising master git repository..." && \
 	$(GIT) gc; \
+	} || echo "WARNING: Error while handling git repository"
+	{ \
+	cd $(GIT-ROOT) && \
+	export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
+	echo "Formaline: Optimising master git repository..." && \
+	cd $(GIT-MASTER-REPO) && \
+	$(GIT-COMPACT-REPO); \
 	} || echo "WARNING: Error while handling git repository"
 	{ \
 	if [ -e "$(CCTK_HOME)/cactus.config" ]; then \
@@ -353,7 +380,7 @@ git-push-everything: git-commit-everything $(BUILD-ID-FILE)
 		export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
 		echo "Formaline: Pushing to central repository $$CACTUS_CENTRAL_GIT_REPO..." && \
 		config_id=$$(cat $(CONFIG-ID-FILE)) && \
-		{ $(GIT) tag -l && echo "$$config_id"; } | \
+		{ $(GIT1) tag -l && echo "$$config_id"; } | \
 		xargs $(GIT) push -f "$$CACTUS_CENTRAL_GIT_REPO"; \
 	fi; \
 	} || echo "WARNING: Error while handling git repository"
@@ -373,7 +400,9 @@ git-commit-everything: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag $(GIT-THORNS
 	$(GIT) branch -f "$$config_id" && \
 	echo "Formaline: Updated git branch $$config_id" && \
 	echo "Formaline: Optimising git repository (slow only the first time)..." && \
-	$(GIT) gc; \
+	true || $(GIT) gc; \
+	cd $(GIT-REPO) && \
+	$(GIT-COMPACT-REPO); \
 	} || echo "WARNING: Error while handling git repository"
 
 .PRECIOUS: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag
