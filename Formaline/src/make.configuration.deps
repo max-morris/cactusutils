@@ -174,7 +174,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-
 # files that do not influence the executable.
 $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX) $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps
 	cd $(CCTK_HOME) && \
-	find arrangements/$(filter %/$*,$(THORNS)) \
+	find arrangements/$(filter %/$*,$(THORNS))/. \
 		-name 'doc' -prune -o \
 		-name 'par' -prune -o \
 		-name 'test' -prune -o \
@@ -211,7 +211,16 @@ $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps:
 # be used via xargs.
 
 FRM-OBJS-words = $(words $(FRM-OBJS))
+
+ifeq ($(shell uname),AIX)
+# Be conservative about the maximum number of objects that can be
+# handled at once.  AIX has a command line length limit of about
+# 32000.  Each object's path name may be about 200 characters long.
 FRM-OBJS-words-max = 100
+else
+# Assume that the system has no limit to speak of.
+FRM-OBJS-words-max = 10000
+endif
 
 ifeq ($(shell test $(FRM-OBJS-words) -le $(FRM-OBJS-words-max) && echo 1), 1)
 
