@@ -133,7 +133,7 @@ $(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK
 		configs/$(notdir $(TOP))/config-data \
 		configs/$(notdir $(TOP))/config-info \
 		-name 'CVS' -prune -o \
-		-name '.*' -prune -o \
+		-name '.?*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
 		-print > $@
@@ -179,10 +179,10 @@ $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CC
 		-name 'par' -prune -o \
 		-name 'test' -prune -o \
 		-name 'CVS' -prune -o \
-		-name '.*' -prune -o \
+		-name '.?*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
-		-print > $@
+		-print | sed -e 's+/[.]/+/+g' > $@
 
 -include $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.ccldeps,$(notdir $(THORNS)))
 # Make aborts if these dependencies vanish.  Therefore mention only files
