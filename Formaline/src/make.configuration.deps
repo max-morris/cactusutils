@@ -278,6 +278,9 @@ main: git-store-source
 .PHONY: git-store-source
 git-store-source: git-commit-everything git-push-everything
 	echo "Formaline: Done."
+	echo "Formaline: (Formaline has finished updating the git repositories."
+	echo "Formaline:  If the build process seems to hang, some other command"
+	echo "Formaline:  is still running, e.g. the final link stage.)"
 
 GIT-ROOT        = $(CCTK_HOME)
 GIT-REPO        = $(TOP)/configjar.git
