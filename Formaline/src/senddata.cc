@@ -170,29 +170,36 @@ namespace Formaline
         // Determine a good relay host
         char run_host [1000];
         Util_GetHostName (run_host, sizeof run_host);
+        CCTK_VInfo (CCTK_THORNSTRING, "Local host name is %s", run_host);
         if (strncmp (run_host, "ic", 2) == 0 && strlen (run_host) == 6)
         {
-          // Peyote
+          // Peyote (AEI)
           my_relay_host = "peyote";
         }
         else if (strncmp (run_host, "mike", 4) == 0 && strlen (run_host) == 7)
         {
-          // Supermike
+          // Supermike (LSU)
           my_use_relay_host = false;
         }
         else if (strlen (run_host) == 21 &&
                  strncmp (run_host, "node", 4) == 0 &&
                  strncmp (run_host + 7, ".damiana.admin", 13) == 0)
         {
-          // Damiana
+          // Damiana (AEI)
           my_relay_host = "damiana";
         }
         else if (strlen (run_host) == 14 &&
                  strncmp (run_host, "node", 4) == 0 &&
                  strncmp (run_host + 8, ".admin", 6) == 0)
         {
-          // Belladonna
+          // Belladonna (AEI)
           my_relay_host = "belladonna";
+        }
+        else if (strncmp (run_host, "i", 1) == 0 &&
+                 strncmp (run_host + 8, ".ranger", 7) == 0)
+        {
+          // Ranger (TACC)
+          my_relay_host = "login3";
         }
         else
         {
