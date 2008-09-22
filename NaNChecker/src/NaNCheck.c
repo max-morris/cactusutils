@@ -1020,3 +1020,28 @@ static void SetToNaN (int vindex, const char *optstring, void *_info)
   /* clean up */
   free (fullname);
 }
+
+
+/********************************************************************
+ ********************    Schedule Wrappers    ***********************
+ ********************************************************************/
+
+CCTK_INT
+NaNChecker_CheckVarsForNaN_Wrapper (CCTK_POINTER_TO_CONST const cctkGH_,
+                                    CCTK_INT              const report_max,
+                                    CCTK_STRING           const vars,
+                                    CCTK_STRING           const check_for,
+                                    CCTK_STRING           const action_if_found)
+{
+  return NaNChecker_CheckVarsForNaN ((cGH const *) cctkGH_,
+                                     report_max,
+                                     vars, check_for, action_if_found);
+}
+
+CCTK_INT
+NaNChecker_SetVarsToNaN_Wrapper (CCTK_POINTER_TO_CONST const cctkGH_,
+                                 CCTK_STRING           const vars)
+{
+  return NaNChecker_SetVarsToNaN ((cGH const *) cctkGH_,
+                                  vars);
+}

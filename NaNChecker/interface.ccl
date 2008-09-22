@@ -6,7 +6,29 @@ implements: NaNChecker
 inherits: Reduce
 
 
+
 INCLUDES HEADER: NaNCheck.h in NaNChecker.h
+
+
+
+CCTK_INT FUNCTION CheckVarsForNaN              \
+    (CCTK_POINTER_TO_CONST IN cctkGH,          \
+     CCTK_INT              IN report_max,      \
+     CCTK_STRING           IN vars,            \
+     CCTK_STRING           IN check_for,       \
+     CCTK_STRING           IN action_if_found)
+PROVIDES FUNCTION CheckVarsForNaN           \
+    WITH NaNChecker_CheckVarsForNaN_Wrapper \
+    LANGUAGE C
+
+CCTK_INT FUNCTION SetVarsToNaN        \
+    (CCTK_POINTER_TO_CONST IN cctkGH, \
+     CCTK_STRING           IN vars)
+PROVIDES FUNCTION SetVarsToNaN           \
+    WITH NaNChecker_SetVarsToNaN_Wrapper \
+    LANGUAGE C
+
+
 
 private:
 
