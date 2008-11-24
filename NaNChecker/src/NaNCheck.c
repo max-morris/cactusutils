@@ -131,7 +131,7 @@ void NaNChecker_NaNCheck (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
-  int i, nelems, sum_handle;
+  int i, nelems;
   t_nanchecker_info info;
 
 
@@ -141,7 +141,7 @@ void NaNChecker_NaNCheck (CCTK_ARGUMENTS)
   }
 
   info.GH = cctkGH;
-  info.count = *NaNsFound = 0;
+  info.count = 0;
   info.bitmask = 0;
   info.report_max = report_max;
   info.action_if_found = action_if_found;
@@ -182,9 +182,14 @@ void NaNChecker_NaNCheck (CCTK_ARGUMENTS)
 
   CCTK_TraverseString (check_vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR);
 
-  sum_handle = CCTK_ReductionHandle ("sum");
-  CCTK_ReduceLocalScalar (cctkGH, -1, sum_handle, &info.count, NaNsFound,
-                          CCTK_VARIABLE_INT);
+  /* reduce the NaN counter globally and accumulate in NaNChecker::NaNsFound */
+  {
+    int sum_handle = CCTK_ReductionHandle ("sum");
+    CCTK_INT count = 0;
+    CCTK_ReduceLocalScalar (cctkGH, -1, sum_handle, &info.count, &count,
+                            CCTK_VARIABLE_INT);
+    *NaNsFound += count;
+  }
 }
 
 

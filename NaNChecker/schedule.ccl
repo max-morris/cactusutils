@@ -5,10 +5,16 @@ if (*check_vars && check_every > 0)
 {
   STORAGE: NaNmask NaNsFound
 
-  schedule NaNChecker_ResetCounter at POSTSTEP before NaNChecker_NaNCheck
+  schedule NaNChecker_ResetCounter at INITIAL
   {
     LANG:    C
-    OPTIONS: level
+    OPTIONS: global
+  } "Reset the NaNChecker::NaNsFound counter"
+
+  schedule NaNChecker_ResetCounter at PRESTEP
+  {
+    LANG:    C
+    OPTIONS: global
   } "Reset the NaNChecker::NaNsFound counter"
 
   schedule NaNChecker_NaNCheck at POSTSTEP
