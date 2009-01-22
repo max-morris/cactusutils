@@ -182,6 +182,7 @@ static void OutputAllTimers (CCTK_ARGUMENTS)
   cTimerData  *td = CCTK_TimerCreateData();
   double timer_secs = -1;
   static int last_ntimers = -1;
+  int i;
 
   assert(ntimers >= 0);
 
@@ -207,7 +208,7 @@ static void OutputAllTimers (CCTK_ARGUMENTS)
     {
       fprintf(file, "# Column 1 iteration\n");
       fprintf(file, "# Column 2 time\n");
-      for (int i = 0; i < ntimers; i++)
+      for (i = 0; i < ntimers; i++)
       {
         const char *name = CCTK_TimerName(i);
           
@@ -220,7 +221,7 @@ static void OutputAllTimers (CCTK_ARGUMENTS)
 
     fprintf(file, "%d\t%f\t", cctk_iteration, cctk_time);
 
-    for (int i = 0; i < ntimers; i++)
+    for (i = 0; i < ntimers; i++)
     {
       CCTK_TimerI(i, td);
         
@@ -265,8 +266,8 @@ typedef struct
 
 static int compare(const void * a, const void * b)
 {
-  timer_pair *t1 = (timer_pair *) a;
-  timer_pair *t2 = (timer_pair *) b;
+  const timer_pair *t1 = (const timer_pair *) a;
+  const timer_pair *t2 = (const timer_pair *) b;
 
   double d = t2->t - t1->t;
 
@@ -289,11 +290,12 @@ static void PrintTopTimers (CCTK_ARGUMENTS)
   timer_pair   timers[ntimers];
   int topn = n_top_timers;
   double total = 0;
+  int i;
 
-  char *sep = "======================================================================";
+  const char *sep = "======================================================================";
 
   assert(ntimers >= 0);
-  for (int i = 0; i < ntimers; i++)
+  for (i = 0; i < ntimers; i++)
   {
     CCTK_TimerI(i, td);
         
@@ -330,7 +332,7 @@ static void PrintTopTimers (CCTK_ARGUMENTS)
   /* This should be the "CCTK total time" timer */
   total = timers[0].t;
 
-  for (int i = 0; i < (ntimers >= topn ? topn : ntimers) ; i++)
+  for (i = 0; i < (ntimers >= topn ? topn : ntimers) ; i++)
   {
     double percent = 100.0 * timers[i].t / total;
 
