@@ -1,9 +1,9 @@
 Cactus Code Thorn NaNChecker
-Authors    : Thomas Radke (tradke@aei.mpg.de)
-CVS info   : $Header$
+Author(s)    : Thomas Radke
+Maintainer(s): Cactus team
 --------------------------------------------------------------------------
 
-Purpose of the thorn:
+1. Purpose
 
 This thorn can be used to analyze CCTK variables of real or complex data type
 for NaN (Not-a-Number) and (on availability of finite(3)) infinite values.
