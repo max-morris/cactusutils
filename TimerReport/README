@@ -1,11 +1,9 @@
-CVS info   : $Header$
-
 Cactus Code Thorn TimerReport
-Thorn Author(s)     : Cactus Maintainers <cactusmaint@cactuscode.org>
-Thorn Maintainer(s) : Cactus Maintainers <cactusmaint@cactuscode.org>
+Author(s)    : Cactus team
+Maintainer(s): Cactus team
 --------------------------------------------------------------------------
 
-Purpose of the thorn:
+1. Purpose
 
 Simplistic additional timer information.  This thorn provides timer
 details to screen at different iterations and before checkpoints
