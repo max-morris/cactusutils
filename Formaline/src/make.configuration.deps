@@ -264,7 +264,7 @@ endif
 GIT-SILENT = > /dev/null 2>&1
 
 # Does git exist, or should we do nothing instead?
-GIT-CMD := $(shell env PATH=$$PATH:$$HOME/git/bin which git)
+GIT-CMD := $(shell env PATH=$$HOME/git/bin:$$PATH which git)
 HAVE-GIT := $(shell '$(GIT-CMD)' --version > /dev/null 2>&1 && echo 'true' || echo 'false')
 GIT1 := $(shell $(HAVE-GIT) && echo '$(SCRATCH_BUILD)/git-lock.pl $(GIT-CMD)' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
 GIT := $(shell $(HAVE-GIT) && echo '$(SCRATCH_BUILD)/git-lock.pl $(GIT-CMD) $(GIT-SILENT)' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
