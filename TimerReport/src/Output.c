@@ -20,7 +20,7 @@
 
 #include "cctk_Schedule.h"
 
-static const char *rcsid = "$Header$";
+static const char * const rcsid = "$Header$";
 
 CCTK_FILEVERSION(CactusUtils_TimerReport_Output_c);
 
@@ -32,15 +32,18 @@ CCTK_FILEVERSION(CactusUtils_TimerReport_Output_c);
  ********************* Local Routine Prototypes *********************
  ********************************************************************/
 
+static void Output (CCTK_ARGUMENTS);
 static void PrintTimes (CCTK_ARGUMENTS);
 static void OutputAllTimers (CCTK_ARGUMENTS);
+static void OutputAllTimersTogether (CCTK_ARGUMENTS);
 static void PrintTopTimers (CCTK_ARGUMENTS);
 
 /********************************************************************
  *********************  Scheduled Routine Prototypes  ***************
  ********************************************************************/
 
-void TimerReport_Output(CCTK_ARGUMENTS);
+void TimerReport_OutputEvery(CCTK_ARGUMENTS);
+void TimerReport_OutputTerminate(CCTK_ARGUMENTS);
 void TimerReport_Checkpoint(CCTK_ARGUMENTS);
 
 /********************************************************************
@@ -56,14 +59,14 @@ void TimerReport_Checkpoint(CCTK_ARGUMENTS);
  ********************************************************************/
 
  /*@@
-   @routine    TimerReport_Output
-   @date       July 6 2003
-   @author     Gabrielle Allen
+   @routine    TimerReport_OutputEvery
+   @date       2008-11-12
+   @author     Erik Schnetter
    @desc
-   Output the timer table
+   Output the timer table periodically
    @enddesc
 @@*/
-void TimerReport_Output(CCTK_ARGUMENTS)
+void TimerReport_OutputEvery(CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
@@ -72,24 +75,37 @@ void TimerReport_Output(CCTK_ARGUMENTS)
       out_at == cctk_iteration ||
       (out_every && cctk_iteration%out_every == 0))
   {
-
     CCTK_VInfo(CCTK_THORNSTRING,
                "Timer Report at iteration %d time %g",
                cctk_iteration, (double)cctk_time);
-    PrintTimes(CCTK_PASS_CTOC);
-
-    if (output_all_timers)
-      OutputAllTimers(CCTK_PASS_CTOC);
-
-    if (n_top_timers > 0)
-      PrintTopTimers(CCTK_PASS_CTOC);
+    Output(CCTK_PASS_CTOC);
 
     if (next)
     {
       CCTK_ParameterSet("next", CCTK_THORNSTRING, "no");
     }
-
   }
+}
+
+
+
+ /*@@
+   @routine    TimerReport_OutputTerminate
+   @date       2008-11-12
+   @author     Erik Schnetter
+   @desc
+   Output the timer table periodically
+   @enddesc
+@@*/
+void TimerReport_OutputTerminate(CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+
+  CCTK_VInfo(CCTK_THORNSTRING,
+             "Timer Report before terminating at iteration %d time %g",
+             cctk_iteration, (double)cctk_time);
+  Output(CCTK_PASS_CTOC);
 }
 
  /*@@
@@ -108,18 +124,45 @@ void TimerReport_Checkpoint(CCTK_ARGUMENTS)
   if (before_checkpoint &&
       (checkpoint_every && cctk_iteration%checkpoint_every == 0))
   {
-
     CCTK_VInfo(CCTK_THORNSTRING,
                "Timer Report before checkpointing at iteration %d, time %g",
                cctk_iteration, (double)cctk_time);
-    PrintTimes(CCTK_PASS_CTOC);
-
+    Output(CCTK_PASS_CTOC);
   }
 }
+
+
 
 /********************************************************************
  ********************    Internal Routines   ************************
  ********************************************************************/
+
+
+
+static void Output (CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+
+  PrintTimes(CCTK_PASS_CTOC);
+
+  if (output_all_timers)
+  {
+    OutputAllTimers(CCTK_PASS_CTOC);
+  }
+
+  if (output_all_timers_together)
+  {
+    OutputAllTimersTogether(CCTK_PASS_CTOC);
+  }
+
+  if (n_top_timers > 0)
+  {
+    PrintTopTimers(CCTK_PASS_CTOC);
+  }
+}
+
+
 
 static void PrintTimes (CCTK_ARGUMENTS)
 {
@@ -144,7 +187,7 @@ static void PrintTimes (CCTK_ARGUMENTS)
     myproc = CCTK_MyProc(cctkGH);
     filename = malloc(filename_length);
     Util_snprintf(filename, filename_length,
-                  "%s/%s.%04d.txt", out_dir, out_filename, myproc);
+                  "%s/%s.%06d.txt", out_dir, out_filename, myproc);
 
     /* truncate or append */
     flags = first_time && IO_TruncateOutputFiles(cctkGH) ? "w" : "a";
@@ -169,6 +212,8 @@ static void PrintTimes (CCTK_ARGUMENTS)
   }
 }
 
+
+
 static void OutputAllTimers (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
@@ -186,7 +231,7 @@ static void OutputAllTimers (CCTK_ARGUMENTS)
 
   assert(ntimers >= 0);
 
-  Util_asprintf(&filename, "%s/%s.%04d.txt", 
+  Util_asprintf(&filename, "%s/%s.%06d.txt", 
                 out_dir, "AllTimers", CCTK_MyProc(cctkGH));
 
   /* truncate or append */
@@ -219,7 +264,7 @@ static void OutputAllTimers (CCTK_ARGUMENTS)
       }
     }
 
-    fprintf(file, "%d\t%f\t", cctk_iteration, cctk_time);
+    fprintf(file, "%d\t%f", cctk_iteration, cctk_time);
 
     for (i = 0; i < ntimers; i++)
     {
@@ -234,14 +279,14 @@ static void OutputAllTimers (CCTK_ARGUMENTS)
         }
         else
         {
-          CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                     "Clock \"%s\" not found", all_timers_clock);
+          CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                     "Clock \"%s\" not found for timer #%d \"%s\"",
+                     all_timers_clock, i, CCTK_TimerName(i));
+          timer_secs = -1;
         }
       }
         
-      fprintf(file, "%.15g", timer_secs);
-      if (i != ntimers - 1)
-        fprintf(file, "\t");
+      fprintf(file, "\t%.15g", timer_secs);
     }
     fprintf(file, "\n");
     fclose(file);
@@ -257,6 +302,142 @@ static void OutputAllTimers (CCTK_ARGUMENTS)
   last_ntimers = ntimers;
   return;
 }
+
+
+
+static void OutputAllTimersTogether (CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+  
+  const int root = 0;
+  
+  const int ntimers = CCTK_NumTimers();
+  assert (ntimers >= 0);
+  
+  
+  
+  CCTK_REAL * const timer_secs     = malloc(ntimers * sizeof *timer_secs    );
+  CCTK_REAL * const timer_secs_avg = malloc(ntimers * sizeof *timer_secs_avg);
+  CCTK_REAL * const timer_secs_min = malloc(ntimers * sizeof *timer_secs_min);
+  CCTK_REAL * const timer_secs_max = malloc(ntimers * sizeof *timer_secs_max);
+  cTimerData * const td = CCTK_TimerCreateData();
+  for (int i = 0; i < ntimers; i++)
+  {
+    CCTK_TimerI(i, td);
+    
+    const cTimerVal * const tv = CCTK_GetClockValue(all_timers_clock, td);
+    
+    if (tv != NULL)
+    {
+      timer_secs[i] = CCTK_TimerClockSeconds(tv);
+    }
+    else
+    {
+      CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                 "Clock \"%s\" not found for timer #%d \"%s\"",
+                 all_timers_clock, i, CCTK_TimerName(i));
+      timer_secs[i] = -1;
+    }
+  }
+  CCTK_TimerDestroyData(td);
+  
+  const int reduce_avg = CCTK_ReductionArrayHandle ("average");
+  const int reduce_min = CCTK_ReductionArrayHandle ("minimum");
+  const int reduce_max = CCTK_ReductionArrayHandle ("maximum");
+  if (reduce_avg < 0 || reduce_min < 0 || reduce_max < 0)
+  {
+    CCTK_WARN (CCTK_WARN_ABORT,
+               "Reduction operators for average, minimum, or maximum not defined");
+  }
+  const int ierr1 = CCTK_ReduceLocArrayToArray1D
+    (cctkGH, root, reduce_avg,
+     timer_secs, timer_secs_avg, ntimers, CCTK_VARIABLE_REAL);
+  const int ierr2 = CCTK_ReduceLocArrayToArray1D
+    (cctkGH, root, reduce_min,
+     timer_secs, timer_secs_min, ntimers, CCTK_VARIABLE_REAL);
+  const int ierr3 = CCTK_ReduceLocArrayToArray1D
+    (cctkGH, root, reduce_max,
+     timer_secs, timer_secs_max, ntimers, CCTK_VARIABLE_REAL);
+  if (ierr1 || ierr2 || ierr3)
+  {
+    CCTK_WARN (CCTK_WARN_ABORT,
+               "Error in calling reduction operators");
+  }
+  
+  
+  
+  if (CCTK_MyProc(cctkGH) == root)
+  {
+    static int first_time = 1;
+    static int last_ntimers = -1;
+    
+    char *filename;
+    Util_asprintf(&filename, "%s/%s.txt", out_dir, "AllTimers");
+    
+    /* truncate or append */
+    const char * const flags =
+      first_time && IO_TruncateOutputFiles(cctkGH) ? "w" : "a";
+    
+    FILE * const file = fopen(filename, flags);
+    if (file)
+    {
+      if (first_time)
+      {
+        fprintf(file, "# Clock %s\n", all_timers_clock);
+        fprintf(file, "# Unit seconds\n");
+      }
+      /* If the number of timers has changed, output the header
+       * containing the timer names again.  It would be better to
+       * track creation and deletion of timers in the flesh, but this
+       * method here works as long as timers are never deleted.  */
+      if (last_ntimers != ntimers)
+      {
+        fprintf(file, "# Column 1 iteration\n");
+        fprintf(file, "# Column 2 time\n");
+        fprintf(file, "# For all following columns:\n");
+        fprintf(file, "#    Column 3n   average of all processes\n");
+        fprintf(file, "#    Column 3n+1 minimum of all processes\n");
+        fprintf(file, "#    Column 3n+2 maximum of all processes\n");
+        for (int i = 0; i < ntimers; i++)
+        {
+          const char * const name = CCTK_TimerName(i);
+          fprintf(file, "# Column %d %s\n", 3*i+3, name ? name : "");
+        }
+      }
+      
+      fprintf(file, "%d\t%f", cctk_iteration, cctk_time);
+      
+      for (int i = 0; i < ntimers; i++)
+      {
+        fprintf(file, "\t%.15g %.15g %.15g",
+                (double)timer_secs_avg[i],
+                (double)timer_secs_min[i], (double)timer_secs_max[i]);
+      }
+      fprintf(file, "\n");
+      fclose(file);
+    }
+    else
+    {
+      CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                 "Could not open timer report output file \"%s\"", filename);
+    }
+    free(filename);
+    
+    first_time = 0;
+    last_ntimers = ntimers;
+    
+  } /* if root processor */
+  
+  free (timer_secs    );
+  free (timer_secs_avg);
+  free (timer_secs_min);
+  free (timer_secs_max);
+  
+  return;
+}
+
+
 
 typedef struct
 {
@@ -277,7 +458,6 @@ static int compare(const void * a, const void * b)
     return 0;
   else return -1;
 }
-
 
 static void PrintTopTimers (CCTK_ARGUMENTS)
 {

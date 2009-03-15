@@ -29,7 +29,11 @@ BOOLEAN next "On next iteration" STEERABLE=ALWAYS
 {
 } "no"
 
-BOOLEAN output_all_timers "Output a separate file containing all the Cactus timers" STEERABLE=ALWAYS
+BOOLEAN output_all_timers "Output one file per processor containing all the Cactus timers" STEERABLE=ALWAYS
+{
+} "no"
+
+BOOLEAN output_all_timers_together "Output one file containing information about all the Cactus timers" STEERABLE=ALWAYS
 {
 } "no"
 
