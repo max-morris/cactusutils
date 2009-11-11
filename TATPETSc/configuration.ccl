@@ -1,0 +1,4 @@
+# Configuration definition for thorn TATPETSc
+# $Header$
+
+REQUIRES PETSc

@@ -1,6 +1,0 @@
-# Main make.configuration.defn file for thorn TAT/TATPETSc
-# $Header$
-
-ifeq ($(strip $(HAVE_PETSC)), )
-    $(error This configuration was not configured to use PETSc.  Please reconfigure with 'PETSC=yes' or remove TATPETSc from your ThornList)
-endif
