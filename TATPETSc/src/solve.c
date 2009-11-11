@@ -456,8 +456,15 @@ int TATPETSc_solve (const cGH *cctkGH,
       CHKERRQ(ierr);
     }
     if (veryverbose) CCTK_INFO ("DAGetColoring");
+#if PETSC_VERSION_MAJOR < 2 || \
+  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3) || \
+  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR == 3 && PETSC_VERSION_SUBMINOR < 3)
     ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
     CHKERRQ(ierr);
+#else
+    ierr = DAGetColoring (da, IS_COLORING_GLOBAL, &iscoloring);
+    CHKERRQ(ierr);
+#endif
     ierr = TATPETSc_jacobian (snes, x, &J, &J, &flag, &user);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("SNESSetJacobian");
@@ -479,8 +486,15 @@ int TATPETSc_solve (const cGH *cctkGH,
         CHKERRQ(ierr);
       }
       if (veryverbose) CCTK_INFO ("DAGetColoring");
+#if PETSC_VERSION_MAJOR < 2 || \
+  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3) || \
+  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR == 3 && PETSC_VERSION_SUBMINOR < 3)
       ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
       CHKERRQ(ierr);
+#else
+      ierr = DAGetColoring (da, IS_COLORING_GLOBAL, &iscoloring);
+      CHKERRQ(ierr);
+#endif
     } else {
       if (veryverbose) CCTK_INFO ("get_coloring");
       ierr = get_coloring (da, &iscoloring, &J, data);
@@ -608,7 +622,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   ierr = SNESGetNumberLinearIterations (snes, &liniters);
   CHKERRQ(ierr);
 
-#  elif PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR > 2
+#  elif PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR ==3 && PETSC_VERSION_SUBMINOR < 3
 
   ierr = SNESSolve (snes, PETSC_NULL, x);
   CHKERRQ(ierr);
@@ -616,6 +630,16 @@ int TATPETSc_solve (const cGH *cctkGH,
   ierr = SNESGetIterationNumber (snes, &iters);
   CHKERRQ(ierr);
   ierr = SNESGetNumberLinearIterations (snes, &liniters);
+  CHKERRQ(ierr);
+
+#  else
+
+  ierr = SNESSolve (snes, PETSC_NULL, x);
+  CHKERRQ(ierr);
+  
+  ierr = SNESGetIterationNumber (snes, &iters);
+  CHKERRQ(ierr);
+  ierr = SNESGetLinearSolveIterations (snes, &liniters);
   CHKERRQ(ierr);
 
 #  endif

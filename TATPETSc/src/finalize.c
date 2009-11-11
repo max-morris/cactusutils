@@ -10,7 +10,7 @@
 
 
 
-void TATPETSc_finalize (void)
+int TATPETSc_finalize (void)
 {
   DECLARE_CCTK_PARAMETERS;
   
@@ -21,4 +21,6 @@ void TATPETSc_finalize (void)
   
   ierr = PetscFinalize ();
   CHKERRQ(ierr);
+
+  return 0;
 }

@@ -27,7 +27,7 @@ int TATPETSc_error_handler (int line, char *fun, char *file, char *dir, int n, i
 
 
 
-void TATPETSc_initialize (void)
+int TATPETSc_initialize (void)
 {
   DECLARE_CCTK_PARAMETERS;
   
@@ -88,7 +88,7 @@ void TATPETSc_initialize (void)
   
   /* Initialise PETSc */
   if (CCTK_IsFunctionAliased ("GetMPICommWorld")) {
-    comm = * (MPI_Comm *) GetMPICommWorld (NULL);
+    comm = * (MPI_Comm const *) GetMPICommWorld (NULL);
   } else {
     comm = MPI_COMM_WORLD;
   }
@@ -113,4 +113,8 @@ void TATPETSc_initialize (void)
   /* Register the solver */
   ierr = TATelliptic_RegisterSolver (TATPETSc_solve, "TATPETSc");
   assert (!ierr);
+
+
+
+  return 0;
 }

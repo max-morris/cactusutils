@@ -172,9 +172,11 @@ int TATPETSc_copyjac (Mat J, void *userptr)
   ierr = PetscMalloc(27*nvars*sizeof(PetscScalar),&vals);CHKERRQ(ierr);
   ierr = DAGetAO(user->da,&ao);CHKERRQ(ierr);
   
+#if PETSC_VERSION_MAJOR < 3
   ierr = MatSetOption(J,MAT_ROWS_SORTED);CHKERRQ(ierr);
   ierr = MatSetOption(J,MAT_COLUMNS_SORTED);CHKERRQ(ierr);
 /*   ierr = MatSetOption(J,MAT_IGNORE_ZERO_ENTRIES);CHKERRQ(ierr); */
+#endif
   
   assert (nvars==1);
   
@@ -215,7 +217,11 @@ int TATPETSc_copyjac (Mat J, void *userptr)
   }
   ierr = MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);  
   ierr = MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);  
+#if PETSC_VERSION_MAJOR < 3
   ierr = MatSetOption(J,MAT_NO_NEW_NONZERO_LOCATIONS);CHKERRQ(ierr);
+#else
+  ierr = MatSetOption(J,MAT_NEW_NONZERO_LOCATIONS,PETSC_FALSE);CHKERRQ(ierr);
+#endif
   
   ierr = PetscFree(vals);CHKERRQ(ierr);
   ierr = PetscFree(rows);CHKERRQ(ierr);
