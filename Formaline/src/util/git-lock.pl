@@ -29,7 +29,7 @@ my $lockdir = "$git_dir/GITLOCK";
 
 
 
-my $waittime = 1;
+my $waittime = 0.01;
 my $maxwaittime = 10;
 while (! (mkdir $lockdir)) {
     # Wait some time
@@ -38,6 +38,7 @@ while (! (mkdir $lockdir)) {
     system "sleep $waittime";
     # Back off exponentially
     $waittime *= 2;
+    $waittime = 1 if $waittime>1 && $waittime<2;
     $waittime = $maxwaittime if $waittime > $maxwaittime;
 }
 

@@ -20,6 +20,7 @@ TR_C := $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -
 # into an executable
 
 TARBALL_DIR = $(SCRATCH_BUILD)
+FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/formaline-bin
 
 
 
@@ -62,7 +63,7 @@ $(FRM-LIB): $(FRM-OBJS)
 .PHONY: $(TOP)/BUILD-ID
 $(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
 	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'` && \
-	hostname=`$(TARBALL_DIR)/gethostname.pl` && \
+	hostname=`$(FORMALINE_BIN_DIR)/gethostname.pl` && \
 	user="$$USER" && \
 	dirname=`echo "$(subst /,-,$(CCTK_HOME:/%=%))" | $(TR_C) -d '[:alnum:]+-._]'` && \
 	timestamp=`date -u +%Y.%m.%d-%H.%M.%S` && \
@@ -95,7 +96,7 @@ $(TARBALL_DIR)/cactus-meta-source.o: $(TARBALL_DIR)/cactus-meta-source.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.c,$(notdir $(THORNS)))
-	$(TARBALL_DIR)/makemetablob.pl Cactus $(notdir $(THORNS)) > $@
+	$(FORMALINE_BIN_DIR)/makemetablob.pl Cactus $(notdir $(THORNS)) > $@
 
 .PRECIOUS: $(TARBALL_DIR)/cactus-meta-source.c $(TARBALL_DIR)/cactus-meta-source.o
 
@@ -115,7 +116,7 @@ $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
-	$(TARBALL_DIR)/makeblob.pl '' Cactus < $< > $@
+	$(FORMALINE_BIN_DIR)/makeblob.pl '' Cactus < $< > $@
 
 $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
 	cd $(CCTK_HOME) && \
@@ -133,6 +134,8 @@ $(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK
 		configs/$(notdir $(TOP))/config-data \
 		configs/$(notdir $(TOP))/config-info \
 		-name 'CVS' -prune -o \
+		-name '*.log' -prune -o \
+		-name '*.log.gz' -prune -o \
 		-name '.?*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
@@ -163,7 +166,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
 	$(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
-	$(TARBALL_DIR)/makeblob.pl $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) < $< > $@
+	$(FORMALINE_BIN_DIR)/makeblob.pl $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) < $< > $@
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
 	cd $(CCTK_HOME) && \
@@ -175,10 +178,13 @@ $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-
 $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX) $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps
 	cd $(CCTK_HOME) && \
 	find arrangements/$(filter %/$*,$(THORNS))/. \
+		-name 'data' -prune -o \
 		-name 'doc' -prune -o \
 		-name 'par' -prune -o \
 		-name 'test' -prune -o \
 		-name 'CVS' -prune -o \
+		-name '*.log' -prune -o \
+		-name '*.log.gz' -prune -o \
 		-name '.?*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
@@ -260,14 +266,10 @@ endif
 
 
 
-# Suppress all output from git commands
-GIT-SILENT = > /dev/null 2>&1
-
 # Does git exist, or should we do nothing instead?
-GIT-CMD := $(shell env PATH=$$HOME/git/bin:$$PATH which git)
+GIT-CMD := $(shell env PATH=$(SCRATCH_BUILD)/git-1.6.6.1/bin:$(SCRATCH_BUILD)/git-1.6.0.6/bin:$$HOME/git/bin:$$PATH which git)
 HAVE-GIT := $(shell '$(GIT-CMD)' --version > /dev/null 2>&1 && echo 'true' || echo 'false')
-GIT1 := $(shell $(HAVE-GIT) && echo '$(SCRATCH_BUILD)/git-lock.pl $(GIT-CMD)' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
-GIT := $(shell $(HAVE-GIT) && echo '$(SCRATCH_BUILD)/git-lock.pl $(GIT-CMD) $(GIT-SILENT)' || { echo 'WARNING: git command not found' >&2 && echo 'true'; })
+GIT := $(shell $(HAVE-GIT) && echo '$(FORMALINE_BIN_DIR)/git-lock.pl $(GIT-CMD)' || { echo 'Formaline: WARNING: git command not found' >&2 && echo 'true'; })
 
 
 
@@ -282,6 +284,7 @@ git-store-source: git-commit-everything git-push-everything
 	echo "Formaline:  If the build process seems to hang, some other command"
 	echo "Formaline:  is still running, e.g. the final link stage.)"
 
+GIT-BIN         = $(FORMALINE_BIN_DIR)
 GIT-ROOT        = $(CCTK_HOME)
 GIT-REPO        = $(TOP)/configjar.git
 GIT-MASTER-REPO = $(CCTK_HOME)/cactusjar.git
@@ -291,161 +294,50 @@ GIT-THORNS      = $(notdir $(THORNS))
 BUILD-ID-FILE   = $(TOP)/BUILD-ID
 CONFIG-ID-FILE  = $(TOP)/CONFIG-ID
 
-define GIT-INIT-MASTER-REPO
-	{ \
-	if [ ! -e $(GIT-MASTER-REPO)/.git/HEAD ]; then \
-		echo "Formaline: Creating master git repository..." && \
-		mkdir -p $(GIT-MASTER-REPO) && \
-		cd $(GIT-MASTER-REPO) && \
-		$(GIT) init-db; \
-	fi && \
-	if [ ! -e $(GIT-MASTER-REPO)/README ]; then \
-		{ \
-		echo "This directory $$(pwd)" && \
-		echo "is not empty -- it contains a git repository with the Cactus source" && \
-		echo "trees of all previous builds, starting on $$(date)." && \
-		echo "" && \
-		echo "You can use the command \"git branch\" to list all configurations that" && \
-		echo "are stored in this repository.  The history of each branch is the" && \
-		echo "sequence in which the configuration was built.  The most recent build" && \
-		echo "is stored in the branch head, as usual.  In order to check out a" && \
-		echo "certain branch into a directory <name>, issue the following commands:" && \
-		echo "        cd <somewhere_else>" && \
-		echo "        mkdir <name>" && \
-		echo "        cd <name>" && \
-		echo "        git init" && \
-		echo "        git pull $$(pwd) <branch>" && \
-		echo "" && \
-		echo "You can also use the command \"git tag -l\" to list all builds that are" && \
-		echo "stored in this repository.  This keeps the source tree for each build" && \
-		echo "directly accessible.  In order to check out a certain tag into a" && \
-		echo "directory <name>, issue the following commands:" && \
-		echo "        cd <somewhere_else>" && \
-		echo "        git clone -o <name> $$(pwd)" && \
-		echo "        git checkout <tag>"; \
-		} > $(GIT-MASTER-REPO)/README; \
-	fi; \
-	} || echo "WARNING: Error while handling git repository"
-endef
-
-define GIT-INIT-REPO
-	{ \
-	if [ ! -e $(GIT-REPO)/.git/HEAD ]; then \
-		echo "Formaline: Creating git repository..." && \
-		mkdir -p $(GIT-REPO) && \
-		cd $(GIT-REPO) && \
-		$(GIT) init-db; \
-	fi; \
-	} || echo "WARNING: Error while handling git repository"
-endef
-
-# Call git-gc if the repository has grown in size by more than a
-# factor of 10.  This macro needs to be called in the directory where
-# the .git subdirectory lives.
-define GIT-COMPACT-REPO
-	{ \
-	if [ ! -e .oldreposize ]; then \
-		echo 0 > .oldreposize; \
-	fi && \
-	oldreposize=$$(cat .oldreposize) && \
-	maxreposize=$$((oldreposize * 10)) && \
-	reposize=$$(du -s .git | awk '{ print $$1; }') && \
-	if [ $$reposize -gt $$maxreposize ]; then \
-		$(GIT) gc && \
-		reposize=$$(du -s .git | awk '{ print $$1; }') && \
-		echo $$reposize > .oldreposize; \
-	fi; \
-	} || echo "WARNING: Error while handling git repository"
-endef
-
 .PHONY: git-push-everything
 git-push-everything: git-commit-everything $(BUILD-ID-FILE)
-	$(GIT-INIT-MASTER-REPO)
 	{ \
-	echo "Formaline: Pushing source tree to master git repository..." && \
-	cd $(GIT-ROOT) && \
-	export GIT_DIR=$(GIT-REPO)/.git && \
-	build_id=$$(cat $(BUILD-ID-FILE)) && \
-	$(GIT) push -f $(GIT-MASTER-REPO) "$$build_id" && \
-	config_id=$$(cat $(CONFIG-ID-FILE)) && \
-	$(GIT) push -f $(GIT-MASTER-REPO) "$$config_id"; \
-	} || echo "WARNING: Error while handling git repository"
-	true || { \
-	cd $(GIT-ROOT) && \
-	export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
-	echo "Formaline: Optimising master git repository..." && \
-	$(GIT) gc; \
-	} || echo "WARNING: Error while handling git repository"
-	{ \
-	cd $(GIT-ROOT) && \
-	export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
-	echo "Formaline: Optimising master git repository..." && \
-	cd $(GIT-MASTER-REPO) && \
-	$(GIT-COMPACT-REPO); \
-	} || echo "WARNING: Error while handling git repository"
-	{ \
+	'$(GIT-BIN)/git-init-master-repo.pl' '$(GIT)' '$(GIT-MASTER-REPO)' && \
 	if [ -e "$(CCTK_HOME)/cactus.config" ]; then \
-		source "$(CCTK_HOME)/cactus.config"; \
+		source "$(CCTK_HOME)/cactus.config" && \
+		export CACTUS_CENTRAL_GIT_REPO; \
 	fi && \
-	if [ -n "$$CACTUS_CENTRAL_GIT_REPO" ]; then \
-		cd $(GIT-ROOT) && \
-		export GIT_DIR=$(GIT-MASTER-REPO)/.git && \
-		echo "Formaline: Pushing to central repository $$CACTUS_CENTRAL_GIT_REPO..." && \
-		config_id=$$(cat $(CONFIG-ID-FILE)) && \
-		{ $(GIT1) tag -l && echo "$$config_id"; } | \
-		xargs $(GIT) push -f "$$CACTUS_CENTRAL_GIT_REPO"; \
-	fi; \
-	} || echo "WARNING: Error while handling git repository"
+	'$(GIT-BIN)/git-push-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-MASTER-REPO)'; \
+	} || echo "Formaline: WARNING: Error while pushing to master repository"
 
-# Try to use the previous commit as parent, if possible
 .PHONY: git-commit-everything
 git-commit-everything: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag $(GIT-THORNS:%=$(SCRATCH_BUILD)/cactus-thorn-%.git-tag) $(BUILD-ID-FILE)
 	{ \
-	echo "Formaline: Committing source tree to git repository..." && \
-	cd $(GIT-ROOT) && \
-	export GIT_DIR=$(GIT-REPO)/.git && \
-	build_id="$$(cat $(BUILD-ID-FILE))" && \
-	{ $(GIT) commit -m "$$build_id" || true; } && \
-	$(GIT) tag -f "$$build_id" && \
-	echo "Formaline: Created git tag $$build_id" && \
-	config_id="$$(cat $(CONFIG-ID-FILE))" && \
-	$(GIT) branch -f "$$config_id" && \
-	echo "Formaline: Updated git branch $$config_id" && \
-	echo "Formaline: Optimising git repository (slow only the first time)..." && \
-	true || $(GIT) gc; \
-	cd $(GIT-REPO) && \
-	$(GIT-COMPACT-REPO); \
-	} || echo "WARNING: Error while handling git repository"
+	'$(GIT-BIN)/git-commit-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' "$$(cat $(BUILD-ID-FILE))" "$$(cat $(CONFIG-ID-FILE))"; \
+	} || echo "Formaline: WARNING: Error while committing to repository"
 
 .PRECIOUS: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag
 $(SCRATCH_BUILD)/cactus-flesh-source.git-tag: $(TARBALL_DIR)/cactus-flesh-source.files
-	$(GIT-INIT-REPO)
 	{ \
+	'$(GIT-BIN)/git-init-repo.pl' '$(GIT)' '$(GIT-REPO)' && \
 	echo "Formaline: Adding flesh to git repository..." && \
-	cd $(GIT-ROOT) && \
-	export GIT_DIR=$(GIT-REPO)/.git && \
-	{ $(GIT) rm --cached -r CONTRIBUTORS COPYRIGHT Makefile lib src configs > /dev/null 2>&1 || true; } && \
-	xargs ls < $(TARBALL_DIR)/cactus-flesh-source.files \
-		> $(TARBALL_DIR)/cactus-flesh-source.files2 2> /dev/null; \
-	xargs $(GIT) add < $(TARBALL_DIR)/cactus-flesh-source.files2 && \
-	rm $(TARBALL_DIR)/cactus-flesh-source.files2 && \
+	'$(GIT-BIN)/git-rm-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' 'cactus' CONTRIBUTORS COPYRIGHT Makefile lib src configs && \
+	: xargs ls < $(TARBALL_DIR)/cactus-flesh-source.files \
+		> $(TARBALL_DIR)/cactus-flesh-source.files2 2> /dev/null && \
+	xargs '$(GIT-BIN)/git-add-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' 'cactus' \
+		< $(TARBALL_DIR)/cactus-flesh-source.files && \
+	: rm $(TARBALL_DIR)/cactus-flesh-source.files2 && \
 	: > $@; \
-	} || echo "WARNING: Error while handling git repository"
+	} && echo "Formaline: WARNING: Error while adding flesh to git repository"
 
 .PRECIOUS: $(SCRATCH_BUILD)/cactus-thorn-%.git-tag
 $(SCRATCH_BUILD)/cactus-thorn-%.git-tag: $(TARBALL_DIR)/cactus-thorn-source-%.files
-	$(GIT-INIT-REPO)
 	{ \
+	'$(GIT-BIN)/git-init-repo.pl' '$(GIT)' '$(GIT-REPO)' && \
 	echo "Formaline: Adding thorn $* to git repository..." && \
-	cd $(GIT-ROOT) && \
-	export GIT_DIR=$(GIT-REPO)/.git && \
-	{ $(GIT) rm --cached -r arrangements/*/$* > /dev/null 2>&1 || true; } &&\
-	xargs ls < $(TARBALL_DIR)/cactus-thorn-source-$*.files \
-		> $(TARBALL_DIR)/cactus-thorn-source-$*.files2 2> /dev/null; \
-	xargs $(GIT) add < $(TARBALL_DIR)/cactus-thorn-source-$*.files2 && \
-	rm $(TARBALL_DIR)/cactus-thorn-source-$*.files2 && \
+	'$(GIT-BIN)/git-rm-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' '$*' "'"'arrangements/*/$*'"'" && \
+	: xargs ls < $(TARBALL_DIR)/cactus-thorn-source-$*.files \
+		> $(TARBALL_DIR)/cactus-thorn-source-$*.files2 2> /dev/null && \
+	xargs '$(GIT-BIN)/git-add-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' '$*' \
+		< $(TARBALL_DIR)/cactus-flesh-source.files && \
+	: rm $(TARBALL_DIR)/cactus-thorn-source-$*.files2 && \
 	: > $@; \
-	} || echo "WARNING: Error while handling git repository"
+	} || echo "Formaline: WARNING: Error while adding thorn $* to git repository"
 
 endif
 
@@ -468,6 +360,21 @@ endif
 
 
 # TODO:
+# 8. Create a separate git repository for every thorn, which would
+#    make git operations more parallel
+# 9. Do not copy all branches/tags to the central repo all the time
+# 10. Add a "git reset --mixed" in the beginning to ensure the
+#     repository is in a consistent state.  Add "git rm -r --cached ."
+#     as well?
+# 11. Execute a "rm scratch/*.git-tag" if there are problems, and try
+#     again
+# 12. Use subdirectories in scratch directory
+# 13. Calculate and output md5sum for source files and the source tree
+#     to see more easily whether and which files changed
+# 14. cd into thorn directory, and use lstat/readlink to follow
+#     symbolic links, to make thing work with recent versions of git
+
+
 
 # DONE:
 # 1. Remember git-archive to get a tarball

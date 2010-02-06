@@ -6,20 +6,13 @@
 # file make.configuration.deps because only here the location of the
 # source directory is known.
 
-TARBALL_DIR = $(SCRATCH_BUILD)
+FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/formaline-bin
 
-$(CCTK_TARGET): $(TARBALL_DIR)/gethostname.pl $(TARBALL_DIR)/makeblob.pl $(TARBALL_DIR)/makemetablob.pl $(SCRATCH_BUILD)/git-lock.pl
+FORMALINE_TAR_FILES = gethostname.pl makeblob.pl makemetablob.pl
+FORMALINE_GIT_FILES = git-add-thorn.pl git-commit-everything.pl git-gc-repo.pl git-init-master-repo.pl git-init-repo.pl git-lock.pl git-push-everything.pl git-rm-thorn.pl
 
+$(CCTK_TARGET): $(FORMALINE_TAR_FILES:%=$(FORMALINE_BIN_DIR)/%) $(FORMALINE_GIT_FILES:%=$(FORMALINE_BIN_DIR)/%)
 
-
-$(TARBALL_DIR)/gethostname.pl: $(SRCDIR)/util/gethostname.pl
-	cd $(TARBALL_DIR) && cp $^ $@
-
-$(TARBALL_DIR)/makeblob.pl: $(SRCDIR)/util/makeblob.pl
-	cd $(TARBALL_DIR) && cp $^ $@
-
-$(TARBALL_DIR)/makemetablob.pl: $(SRCDIR)/util/makemetablob.pl
-	cd $(TARBALL_DIR) && cp $^ $@
-
-$(SCRATCH_BUILD)/git-lock.pl: $(SRCDIR)/util/git-lock.pl
-	cd $(SCRATCH_BUILD) && cp $^ $@
+$(FORMALINE_BIN_DIR)/%.pl: $(SRCDIR)/util/%.pl
+	mkdir -p $(FORMALINE_BIN_DIR)
+	cp $^ $@

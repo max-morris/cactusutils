@@ -1,0 +1,74 @@
+#! /usr/bin/perl -w
+
+# Push everything to the master repository
+
+# 2010-01-29 Erik Schnetter <schnetter@cct.lsu.edu>
+
+use strict;
+
+
+
+$#ARGV == 2 or die;
+my ($git_cmd, $git_repo, $git_master_repo) = @ARGV;
+
+# Central Cactus repository
+my $git_central_repo = $ENV{'CACTUS_CENTRAL_GIT_REPO'};
+
+# Path where the git-*.pl commands are installed
+my $bindir = $ENV{'SCRATCH_BUILD'} . '/formaline-bin';
+
+my $silent = $ENV{'SILENT'};
+$silent = 'yes' if ! defined $silent;
+$silent = $silent !~ /^no$/i;
+my $silencer = $silent ? '> /dev/null 2>&1' : '';
+
+
+
+# Ensure that the repositories exist
+die unless -e "$git_repo/.git";
+$ENV{'GIT_DIR'} = "$git_repo/.git";
+die unless -e "$git_master_repo/.git";
+
+
+
+print "Formaline: Pushing source tree to master git repository...\n";
+
+print "Executing: $git_cmd push -v -f --all $git_master_repo\n" unless $silent;
+system "$git_cmd push -v -f --all $git_master_repo $silencer";
+if ($?) {
+    die "Could not push branches";
+}
+
+print "Executing: $git_cmd push -v -f --tags $git_master_repo\n" unless $silent;
+system "$git_cmd push -v -f --tags $git_master_repo $silencer";
+if ($?) {
+    die "Could not push tags";
+}
+
+print "Executing: $bindir/git-gc-repo.pl '$git_cmd' $git_master_repo\n"
+    unless $silent;
+system "$bindir/git-gc-repo.pl '$git_cmd' $git_master_repo $silencer";
+if ($?) {
+    die "Could not collect garbage";
+}
+
+
+
+if (defined $git_central_repo) {
+    $ENV{'GIT_DIR'} = "$git_master_repo/.git";
+    
+    print "Formaline: Pushing to central repository $git_central_repo...\n";
+    
+    print "Executing: $git_cmd push -v -f --all $git_central_repo\n"
+        unless $silent;
+    system "$git_cmd push -v -f --all $git_central_repo $silencer";
+    if ($?) {
+        die "Could not push branches";
+    }
+    
+    print "$git_cmd push -v -f --tags $git_central_repo\n" unless $silent;
+    system "$git_cmd push -v -f --tags $git_central_repo $silencer";
+    if ($?) {
+        die "Could not push tags";
+    }
+}

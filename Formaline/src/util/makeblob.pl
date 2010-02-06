@@ -3,7 +3,7 @@
 use strict;
 
 my $items_per_line = 16;
-my $items_per_file = 1024 * 1024;
+my $items_per_file = 128 * 1024;
 
 $#ARGV == 1 or die;
 
