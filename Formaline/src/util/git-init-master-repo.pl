@@ -37,6 +37,11 @@ system "$git_cmd init-db $silencer";
 if ($?) {
     die "Formaline: WARNING: Error while initialising master git repository";
 }
+print "Executing: $git_cmd config receive.denyCurrentBranch false\n" unless $silent;
+system "$git_cmd config receive.denyCurrentBranch false $silencer";
+if ($?) {
+    die "Formaline: WARNING: Error while configuring master git repository";
+}
 
 
 

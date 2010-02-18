@@ -33,6 +33,12 @@ die unless -e "$git_master_repo/.git";
 
 print "Formaline: Pushing source tree to master git repository...\n";
 
+print "Executing: $git_cmd config receive.denyCurrentBranch false\n" unless $silent;
+system "$git_cmd --git-dir=$git_master_repo/.git config receive.denyCurrentBranch false $silencer";
+if ($?) {
+    die "Formaline: WARNING: Error while configuring master git repository";
+}
+
 print "Executing: $git_cmd push -v -f --all $git_master_repo\n" unless $silent;
 system "$git_cmd push -v -f --all $git_master_repo $silencer";
 if ($?) {
