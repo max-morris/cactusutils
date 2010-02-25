@@ -323,7 +323,7 @@ $(SCRATCH_BUILD)/cactus-flesh-source.git-tag: $(TARBALL_DIR)/cactus-flesh-source
 		< $(TARBALL_DIR)/cactus-flesh-source.files && \
 	: rm $(TARBALL_DIR)/cactus-flesh-source.files2 && \
 	: > $@; \
-	} && echo "Formaline: WARNING: Error while adding flesh to git repository"
+	} || echo "Formaline: WARNING: Error while adding flesh to git repository"
 
 .PRECIOUS: $(SCRATCH_BUILD)/cactus-thorn-%.git-tag
 $(SCRATCH_BUILD)/cactus-thorn-%.git-tag: $(TARBALL_DIR)/cactus-thorn-source-%.files
@@ -334,7 +334,7 @@ $(SCRATCH_BUILD)/cactus-thorn-%.git-tag: $(TARBALL_DIR)/cactus-thorn-source-%.fi
 	: xargs ls < $(TARBALL_DIR)/cactus-thorn-source-$*.files \
 		> $(TARBALL_DIR)/cactus-thorn-source-$*.files2 2> /dev/null && \
 	xargs '$(GIT-BIN)/git-add-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' '$*' \
-		< $(TARBALL_DIR)/cactus-flesh-source.files && \
+		< $(TARBALL_DIR)/cactus-thorn-source-$*.files && \
 	: rm $(TARBALL_DIR)/cactus-thorn-source-$*.files2 && \
 	: > $@; \
 	} || echo "Formaline: WARNING: Error while adding thorn $* to git repository"
