@@ -29,7 +29,7 @@ print "Formaline: Creating git master repository...\n";
 
 # Create the directory for the repository
 mkdir $git_master_repo;
-$ENV{'GIT_DIR'} = $git_master_repo;
+$ENV{'GIT_DIR'} = "$git_master_repo/.git";
 
 # Create the repository
 print "Executing: $git_cmd init-db\n" unless $silent;
