@@ -115,7 +115,7 @@ $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
 	@echo "Creating Formaline tarball for the flesh"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
-$(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
+$(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION
 	$(FORMALINE_BIN_DIR)/makeblob.pl '' Cactus < $< > $@
 
 $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
@@ -165,7 +165,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
 	@echo "Creating Formaline tarball for thorn $*"
 	$(CC) $(CFLAGS) -c -o $@ $^
 
-$(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/AEIThorns/Formaline/src/util/VERSION
+$(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION
 	$(FORMALINE_BIN_DIR)/makeblob.pl $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) < $< > $@
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
