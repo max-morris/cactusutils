@@ -48,8 +48,8 @@ static void OutputAllTimersTogether (CCTK_ARGUMENTS);
 static void OutputAllTimersReadable (CCTK_ARGUMENTS);
 static void PrintTopTimers (CCTK_ARGUMENTS);
 
-static void CollectTimerInfo (cGH const * restrict const cctkGH,
-                              struct timer_stats * restrict const timers);
+static int CollectTimerInfo (cGH const * restrict const cctkGH,
+                             struct timer_stats * restrict const timers);
 
 static char *QuoteForCSV (const char*);
 static char *QuoteForTSV (const char*);
@@ -332,7 +332,8 @@ static void OutputAllTimersTogether (CCTK_ARGUMENTS)
   DECLARE_CCTK_PARAMETERS;
   
   struct timer_stats timers;
-  CollectTimerInfo (cctkGH, &timers);
+  if (!CollectTimerInfo (cctkGH, &timers))
+    return;
   
   if (CCTK_MyProc(cctkGH) == 0)
   {
@@ -452,8 +453,8 @@ static void OutputAllTimersReadable (CCTK_ARGUMENTS)
   DECLARE_CCTK_PARAMETERS;
   
   struct timer_stats timers;
-  CollectTimerInfo (cctkGH, &timers);
-  
+  if (!CollectTimerInfo (cctkGH, &timers))
+    return;
   
   if (CCTK_MyProc(cctkGH) == 0)
   {
@@ -613,11 +614,29 @@ static void PrintTopTimers (CCTK_ARGUMENTS)
   return;
 }
 
+static int integer_same_on_all_procs(cGH const * restrict const cctkGH, const CCTK_INT i)
+{
+  /* There is no "equals" reduction operator, so we check that
+   * minimum and maximum are the same */
+  const int reduce_min = CCTK_ReductionArrayHandle ("minimum");
+  const int reduce_max = CCTK_ReductionArrayHandle ("maximum");
+  CCTK_INT min_i = 0;
+  CCTK_INT max_i = 0;
+
+  if (CCTK_ReduceLocScalar(cctkGH, -1 /* All processors */, reduce_min,
+                           &i, &min_i, CCTK_VARIABLE_INT)) 
+    CCTK_WARN (CCTK_WARN_ABORT, "Error in calling min reduction operator");
+
+  if (CCTK_ReduceLocScalar(cctkGH, -1 /* All processors */, reduce_max,
+                           &i, &max_i, CCTK_VARIABLE_INT))
+    CCTK_WARN (CCTK_WARN_ABORT, "Error in calling max reduction operator");
+  return min_i == max_i;
+}
 
 
 /* Collect timer information onto the root processor */
-static void CollectTimerInfo (cGH const * restrict const cctkGH,
-                              struct timer_stats * restrict const timers)
+static int CollectTimerInfo (cGH const * restrict const cctkGH,
+                             struct timer_stats * restrict const timers)
 {
   DECLARE_CCTK_PARAMETERS;
   
@@ -625,7 +644,16 @@ static void CollectTimerInfo (cGH const * restrict const cctkGH,
   
   timers->ntimers = CCTK_NumTimers();
   assert (timers->ntimers >= 0);
-  
+
+  /* Check that the number of timers is consistent across processors */
+  if (!integer_same_on_all_procs(cctkGH, timers->ntimers))
+  {
+    CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "Number of timers is inconsistent across processes; cannot collect timer information.  Number of timers on processor %d: %d",  
+                CCTK_MyProc(cctkGH), timers->ntimers);
+    return 0;
+  }
+
   timers->secs_local = malloc(timers->ntimers * sizeof *timers->secs_local);
   assert (timers->ntimers==0 || timers->secs_local);
   if (CCTK_MyProc(cctkGH) == 0)
@@ -685,6 +713,7 @@ static void CollectTimerInfo (cGH const * restrict const cctkGH,
     CCTK_WARN (CCTK_WARN_ABORT,
                "Error in calling reduction operators");
   }
+  return 1;
 }
 
 
