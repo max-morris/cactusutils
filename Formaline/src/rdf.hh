@@ -42,7 +42,7 @@ namespace Formaline
   // buffer to keep RDF metadata until the next Update() call
   extern std::vector<rdfPublishItem> rdfPublishList;
 
-  // the jobID string
+  // the jobID std::string
   extern std::string jobID;
 
   std::string clean (std::string const & txt);
@@ -53,17 +53,23 @@ namespace Formaline
 
   class rdf : public storage
   {
-    
     std::ostringstream msgbuf;
+    std::string const groupname;
+    rdf * const parent;
     
   public:
   
     rdf (char const * id,
          enum state st,
-         cGH const * cctkGH);
+         cGH const * cctkGH,    // this should probably go away
+         char const * n = "",
+         rdf * par = 0);
   
     virtual
     ~ rdf ();
+    
+    virtual rdf *
+    open_group (char const * name);
   
     virtual void
     store (char const * key,

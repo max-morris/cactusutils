@@ -36,6 +36,11 @@ namespace Formaline
   {
     DECLARE_CCTK_PARAMETERS;
     
+    if (verbose) {
+      CCTK_VInfo (CCTK_THORNSTRING,
+                  "Announcing to %s:%d", hostname.c_str(), port);
+    }
+    
 #if 0
     // pair<,> is not a standard STL class
     typedef pair <string, int> destination_t;

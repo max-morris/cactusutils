@@ -11,51 +11,59 @@
 
 namespace Formaline
 {
-
-  using namespace std;
-
-
-
+  
   class multistorage
   {
-    list<storage *> stores;
-  
+    std::list<storage *> stores;
+    
     multistorage (multistorage const &);
-  
+    
     multistorage
     operator= (multistorage const &);
-  
+    
   public:
-  
+    
     multistorage ();
-  
+    
     ~ multistorage ();
-  
+    
+    void
+    close ();
+    
+    
+    
     void
     add_storage (storage *);
-  
+    
     int
     num_storages ()
       const;
-  
+    
+    
+    
+    void
+    open_group (multistorage &, char const * name);
+    
+    
+    
     void
     store (char const * key, bool value)
       const;
-  
+    
     void
     store (char const * key, CCTK_INT value)
       const;
-  
+    
     void
     store (char const * key, CCTK_REAL value)
       const;
-  
+    
     void
     store (char const * key, char const * value)
       const;
-
-
-
+    
+    
+    
 #ifdef HAVE_CCTK_INT1
 #  ifndef CCTK_INTEGER_PRECISION_1
     void
@@ -66,7 +74,7 @@ namespace Formaline
     }
 #  endif
 #endif
-
+    
 #ifdef HAVE_CCTK_INT2
 #  ifndef CCTK_INTEGER_PRECISION_2
     void
@@ -77,7 +85,7 @@ namespace Formaline
     }
 #  endif
 #endif
-
+    
 #ifdef HAVE_CCTK_INT4
 #  ifndef CCTK_INTEGER_PRECISION_4
     void
@@ -88,7 +96,7 @@ namespace Formaline
     }
 #  endif
 #endif
-
+    
 #ifdef HAVE_CCTK_INT8
 #  ifndef CCTK_INTEGER_PRECISION_8
     void
@@ -99,7 +107,7 @@ namespace Formaline
     }
 #  endif
 #endif
-
+    
 #ifdef HAVE_CCTK_REAL4
 #  ifndef CCTK_REAL_PRECISION_4
     void
@@ -110,7 +118,7 @@ namespace Formaline
     }
 #  endif
 #endif
-
+    
 #ifdef HAVE_CCTK_REAL8
 #  ifndef CCTK_REAL_PRECISION_8
     void
@@ -121,7 +129,7 @@ namespace Formaline
     }
 #  endif
 #endif
-
+    
 #ifdef HAVE_CCTK_REAL16
 #  ifndef CCTK_REAL_PRECISION_16
     void
@@ -132,7 +140,7 @@ namespace Formaline
     }
 #  endif
 #endif
-
+    
   };
 
 

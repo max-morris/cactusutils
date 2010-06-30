@@ -19,8 +19,8 @@ TR_C := $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -
 # Create a tarball of the source code whenever this thorn is linked
 # into an executable
 
-TARBALL_DIR = $(SCRATCH_BUILD)
-FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/formaline-bin
+TARBALL_DIR = $(SCRATCH_BUILD)/Formaline
+FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/Formaline/bin
 
 
 
@@ -77,7 +77,7 @@ $(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline
 
 .PRECIOUS: $(TARBALL_DIR)/build-id.o
 $(TARBALL_DIR)/build-id.o: $(TARBALL_DIR)/build-id.c
-	$(CC) $(CFLAGS) -c -o $@ $^
+	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c -o $@ $^
 
 .PRECIOUS: $(TARBALL_DIR)/build-id.c
 $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID
@@ -93,7 +93,7 @@ $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID
 
 # Meta information
 $(TARBALL_DIR)/cactus-meta-source.o: $(TARBALL_DIR)/cactus-meta-source.c
-	$(CC) $(CFLAGS) -c -o $@ $^
+	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.c,$(notdir $(THORNS)))
 	$(FORMALINE_BIN_DIR)/makemetablob.pl Cactus $(notdir $(THORNS)) > $@
@@ -113,10 +113,11 @@ $(TARBALL_DIR)/cactus-meta-source.c: $(TARBALL_DIR)/cactus-flesh-source.c $(pats
 
 $(TARBALL_DIR)/cactus-flesh-source.o: $(TARBALL_DIR)/cactus-flesh-source.c
 	@echo "Creating Formaline tarball for the flesh"
-	$(CC) $(CFLAGS) -c -o $@ $^
+	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c $^ $(^:%.c=%-????.c)
 
 $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION
-	$(FORMALINE_BIN_DIR)/makeblob.pl '' Cactus < $< > $@
+	$(RM) -f $(@:%.c=%-????.c)
+	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' Cactus < $<
 
 $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
 	cd $(CCTK_HOME) && \
@@ -145,6 +146,7 @@ $(TARBALL_DIR)/cactus-flesh-source.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK
 # Make aborts if these dependencies vanish.  Therefore mention only files
 # here that cannot go away.
 $(TARBALL_DIR)/cactus-flesh-source.ccldeps:
+	mkdir -p $(TARBALL_DIR)
 	{ \
 	        echo "$(@:%.ccldeps=%.files) \\"; \
 	        echo "$@: \\"; \
@@ -163,10 +165,11 @@ $(TARBALL_DIR)/cactus-flesh-source.ccldeps:
 
 $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
 	@echo "Creating Formaline tarball for thorn $*"
-	$(CC) $(CFLAGS) -c -o $@ $^
+	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c $^ $(^:%.c=%-????.c)
 
 $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION
-	$(FORMALINE_BIN_DIR)/makeblob.pl $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) < $< > $@
+	$(RM) -f $(@:%.c=%-????.c)
+	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) < $<
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
 	cd $(CCTK_HOME) && \
@@ -194,6 +197,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CC
 # Make aborts if these dependencies vanish.  Therefore mention only files
 # here that cannot go away.
 $(TARBALL_DIR)/cactus-thorn-source-%.ccldeps:
+	mkdir -p $(TARBALL_DIR)
 	{ \
 	        echo "$(@:%.ccldeps=%.files) \\"; \
 	        echo "$@: \\"; \
@@ -284,6 +288,7 @@ git-store-source: git-commit-everything git-push-everything
 	echo "Formaline:  If the build process seems to hang, some other command"
 	echo "Formaline:  is still running, e.g. the final link stage.)"
 
+GIT-TAG-DIR     = $(SCRATCH_BUILD)/Formaline
 GIT-BIN         = $(FORMALINE_BIN_DIR)
 GIT-ROOT        = $(CCTK_HOME)
 GIT-REPO        = $(TOP)/configjar.git
@@ -299,34 +304,44 @@ git-push-everything: git-commit-everything $(BUILD-ID-FILE)
 	{ \
 	'$(GIT-BIN)/git-init-master-repo.pl' '$(GIT)' '$(GIT-MASTER-REPO)' && \
 	if [ -e "$(CCTK_HOME)/cactus.config" ]; then \
-		source "$(CCTK_HOME)/cactus.config" && \
-		export CACTUS_CENTRAL_GIT_REPO; \
+		. "$(CCTK_HOME)/cactus.config"; \
 	fi && \
+	export CACTUS_CENTRAL_GIT_REPO && \
 	'$(GIT-BIN)/git-push-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-MASTER-REPO)'; \
 	} || echo "Formaline: WARNING: Error while pushing to master repository"
 
 .PHONY: git-commit-everything
-git-commit-everything: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag $(GIT-THORNS:%=$(SCRATCH_BUILD)/cactus-thorn-%.git-tag) $(BUILD-ID-FILE)
+git-commit-everything: $(GIT-TAG-DIR)/cactus-flesh-source.git-tag $(GIT-THORNS:%=$(GIT-TAG-DIR)/cactus-thorn-%.git-tag) $(BUILD-ID-FILE) git-rm-unused-thorns
 	{ \
 	'$(GIT-BIN)/git-commit-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' "$$(cat $(BUILD-ID-FILE))" "$$(cat $(CONFIG-ID-FILE))"; \
 	} || echo "Formaline: WARNING: Error while committing to repository"
 
-.PRECIOUS: $(SCRATCH_BUILD)/cactus-flesh-source.git-tag
-$(SCRATCH_BUILD)/cactus-flesh-source.git-tag: $(TARBALL_DIR)/cactus-flesh-source.files
+# Wait until after thorn Formaline has been built, so that its
+# utilities are available
+.PHONY: git-rm-unused-thorns
+git-rm-unused-thorns: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
+	{ \
+	'$(GIT-BIN)/git-rm-unused-thorns.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' $(THORNS); \
+	} || echo "Formaline: WARNING: Error while removing unused thorns"
+
+.PRECIOUS: $(GIT-TAG-DIR)/cactus-flesh-source.git-tag
+$(GIT-TAG-DIR)/cactus-flesh-source.git-tag: $(TARBALL_DIR)/cactus-flesh-source.files
+	mkdir -p $(GIT-TAG-DIR)
 	{ \
 	'$(GIT-BIN)/git-init-repo.pl' '$(GIT)' '$(GIT-REPO)' && \
 	echo "Formaline: Adding flesh to git repository..." && \
-	'$(GIT-BIN)/git-rm-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' 'cactus' CONTRIBUTORS COPYRIGHT Makefile lib src configs && \
+	'$(GIT-BIN)/git-rm-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' 'Cactus' CONTRIBUTORS COPYRIGHT Makefile lib src configs && \
 	: xargs ls < $(TARBALL_DIR)/cactus-flesh-source.files \
 		> $(TARBALL_DIR)/cactus-flesh-source.files2 2> /dev/null && \
-	xargs '$(GIT-BIN)/git-add-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' 'cactus' \
+	xargs '$(GIT-BIN)/git-add-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' 'Cactus' \
 		< $(TARBALL_DIR)/cactus-flesh-source.files && \
 	: rm $(TARBALL_DIR)/cactus-flesh-source.files2 && \
 	: > $@; \
 	} || echo "Formaline: WARNING: Error while adding flesh to git repository"
 
-.PRECIOUS: $(SCRATCH_BUILD)/cactus-thorn-%.git-tag
-$(SCRATCH_BUILD)/cactus-thorn-%.git-tag: $(TARBALL_DIR)/cactus-thorn-source-%.files
+.PRECIOUS: $(GIT-TAG-DIR)/cactus-thorn-%.git-tag
+$(GIT-TAG-DIR)/cactus-thorn-%.git-tag: $(TARBALL_DIR)/cactus-thorn-source-%.files
+	mkdir -p $(GIT-TAG-DIR)
 	{ \
 	'$(GIT-BIN)/git-init-repo.pl' '$(GIT)' '$(GIT-REPO)' && \
 	echo "Formaline: Adding thorn $* to git repository..." && \

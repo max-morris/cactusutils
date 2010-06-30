@@ -3,3 +3,4 @@ Each auto-generated file depends on this file.
 Thus, whenever this file changes, all auto-generated files are recreated.
 
 2005-08-22: Change layout of struct sourceinfo
+2010-06-23: Move thorn to a new arrangement

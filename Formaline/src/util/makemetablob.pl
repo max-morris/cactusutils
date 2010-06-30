@@ -1,11 +1,12 @@
 #! /usr/bin/perl -w
 
 use strict;
-  
+
 print <<EOF;
 /* This is an auto-generated file -- do not edit */
 
 \#include <stddef.h>
+\#include <stdlib.h>
 
 struct datainfo
 {
@@ -23,21 +24,20 @@ struct sourceinfo
 
 EOF
 
-for (my $count = 0; $count <= $#ARGV; ++ $count)
-{
-    printf "extern struct sourceinfo cactus_source_%s;\n", $ARGV[$count];
+foreach my $argv (@ARGV) {
+    print "extern struct sourceinfo const cactus_source_${argv};\n";
 }
-printf "\n";
-printf "struct sourceinfo const * const cactus_source [] = {";
-for (my $count = 0; $count <= $#ARGV; ++ $count)
-{
-    if ($count != 0)
-    {
-        printf ",";
-    }
-    printf "\n";
-    printf "  & cactus_source_%s", $ARGV[$count];
+
+print <<EOF;
+
+struct sourceinfo const * const cactus_source [] = {
+EOF
+
+foreach my $argv (@ARGV) {
+    print "  & cactus_source_${argv},\n";
 }
-printf "\n";
-printf "};\n";
-printf "size_t const cactus_source_length = %d;\n", $#ARGV + 1;
+
+print <<EOF;
+  NULL
+};
+EOF

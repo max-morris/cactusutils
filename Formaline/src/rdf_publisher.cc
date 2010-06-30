@@ -296,7 +296,7 @@ static void ParameterSetNotify (void *,
 
 
 extern "C"
-void Formaline_RegisterPublishRDF_Callbacks (void)
+void Formaline_RegisterPublishRDF_Callbacks (CCTK_ARGUMENTS)
 {
   int registered = 0;
 

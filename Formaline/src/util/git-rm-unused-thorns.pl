@@ -1,16 +1,16 @@
 #! /usr/bin/perl -w
 
-# Remove a Cactus thorn from the repository index, if and wherever it
-# exists
+# Remove all Cactus thorns from the repository index unless they are
+# in the thorn list
 
-# 2010-01-29 Erik Schnetter <schnetter@cct.lsu.edu>
+# 2010-04-08 Erik Schnetter <schnetter@cct.lsu.edu>
 
 use strict;
 
 
 
-$#ARGV >= 4 or die;
-my ($git_cmd, $git_repo, $git_root, $thorn, @files) = @ARGV;
+$#ARGV >= 3 or die;
+my ($git_cmd, $git_repo, $git_root, @thorns) = @ARGV;
 
 my $silent = $ENV{'SILENT'};
 $silent = 'yes' if ! defined $silent;
@@ -25,16 +25,20 @@ $ENV{'GIT_DIR'} = "$git_repo/.git";
 
 
 
+my @files = split m{\n}, `$git_cmd ls-files arrangements 2> /dev/null`;
+
 # Remove the files one by one because we want to ignore errors, but
 # git aborts after the first error
-for my $file (@files) {
+file: for my $file (@files) {
+    for my $thorn (@thorns) {
+        next file if $file =~ m{^arrangements/$thorn/};
+    }
     
-    print "Executing: $git_cmd rm --cached -r $file 2> /dev/null\n"
+    print "Executing: $git_cmd rm --cached -r $file\n"
         unless $silent;
     system "$git_cmd rm --cached -r $file > /dev/null 2>&1";
     # Ignore errors
     #if ($?) {
-    #    die "Could not remove thorn $thorn from git repository";
+    #    die "Could not remove file $file from git repository";
     #}
-    
 }

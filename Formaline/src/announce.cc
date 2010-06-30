@@ -177,7 +177,8 @@ namespace Formaline
         void const * const ptr
           = CCTK_ParameterGet ("cctk_run_title", "Cactus", & type);
         assert (type == PARAMETER_STRING);
-        char const * const run_title = * static_cast<char const * const *> (ptr);
+        char const * const run_title =
+          * static_cast<char const * const *> (ptr);
         stores.store ("app_title", run_title);
       }
 
@@ -284,7 +285,7 @@ namespace Formaline
       {
         char parameter_filename [10000];
         CCTK_ParameterFilename (sizeof parameter_filename, parameter_filename);
-        stores.store ("parameter_file", parameter_filename);
+        stores.store ("parameter_filename", parameter_filename);
       }
 
       {
@@ -296,8 +297,9 @@ namespace Formaline
       }
 
       {
-        // Don't know what this is for
-        stores.store ("data_directory", "");
+        // Don't know exactly what this is for -- send the IO output
+        // directory
+        stores.store ("data_directory", out_dir);
       }
 
       {

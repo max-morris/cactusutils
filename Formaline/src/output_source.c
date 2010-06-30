@@ -51,7 +51,7 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
   CCTK_CreateDirectory (0755, filename);
 
   /* Output all thorns' tarballs */
-  for (count = 0; count < cactus_source_length; ++ count)
+  for (count = 0; cactus_source[count]; ++ count)
   {
     snprintf (filename, sizeof filename,
               "%s/%s/Cactus-source-%s.tar.gz",

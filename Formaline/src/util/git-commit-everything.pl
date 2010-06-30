@@ -12,7 +12,7 @@ $#ARGV == 4 or die;
 my ($git_cmd, $git_repo, $git_root, $build_id, $config_id) = @ARGV;
 
 # Path where the git-*.pl commands are installed
-my $bindir = $ENV{'SCRATCH_BUILD'} . '/formaline-bin';
+my $bindir = $ENV{'SCRATCH_BUILD'} . '/Formaline/bin';
 
 my $silent = $ENV{'SILENT'};
 $silent = 'yes' if ! defined $silent;

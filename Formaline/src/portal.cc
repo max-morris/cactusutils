@@ -19,15 +19,13 @@
 
 #include "portal.hh"
 
+using namespace std;
+
 
 
 namespace Formaline
 {
-
-  using namespace std;
   
-  
-
   static bool
   is_clean_for_shell (char const * str);
   
@@ -35,10 +33,14 @@ namespace Formaline
   
   portal::
   portal (char const * const id,
-          enum state const st)
-    : storage (st)
+          enum state const st,
+          char const * const p,
+          portal * const par)
+    : storage (st), path (p), parent (par)
   {
     DECLARE_CCTK_PARAMETERS;
+    
+    if (parent) return;
     
     msgbuf << "<?xml version='1.0' ?>"
            << "<methodCall><methodName>";
@@ -62,14 +64,22 @@ namespace Formaline
            << "<name>jobid</name>"
            << "<value><string>" << clean (id) << "</string></value>"
            << "</member>";
-  }
-
-
-
+    }
+  
+  
+  
   portal::
   ~ portal ()
   {
     DECLARE_CCTK_PARAMETERS;
+    
+    if (parent)
+    {
+      parent->msgbuf << msgbuf.str();
+      return;
+    }
+    
+    
     
     string const socket_script = "socket-client.pl";
     string const socket_data = "socket-data";
@@ -115,9 +125,10 @@ namespace Formaline
 << "my @hostlist = (";
 
     // NUM_PORTAL_ENTRIES must match the size of the
-    // Formaline::portal_hostname and Formaline::portal_port parameter arrays
+    // Formaline::portal_hostname and Formaline::portal_port parameter
+    // arrays
 #define NUM_PORTAL_ENTRIES 5
-
+    
     // add all array parameters which have been set
     for (int i = 0; i < NUM_PORTAL_ENTRIES; i++) {
       if (*portal_hostname[i]) {
@@ -334,7 +345,20 @@ namespace Formaline
     remove (datafilename);
     remove (scriptfilename);
   }
-
+  
+  
+  
+  portal * portal::
+  open_group (char const * const name)
+  {
+    assert (name);
+    string name1 (name);
+    if (not name1.empty() and name1[name1.length()-1] != '/') {
+      name1 = name1 + "/";
+    }
+    return new portal (0, get_state (), name1.c_str(), this);
+  }
+  
 
 
   void portal::
@@ -344,7 +368,7 @@ namespace Formaline
     assert (key);
   
     ostringstream keybuf;
-    keybuf << key;
+    keybuf << path << key;
     ostringstream valuebuf;
     valuebuf << (value ? "true" : "false");
   
@@ -363,7 +387,7 @@ namespace Formaline
     assert (key);
   
     ostringstream keybuf;
-    keybuf << key;
+    keybuf << path << key;
     ostringstream valuebuf;
     valuebuf << value;
   
@@ -384,7 +408,7 @@ namespace Formaline
     int const prec = numeric_limits<CCTK_REAL>::digits10;
     
     ostringstream keybuf;
-    keybuf << key;
+    keybuf << path << key;
     ostringstream valuebuf;
     valuebuf << setprecision(prec) << value;
   
@@ -403,7 +427,7 @@ namespace Formaline
     assert (key);
   
     ostringstream keybuf;
-    keybuf << key;
+    keybuf << path << key;
     ostringstream valuebuf;
     valuebuf << value;
   

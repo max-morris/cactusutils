@@ -15,7 +15,7 @@ my ($git_cmd, $git_repo, $git_master_repo) = @ARGV;
 my $git_central_repo = $ENV{'CACTUS_CENTRAL_GIT_REPO'};
 
 # Path where the git-*.pl commands are installed
-my $bindir = $ENV{'SCRATCH_BUILD'} . '/formaline-bin';
+my $bindir = $ENV{'SCRATCH_BUILD'} . '/Formaline/bin';
 
 my $silent = $ENV{'SILENT'};
 $silent = 'yes' if ! defined $silent;

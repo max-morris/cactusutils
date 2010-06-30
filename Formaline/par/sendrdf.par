@@ -5,13 +5,15 @@ Cactus::cctk_show_schedule = no
 
 Cactus::cctk_itlast = 0
 
+ActiveThorns = "LoopControl"
+
 ActiveThorns = "CoordBase InitBase"
 
 ActiveThorns = "IOUtil"
-IO::out_dir = $parfile
+IO::out_dir           = $parfile
 IOUtil::parfile_write = no
 
-ActiveThorns = "PUGH"
+ActiveThorns = "CarpetLib Carpet"
 
 ActiveThorns = "Formaline"
 Formaline::verbose         = yes
@@ -19,3 +21,5 @@ Formaline::publish_level   = 2
 Formaline::send_as_rdf     = yes
 Formaline::rdf_hostname[0] = "buran.aei.mpg.de"
 Formaline::rdf_port    [0] = 24997
+Formaline::rdf_hostname[1] = "devportal.cct.lsu.edu"
+Formaline::rdf_port    [1] = 8080

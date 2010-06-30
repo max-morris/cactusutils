@@ -33,7 +33,8 @@ namespace Formaline
 {
   using namespace std;
 
-  // the jobID is shared between this source file and PublishAsRDF.cc
+  // The jobID is shared between this source file and PublishAsRDF.cc
+  // ES 2008-04-29: Check this, I think this is wrong
   string jobID;
 
 
@@ -56,9 +57,13 @@ namespace Formaline
   rdf::
   rdf (char const * const id,
        enum state const st,
-       cGH const * const cctkGH)
-    : storage (st)
+       cGH const * const cctkGH,
+       char const * const n,
+       rdf * const par)
+    : storage (st), groupname (n), parent (par)
   {
+    if (parent) return;
+    
     // set the unique ID for this simulation
     jobID = clean (string (id));
 
@@ -452,6 +457,14 @@ namespace Formaline
   {
     DECLARE_CCTK_PARAMETERS;
 
+    if (parent)
+    {
+      parent->msgbuf << "<cctk:" << groupname << ">" << endl
+                     << msgbuf.str()
+                     << "</cctk:" << groupname << ">" << endl;
+      return;
+    }
+
     // check if anything needs to be done
     if (msgbuf.str().empty()) return;
 
@@ -522,6 +535,14 @@ namespace Formaline
 
       }
     } // loop over all destinations
+  }
+
+
+
+  rdf * rdf::
+  open_group (char const * const name)
+  {
+    return new rdf (0, get_state (), 0, name, this);
   }
 
 

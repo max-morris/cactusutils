@@ -42,7 +42,9 @@ if (! defined $oldreposize) {
     $oldreposize = 0;
 }
 
-my $maxreposize = 10 * $oldreposize;
+# Collect garbage once the repository has grown by more than a factor
+# of two
+my $maxreposize = 2 * $oldreposize;
 if ($reposize > $maxreposize) {
     
     print "Formaline: Optimising git repository (slow only the first time)...\n";

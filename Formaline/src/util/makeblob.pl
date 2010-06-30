@@ -1,20 +1,94 @@
 #! /usr/bin/perl -w
 
+use diagnostics;
+use warnings;
 use strict;
 
 my $items_per_line = 16;
 my $items_per_file = 128 * 1024;
 
-$#ARGV == 1 or die;
+$#ARGV == 2 or die "ARGV=@ARGV";
 
-my $arrangement = $ARGV[0];
-my $thorn = $ARGV[1];
+my $basename = $ARGV[0];
+my $arrangement = $ARGV[1];
+my $thorn = $ARGV[2];
 $thorn ne '' or die;
 
-print <<EOF;
+
+
+# Write several files, each with a maximum length
+
+my $done = 0;
+for (my $count = 0; ! $done; ++ $count) {
+    my $fcount      = sprintf "%04d", $count;
+    my $fcount_next = sprintf "%04d", $count + 1;
+    
+    open FILE, "> $basename-$fcount.c" or die;
+    print FILE <<EOF;
 /* This is an auto-generated file -- do not edit */
 
 \#include <stddef.h>
+\#include <stdlib.h>
+
+struct datainfo
+{
+  unsigned char const * data;
+  size_t length;
+  struct datainfo const * next;
+};
+
+EOF
+    
+    print FILE "static unsigned char const data_${fcount} [] = {";
+    my $bytes;
+    for ($bytes = 0; $bytes < $items_per_file; ++ $bytes) {
+        my $ch = getc;
+        if (! defined $ch) {
+            $done = 1;
+            last;
+        }
+        if ($bytes != 0) {
+            printf FILE ",";
+        }
+        if ($bytes % $items_per_line == 0) {
+            printf FILE "\n";
+            printf FILE "  ";
+        }
+        printf FILE "%3d", ord $ch;
+    }
+    printf FILE "\n";
+    printf FILE "};\n";
+    
+    print FILE "\n";
+    if (! $done) {
+        print FILE "struct datainfo const cactus_data_${fcount_next}_${thorn};\n";
+    }
+    print FILE "struct datainfo const cactus_data_${fcount}_${thorn} =\n";
+    print FILE "{\n";
+    print FILE "  data_${fcount},\n";
+    print FILE "  ${bytes}UL,\n";
+    if (! $done) {
+        print FILE "  & cactus_data_${fcount_next}_${thorn}\n";
+    }
+    else {
+        print FILE "  NULL\n";
+    }
+    print FILE "};\n";
+    
+    close FILE;
+}
+
+
+
+# Write meta-file
+
+{
+    open FILE, "> $basename.c" or die;
+    printf FILE <<EOF;
+/* This is an auto-generated file -- do not edit */
+
+\#include <stddef.h>
+\#include <stdlib.h>
 
 struct datainfo
 {
@@ -38,50 +112,5 @@ struct sourceinfo const cactus_source_$thorn =
   \"$thorn\"
 };
 EOF
-
-my $done = 0;
-for (my $fcount = 0; ! $done; ++ $fcount)
-{
-    printf "\n";
-    printf "static unsigned char const data_%04d [] = {", $fcount;
-    my $count;
-    for ($count = 0; $count < $items_per_file; ++ $count)
-    {
-        my $ch = getc;
-        if (! defined $ch)
-        {
-            $done = 1;
-            last;
-        }
-        if ($count != 0)
-        {
-            printf ",";
-        }
-        if ($count % $items_per_line == 0)
-        {
-            printf "\n";
-            printf "  ";
-        }
-        printf "%3d", ord $ch;
-    }
-    printf "\n";
-    printf "};\n";
-    printf "\n";
-    if (! $done)
-    {
-        printf "struct datainfo const cactus_data_%04d_%s;\n", $fcount + 1, $thorn;
-    }
-    printf "struct datainfo const cactus_data_%04d_%s =\n", $fcount, $thorn;
-    printf "{\n";
-    printf "  data_%04d,\n", $fcount;
-    printf "  %dUL,\n", $count;
-    if (! $done)
-    {
-        printf "  & cactus_data_%04d_%s\n", $fcount + 1, $thorn;
-    }
-    else
-    {
-        printf "  NULL\n";
-    }
-    printf "};\n";
+    close FILE;
 }
