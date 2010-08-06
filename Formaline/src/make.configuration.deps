@@ -32,6 +32,7 @@ FRM-LIB = $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus
 $(EXEDIR)$(DIRSEP)$(EXE): $(FRM-LIB)
 
 FRM-OBJS = $(TARBALL_DIR)/cactus-meta-source.o $(TARBALL_DIR)/build-id.o $(TARBALL_DIR)/cactus-flesh-source.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%.o,$(notdir $(THORNS)))
+FRM-OBJS-other = $(TARBALL_DIR)/cactus-flesh-source-????.o $(patsubst %,$(TARBALL_DIR)/cactus-thorn-source-%-????.o,$(notdir $(THORNS)))
 
 $(FRM-LIB): $(FRM-OBJS)
 #	$(AR) $(ARFLAGS) $@ $^
@@ -238,7 +239,7 @@ ifeq ($(shell test $(FRM-OBJS-words) -le $(FRM-OBJS-words-max) && echo 1), 1)
 
 .PHONY: $(FRM-LIB).objectlist.custom
 $(FRM-LIB).objectlist.custom:
-	echo $(FRM-OBJS) > $(FRM-LIB).objectlist
+	echo $(FRM-OBJS) $(FRM-OBJS-other) > $(FRM-LIB).objectlist
 
 else
 

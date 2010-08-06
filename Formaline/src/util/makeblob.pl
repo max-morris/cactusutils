@@ -61,7 +61,7 @@ EOF
     
     print FILE "\n";
     if (! $done) {
-        print FILE "struct datainfo const cactus_data_${fcount_next}_${thorn};\n";
+        print FILE "extern struct datainfo const cactus_data_${fcount_next}_${thorn};\n";
     }
     print FILE "struct datainfo const cactus_data_${fcount}_${thorn} =\n";
     print FILE "{\n";
@@ -104,7 +104,7 @@ struct sourceinfo
   char const * thorn;
 };
 
-struct datainfo const cactus_data_0000_$thorn;
+extern struct datainfo const cactus_data_0000_$thorn;
 struct sourceinfo const cactus_source_$thorn =
 {
   & cactus_data_0000_$thorn,
