@@ -8,7 +8,7 @@ INT process_memory TYPE=array DIM=1 SIZE=1 DISTRIB=constant TAGS='Checkpoint="no
 
 INT process_memory_mb TYPE=array DIM=1 SIZE=1 DISTRIB=constant TAGS='Checkpoint="no"'
 {
-  maxrss_mb, majflt_mb, arena_mb, ordblks_mb, hblks_mb, hblkhd_mb, uordblks_mb, fordblks_mb, keepcost_mb
+  maxrss_mb, majflt_mb, arena_mb, ordblks_mb, hblks_mb, hblkhd_mb, uordblks_mb, fordblks_mb, keepcost_mb, swap_used_mb
 } "Run memory statistics in MB"
 
 INT process_memory_kb TYPE=array DIM=1 SIZE=1 DISTRIB=constant TAGS='Checkpoint="no"'

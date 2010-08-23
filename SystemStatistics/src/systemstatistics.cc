@@ -130,6 +130,42 @@ static unsigned int get_majflt()
   return majflt * page_size;
 }
 
+long long int get_swap_kB()
+{
+  FILE *f = fopen("/proc/meminfo", "r");
+  if (f == 0)
+    return -1;
+  const int buf_len = 100;
+  char buffer[buf_len];
+  long long int swap_total = 0;
+  long long int swap_free = 0;
+
+
+  while(!feof(f))
+  {
+    fgets(buffer, buf_len, f);
+    if (!feof(f))
+    {
+      char key[100];
+      char unit[100];
+      long long int val = -1;
+      sscanf(buffer, "%s %ld %s", key, &val, unit);
+      if (strcmp(key, "SwapTotal:") == 0)
+      {
+        assert(strcmp(unit, "kB") == 0);
+        swap_total = val;
+      }
+      else if (strcmp(key, "SwapFree:") == 0)
+      {
+      assert(strcmp(unit, "kB") == 0);
+        swap_free = val;
+      }
+    }
+  }
+  fclose(f);
+  return swap_total - swap_free;
+}
+
 extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS
@@ -157,6 +193,8 @@ extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
   *uordblks_mb = *uordblks / mb;
   *fordblks_mb = *fordblks / mb;
   *keepcost_mb = *keepcost / mb;
+
+  *swap_used_mb = get_swap_kB() / 1024;
 
   *maxrss_kb = get_rss() / kb;
   *majflt_kb = *majflt / kb;
