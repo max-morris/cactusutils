@@ -14,6 +14,13 @@
 #include <malloc.h>
 #endif
 
+// There doesn't seem to be a Cactus macro defined for the Mach header
+// files we actually need, so use the mach_time.h macro instead
+#ifdef HAVE_MACH_MACH_TIME_H
+#include <mach/task.h>
+#include <mach/mach_init.h>
+#endif
+
 #ifndef HAVE_MALLINFO
 
 // Provide a dummy mallinfo function if none is available
@@ -48,6 +55,8 @@ struct mallinfo mallinfo()
 
 #endif
 
+#ifndef _MACH_INIT_
+
 static unsigned long int get_rss()
 {
   unsigned int size=0; //       total program size
@@ -72,6 +81,28 @@ static unsigned long int get_rss()
   }
   return (unsigned long int ) resident * (unsigned long int) page_size;
 }
+
+#else
+
+// The code to get the RSS from Mac OS has been modified from
+//   http://miknight.blogspot.com/2005/11/resident-set-size-in-mac-os-x.html
+
+static unsigned long int get_rss()
+{
+    struct task_basic_info t_info;
+    mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
+
+    unsigned int rss, vs, psize;
+    task_t task = MACH_PORT_NULL;
+
+    if (task_for_pid(current_task(), getpid(), &task) != KERN_SUCCESS)
+        abort();
+
+    task_info(task, TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
+    return t_info.resident_size;
+}
+
+#endif
 
 static unsigned int get_majflt()
 {
