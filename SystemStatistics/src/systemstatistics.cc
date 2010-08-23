@@ -149,7 +149,7 @@ long long int get_swap_kB()
       char key[100];
       char unit[100];
       long long int val = -1;
-      sscanf(buffer, "%s %ld %s", key, &val, unit);
+      sscanf(buffer, "%s %lld %s", key, &val, unit);
       if (strcmp(key, "SwapTotal:") == 0)
       {
         assert(strcmp(unit, "kB") == 0);
