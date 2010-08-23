@@ -1,22 +1,17 @@
 
 implements: SystemStatistics
 
-INT process_memory TYPE=SCALAR
+INT process_memory TYPE=array DIM=1 SIZE=1 DISTRIB=constant TAGS='Checkpoint="no"'
 {
   maxrss, majflt, arena, ordblks, hblks, hblkhd, uordblks, fordblks, keepcost
 } "Process memory statistics"
 
-INT process_memory_mb TYPE=SCALAR
+INT process_memory_mb TYPE=array DIM=1 SIZE=1 DISTRIB=constant TAGS='Checkpoint="no"'
 {
   maxrss_mb, majflt_mb, arena_mb, ordblks_mb, hblks_mb, hblkhd_mb, uordblks_mb, fordblks_mb, keepcost_mb
 } "Run memory statistics in MB"
 
-INT process_memory_kb TYPE=SCALAR
+INT process_memory_kb TYPE=array DIM=1 SIZE=1 DISTRIB=constant TAGS='Checkpoint="no"'
 {
   maxrss_kb, majflt_kb, arena_kb, ordblks_kb, hblks_kb, hblkhd_kb, uordblks_kb, fordblks_kb, keepcost_kb
 } "Run memory statistics in KB"
-
-INT reduced TYPE=SCALAR
-{
-  maxrss_min_mb, maxrss_max_mb, maxrss_avg_mb
-}

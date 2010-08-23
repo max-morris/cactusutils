@@ -1,15 +1,7 @@
-STORAGE: process_memory, process_memory_mb, process_memory_kb, reduced
+STORAGE: process_memory, process_memory_mb, process_memory_kb
 
 schedule SystemStatistics_Collect at CCTK_ANALYSIS
 {
   LANG: C
   OPTIONS: GLOBAL
 } "Collect system statistics"
-
-schedule SystemStatistics_Reduce at CCTK_ANALYSIS after SystemStatistics_Collect
-{
-  LANG: C
-  OPTIONS: GLOBAL
-# The routine doesn't seem to be called when triggered by CarpetIOBasic
-#  TRIGGERS: SystemStatistics::reduced
-} "Reduce the system statistics"
