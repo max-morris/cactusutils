@@ -1,0 +1,10 @@
+Cactus Code Thorn SystemStatistics
+Author(s)    : Ian Hinder <ian.hinder@aei.mpg.de>
+Maintainer(s): Ian Hinder <ian.hinder@aei.mpg.de>
+Licence      : Private
+--------------------------------------------------------------------------
+
+1. Purpose
+
+This thorn collects information about the system Cactus is running on
+and exposes it in Cactus grid variables.
