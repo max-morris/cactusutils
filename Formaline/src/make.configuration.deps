@@ -166,10 +166,10 @@ $(TARBALL_DIR)/cactus-flesh-source.ccldeps:
 
 $(TARBALL_DIR)/cactus-thorn-source-%.o: $(TARBALL_DIR)/cactus-thorn-source-%.c
 	@echo "Creating Formaline tarball for thorn $*"
-	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c $^ $(^:%.c=%-????.c)
+	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^ $(^:%.c=%-????.c))
 
 $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION
-	$(RM) -f $(@:%.c=%-????.c)
+	cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c)
 	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/cactus-thorn-source-%.c=%) < $<
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
@@ -246,7 +246,7 @@ else
 # The list is long.  Create the file via a set of rules, one rule per
 # object file.
 
-FRM-OBJS-added = $(FRM-OBJS:%=%.added)
+FRM-OBJS-added = $(FRM-OBJS:%=%.added) $(FRM-OBJS-other:%=%.added)
 
 .PHONY: $(FRM-LIB).objectlist.custom
 $(FRM-LIB).objectlist.custom: $(FRM-OBJS-added)
