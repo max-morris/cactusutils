@@ -343,7 +343,7 @@ static void OutputAllTimersTogether (CCTK_ARGUMENTS)
     char *filename, *filename_csv, *filename_tsv;
     Util_asprintf(&filename, "%s/%s.txt", out_dir, "AllTimers");
     Util_asprintf(&filename_csv, "%s/%s.csv", out_dir, "AllTimers");
-    Util_asprintf(&filename_tsv, "%s/%s.txt", out_dir, "AllTimers");
+    Util_asprintf(&filename_tsv, "%s/%s.tsv", out_dir, "AllTimers");
     
     /* truncate or append */
     const char * const flags =
