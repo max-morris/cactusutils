@@ -363,8 +363,8 @@ static void OutputAllTimersTogether (CCTK_ARGUMENTS)
         fprintf(file_csv, "\"Unit seconds\"\n");
         free (all_timers_clock_csv);
         char *const all_timers_clock_tsv = QuoteForTSV(all_timers_clock);
-        fprintf(file, "Clock %s\t", all_timers_clock_tsv);
-        fprintf(file, "Unit seconds\n");
+        fprintf(file_tsv, "Clock %s\t", all_timers_clock_tsv);
+        fprintf(file_tsv, "Unit seconds\n");
         free (all_timers_clock_tsv);
       }
       /* If the number of timers has changed, output the header
