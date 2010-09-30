@@ -33,11 +33,11 @@ BOOLEAN output_all_timers "Output one file per processor containing all the Cact
 {
 } "no"
 
-BOOLEAN output_all_timers_together "Output one file containing information about all the Cactus timers" STEERABLE=ALWAYS
+BOOLEAN output_all_timers_together "Output three files (formats .txt, .csv, and .tsv), containing information about all the Cactus timers (average, minimum, and maximum over all processors)" STEERABLE=ALWAYS
 {
 } "no"
 
-BOOLEAN output_all_timers_readable "Output one file containing information about all the Cactus timers, in a format that is readable by humans" STEERABLE=ALWAYS
+BOOLEAN output_all_timers_readable "Output one file containing information about all the Cactus timers (average, minimum, and maximum over all processors), in a format that is readable by humans" STEERABLE=ALWAYS
 {
 } "no"
 
