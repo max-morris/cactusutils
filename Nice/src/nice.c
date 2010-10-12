@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <sys/resource.h>
 
+int Nice_Renice(void);
 int Nice_Renice(void)
 {
     DECLARE_CCTK_PARAMETERS
