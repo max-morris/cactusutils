@@ -7,7 +7,7 @@
 # Should we use gtar or tar?
 TAR := $(shell gtar --help > /dev/null 2> /dev/null && echo gtar || echo tar)
 # Is this Gnu tar? If so, set this to 1, otherwise to 0
-#   This is used to treat a exit code of 1 from gnu tar as non-fatal. This exit code
+#   This is used to treat an exit code of 1 from gnu tar as non-fatal. This exit code
 #   indicates that files changed while reading, which can happen here because of changed
 #   atimes.
 GNUTAR := $(shell $TAR --version 2>/dev/null | grep -q 'GNU tar' && echo "1" || echo "0")
@@ -127,7 +127,7 @@ $(TARBALL_DIR)/cactus-flesh-source.c: $(TARBALL_DIR)/cactus-flesh-source.tar.gz 
 
 $(TARBALL_DIR)/cactus-flesh-source.tar.gz: $(TARBALL_DIR)/cactus-flesh-source.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $[ $?/($GNUTAR+1) ] -eq 0 ]
+	$(TAR) czf $@ -T $< || [ $[ $?/\($(GNUTAR)+1\) ] -eq 0 ]
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
@@ -179,7 +179,7 @@ $(TARBALL_DIR)/cactus-thorn-source-%.c: $(TARBALL_DIR)/cactus-thorn-source-%.tar
 
 $(TARBALL_DIR)/cactus-thorn-source-%.tar.gz: $(TARBALL_DIR)/cactus-thorn-source-%.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $[ $?/($GNUTAR+1) ] -eq 0 ]
+	$(TAR) czf $@ -T $< || [ $[ $?/\($(GNUTAR)+1\) ] -eq 0 ]
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
