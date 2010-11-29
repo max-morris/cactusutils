@@ -1,0 +1,9 @@
+Cactus Code Thorn Vectors
+Author(s)    : Erik Schnetter <schnetter@cct.lsu.edu>
+Maintainer(s): Erik Schnetter <schnetter@cct.lsu.edu>
+Licence      : GPL
+--------------------------------------------------------------------------
+
+1. Purpose
+
+Provide a C++ class template that helps vectorisation.
