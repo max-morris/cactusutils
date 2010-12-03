@@ -1,0 +1,5 @@
+# Interface definition for thorn NoMPI
+
+IMPLEMENTS: NoMPI
+
+INCLUDES HEADER: nompi.h IN nompi.h

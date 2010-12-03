@@ -1,0 +1,13 @@
+Cactus Code Thorn NoMPI
+Author(s)    : Erik Schnetter <schnetter@cct.lsu.edu>
+Maintainer(s): Erik Schnetter <schnetter@cct.lsu.edu>
+Licence      : GPL
+--------------------------------------------------------------------------
+
+1. Purpose
+
+Provide a dummy MPI implementation that works only a single process.
+This implements only a subset of the MPI standard.
+
+This thorn disables itself when an actual MPI implementation is
+present.
