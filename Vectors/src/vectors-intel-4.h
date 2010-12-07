@@ -110,6 +110,11 @@ static const union {
   __m128   v;
 } k4sign_mask_union = {{ 0x80000000U, 0x80000000U, 0x80000000U, 0x80000000U }};
 #define k4sign_mask (k4sign_mask_union.v)
+static const union {
+  unsigned i[4];
+  __m128   v;
+} k4abs_mask_union = {{ 0x7fffffffU, 0x7fffffffU, 0x7fffffffU, 0x7fffffffU }};
+#define k4abs_mask (k4abs_mask_union.v)
 
 // Operators
 #define k4pos(x) (x)
@@ -127,7 +132,7 @@ static const union {
 #define k4nmsub(x,y,z) (k4sub(z,k4mul(x,y)))
 
 // Cheap functions
-#define k4fabs(x)   (_mm_andnot_ps(x,k4sign_mask))
+#define k4fabs(x)   (_mm_and_ps(x,k4abs_mask))
 #define k4fmax(x,y) (_mm_max_ps(x,y))
 #define k4fmin(x,y) (_mm_min_ps(x,y))
 #define k4fnabs(x)  (_mm_or_ps(x,k4sign_mask))

@@ -74,6 +74,11 @@ static const union {
   __m128d            v;
 } k8sign_mask_union = {{ 0x8000000000000000ULL, 0x8000000000000000ULL }};
 #define k8sign_mask (k8sign_mask_union.v)
+static const union {
+  unsigned long long i[2];
+  __m128d            v;
+} k8abs_mask_union = {{ 0x7fffffffffffffffULL, 0x7fffffffffffffffULL }};
+#define k8abs_mask (k8sign_mask_union.v)
 
 // Operators
 #define k8pos(x) (x)
@@ -91,7 +96,7 @@ static const union {
 #define k8nmsub(x,y,z) (k8sub(z,k8mul(x,y)))
 
 // Cheap functions
-#define k8fabs(x)   (_mm_andnot_pd(x,k8sign_mask))
+#define k8fabs(x)   (_mm_and_pd(x,k8abs_mask))
 #define k8fmax(x,y) (_mm_max_pd(x,y))
 #define k8fmin(x,y) (_mm_min_pd(x,y))
 #define k8fnabs(x)  (_mm_or_pd(x,k8sign_mask))
