@@ -47,7 +47,8 @@ for my $file (@files) {
         $dir = '.';
     }
     mkpath "$dstdir/$dir";      # ignore errors
-    link "$srcdir/$file", "$dstdir/$file" or die;
+    link "$srcdir/$file", "$dstdir/$file" or
+        die "ERROR: Cannot create hard link from \"$srcdir/$file\" to \"$dstdir/$file\"";
 }
 
 print "Executing: cd $dstdir && $git_cmd add @files\n" unless $silent;
