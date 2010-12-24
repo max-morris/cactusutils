@@ -22,13 +22,33 @@
 #define vec8_set1(a)  (_mm_set1_pd(a))
 #define vec8_set(a,b) (_mm_set_pd(b,a)) // note reversed arguments
 
-#define vec8_elt0(x) (_mm_cvtsd_f64(x)) // this is a no-op
+#if defined(__PGI) && defined (__amd64__)
+// _mm_cvtsd_f64 does not exist on PGI 9 compilers
+#  define vec8_elt0(x)                          \
+({                                              \
+  CCTK_REAL8 aelt0;                             \
+  asm ("" : "=x" (aelt0) : "0" (x));            \
+  aelt0;                                        \
+})
+#else
+#  define vec8_elt0(x) (_mm_cvtsd_f64(x)) // this is a no-op
+#endif
 #define vec8_elt1(x)                            \
 ({                                              \
   CCTK_REAL8_VEC const xelt1=(x);               \
   vec8_elt0(_mm_unpackhi_pd(xelt1,xelt1));      \
 })
-#define vec8_elt(x,d)                           \
+#if defined(__PGI) && defined (__amd64__)
+#  define vec8_elt(x,d)                         \
+({                                              \
+  CCTK_REAL8_VEC const xelt=(x);                \
+  CCTK_REAL8 aelt;                              \
+  if      (d==0) aelt=vec8_elt0(xelt);          \
+  else if (d==1) aelt=vec8_elt1(xelt);          \
+  aelt;                                         \
+})
+#else
+#  define vec8_elt(x,d)                         \
 ({                                              \
   CCTK_REAL8_VEC const xelt=(x);                \
   CCTK_REAL8 aelt;                              \
@@ -38,6 +58,7 @@
   }                                             \
   aelt;                                         \
 })
+#endif
 
 
 
@@ -62,8 +83,14 @@
 
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
-#define vec8_store_nta_partial_lo(p,x,n) (_mm_storel_pd(&(p),x))
-#define vec8_store_nta_partial_hi(p,x,n) (_mm_storeh_pd(&(p)+1,x))
+#if 1
+#  define vec8_store_nta_partial_lo(p,x,n) (_mm_storel_pd(&(p),x))
+#  define vec8_store_nta_partial_hi(p,x,n) (_mm_storeh_pd(&(p)+1,x))
+#else
+// This is slower; we would need a non-temporal read
+#  define vec8_store_nta_partial_lo(p,x,n) (vec8_store_nta(p,_mm_loadh_pd(x,&(p)+1)))
+#  define vec8_store_nta_partial_hi(p,x,n) (vec8_store_nta(p,_mm_loadl_pd(x,&(p))))
+#endif
 
 
 

@@ -48,7 +48,19 @@
   CCTK_REAL4_VEC const xelt3=(x);                               \
   vec4_elt0(_mm_shuffle_ps(xelt3,xelt3,_MM_SHUFFLE(3,2,1,0)));  \
 })
-#define vec4_elt(x,d)                           \
+#if defined(__PGI) && defined (__amd64__)
+#  define vec4_elt(x,d)                         \
+({                                              \
+  CCTK_REAL4_VEC const xelt=(x);                \
+  CCTK_REAL4 aelt;                              \
+  if (d==0)      aelt=vec4_elt0(xelt);          \
+  else if (d==1) aelt=vec4_elt1(xelt);          \
+  else if (d==2) aelt=vec4_elt2(xelt);          \
+  else if (d==3) aelt=vec4_elt3(xelt);          \
+  aelt;                                         \
+})
+#else
+#  define vec4_elt(x,d)                         \
 ({                                              \
   CCTK_REAL4_VEC const xelt=(x);                \
   CCTK_REAL4 aelt;                              \
@@ -60,6 +72,7 @@
   }                                             \
   aelt;                                         \
 })
+#endif
 
 
 
