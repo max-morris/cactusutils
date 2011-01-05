@@ -456,13 +456,17 @@ int TATPETSc_solve (const cGH *cctkGH,
       CHKERRQ(ierr);
     }
     if (veryverbose) CCTK_INFO ("DAGetColoring");
-#if PETSC_VERSION_MAJOR < 2 || \
-  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3) || \
+#if PETSC_VERSION_MAJOR < 2 ||                                          \
+  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3) ||              \
   (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR == 3 && PETSC_VERSION_SUBMINOR < 3)
     ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
     CHKERRQ(ierr);
-#else
+#elif PETSC_VERSION_MAJOR < 3 ||                        \
+  (PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR < 1)
     ierr = DAGetColoring (da, IS_COLORING_GLOBAL, &iscoloring);
+    CHKERRQ(ierr);
+#else
+    ierr = DAGetColoring (da, IS_COLORING_GLOBAL, MATAIJ, &iscoloring);
     CHKERRQ(ierr);
 #endif
     ierr = TATPETSc_jacobian (snes, x, &J, &J, &flag, &user);
@@ -486,13 +490,17 @@ int TATPETSc_solve (const cGH *cctkGH,
         CHKERRQ(ierr);
       }
       if (veryverbose) CCTK_INFO ("DAGetColoring");
-#if PETSC_VERSION_MAJOR < 2 || \
-  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3) || \
+#if PETSC_VERSION_MAJOR < 2 ||                                          \
+  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3) ||              \
   (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR == 3 && PETSC_VERSION_SUBMINOR < 3)
       ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
       CHKERRQ(ierr);
-#else
+#elif PETSC_VERSION_MAJOR < 3 ||                        \
+  (PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR < 1)
       ierr = DAGetColoring (da, IS_COLORING_GLOBAL, &iscoloring);
+      CHKERRQ(ierr);
+#else
+      ierr = DAGetColoring (da, IS_COLORING_GLOBAL, MATAIJ, &iscoloring);
       CHKERRQ(ierr);
 #endif
     } else {
