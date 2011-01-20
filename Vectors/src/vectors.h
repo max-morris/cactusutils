@@ -5,28 +5,40 @@
 
 
 
+#undef EMULATE_AVX
+
+
+
 #if defined(KRANC_VECTORS)
 
-#  if defined(__SSE__)          // Intel SSE vector instructions
-#    include "vectors-intel-4.h"
-#  elif defined(__ALTIVEC__)    // Altivec (Power)
-#    include "vectors-power-4.h"
+#  if defined(__SSE__)          // Intel SSE
+#    include "vectors-4-SSE.h"
+#  elif defined(__ALTIVEC__)    // Power Altivec
+#    include "vectors-4-Altivec.h"
 #  endif
 
-#  if defined(__SSE2__)         // Intel SSE2 vector instructions
-#    include "vectors-intel-8.h"
-#  elif defined(__ALTIVEC__) && defined(_ARCH_PWR7) // Altivec (Power)
-#    include "vectors-power-8.h"
+#  if defined(__AVX__)        // Intel AVX
+#    include "vectors-8-AVX.h"
+#  elif defined(__SSE2__)         // Intel SSE2
+#    if defined(EMULATE_AVX)
+#      include "vectors-8-AVX.h"
+#    else
+#      include "vectors-8-SSE2.h"
+#    endif
+#  elif defined(_ARCH_450D)     // Blue Gene/P Double Hummer
+#    include "vectors-8-DoubleHummer.h"
+#  elif defined(__ALTIVEC__) && defined(_ARCH_PWR7) // Power VSX
+#    include "vectors-8-VSX.h"
 #  endif
 
 #endif
 
 // Default implementation, do not vectorise
 #if ! defined(CCTK_REAL4_VEC_SIZE)
-#  include "vectors-default-4.h"
+#  include "vectors-4-default.h"
 #endif
 #if ! defined(CCTK_REAL8_VEC_SIZE)
-#  include "vectors-default-8.h"
+#  include "vectors-8-default.h"
 #endif
 
 

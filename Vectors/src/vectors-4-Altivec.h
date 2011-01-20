@@ -1,4 +1,4 @@
-// Vectorise using IBM's  Altivec (Power)
+// Vectorise using IBM's Altivec (Power)
 
 // Use the type vector double directly, without introducing a wrapper class
 // Use macros instead of inline functions
@@ -54,8 +54,12 @@
 // a reference to a scalar
 #define vec4_store(p,x)     (*(CCTK_REAL4_VEC*)&(p)=(x))
 #define vec4_storeu(p,x)    (*(CCTK_REAL4_VEC*)&(p)=(x))
-// TODO: Use stvxl instruction?
-#define vec4_store_nta(p,x) (*(CCTK_REAL4_VEC*)&(p)=(x))
+#if 0
+#  define vec4_store_nta(p,x) (*(CCTK_REAL4_VEC*)&(p)=(x))
+#else
+// use stvxl instruction
+#  define vec4_store_nta(p,x) (vec_stl(x,0,(CCTK_REAL4_VEC*)&(p)))
+#endif
 
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
