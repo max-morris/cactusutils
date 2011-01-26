@@ -5,16 +5,16 @@
 # Some configury magic
 
 # Should we use gtar or tar?
-TAR := $(shell gtar --help > /dev/null 2> /dev/null && echo gtar || echo tar)
+TAR = $(shell gtar --help > /dev/null 2> /dev/null && echo gtar || echo tar)
 # Is this gnu tar? If so, set this to 1, otherwise to 0. This is used
 # to treat an exit code of 1 from gnu tar as non-fatal. This exit code
 # indicates that files changed while reading, which can happen if the
 # atime changed. (An atime change means that another program read the
 # file, which is inconsequential.)
-IS_GNUTAR := $(shell $(TAR) --version 2>/dev/null | grep -q 'GNU tar' && echo "1" || echo "0")
+IS_GNUTAR = $(shell $(TAR) --version 2>/dev/null | grep -q 'GNU tar' && echo "1" || echo "0")
 
 # Does tr support -C, or should we use -c instead?
-TR_C := $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
+TR_C = $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
 
 
 
@@ -128,7 +128,7 @@ $(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.tar.gz $(CCTK_HOME)/a
 
 $(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $$[ $$? / ($(IS_GNUTAR)+1) ] -eq 0 ]
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
@@ -187,7 +187,7 @@ $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangement
 
 $(TARBALL_DIR)/thorn-%.tar.gz: $(TARBALL_DIR)/thorn-%.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $$[ $$? / ($(IS_GNUTAR)+1) ] -eq 0 ]
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
@@ -285,7 +285,7 @@ endif
 
 
 # Does git exist, or should we do nothing instead?
-GIT-CMD := $(shell env PATH="$(SCRATCH_BUILD)/git-1.6.6.1/bin:$(SCRATCH_BUILD)/external/git/bin:$(SCRATCH_BUILD)/git-1.6.0.6/bin:$$HOME/git/bin:$$PATH" which git)
+GIT-CMD := $(shell env PATH="$(SCRATCH_BUILD)/external/git/bin:$(SCRATCH_BUILD)/git-1.6.6.1/bin:$(SCRATCH_BUILD)/git-1.6.0.6/bin:$$HOME/git/bin:$$PATH" which git)
 HAVE-GIT := $(shell '$(GIT-CMD)' --version > /dev/null 2>&1 && echo 'true' || echo 'false')
 GIT := $(shell $(HAVE-GIT) && echo '$(FORMALINE_BIN_DIR)/git-lock.pl $(GIT-CMD)' || { echo 'Formaline: WARNING: git command not found' >&2 && echo 'true'; })
 
