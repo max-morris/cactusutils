@@ -53,11 +53,11 @@ if ($reposize > $maxreposize) {
     print "Executing: $git_cmd gc\n" unless $silent;
     system "$git_cmd gc $silencer";
     if ($?) {
-        die "Could not compact repository";
+        die "Could not compact repository\nCommand was\n   $git_cmd gc";
     }
     
     # Determine new repository size
-    my $newreposize = `du -s $git_dir` or die;
+    my $newreposize = `du -s '$git_dir'` or die;
     $newreposize = (split ' ', $newreposize)[0];
     
     # Write new repository size

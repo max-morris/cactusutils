@@ -34,9 +34,9 @@ file: for my $file (@files) {
         next file if $file =~ m{^arrangements/$thorn/};
     }
     
-    print "Executing: $git_cmd rm --cached -r $file\n"
+    print "Executing: $git_cmd rm --cached -r '$file'\n"
         unless $silent;
-    system "$git_cmd rm --cached -r $file > /dev/null 2>&1";
+    system "$git_cmd rm --cached -r '$file' > /dev/null 2>&1";
     # Ignore errors
     #if ($?) {
     #    die "Could not remove file $file from git repository";

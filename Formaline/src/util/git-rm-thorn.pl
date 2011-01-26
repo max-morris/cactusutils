@@ -29,9 +29,9 @@ $ENV{'GIT_DIR'} = "$git_repo/.git";
 # git aborts after the first error
 for my $file (@files) {
     
-    print "Executing: $git_cmd rm --cached -r $file 2> /dev/null\n"
+    print "Executing: $git_cmd rm --cached -r '$file' 2> /dev/null\n"
         unless $silent;
-    system "$git_cmd rm --cached -r $file > /dev/null 2>&1";
+    system "$git_cmd rm --cached -r '$file' > /dev/null 2>&1";
     # Ignore errors
     #if ($?) {
     #    die "Could not remove thorn $thorn from git repository";

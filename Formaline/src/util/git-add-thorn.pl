@@ -32,7 +32,7 @@ $ENV{'GIT_DIR'} = "$git_repo/.git";
 # links, and git refuses to follow them.  Instad, we copy the whole
 # thorn (using hard links), and then add the copy.
 
-# system "cd $git_root && $git_cmd add @files" or die;
+# system "cd '$git_root' && $git_cmd add @files" or die;
 
 my $srcdir = $git_root;
 my $dstdir = "$scratch/tmp-$thorn";
@@ -51,10 +51,12 @@ for my $file (@files) {
         die "ERROR: Cannot create hard link from \"$srcdir/$file\" to \"$dstdir/$file\"";
 }
 
-print "Executing: cd $dstdir && $git_cmd add @files\n" unless $silent;
-system "cd $dstdir && $git_cmd add @files $silencer";
-if ($?) {
-    die "Could not add thorn $thorn to git repository";
+if (@files) {
+    print "Executing: cd '$dstdir' && $git_cmd add @files\n" unless $silent;
+    system "cd '$dstdir' && $git_cmd add @files $silencer";
+    if ($?) {
+        die "Could not add thorn $thorn to git repository\nCommand was\n   cd '$dstdir' && $git_cmd add @files";
+    }
 }
 
 rmtree $dstdir or die;

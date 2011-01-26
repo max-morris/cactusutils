@@ -35,7 +35,7 @@ while (! (mkdir $lockdir)) {
     # Wait some time
     my $unit = $waittime==1 ? "second" : "seconds";
     print "Git repository is busy; waiting $waittime $unit...\n";
-    system "sleep $waittime";
+    system "sleep '$waittime'";
     # Back off exponentially
     $waittime *= 2;
     $waittime = 1 if $waittime>1 && $waittime<2;

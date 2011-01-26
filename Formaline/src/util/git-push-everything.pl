@@ -34,28 +34,28 @@ die unless -e "$git_master_repo/.git";
 print "Formaline: Pushing source tree to master git repository...\n";
 
 print "Executing: $git_cmd config receive.denyCurrentBranch false\n" unless $silent;
-system "$git_cmd --git-dir=$git_master_repo/.git config receive.denyCurrentBranch false $silencer";
+system "$git_cmd --git-dir='$git_master_repo/.git' config receive.denyCurrentBranch false $silencer";
 if ($?) {
-    die "Formaline: WARNING: Error while configuring master git repository";
+    die "Formaline: WARNING: Error while configuring master git repository\nCommand was\n   $git_cmd --git-dir='$git_master_repo/.git' config receive.denyCurrentBranch false";
 }
 
-print "Executing: $git_cmd push -v -f --all $git_master_repo\n" unless $silent;
-system "$git_cmd push -v -f --all $git_master_repo $silencer";
+print "Executing: $git_cmd push -v -f --all '$git_master_repo'\n" unless $silent;
+system "$git_cmd push -v -f --all '$git_master_repo' $silencer";
 if ($?) {
-    die "Could not push branches";
+    die "Could not push branches\nCommand was\n   $git_cmd push -v -f --all '$git_master_repo'";
 }
 
-print "Executing: $git_cmd push -v -f --tags $git_master_repo\n" unless $silent;
-system "$git_cmd push -v -f --tags $git_master_repo $silencer";
+print "Executing: $git_cmd push -v -f --tags '$git_master_repo'\n" unless $silent;
+system "$git_cmd push -v -f --tags '$git_master_repo' $silencer";
 if ($?) {
-    die "Could not push tags";
+    die "Could not push tags\nCommand was\n   $git_cmd push -v -f --tags '$git_master_repo'";
 }
 
-print "Executing: $bindir/git-gc-repo.pl '$git_cmd' $git_master_repo\n"
+print "Executing: '$bindir/git-gc-repo.pl' '$git_cmd' '$git_master_repo'\n"
     unless $silent;
-system "$bindir/git-gc-repo.pl '$git_cmd' $git_master_repo $silencer";
+system "'$bindir/git-gc-repo.pl' '$git_cmd' '$git_master_repo' $silencer";
 if ($?) {
-    die "Could not collect garbage";
+    die "Could not collect garbage\nCommand was\n   '$bindir/git-gc-repo.pl' '$git_cmd' '$git_master_repo'";
 }
 
 
@@ -65,16 +65,16 @@ if (defined $git_central_repo) {
     
     print "Formaline: Pushing to central repository $git_central_repo...\n";
     
-    print "Executing: $git_cmd push -v -f --all $git_central_repo\n"
+    print "Executing: $git_cmd push -v -f --all '$git_central_repo'\n"
         unless $silent;
-    system "$git_cmd push -v -f --all $git_central_repo $silencer";
+    system "$git_cmd push -v -f --all '$git_central_repo' $silencer";
     if ($?) {
-        die "Could not push branches";
+        die "Could not push branches\nCommand was\n   $git_cmd push -v -f --all '$git_central_repo'";
     }
     
-    print "$git_cmd push -v -f --tags $git_central_repo\n" unless $silent;
-    system "$git_cmd push -v -f --tags $git_central_repo $silencer";
+    print "$git_cmd push -v -f --tags '$git_central_repo'\n" unless $silent;
+    system "$git_cmd push -v -f --tags '$git_central_repo' $silencer";
     if ($?) {
-        die "Could not push tags";
+        die "Could not push tags\nCommand was\n   $git_cmd push -v -f --tags '$git_central_repo'";
     }
 }

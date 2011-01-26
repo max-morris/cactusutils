@@ -35,12 +35,12 @@ $ENV{'GIT_DIR'} = "$git_master_repo/.git";
 print "Executing: $git_cmd init-db\n" unless $silent;
 system "$git_cmd init-db $silencer";
 if ($?) {
-    die "Formaline: WARNING: Error while initialising master git repository";
+    die "Formaline: WARNING: Error while initialising master git repository\nCommand was\n   $git_cmd init-db";
 }
 print "Executing: $git_cmd config receive.denyCurrentBranch false\n" unless $silent;
 system "$git_cmd config receive.denyCurrentBranch false $silencer";
 if ($?) {
-    die "Formaline: WARNING: Error while configuring master git repository";
+    die "Formaline: Error while configuring master git repository\nCommand was\n   $git_cmd config receive.denyCurrentBranch false";
 }
 
 

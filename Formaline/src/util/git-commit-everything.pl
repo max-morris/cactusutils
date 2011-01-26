@@ -37,22 +37,22 @@ system "$git_cmd commit -m $build_id $silencer";
 #    die "Could not commit";
 #}
 
-print "Executing: $git_cmd tag $build_id\n" unless $silent;
-system "$git_cmd tag $build_id $silencer";
+print "Executing: $git_cmd tag '$build_id'\n" unless $silent;
+system "$git_cmd tag '$build_id' $silencer";
 if ($?) {
-    die "Could not tag";
+    die "Could not tag\nCommand was\n   $git_cmd tag '$build_id'";
 }
 print "Formaline: Created git tag $build_id\n";
 
-print "Executing: $git_cmd branch -f $config_id\n" unless $silent;
-system "$git_cmd branch -f $config_id $silencer";
+print "Executing: $git_cmd branch -f '$config_id'\n" unless $silent;
+system "$git_cmd branch -f '$config_id' $silencer";
 if ($?) {
-    die "Could not update branch";
+    die "Could not update branch\nCommand was\n   $git_cmd branch -f '$config_id'";
 }
 print "Formaline: Updated git branch $config_id\n";
 
-print "Executing: $bindir/git-gc-repo.pl '$git_cmd' $git_repo\n" unless $silent;
-system "$bindir/git-gc-repo.pl '$git_cmd' $git_repo $silencer";
+print "Executing: '$bindir/git-gc-repo.pl' '$git_cmd' '$git_repo'\n" unless $silent;
+system "'$bindir/git-gc-repo.pl' '$git_cmd' '$git_repo' $silencer";
 if ($?) {
-    die "Could not collect garbage";
+    die "Could not collect garbage\nCommand was\n   '$bindir/git-gc-repo.pl' '$git_cmd' '$git_repo'";
 }
