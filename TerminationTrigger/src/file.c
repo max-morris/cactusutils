@@ -54,6 +54,10 @@ const char * get_termination_file (void)
 
 
 
+/* Note that the termination file is created even if
+   termination_from_file is false. This is because
+   termination_from_file is steerable and may be changed to true at
+   run time. */
 void TerminationTrigger_CreateFile (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
@@ -81,6 +85,11 @@ void TerminationTrigger_CheckFile (CCTK_ARGUMENTS)
   FILE *file;
   int terminate;
   
+  if (! termination_from_file)
+  {
+    return;
+  }
+
   /* only one processor needs to check the file */
   if (CCTK_MyProc (cctkGH) != 0)
   {
