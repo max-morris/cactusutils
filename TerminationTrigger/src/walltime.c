@@ -53,6 +53,13 @@ void TerminationTrigger_CheckWalltime (CCTK_ARGUMENTS)
   
   CCTK_REAL time;
   
+  /* if the maximum wall time or the remaining wall time have not been
+     set, then don't terminate */
+  if (max_walltime == 0.0 || on_remaining_walltime == 0.0)
+  {
+    return;
+  }
+
   /* only one processor needs to query the elapsed runtime */
   if (CCTK_MyProc (cctkGH) != 0)
   {
