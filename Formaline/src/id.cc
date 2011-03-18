@@ -127,7 +127,9 @@ namespace Formaline
       parfilename.erase (0, last_slash + 1);
     }
     size_t const first_dot = parfilename.find ('.');
-    parfilename.erase (first_dot);
+    if (first_dot < string::npos) {
+      parfilename.erase (first_dot);
+    }
     {
       string::iterator it = parfilename.begin();
       while (it != parfilename.end()) {
@@ -154,7 +156,10 @@ namespace Formaline
 #if 0
     char const * const run_user = CCTK_RunUser();
 #else
-    char const * const run_user = getenv ("USER");
+    char const * run_user = getenv ("USER");
+    if (not run_user) {
+      run_user = "";
+    }
 #endif
     run_idbuf << run_user;
     
