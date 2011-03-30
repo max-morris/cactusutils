@@ -29,6 +29,10 @@ BOOLEAN next "On next iteration" STEERABLE=ALWAYS
 {
 } "no"
 
+BOOLEAN output_schedule_timers "Output the schedule timers in a formatted tabular format" STEERABLE=ALWAYS
+{
+} "yes"
+
 BOOLEAN output_all_timers "Output one file per processor containing all the Cactus timers" STEERABLE=ALWAYS
 {
 } "no"

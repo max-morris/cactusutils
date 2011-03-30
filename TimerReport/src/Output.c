@@ -160,7 +160,10 @@ static void Output (CCTK_ARGUMENTS)
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  PrintTimes(CCTK_PASS_CTOC);
+  if (output_schedule_timers)
+  {
+    PrintTimes(CCTK_PASS_CTOC);
+  }
 
   if (output_all_timers)
   {
