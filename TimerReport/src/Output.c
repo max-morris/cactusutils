@@ -617,7 +617,10 @@ static void PrintTopTimers (CCTK_ARGUMENTS)
   return;
 }
 
-static int integer_same_on_all_procs(cGH const * restrict const cctkGH, const CCTK_INT i)
+static int integer_same_on_all_procs(cGH const * restrict const cctkGH,
+                                     const CCTK_INT i,
+                                     CCTK_INT* restrict const iminp,
+                                     CCTK_INT* restrict const imaxp)
 {
   /* There is no "equals" reduction operator, so we check that
    * minimum and maximum are the same */
@@ -633,6 +636,8 @@ static int integer_same_on_all_procs(cGH const * restrict const cctkGH, const CC
   if (CCTK_ReduceLocScalar(cctkGH, -1 /* All processors */, reduce_max,
                            &i, &max_i, CCTK_VARIABLE_INT))
     CCTK_WARN (CCTK_WARN_ABORT, "Error in calling max reduction operator");
+  if (iminp) *iminp = min_i;
+  if (imaxp) *imaxp = max_i;
   return min_i == max_i;
 }
 
@@ -649,11 +654,12 @@ static int CollectTimerInfo (cGH const * restrict const cctkGH,
   assert (timers->ntimers >= 0);
 
   /* Check that the number of timers is consistent across processors */
-  if (!integer_same_on_all_procs(cctkGH, timers->ntimers))
+  CCTK_INT imin, imax;
+  if (!integer_same_on_all_procs(cctkGH, timers->ntimers, &imin, &imax))
   {
     CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                "Number of timers is inconsistent across processes; cannot collect timer information.  Number of timers on processor %d: %d",  
-                CCTK_MyProc(cctkGH), timers->ntimers);
+                "Number of timers is inconsistent across processes; cannot collect timer information. Number of timers on processor %d: %d; overall minimum: %d; overall maximum: %d",
+                CCTK_MyProc(cctkGH), timers->ntimers, (int)imin, (int)imax);
     return 0;
   }
 
