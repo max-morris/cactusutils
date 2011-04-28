@@ -25,6 +25,7 @@ typedef struct
 } TriggerGH;
 
 /* This routine will output the variable with varindex as index */
+int Trigger_Write(const cGH *GH, int varindex, const char *method);
 int Trigger_Write(const cGH *GH, int varindex, const char *method)
 {
   char *full_name, *file_name;
@@ -46,6 +47,7 @@ int Trigger_Write(const cGH *GH, int varindex, const char *method)
 }
 
 /* This routine checks if a trigger is fullfilled */
+int Trigger_TriggerFullFilled(const cGH *GH, int trigger);
 int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
 {
   TriggerGH *my_GH;
@@ -129,6 +131,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
                  my_GH->checked_value[trigger]);
   else
     if (my_GH->debug)
+    {
       if (varindex>=0)
         CCTK_VInfo(CCTK_THORNSTRING,
                    "trigger nr. %d not fullfilled for %s (%f%s%f)",
@@ -142,6 +145,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
                             my_GH->checked_parameter_thorn[trigger],
                    value, my_GH->relation[trigger],
                    my_GH->checked_value[trigger]);
+    }
   return ret;
 }
 
@@ -149,6 +153,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
  * If one output variable of one trigger matches the requested varindex,
  * we return 1. We do not check if the trigger is fullfilled, because
  * some variables might not be allocated yet */
+int Trigger_TimeForOutput(const cGH *GH, int varindex);
 int Trigger_TimeForOutput(const cGH *GH, int varindex)
 {
   TriggerGH *my_GH;
@@ -175,9 +180,10 @@ int Trigger_TimeForOutput(const cGH *GH, int varindex)
 /* output triggered variables if nessesary,
  * This routine does _not_ nessecarily output varindex; it loops over all
  * triggers and outputs variables that are specified there. */
+int Trigger_TriggerOutput(const cGH *GH, int varindex);
 int Trigger_TriggerOutput(const cGH *GH, int varindex)
 {
-  int i, j, o, handle, ret=1;
+  int i, j, handle, ret=1;
   TriggerGH *my_GH;
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
   if (my_GH->debug)
@@ -189,10 +195,10 @@ int Trigger_TriggerOutput(const cGH *GH, int varindex)
     for (handle=CCTK_NumIOMethods()-1; handle>=0; handle--)
     {
       if (my_GH->debug)
-        printf("io-method: %s, wanted:%s\n", CCTK_IOMethod(handle),
+        printf("io-method: %s, wanted:%s\n", CCTK_IOMethod(handle)->name,
                                              my_GH->output_method[i]);
       /* check if we want to output using that io method */
-      if (CCTK_EQUALS(CCTK_IOMethod(handle), my_GH->output_method[i]))
+      if (CCTK_EQUALS(CCTK_IOMethod(handle)->name, my_GH->output_method[i]))
       {
         /* check the condition of the trigger */
         if (Trigger_TriggerFullFilled(GH, i))
@@ -205,7 +211,7 @@ int Trigger_TriggerOutput(const cGH *GH, int varindex)
             {
               /* do the output */
               if (!Trigger_Write(GH,my_GH->output_variables[i*CCTK_NumVars()+j],
-                                    CCTK_IOMethod(handle)))
+                                    CCTK_IOMethod(handle)->name))
                 ret=0;
             }
           }
@@ -309,7 +315,7 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
 {
   DECLARE_CCTK_PARAMETERS
   TriggerGH *my_GH;
-  int i,method;
+  int i;
   transverse_info *info;
   
   /* allocate internal data structures */
@@ -391,10 +397,10 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
 
 /* This is the only routine, which is called from the scheduler.
  */
-void Trigger_Startup()
+int Trigger_Startup()
 {
   CCTK_RegisterGHExtensionSetupGH(CCTK_RegisterGHExtension("Trigger"),
                                   Trigger_SetupGH);
-  return;
+  return 0;
 }
 
