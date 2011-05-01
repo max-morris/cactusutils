@@ -5,7 +5,6 @@
    @desc
               Functions to report the timers
    @enddesc
-   @version   $Header$
  @@*/
 
 #include <assert.h>
@@ -14,16 +13,11 @@
 #include <string.h>
 
 #include "cctk.h"
-#include "cctk_Parameters.h"
 #include "cctk_Arguments.h"
-
-#include "util_String.h"
-
+#include "cctk_Parameters.h"
 #include "cctk_Schedule.h"
 
-static const char * const rcsid = "$Header$";
-
-CCTK_FILEVERSION(CactusUtils_TimerReport_Output_c);
+#include "util_String.h"
 
 /********************************************************************
  *********************     Local Data Types   ***********************
@@ -40,6 +34,8 @@ struct timer_stats {
 /********************************************************************
  ********************* Local Routine Prototypes *********************
  ********************************************************************/
+
+static int min(int x, int y);
 
 static void Output (CCTK_ARGUMENTS);
 static void PrintTimes (CCTK_ARGUMENTS);
@@ -69,6 +65,8 @@ void TimerReport_Checkpoint(CCTK_ARGUMENTS);
 /********************************************************************
  *********************     Local Data   *****************************
  ********************************************************************/
+
+static const char *const sep = "======================================================================";
 
 /********************************************************************
  ********************    External Routines   ************************
@@ -152,6 +150,11 @@ void TimerReport_Checkpoint(CCTK_ARGUMENTS)
 /********************************************************************
  ********************    Internal Routines   ************************
  ********************************************************************/
+
+static int min(int x, int y)
+{
+  return x<y ? x : y;
+}
 
 
 
@@ -526,96 +529,89 @@ static void OutputAllTimersReadable (CCTK_ARGUMENTS)
 
 
 
-typedef struct
+static struct timer_stats const * compare_timers = NULL;
+
+static int compare(const void *a, const void *b)
 {
-  int timer;
-  double t;
-} timer_pair;
-
-static int compare(const void * a, const void * b)
-{
-  const timer_pair *t1 = (const timer_pair *) a;
-  const timer_pair *t2 = (const timer_pair *) b;
-
-  double d = t2->t - t1->t;
-
+  int const idx1 = *(const int *)a;
+  int const idx2 = *(const int *)b;
+  
+  /* compare average times */
+  double const d =
+    compare_timers->secs_avg[idx2] -
+    compare_timers->secs_avg[idx1];
+  
   if (d > 0)
-    return 1;
-  else if (d == 0)
+    return +1;
+  else if (d < 0)
+    return -1;
+  else
     return 0;
-  else return -1;
 }
 
 static void PrintTopTimers (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
-
-  int ntimers = CCTK_NumTimers();
-  cTimerData  *td = CCTK_TimerCreateData();
-  double timer_secs = -1;
-  timer_pair   timers[ntimers];
-  int topn = n_top_timers;
-  double total = 0;
-  int i;
-
-  const char *sep = "======================================================================";
-
-  assert(ntimers >= 0);
-  for (i = 0; i < ntimers; i++)
+  
+  /* Collect timing information from all processes */
+  struct timer_stats timers;
+  if (! CollectTimerInfo (cctkGH, &timers))
   {
-    CCTK_TimerI(i, td);
-        
-    {
-      const cTimerVal  *tv = CCTK_GetClockValue(all_timers_clock, td);
-
-      if (tv != NULL)
-      {
-        timer_secs = CCTK_TimerClockSeconds(tv);
-      }
-      else
-      {
-        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                   "Clock \"%s\" not found", all_timers_clock);
-      }
-    }
-
-    timers[i].timer = i;
-    timers[i].t = timer_secs;
+    return;
   }
-
-  qsort(timers, ntimers, sizeof(timer_pair), compare);
-
-  CCTK_TimerDestroyData(td);
-
+  
+  /* Output the times only on the root process (because they are not
+     reduced onto the other processes anyway) */
+  if (CCTK_MyProc(cctkGH) != 0)
+  {
+    return;
+  }
+  
+  /* Sort timers (by average) */
+  int idx[timers.ntimers];
+  for (int i=0; i<timers.ntimers; ++i)
+  {
+    idx[i] = i;
+  }
+  compare_timers = &timers;
+  qsort (idx, timers.ntimers, sizeof(*idx), compare);
+  compare_timers = NULL;
+  
   CCTK_VInfo(CCTK_THORNSTRING,
              "Top timers at iteration %d time %g",
              cctk_iteration, (double)cctk_time);
-
+  
   printf("%s\n", sep);
-  printf("%%      Time/s   Timer (%s)\n", all_timers_clock);
+  printf("%5s   %7s %7s %7s   %s (%s)\n",
+         "%", "Time/s", "Min/s", "Max/s", "Timer", all_timers_clock);
   printf("%s\n", sep);
-
+  
   /* This should be the "CCTK total time" timer */
-  total = timers[0].t;
-
-  for (i = 0; i < (ntimers >= topn ? topn : ntimers) ; i++)
+  int const total_idx = 0;
+  assert (timers.ntimers > total_idx);
+  
+  CCTK_REAL const max_time = timers.secs_max[idx[total_idx]];
+  int const digits = floor(log10(max_time) + 1.0e-4) + 1;
+  
+  /* Output timing results */
+  for (int i=0; i<min(timers.ntimers, n_top_timers); ++i)
   {
-    double percent = 100.0 * timers[i].t / total;
-
-    char percent_string[10];
-    char time_string[10];
-
-    snprintf(percent_string, 6, "%.5f", percent);
-    snprintf(time_string, 8, "%.7f", timers[i].t);
-
-    printf("%s  %s  %s\n", percent_string, time_string, 
-           CCTK_TimerName(timers[i].timer));
+    double const percent =
+      100.0 * timers.secs_avg[idx[i]] / timers.secs_avg[idx[total_idx]];
+    
+    /* field widths: 5+3 + 7+1 + 7+1 + 7+3 + n = 80 */
+    printf("%5.1f   %7.*f %7.*f %7.*f   %s\n",
+           percent,
+           6-digits, timers.secs_avg[idx[i]],
+           6-digits, timers.secs_min[idx[i]],
+           6-digits, timers.secs_max[idx[i]],
+           CCTK_TimerName(idx[i]));
   }
   printf("%s\n", sep);
-
-  return;
 }
+
+
 
 static int integer_same_on_all_procs(cGH const * restrict const cctkGH,
                                      const CCTK_INT i,
