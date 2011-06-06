@@ -50,6 +50,7 @@
 // the vector elements into memory locations as if element 0 were
 // stored at p.
 #define vec8_store_nta_partial_hi(p,x,n) (assert(0))
+#define vec8_store_nta_partial_mid(p,x,nlo,nhi) (assert(0))
 
 
 

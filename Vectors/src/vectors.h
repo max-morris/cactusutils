@@ -5,22 +5,19 @@
 
 
 
-#undef EMULATE_AVX
+#if VECTORISE
 
-
-
-#if defined(KRANC_VECTORS)
-
+/* TOOD: support AVX */
 #  if defined(__SSE__)          // Intel SSE
 #    include "vectors-4-SSE.h"
 #  elif defined(__ALTIVEC__)    // Power Altivec
 #    include "vectors-4-Altivec.h"
 #  endif
 
-#  if defined(__AVX__)        // Intel AVX
+#  if defined(__AVX__)          // Intel AVX
 #    include "vectors-8-AVX.h"
-#  elif defined(__SSE2__)         // Intel SSE2
-#    if defined(EMULATE_AVX)
+#  elif defined(__SSE2__)       // Intel SSE2
+#    if VECTORISE_EMULATE_AVX
 #      include "vectors-8-AVX.h"
 #    else
 #      include "vectors-8-SSE2.h"
@@ -56,14 +53,15 @@
 #  define vec_elt0 vec4_elt0
 #  define vec_elt  vec4_elt
 
-#  define vec_load                 vec4_load
-#  define vec_loadu                vec4_loadu
-#  define vec_loadu_maybe          vec4_loadu_maybe
-#  define vec_loadu_maybe3         vec4_loadu_maybe3
-#  define vec_store                vec4_store
-#  define vec_store_nta            vec4_store_nta
-#  define vec_store_nta_partial_lo vec4_store_nta_partial_lo
-#  define vec_store_nta_partial_hi vec4_store_nta_partial_hi
+#  define vec_load                  vec4_load
+#  define vec_loadu                 vec4_loadu
+#  define vec_loadu_maybe           vec4_loadu_maybe
+#  define vec_loadu_maybe3          vec4_loadu_maybe3
+#  define vec_store                 vec4_store
+#  define vec_store_nta             vec4_store_nta
+#  define vec_store_nta_partial_lo  vec4_store_nta_partial_lo
+#  define vec_store_nta_partial_hi  vec4_store_nta_partial_hi
+#  define vec_store_nta_partial_mid vec4_store_nta_partial_mid
 
 #  define kpos k4pos
 #  define kneg k4neg
@@ -98,14 +96,15 @@
 #  define vec_elt0 vec8_elt0
 #  define vec_elt  vec8_elt
 
-#  define vec_load                 vec8_load
-#  define vec_loadu                vec8_loadu
-#  define vec_loadu_maybe          vec8_loadu_maybe
-#  define vec_loadu_maybe3         vec8_loadu_maybe3
-#  define vec_store                vec8_store
-#  define vec_store_nta            vec8_store_nta
-#  define vec_store_nta_partial_lo vec8_store_nta_partial_lo
-#  define vec_store_nta_partial_hi vec8_store_nta_partial_hi
+#  define vec_load                  vec8_load
+#  define vec_loadu                 vec8_loadu
+#  define vec_loadu_maybe           vec8_loadu_maybe
+#  define vec_loadu_maybe3          vec8_loadu_maybe3
+#  define vec_store                 vec8_store
+#  define vec_store_nta             vec8_store_nta
+#  define vec_store_nta_partial_lo  vec8_store_nta_partial_lo
+#  define vec_store_nta_partial_hi  vec8_store_nta_partial_hi
+#  define vec_store_nta_partial_mid vec8_store_nta_partial_mid
 
 #  define kpos k8pos
 #  define kneg k8neg
@@ -284,6 +283,11 @@ struct vecprops<CCTK_REAL8> {
 
 
 // For Kranc
+
+#undef KRANC_DIFF_FUNCTIONS
+#if ! VECTORISE_INLINE
+#  define KRANC_DIFF_FUNCTIONS
+#endif
 
 #undef ToReal
 #define ToReal(x) (vec_set1((CCTK_REAL)(x)))

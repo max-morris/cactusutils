@@ -21,12 +21,12 @@
 
 #define vec8_set1(a)  (vec_splats(a))
 #define vec8_set(a,b)                           \
-({                                              \
-  CCTK_REAL8_VEC x;                             \
-  x[0]=(a);                                     \
-  x[1]=(b);                                     \
-  x;                                            \
-})
+  ({                                            \
+    CCTK_REAL8_VEC x;                           \
+    x[0]=(a);                                   \
+    x[1]=(b);                                   \
+    x;                                          \
+  })
 
 #define vec8_elt0(x) ((x)[0])
 #define vec8_elt1(x) ((x)[1])
@@ -48,19 +48,16 @@
 
 // Store a vector to memory (aligned and non-temporal); this stores to
 // a reference to a scalar
-#define vec8_store(p,x)     (*(CCTK_REAL8_VEC*)&(p)=(x))
-#define vec8_storeu(p,x)    (*(CCTK_REAL8_VEC*)&(p)=(x))
-#if 1
-#  define vec8_store_nta(p,x) (*(CCTK_REAL8_VEC*)&(p)=(x))
-#else
+#define vec8_store(p,x)  (*(CCTK_REAL8_VEC*)&(p)=(x))
+#define vec8_storeu(p,x) (*(CCTK_REAL8_VEC*)&(p)=(x))
 // stvxl instruction doesn't exist for double precision
-#  define vec8_store_nta(p,x) (vec_stl(x,0,(CCTK_REAL8_VEC*)&(p)))
-#endif
+#define vec8_store_nta(p,x) vec8_store(p,x)
 
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
 #define vec8_store_nta_partial_lo(p,x,n) ((&(p))[0]=(x)[0])
 #define vec8_store_nta_partial_hi(p,x,n) ((&(p))[1]=(x)[1])
+#define vec8_store_nta_partial_mid(p,x,nlo,nhi) (assert(0))
 
 
 
@@ -87,24 +84,25 @@
 #define k8fmin(x,y) (vec_min(x,y))
 #define k8fnabs(x)  (vec_nabs(x))
 
-#define k8exp(x)                                        \
-({                                                      \
-  CCTK_REAL8_VEC const xexp=(x);                        \
-  vec8_set(exp(vec8_elt0(xexp)), exp(vec8_elt1(xexp))); \
-})
-#define k8log(x)                                        \
-({                                                      \
-  CCTK_REAL8_VEC const xlog=(x);                        \
-  vec8_set(log(vec8_elt0(xlog)), log(vec8_elt1(xlog))); \
-})
-#define k8pow(x,a)                                                      \
-({                                                                      \
-  CCTK_REAL8_VEC const xpow=(x);                                        \
-  CCTK_REAL8 const apow=(a);                                            \
-  vec8_set(pow(vec8_elt0(xpow),apow), pow(vec8_elt1(xpow),apow));       \
-})
-#define k8sqrt(x)                                               \
-({                                                              \
-  CCTK_REAL8_VEC const xsqrt=(x);                               \
-  vec8_set(sqrt(vec8_elt0(xsqrt)), sqrt(vec8_elt1(xsqrt)));     \
-})
+// Expensive functions
+#define K8REPL(f,x_)                            \
+  ({                                            \
+    CCTK_REAL8_VEC const xx=(x_);               \
+    CCTK_REAL8_VEC const x=xx;                  \
+    vec8_set(f(vec8_elt0(x)),                   \
+             f(vec8_elt1(x)));                  \
+  })
+#define K8REPL2(f,x_,a_)                        \
+  ({                                            \
+    CCTK_REAL8_VEC const xx=(x_);               \
+    CCTK_REAL8_VEC const x=xx;                  \
+    CCTK_REAL8     const aa=(a_);               \
+    CCTK_REAL8     const a=aa;                  \
+    vec8_set(f(vec8_elt0(x),a),                 \
+             f(vec8_elt1(x),a));                \
+  })
+
+#define k8exp(x)   K8REPL(exp,x)
+#define k8log(x)   K8REPL(log,x)
+#define k8pow(x,a) K8REPL2(pow,x,a)
+#define k8sqrt(x)  K8REPL(sqrt,x)

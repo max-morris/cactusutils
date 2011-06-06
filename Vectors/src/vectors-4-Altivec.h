@@ -21,14 +21,14 @@
 
 #define vec4_set1(a)  (vec_splats(a))
 #define vec4_set(a,b,c,d)                       \
-({                                              \
-  CCTK_REAL4_VEC x;                             \
-  x[0]=(a);                                     \
-  x[1]=(b);                                     \
-  x[2]=(c);                                     \
-  x[3]=(d);                                     \
-  x;                                            \
-})
+  ({                                            \
+    CCTK_REAL4_VEC x;                           \
+    x[0]=(a);                                   \
+    x[1]=(b);                                   \
+    x[2]=(c);                                   \
+    x[3]=(d);                                   \
+    x;                                          \
+  })
 
 #define vec4_elt0(x) ((x)[0])
 #define vec4_elt1(x) ((x)[1])
@@ -52,10 +52,10 @@
 
 // Store a vector to memory (aligned and non-temporal); this stores to
 // a reference to a scalar
-#define vec4_store(p,x)     (*(CCTK_REAL4_VEC*)&(p)=(x))
-#define vec4_storeu(p,x)    (*(CCTK_REAL4_VEC*)&(p)=(x))
-#if 0
-#  define vec4_store_nta(p,x) (*(CCTK_REAL4_VEC*)&(p)=(x))
+#define vec4_store(p,x)  (*(CCTK_REAL4_VEC*)&(p)=(x))
+#define vec4_storeu(p,x) (*(CCTK_REAL4_VEC*)&(p)=(x))
+#if ! VECTORISE_STREAMING_STORES
+#  define vec4_store_nta(p,x) (vec4_store(p,x))
 #else
 // use stvxl instruction
 #  define vec4_store_nta(p,x) (vec_stl(x,0,(CCTK_REAL4_VEC*)&(p)))
@@ -63,22 +63,49 @@
 
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
-#define vec4_store_nta_partial_lo(p,x,n)        \
-({                                              \
-  switch (n) {                                  \
-  case 3: ((&(p))[2]=(x)[2]);                   \
-  case 2: ((&(p))[1]=(x)[1]);                   \
-  case 1: ((&(p))[0]=(x)[0]);                   \
-  }                                             \
-})
-#define vec4_store_nta_partial_hi(p,x,n)        \
-({                                              \
-  switch (n) {                                  \
-  case 3: ((&(p))[1]=(x)[1]);                   \
-  case 2: ((&(p))[2]=(x)[2]);                   \
-  case 1: ((&(p))[3]=(x)[3]);                   \
-  }                                             \
-})
+#define vec4_store_nta_partial_lo(p_,x_,n)      \
+  ({                                            \
+    CCTK_REAL4 const& pp=(p_);                  \
+    CCTK_REAL4 const& p=pp;                     \
+    CCTK_REAL4_VEC const xx=(x_);               \
+    CCTK_REAL4_VEC const x=xx;                  \
+    switch (n) {                                \
+    case 3: (&p)[2]=x[2];                       \
+    case 2: (&p)[1]=x[1];                       \
+    case 1: (&p)[0]=x[0];                       \
+    }                                           \
+  })
+#define vec4_store_nta_partial_hi(p_,x_,n)      \
+  ({                                            \
+    CCTK_REAL4 const& pp=(p_);                  \
+    CCTK_REAL4 const& p=pp;                     \
+    CCTK_REAL4_VEC const xx=(x_);               \
+    CCTK_REAL4_VEC const x=xx;                  \
+    switch (n) {                                \
+    case 3: (&p)[1]=x[1];                       \
+    case 2: (&p)[2]=x[2];                       \
+    case 1: (&p)[3]=x[3];                       \
+    }                                           \
+  })
+#define vec4_store_nta_partial_mid(p_,x_,nlo_,nhi_)     \
+  ({                                                    \
+    CCTK_REAL4 const& pp=(p_);                          \
+    CCTK_REAL4 const& p=pp;                             \
+    CCTK_REAL4_VEC const xx=(x_);                       \
+    CCTK_REAL4_VEC const x=xx;                          \
+    int const nnlo=(nlo_);                              \
+    int const nlo=nnlo;                                 \
+    int const nnhi=(nhi_);                              \
+    int const nhi=nnhi;                                 \
+    if (nlo==3 and nhi==3) {                            \
+      (&p)[1]=x[1];                                     \
+      (&p)[2]=x[2];                                     \
+    } else if (nlo==2 and nhi==3) {                     \
+      (&p)[1]=x[1];                                     \
+    } else if (nlo==3 and nhi==2) {                     \
+      (&p)[2]=x[2];                                     \
+    }                                                   \
+  })
 
 
 
@@ -105,28 +132,29 @@
 #define k4fmin(x,y) (vec_min(x,y))
 #define k4fnabs(x)  (vec_nabs(x))
 
-#define k4exp(x)                                        \
-({                                                      \
-  CCTK_REAL4_VEC const xexp=(x);                        \
-  vec4_set(exp(vec4_elt0(xexp)), exp(vec4_elt1(xexp)),  \
-           exp(vec4_elt2(xexp)), exp(vec4_elt3(xexp))); \
-})
-#define k4log(x)                                        \
-({                                                      \
-  CCTK_REAL4_VEC const xlog=(x);                        \
-  vec4_set(log(vec4_elt0(xlog)), log(vec4_elt1(xlog)),  \
-           log(vec4_elt2(xlog)), log(vec4_elt3(xlog))); \
-})
-#define k4pow(x,a)                                                      \
-({                                                                      \
-  CCTK_REAL4_VEC const xpow=(x);                                        \
-  CCTK_REAL4 const apow=(a);                                            \
-  vec4_set(pow(vec4_elt0(xpow),apow), pow(vec4_elt1(xpow),apow),        \
-           pow(vec4_elt2(xpow),apow), pow(vec4_elt3(xpow),apow));       \
-})
-#define k4sqrt(x)                                               \
-({                                                              \
-  CCTK_REAL4_VEC const xsqrt=(x);                               \
-  vec4_set(sqrt(vec4_elt0(xsqrt)), sqrt(vec4_elt1(xsqrt)),      \
-           sqrt(vec4_elt2(xsqrt)), sqrt(vec4_elt3(xsqrt)));     \
-})
+// Expensive functions
+#define K4REPL(f,x_)                            \
+  ({                                            \
+    CCTK_REAL4_VEC const xx=(x_);               \
+    CCTK_REAL4_VEC const x=xx;                  \
+    vec4_set(f(vec4_elt0(x)),                   \
+             f(vec4_elt1(x)),                   \
+             f(vec4_elt2(x)),                   \
+             f(vec4_elt3(x)));                  \
+  })
+#define K4REPL2(f,x_,a_)                        \
+  ({                                            \
+    CCTK_REAL4_VEC const xx=(x_);               \
+    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4     const aa=(a_);               \
+    CCTK_REAL4     const a=aa;                  \
+    vec4_set(f(vec4_elt0(x),a),                 \
+             f(vec4_elt1(x),a),                 \
+             f(vec4_elt2(x),a),                 \
+             f(vec4_elt3(x),a));                \
+  })
+
+#define k4exp(x)   K4REPL(exp,x)
+#define k4log(x)   K4REPL(log,x)
+#define k4pow(x,a) K4REPL2(pow,x,a)
+#define k4sqrt(x)  K4REPL(sqrt,x)

@@ -5,7 +5,7 @@
 
 
 
-#if defined(EMULATE_AVX)
+#if VECTORISE_EMULATE_AVX
 #  include "avxintrin_emu.h"
 #else
 #  include <immintrin.h>
@@ -39,31 +39,11 @@ union k8const_t {
 #define vec8_set1(a)      (_mm256_set1_pd(a))
 #define vec8_set(a,b,c,d) (_mm256_set_pd(d,c,b,a)) // note reversed arguments
 
-#define vec8_elt0(x) (_mm_cvtsd_f64(_mm256_extractf128_pd(x,0)))
-#define vec8_elt1(x)                                            \
-({                                                              \
-  __m128d const xelt1=_mm256_extractf128_pd(x,0);               \
-  _mm_cvtsd_f64(_mm_unpackhi_pd(xelt1,xelt1));                  \
-})
-#define vec8_elt2(x) (_mm_cvtsd_f64(_mm256_extractf128_pd(x,1)))
-#define vec8_elt3(x)                                            \
-({                                                              \
-  __m128d const xelt3=_mm256_extractf128_pd(x,1);               \
-  _mm_cvtsd_f64(_mm_unpackhi_pd(xelt3,xelt3));                  \
-})
-
-#define vec8_elt(x,d)                           \
-({                                              \
-  CCTK_REAL8_VEC const xelt=(x);                \
-  CCTK_REAL8 aelt;                              \
-  switch (d) {                                  \
-  case 0: aelt=vec8_elt0(xelt); break;          \
-  case 1: aelt=vec8_elt1(xelt); break;          \
-  case 2: aelt=vec8_elt2(xelt); break;          \
-  case 3: aelt=vec8_elt3(xelt); break;          \
-  }                                             \
-  aelt;                                         \
-})
+#define vec8_elt0(x) (((CCTK_REAL8 const*)&(x))[0])
+#define vec8_elt1(x) (((CCTK_REAL8 const*)&(x))[1])
+#define vec8_elt2(x) (((CCTK_REAL8 const*)&(x))[2])
+#define vec8_elt3(x) (((CCTK_REAL8 const*)&(x))[3])
+#define vec8_elt(x,d) (((CCTK_REAL8 const*)&(x))[d])
 
 
 
@@ -73,18 +53,53 @@ union k8const_t {
 // a reference to a scalar
 #define vec8_load(p)  (_mm256_load_pd(&(p)))
 #define vec8_loadu(p) (_mm256_loadu_pd(&(p)))
+#if ! VECTORISE_ALWAYS_USE_ALIGNED_LOADS
+#  define vec8_load_off1(p) vec_loadu(p)
+#else
+#  error "VECTORISE_ALWAYS_USE_ALIGNED_LOADS not yet supported"
+#endif
 
 // Load a vector from memory that may or may not be aligned, as
 // decided by the offset off and the vector size
+#if VECTORISE_ALWAYS_USE_UNALIGNED_LOADS
 // Implementation: Always use unaligned load
-#define vec8_loadu_maybe(off,p)             (vec8_loadu(p))
-#define vec8_loadu_maybe3(off1,off2,off3,p) (vec8_loadu(p))
+#  define vec8_loadu_maybe(off,p)             (vec8_loadu(p))
+#  define vec8_loadu_maybe3(off1,off2,off3,p) (vec8_loadu(p))
+#else
+#  define vec8_loadu_maybe(off,p_)              \
+  ({                                            \
+    CCTK_REAL8 const& pp=(p_);                  \
+    CCTK_REAL8 const& p=pp;                     \
+    (off) % CCTK_REAL8_VEC_SIZE == 0 ?          \
+      vec8_load(p) :                            \
+      vec8_load_off1(p);                        \
+  })
+#  if VECTORISE_ALIGNED_ARRAYS
+// Assume all array x sizes are multiples of the vector size
+#    define vec8_loadu_maybe3(off1,off2,off3,p) \
+  vec8_loadu_maybe(off1,p)
+#  else
+#    define vec8_loadu_maybe3(off1,off2,off3,p_)        \
+  ({                                                    \
+    CCTK_REAL8 const& pp=(p_);                          \
+    CCTK_REAL8 const& p=pp;                             \
+    ((off2) % CCTK_REAL8_VEC_SIZE != 0 or               \
+     (off3) % CCTK_REAL8_VEC_SIZE != 0) ?               \
+      vec8_loadu(p) :                                   \
+      vec8_loadu_maybe(off1,p);                         \
+  })
+#  endif
+#endif
 
 // Store a vector to memory (aligned and non-temporal); this stores to
 // a reference to a scalar
-#define vec8_store(p,x)     (_mm256_store_pd(&(p),x))
-#define vec8_storeu(p,x)    (_mm256_storeu_pd(&(p),x))
-#define vec8_store_nta(p,x) (_mm256_stream_pd(&(p),x))
+#define vec8_store(p,x)  (_mm256_store_pd(&(p),x))
+#define vec8_storeu(p,x) (_mm256_storeu_pd(&(p),x))
+#if ! VECTORISE_STREAMING_STORES
+#  define vec8_store_nta(p,x) (vec8_store(p,x))
+#else
+#  define vec8_store_nta(p,x) (_mm256_stream_pd(&(p),x))
+#endif
 
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
@@ -96,8 +111,6 @@ static const k8const_t k8store_lo_union[5] =
     {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_ZERO, }},
     {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }},
   };
-#define vec8_store_nta_partial_lo(p,x,n)                \
-  (_mm256_maskstore_pd(&(p),k8store_lo_union[n].vi,x))
 static const k8const_t k8store_hi_union[5] =
   {
     {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }},
@@ -106,8 +119,28 @@ static const k8const_t k8store_hi_union[5] =
     {{ K8_ZERO, K8_IMIN, K8_IMIN, K8_IMIN, }},
     {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }},
   };
-#define vec8_store_nta_partial_hi(p,x,n)                \
+#if defined(__GNUC__) && __GNUC__==4 && __GNUC_MINOR__<=4
+// gcc 4.4 uses a wrong prototype for _mm256_maskstore_pd
+#  define vec8_store_nta_partial_lo(p,x,n)                              \
+  (_mm256_maskstore_pd(&(p),_mm256_castsi256_pd(k8store_lo_union[n].vi),x))
+#  define vec8_store_nta_partial_hi(p,x,n)                              \
+  (_mm256_maskstore_pd(&(p),_mm256_castsi256_pd(k8store_hi_union[n].vi),x))
+#  define vec8_store_nta_partial_mid(p,x,nlo,nhi)                       \
+  (_mm256_maskstore_pd                                                  \
+   (&(p),                                                               \
+    _mm256_castsi256_pd(k8store_lo_union[nlo].vi & k8store_hi_union[nhi].vi), \
+    x))
+#else
+#  define vec8_store_nta_partial_lo(p,x,n)              \
+  (_mm256_maskstore_pd(&(p),k8store_lo_union[n].vi,x))
+#  define vec8_store_nta_partial_hi(p,x,n)              \
   (_mm256_maskstore_pd(&(p),k8store_hi_union[n].vi,x))
+#  define vec8_store_nta_partial_mid(p,x,nlo,nhi)               \
+  (_mm256_maskstore_pd                                          \
+   (&(p),                                                       \
+    k8store_lo_union[nlo].vi & k8store_hi_union[nhi].vi,        \
+    x))
+#endif
 
 
 
@@ -141,23 +174,23 @@ static const k8const_t k8abs_mask_union =
 #define k8sqrt(x)   (_mm256_sqrt_pd(x))
 
 // Expensive functions
-#define K8REPL(x,func)                          \
+#define K8REPL(f,x)                             \
 ({                                              \
   CCTK_REAL8_VEC const xfunc=(x);               \
-  vec8_set((vec8_elt0(xfunc)),                  \
-           (vec8_elt1(xfunc)),                  \
-           (vec8_elt2(xfunc)),                  \
-           (vec8_elt3(xfunc)));                 \
+  vec8_set(f(vec8_elt0(xfunc)),                 \
+           f(vec8_elt1(xfunc)),                 \
+           f(vec8_elt2(xfunc)),                 \
+           f(vec8_elt3(xfunc)));                \
 })
-#define K8REPL2(x,a,func)                       \
+#define K8REPL2(f,x,a)                          \
 ({                                              \
   CCTK_REAL8_VEC const xfunc=(x);               \
   CCTK_REAL8     const afunc=(a);               \
-  vec8_set((vec8_elt0(xfunc),afunc),            \
-           (vec8_elt1(xfunc),afunc),            \
-           (vec8_elt2(xfunc),afunc),            \
-           (vec8_elt3(xfunc),afunc));           \
+  vec8_set(f(vec8_elt0(xfunc),afunc),           \
+           f(vec8_elt1(xfunc),afunc),           \
+           f(vec8_elt2(xfunc),afunc),           \
+           f(vec8_elt3(xfunc),afunc));          \
 })
-#define k8exp(x) K8REPL(x,exp)
-#define k8log(x) K8REPL(x,log)
-#define k8pow(x,a) K8REPL2(x,a,exp)
+#define k8exp(x)   K8REPL(exp,x)
+#define k8log(x)   K8REPL(log,x)
+#define k8pow(x,a) K8REPL2(pow,x,a)
