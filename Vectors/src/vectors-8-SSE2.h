@@ -17,6 +17,8 @@
 
 
 
+#define vec8_architecture "SSE2"
+
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL8_VEC __m128d
 
@@ -156,43 +158,6 @@ static const union {
 } k8abs_mask_union = {{ 0x7fffffffffffffffULL, 0x7fffffffffffffffULL }};
 #define k8abs_mask (k8sign_mask_union.v)
 
-// Choice   [sign(x)>0 ? y : z]
-#ifdef __SSE4_1__
-#  define k8ifthen(x,y,z) (_mm_blendv_pd(y,z,x))
-#elif 0
-#  define k8ifthen(x,y,z)                       \
-  ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
-    CCTK_REAL8_VEC const yy=(y_);               \
-    CCTK_REAL8_VEC const y=yy;                  \
-    CCTK_REAL8_VEC const zz=(z_);               \
-    CCTK_REAL8_VEC const z=zz;                  \
-    int const m = _mm_movemask_pd(x);           \
-    CCTK_REAL8_VEC r;                           \
-    switch (m) {                                \
-    case 0: r = y; break;                       \
-    case 1: r = _mm_move_sd(y,z); break;        \
-    case 2: r = _mm_move_sd(z,y); break;        \
-    case 3: r = z; break;                       \
-    }                                           \
-    r;                                          \
-  })
-#else
-#  define k8ifthen(x,y,z)                                       \
-  ({                                                            \
-    CCTK_REAL8_VEC const xx=(x_);                               \
-    CCTK_REAL8_VEC const x=xx;                                  \
-    CCTK_REAL8_VEC const yy=(y_);                               \
-    CCTK_REAL8_VEC const y=yy;                                  \
-    CCTK_REAL8_VEC const zz=(z_);                               \
-    CCTK_REAL8_VEC const z=zz;                                  \
-    CCTK_REAL8_VEC const c = _mm_and_pd(x,k8sign_mask);         \
-    vec8_set(not vec8_elt0(c) ? vec8_elt0(y) : vec8_elt0(z),    \
-             not vec8_elt1(c) ? vec8_elt1(y) : vec8_elt1(z));   \
-  })
-#endif
-
 // Operators
 #define k8pos(x) (x)
 #define k8neg(x) (_mm_xor_pd(x,k8sign_mask))
@@ -236,3 +201,40 @@ static const union {
 #define k8exp(x)   K8REPL(exp,x)
 #define k8log(x)   K8REPL(log,x)
 #define k8pow(x,a) K8REPL2(pow,x,a)
+
+// Choice   [sign(x)>0 ? y : z]
+#ifdef __SSE4_1__
+#  define k8ifthen(x,y,z) (_mm_blendv_pd(y,z,x))
+#elif 0
+#  define k8ifthen(x,y,z)                       \
+  ({                                            \
+    CCTK_REAL8_VEC const xx=(x_);               \
+    CCTK_REAL8_VEC const x=xx;                  \
+    CCTK_REAL8_VEC const yy=(y_);               \
+    CCTK_REAL8_VEC const y=yy;                  \
+    CCTK_REAL8_VEC const zz=(z_);               \
+    CCTK_REAL8_VEC const z=zz;                  \
+    int const m = _mm_movemask_pd(x);           \
+    CCTK_REAL8_VEC r;                           \
+    switch (m) {                                \
+    case 0: r = y; break;                       \
+    case 1: r = _mm_move_sd(y,z); break;        \
+    case 2: r = _mm_move_sd(z,y); break;        \
+    case 3: r = z; break;                       \
+    }                                           \
+    r;                                          \
+  })
+#else
+#  define k8ifthen(x,y,z)                                       \
+  ({                                                            \
+    CCTK_REAL8_VEC const xx=(x_);                               \
+    CCTK_REAL8_VEC const x=xx;                                  \
+    CCTK_REAL8_VEC const yy=(y_);                               \
+    CCTK_REAL8_VEC const y=yy;                                  \
+    CCTK_REAL8_VEC const zz=(z_);                               \
+    CCTK_REAL8_VEC const z=zz;                                  \
+    CCTK_REAL8_VEC const c = _mm_and_pd(x,k8sign_mask);         \
+    vec8_set(vec8_elt0(not vec8_elt0(c) ? y : z),               \
+             vec8_elt1(not vec8_elt1(c) ? y : z));              \
+  })
+#endif

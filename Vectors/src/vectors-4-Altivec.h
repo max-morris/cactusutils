@@ -9,6 +9,8 @@
 
 
 
+#define vec4_architecture "Altivec"
+
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL4_VEC vector float
 
@@ -158,3 +160,6 @@
 #define k4log(x)   K4REPL(log,x)
 #define k4pow(x,a) K4REPL2(pow,x,a)
 #define k4sqrt(x)  K4REPL(sqrt,x)
+
+#define k4ifthen(x,y,z)                                                 \
+  vec_sel(vec_sra(vec_convert((x), &(vector int*)0, 31), (y), (z))

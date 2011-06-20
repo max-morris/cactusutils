@@ -8,6 +8,8 @@
 
 
 
+#define vec8_architecture "scalar (no vectorisation)"
+
 // Use CCTK_REAL8
 #define CCTK_REAL8_VEC CCTK_REAL8
 
@@ -78,3 +80,5 @@
 #define k8log(x)    (log(x))
 #define k8pow(x,a)  (pow(x,a))
 #define k8sqrt(x)   (sqrt(x))
+
+#define k8ifthen(x,y,z) ((x)>=0?(y):(z))

@@ -8,6 +8,8 @@
 
 
 
+#define vec4_architecture "scalar (no vectorisation)"
+
 // Use CCTK_REAL4
 #define CCTK_REAL4_VEC CCTK_REAL4
 
@@ -78,3 +80,5 @@
 #define k4log(x)    (logf(x))
 #define k4pow(x,a)  (powf(x,a))
 #define k4sqrt(x)   (sqrtf(x))
+
+#define k4ifthen(x,y,z) ((x)>=0?(y):(z))

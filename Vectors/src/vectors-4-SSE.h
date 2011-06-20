@@ -6,12 +6,18 @@
 
 
 #include <xmmintrin.h>
+#ifdef __SSE4_1__
+// Intel's SSE 4.1
+#  include <smmintrin.h>
+#endif
 #ifdef __SSE4A__
 // AMD's SSE 4a
 #  include <ammintrin.h>
 #endif
 
 
+
+#define vec4_architecture "SSE"
 
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL4_VEC __m128
@@ -292,3 +298,23 @@ static const union {
 #define k4exp(x)   K4REPL(exp,x)
 #define k4log(x)   K4REPL(log,x)
 #define k4pow(x,a) K4REPL2(pow,x,a)
+
+// Choice   [sign(x)>0 ? y : z]
+#ifdef __SSE4_1__
+#  define k4ifthen(x,y,z) (_mm_blendv_ps(y,z,x))
+#else
+#  define k4ifthen(x,y,z)                                       \
+  ({                                                            \
+    CCTK_REAL4_VEC const xx=(x_);                               \
+    CCTK_REAL4_VEC const x=xx;                                  \
+    CCTK_REAL4_VEC const yy=(y_);                               \
+    CCTK_REAL4_VEC const y=yy;                                  \
+    CCTK_REAL4_VEC const zz=(z_);                               \
+    CCTK_REAL4_VEC const z=zz;                                  \
+    CCTK_REAL4_VEC const c = _mm_and_ps(x,k4sign_mask);         \
+    vec4_set(vec4_elt0(not vec4_elt0(c) ? y : z),               \
+             vec4_elt1(not vec4_elt1(c) ? y : z),               \
+             vec4_elt2(not vec4_elt2(c) ? y : z),               \
+             vec4_elt3(not vec4_elt3(c) ? y : z));              \
+  })
+#endif

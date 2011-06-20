@@ -13,6 +13,8 @@
 
 
 
+#define vec8_architecture "AVX"
+
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL8_VEC __m256d
 
@@ -194,3 +196,5 @@ static const k8const_t k8abs_mask_union =
 #define k8exp(x)   K8REPL(exp,x)
 #define k8log(x)   K8REPL(log,x)
 #define k8pow(x,a) K8REPL2(pow,x,a)
+
+#define k8ifthen(x,y,z) (_mm256_blendv_pd(y,z,x))

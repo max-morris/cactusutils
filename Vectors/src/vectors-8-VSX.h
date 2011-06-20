@@ -9,6 +9,8 @@
 
 
 
+#define vec8_architecture "VSX"
+
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL8_VEC vector double
 
@@ -106,3 +108,6 @@
 #define k8log(x)   K8REPL(log,x)
 #define k8pow(x,a) K8REPL2(pow,x,a)
 #define k8sqrt(x)  K8REPL(sqrt,x)
+
+#define k8ifthen(x,y,z)                                                 \
+  vec_sel(vec_sra(vec_convert((x), &(vector long long*)0, 63), (y), (z))
