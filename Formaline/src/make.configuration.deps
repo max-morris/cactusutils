@@ -135,7 +135,7 @@ $(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
 # files that do not influence the executable.
 $(TARBALL_DIR)/flesh-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/flesh-Cactus.ccldeps
 	cd $(CCTK_HOME) && \
-	find CONTRIBUTORS COPYRIGHT Makefile lib src \
+	find CONTRIBUTORS COPYRIGHT Makefile lib/ src/ \
 		`ls configs/$(notdir $(TOP))/OptionList 2> /dev/null` \
 		`ls configs/$(notdir $(TOP))/properties.ini 2> /dev/null` \
 		`ls configs/$(notdir $(TOP))/RunScript 2> /dev/null` \
