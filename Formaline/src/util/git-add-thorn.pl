@@ -40,6 +40,9 @@ my $dstdir = "$scratch/tmp-$thorn";
 rmtree $dstdir;                 # ignore errors
 
 for my $file (@files) {
+    if (! -f "$file") {                 # only accept normal files.
+        die "ERROR: Refusing to make hard link from \"$srcdir/$file\" as it is not a regular file";
+    }
     my $dir = $file;
     if ($dir =~ m+/+) {
         $dir =~ s+/[^/]*$++;
