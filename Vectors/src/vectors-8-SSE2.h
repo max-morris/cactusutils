@@ -156,7 +156,7 @@ static const union {
   unsigned long long i[2];
   __m128d            v;
 } k8abs_mask_union = {{ 0x7fffffffffffffffULL, 0x7fffffffffffffffULL }};
-#define k8abs_mask (k8sign_mask_union.v)
+#define k8abs_mask (k8abs_mask_union.v)
 
 // Operators
 #define k8pos(x) (x)
