@@ -206,7 +206,7 @@ static const union {
 #ifdef __SSE4_1__
 #  define k8ifthen(x,y,z) (_mm_blendv_pd(y,z,x))
 #elif 0
-#  define k8ifthen(x,y,z)                       \
+#  define k8ifthen(x_,y_,z_)                    \
   ({                                            \
     CCTK_REAL8_VEC const xx=(x_);               \
     CCTK_REAL8_VEC const x=xx;                  \
@@ -225,7 +225,7 @@ static const union {
     r;                                          \
   })
 #else
-#  define k8ifthen(x,y,z)                                       \
+#  define k8ifthen(x_,y_,z_)                                    \
   ({                                                            \
     CCTK_REAL8_VEC const xx=(x_);                               \
     CCTK_REAL8_VEC const x=xx;                                  \
