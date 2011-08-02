@@ -5,7 +5,7 @@ if (*check_vars && check_every > 0)
 {
   STORAGE: NaNmask NaNsFound
 
-  schedule NaNChecker_ResetCounter at INITIAL
+  schedule NaNChecker_ResetCounter at BASEGRID
   {
     LANG:    C
     OPTIONS: global
@@ -17,13 +17,25 @@ if (*check_vars && check_every > 0)
     OPTIONS: global
   } "Reset the NaNChecker::NaNsFound counter"
 
-  schedule NaNChecker_NaNCheck at POSTSTEP
+  schedule NaNChecker_NaNCheck as zzz_NaNChecker_NaNCheck at POSTSTEP
   {
     LANG:    C
     OPTIONS: local
   } "Check for NaNs and count them in NaNChecker::NaNsFound"
 
-  schedule NaNChecker_TakeAction at POSTSTEP after NaNChecker_NaNCheck
+  schedule NaNChecker_TakeAction at POSTSTEP after zzz_NaNChecker_NaNCheck
+  {
+    LANG:    C
+    OPTIONS: global loop-level
+  } "Output NaNChecker::NaNmask and take action according to NaNChecker::action_if_found"
+
+  schedule NaNChecker_NaNCheck as zzz_NaNChecker_NaNCheck at POST_RECOVER_VARIABLES
+  {
+    LANG:    C
+    OPTIONS: local
+  } "Check for NaNs and count them in NaNChecker::NaNsFound"
+
+  schedule NaNChecker_TakeAction at POST_RECOVER_VARIABLES after zzz_NaNChecker_NaNCheck
   {
     LANG:    C
     OPTIONS: global loop-level
