@@ -26,7 +26,7 @@ esac
 # vectorisation macros depend on optimisation for efficient code;
 # without optimisation, the code is most likely much slower than
 # usual.)
-case $(echo "x$OPTIMISE$OPTIMIZE" | tr '[:upper:]' '[:lower:]') in
+case $(echo "x$OPTIMISE_MODE" | tr '[:upper:]' '[:lower:]') in
     (xyes) ;;                   # do nothing
     (xno)  VECTORISE=0 ;;       # disable vectorisation
     (*)    echo "BEGIN ERROR"
