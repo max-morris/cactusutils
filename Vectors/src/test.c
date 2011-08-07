@@ -13,7 +13,7 @@
     if(vecres == res)                                           \
       passed++;                                                 \
     else                                                        \
-      CCTK_VWarn(warnlevel, __LINE__, __FILE__,                 \
+      CCTK_VWarn(CCTK_WARN_ALERT, __LINE__, __FILE__,           \
         CCTK_THORNSTRING, "Failed test %s", testname);          \
     numtests++;                                                 \
   }                                                             \
@@ -23,12 +23,6 @@ void Vectors_Test(CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
-
-  int warnlevel;
-  if (CCTK_EQUALS(tests, "abort"))
-    warnlevel = CCTK_WARN_ABORT;
-  else
-    warnlevel = CCTK_WARN_ALERT;
 
   CCTK_INT passed = 0, numtests=0;
 
@@ -79,6 +73,11 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("kifthen 0",     kifthen(ToReal(0.),bv,cv),  signbit(0.)?c[i]:b[i]);
   VECTEST("kifthen -0",    kifthen(ToReal(-0.),bv,cv), signbit(-0.)?c[i]:b[i]);
 
-  CCTK_VInfo(CCTK_THORNSTRING, "%d/%d tests passed ", passed, numtests);
+  if (passed != numtests)
+    CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+      "Failed %d correctness tests", numtests - passed);
+  else
+    CCTK_VInfo(CCTK_THORNSTRING, "%d/%d tests passed ", passed, numtests);
+
   return;
 }

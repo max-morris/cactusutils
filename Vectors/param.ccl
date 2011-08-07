@@ -1,8 +1,1 @@
 # Parameter definitions for thorn Vectors
-
-KEYWORD tests "Whether to run correctness tests on startup."
-{
-    "report" :: "Run tests and report any which fail."
-    "abort"  :: "Run tests and abort if any fail."
-    "skip"   :: "Don't run tests."
-} "skip"
