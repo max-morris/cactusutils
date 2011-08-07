@@ -4,3 +4,11 @@ schedule Vectors_Startup at CCTK_STARTUP
 {
   LANG: C
 } "Print startup message"
+
+if (CCTK_EQUALS(tests, "report") || CCTK_EQUALS(tests, "abort"))
+{
+  schedule Vectors_Test at CCTK_PARAMCHECK
+  {
+    LANG: C
+  } "Run correctness tests."
+}
