@@ -207,4 +207,4 @@
 #define k8pow(x,a) K8REPL2(pow,x,a)
 #define k8sqrt(x)  K8REPL(sqrt,x)
 
-#define k8ifthen(x,y,z) fpsel(y,z,x)
+#define k8ifpos(x,y,z) fpsel(y,z,x)

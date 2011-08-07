@@ -210,9 +210,9 @@ static const union {
 
 // Choice   [sign(x)>0 ? y : z]
 #ifdef __SSE4_1__
-#  define k8ifthen(x,y,z) (_mm_blendv_pd(y,z,x))
+#  define k8ifpos(x,y,z) (_mm_blendv_pd(y,z,x))
 #elif 0
-#  define k8ifthen(x_,y_,z_)                    \
+#  define k8ifpos(x_,y_,z_)                     \
   ({                                            \
     CCTK_REAL8_VEC const xx=(x_);               \
     CCTK_REAL8_VEC const x=xx;                  \
@@ -237,7 +237,7 @@ static const union {
 #else
 #define SGN(x) signbit(x)
 #endif
-#  define k8ifthen(x_,y_,z_)                                    \
+#  define k8ifpos(x_,y_,z_)                                     \
   ({                                                            \
     CCTK_REAL8_VEC const xx=(x_);                               \
     CCTK_REAL8_VEC const x=xx;                                  \

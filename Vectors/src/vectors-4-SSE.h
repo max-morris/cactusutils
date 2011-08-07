@@ -307,7 +307,7 @@ static const union {
 
 // Choice   [sign(x)>0 ? y : z]
 #ifdef __SSE4_1__
-#  define k4ifthen(x,y,z) (_mm_blendv_ps(y,z,x))
+#  define k4ifpos(x,y,z) (_mm_blendv_ps(y,z,x))
 #else
 #include <math.h>
 #ifdef __cplusplus
@@ -315,7 +315,7 @@ static const union {
 #else
 #define SGN(x) signbit(x)
 #endif
-#  define k4ifthen(x,y,z)                                       \
+#  define k4ifpos(x,y,z)                                        \
   ({                                                            \
     CCTK_REAL4_VEC const xx=(x_);                               \
     CCTK_REAL4_VEC const x=xx;                                  \

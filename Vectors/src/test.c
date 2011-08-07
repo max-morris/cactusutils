@@ -68,10 +68,10 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("kpow",   kpow(av, 3.14159),  pow(a[i], 3.14159)  );
   VECTEST("ksqrt",  ksqrt(av),          sqrt(a[i])          );
 
-  VECTEST("kifthen positive", kifthen(av, bv, cv), signbit(a[i]) ? c[i] : b[i]);
-  VECTEST("kifthen negative", kifthen(bv, bv, cv), signbit(b[i]) ? c[i] : b[i]);
-  VECTEST("kifthen 0",     kifthen(ToReal(0.),bv,cv),  signbit(0.)?c[i]:b[i]);
-  VECTEST("kifthen -0",    kifthen(ToReal(-0.),bv,cv), signbit(-0.)?c[i]:b[i]);
+  VECTEST("kifpos positive", kifpos(av, bv, cv), signbit(a[i]) ? c[i] : b[i]);
+  VECTEST("kifpos negative", kifpos(bv, bv, cv), signbit(b[i]) ? c[i] : b[i]);
+  VECTEST("kifpos 0",     kifpos(ToReal(0.),bv,cv),  signbit(0.)?c[i]:b[i]);
+  VECTEST("kifpos -0",    kifpos(ToReal(-0.),bv,cv), signbit(-0.)?c[i]:b[i]);
 
   if (passed != numtests)
     CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,

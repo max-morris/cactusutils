@@ -88,4 +88,4 @@
 #define SGN(x) signbit(x)
 #endif
 
-#define k4ifthen(x,y,z) (SGN(x)?(z):(y))
+#define k4ifpos(x,y,z) (SGN(x)?(z):(y))

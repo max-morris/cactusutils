@@ -87,7 +87,7 @@
 #  define kpow   k4pow
 #  define ksqrt  k4sqrt
 
-#  define kifthen k4ifthen
+#  define kifpos k4ifpos
 
 #elif defined(CCTK_REAL_PRECISION_8)
 
@@ -134,7 +134,7 @@
 #  define kpow   k8pow
 #  define ksqrt  k8sqrt
 
-#  define kifthen k8ifthen
+#  define kifpos k8ifpos
 
 #else
 
