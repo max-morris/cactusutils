@@ -52,3 +52,11 @@ slower code.)
 VECTORISE_EMULATE_AVX (default "no", experimental): Emulate AVX
 instructions with SSE2 instructions. This produces slower code, but
 can be used to test AVX code on systems that don't support AVX.
+
+3. Tests
+
+Correctness testing is run at startup (in CCTK_PARAMCHECK) provided the
+Vectors thorn is in the list of ActiveThorns. This aims to test all vector
+operations by comparing the results with the same operations done using a
+scalar implementation. The number of passed tests is always reported. If any
+test fails, the run is aborted immediately.
