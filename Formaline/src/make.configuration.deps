@@ -43,6 +43,7 @@ FRM-OBJS-other = $(TARBALL_DIR)/flesh-Cactus-????.o $(patsubst %,$(TARBALL_DIR)/
 $(FRM-LIB): $(FRM-OBJS)
 #	$(AR) $(ARFLAGS) $@ $^
 	$(MAKE) -f $(MAKE_DIR)/make.configuration $(FRM-LIB).objectlist.custom
+	$(RM) $@ 2>/dev/null
 	xargs -n $(FRM-OBJS-words-max) $(AR) $(ARFLAGS) $@ < $(FRM-LIB).objectlist
 	$(RM) $(FRM-LIB).objectlist
 	if test "x$(USE_RANLIB)" = "xyes" ; then $(RANLIB) $(RANLIBFLAGS) $@ ; fi
