@@ -81,4 +81,11 @@
 #define k4pow(x,a)  (powf(x,a))
 #define k4sqrt(x)   (sqrtf(x))
 
-#define k4ifthen(x,y,z) ((x)>=0?(y):(z))
+#include <math.h>
+#ifdef __cplusplus
+#define SGN(x) std::signbit(x)
+#else
+#define SGN(x) signbit(x)
+#endif
+
+#define k4ifthen(x,y,z) (SGN(x)?(z):(y))

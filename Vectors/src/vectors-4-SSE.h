@@ -303,6 +303,12 @@ static const union {
 #ifdef __SSE4_1__
 #  define k4ifthen(x,y,z) (_mm_blendv_ps(y,z,x))
 #else
+#include <math.h>
+#ifdef __cplusplus
+#define SGN(x) std::signbit(x)
+#else
+#define SGN(x) signbit(x)
+#endif
 #  define k4ifthen(x,y,z)                                       \
   ({                                                            \
     CCTK_REAL4_VEC const xx=(x_);                               \
@@ -311,10 +317,9 @@ static const union {
     CCTK_REAL4_VEC const y=yy;                                  \
     CCTK_REAL4_VEC const zz=(z_);                               \
     CCTK_REAL4_VEC const z=zz;                                  \
-    CCTK_REAL4_VEC const c = _mm_and_ps(x,k4sign_mask);         \
-    vec4_set(vec4_elt0(not vec4_elt0(c) ? y : z),               \
-             vec4_elt1(not vec4_elt1(c) ? y : z),               \
-             vec4_elt2(not vec4_elt2(c) ? y : z),               \
-             vec4_elt3(not vec4_elt3(c) ? y : z));              \
+    vec4_set(SGN(vec4_elt0(x)) ? vec4_elt0(z) : vec4_elt0(y),   \
+             SGN(vec4_elt1(x)) ? vec4_elt1(z) : vec4_elt1(y),   \
+             SGN(vec4_elt2(x)) ? vec4_elt2(z) : vec4_elt2(y),   \
+             SGN(vec4_elt3(x)) ? vec4_elt3(z) : vec4_elt3(y));  \
   })
 #endif

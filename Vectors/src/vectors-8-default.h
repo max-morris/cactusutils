@@ -81,4 +81,11 @@
 #define k8pow(x,a)  (pow(x,a))
 #define k8sqrt(x)   (sqrt(x))
 
-#define k8ifthen(x,y,z) ((x)>=0?(y):(z))
+#include <math.h>
+#ifdef __cplusplus
+#define SGN(x) std::signbit(x)
+#else
+#define SGN(x) signbit(x)
+#endif
+
+#define k8ifthen(x,y,z) (SGN(x)?(z):(y))

@@ -225,6 +225,12 @@ static const union {
     r;                                          \
   })
 #else
+#include <math.h>
+#ifdef __cplusplus
+#define SGN(x) std::signbit(x)
+#else
+#define SGN(x) signbit(x)
+#endif
 #  define k8ifthen(x_,y_,z_)                                    \
   ({                                                            \
     CCTK_REAL8_VEC const xx=(x_);                               \
@@ -233,8 +239,7 @@ static const union {
     CCTK_REAL8_VEC const y=yy;                                  \
     CCTK_REAL8_VEC const zz=(z_);                               \
     CCTK_REAL8_VEC const z=zz;                                  \
-    CCTK_REAL8_VEC const c = _mm_and_pd(x,k8sign_mask);         \
-    vec8_set(vec8_elt0(not vec8_elt0(c) ? y : z),               \
-             vec8_elt1(not vec8_elt1(c) ? y : z));              \
+    vec8_set(SGN(vec8_elt0(x)) ? vec8_elt0(z) : vec8_elt0(y),   \
+             SGN(vec8_elt1(x)) ? vec8_elt1(z) : vec8_elt1(y));  \
   })
 #endif
