@@ -8,7 +8,7 @@
 
 
 
-#define vec4_architecture "scalar (no vectorisation)"
+#define vec4_architecture "scalar (no vectorisation, 32-bit precision)"
 
 // Use CCTK_REAL4
 #define CCTK_REAL4_VEC CCTK_REAL4

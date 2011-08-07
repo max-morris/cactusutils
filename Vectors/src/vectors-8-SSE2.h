@@ -17,7 +17,13 @@
 
 
 
-#define vec8_architecture "SSE2"
+#ifdef __SSE4_1__
+#define vec8_architecture "SSE4.1 (64-bit precision)"
+#elif defined(__SSE4A__)
+#define vec8_architecture "SSE4A (64-bit precision)"
+#else
+#define vec8_architecture "SSE2 (64-bit precision)"
+#endif
 
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL8_VEC __m128d

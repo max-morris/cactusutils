@@ -8,7 +8,7 @@
 
 
 
-#define vec8_architecture "scalar (no vectorisation)"
+#define vec8_architecture "scalar (no vectorisation, 64-bit precision)"
 
 // Use CCTK_REAL8
 #define CCTK_REAL8_VEC CCTK_REAL8
