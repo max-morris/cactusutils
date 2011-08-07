@@ -44,7 +44,7 @@
 
 #if defined(CCTK_REAL_PRECISION_4)
 
-#  define vec_architecture vec8_architecture
+#  define vec_architecture vec4_architecture
 
 #  define CCTK_REAL_VEC      CCTK_REAL4_VEC
 #  define CCTK_REAL_VEC_SIZE CCTK_REAL4_VEC_SIZE
@@ -91,7 +91,7 @@
 
 #elif defined(CCTK_REAL_PRECISION_8)
 
-#  define vec_architecture vec4_architecture
+#  define vec_architecture vec8_architecture
 
 #  define CCTK_REAL_VEC      CCTK_REAL8_VEC
 #  define CCTK_REAL_VEC_SIZE CCTK_REAL8_VEC_SIZE
