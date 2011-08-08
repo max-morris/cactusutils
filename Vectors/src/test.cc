@@ -75,11 +75,6 @@ void Vectors_Test(CCTK_ARGUMENTS)
   CCTK_REAL_VEC sv;
   CCTK_REAL *const s = (CCTK_REAL*)&sv;
 
-  /* TODO: Add individual tests for vec_set1, vec_set, vec_elt0, vec_elt
-           vec_load, vec_loadu, vec_loadu_maybe, vec_loadu_maybe3
-           vec_store, vec_store_nta, vec_store_nta_partial_lo,
-           vec_store_nta_partial_hi, vec_store_nta_partial_mid */
-
   VECTEST("vec_set1", vec_set1(a[0]),  a[0]);
 #if CCTK_REAL_VEC_SIZE == 1
   VECTEST("vec_set", vec_set(a[0]), a[i]);
