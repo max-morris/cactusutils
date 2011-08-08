@@ -5,6 +5,9 @@
 
 
 
+#include <assert.h>
+#include <math.h>
+
 #include <emmintrin.h>
 #ifdef __SSE4_1__
 // Intel's SSE 4.1
@@ -231,12 +234,11 @@ static const union {
     r;                                          \
   })
 #else
-#include <math.h>
-#ifdef __cplusplus
-#define SGN(x) std::signbit(x)
-#else
-#define SGN(x) signbit(x)
-#endif
+#  ifdef __cplusplus
+#    define SGN(x) std::signbit(x)
+#  else
+#    define SGN(x) signbit(x)
+#  endif
 #  define k8ifpos(x_,y_,z_)                                     \
   ({                                                            \
     CCTK_REAL8_VEC const xx=(x_);                               \

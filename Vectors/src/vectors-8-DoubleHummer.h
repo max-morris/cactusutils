@@ -5,7 +5,11 @@
 
 
 
-#include <builtins.h>
+#include <assert.h>
+
+#ifdef __cplusplus
+#  include <builtins.h>
+#endif
 
 
 

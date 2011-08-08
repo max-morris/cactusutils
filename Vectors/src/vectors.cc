@@ -4,6 +4,7 @@
 #include "cctk_Parameters.h" 
 #include "vectors.h"
 
+extern "C"
 int Vectors_Startup(void)
 {
   CCTK_VInfo(CCTK_THORNSTRING, "Using vector size %d for architecture %s",

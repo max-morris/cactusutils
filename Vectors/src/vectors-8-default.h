@@ -1,10 +1,13 @@
 // Fallback vectorisation implementation: Do not vectorise
 
-
-
 // We use macros here, so that we are not surprised by compilers which
 // don't like to inline functions. This should also make debug builds
 // (which may not inline) more efficient.
+
+
+
+#include <assert.h>
+#include <math.h>
 
 
 
@@ -81,11 +84,10 @@
 #define k8pow(x,a)  (pow(x,a))
 #define k8sqrt(x)   (sqrt(x))
 
-#include <math.h>
 #ifdef __cplusplus
-#define SGN(x) std::signbit(x)
+#  define SGN(x) std::signbit(x)
 #else
-#define SGN(x) signbit(x)
+#  define SGN(x) signbit(x)
 #endif
 
 #define k8ifpos(x,y,z) (SGN(x)?(z):(y))
