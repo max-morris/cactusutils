@@ -85,9 +85,9 @@
 #define k4sqrt(x)   (sqrtf(x))
 
 #ifdef __cplusplus
-#  define SGN(x) std::signbit(x)
+#  define Vectors_SGN(x) std::signbit(x)
 #else
-#  define SGN(x) signbit(x)
+#  define Vectors_SGN(x) signbit(x)
 #endif
 
-#define k4ifpos(x,y,z) (SGN(x)?(z):(y))
+#define k4ifpos(x,y,z) (Vectors_SGN(x)?(z):(y))
