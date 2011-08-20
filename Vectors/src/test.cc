@@ -2,8 +2,15 @@
 #include "cctk_Arguments.h" 
 #include "cctk_Parameters.h" 
 #include "vectors.h"
+
 #include <math.h>
 #include <stdio.h>
+
+inline int my_signbit (CCTK_REAL const x)
+{
+  using namespace std;
+  return signbit(x);
+}
 
 #define SCALARTEST(testname, vecexpr, scalarexpr)                       \
 do {                                                                    \
@@ -163,9 +170,9 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("ksqrt",  ksqrt(av),          sqrt(a[i])          );
 
   VECTEST("kifpos positive",
-          kifpos(av, bv, cv), std::signbit(a[i]) ? c[i] : b[i]);
+          kifpos(av, bv, cv), my_signbit(a[i]) ? c[i] : b[i]);
   VECTEST("kifpos negative",
-          kifpos(bv, bv, cv), std::signbit(b[i]) ? c[i] : b[i]);
+          kifpos(bv, bv, cv), my_signbit(b[i]) ? c[i] : b[i]);
   VECTEST("kifpos 0",  kifpos(vec_set1(0.),bv,cv),  b[i]);
   VECTEST("kifpos -0", kifpos(vec_set1(-0.),bv,cv), c[i]);
 

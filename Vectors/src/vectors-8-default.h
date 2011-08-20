@@ -85,9 +85,9 @@
 #define k8sqrt(x)   (sqrt(x))
 
 #ifdef __cplusplus
-#  define Vectors_SGN(x) std::signbit(x)
+#  define k8sgn(x) ({ using namespace std; signbit(x); })
 #else
-#  define Vectors_SGN(x) signbit(x)
+#  define k8sgn(x) (signbit(x))
 #endif
 
-#define k8ifpos(x,y,z) (Vectors_SGN(x)?(z):(y))
+#define k8ifpos(x,y,z) (k8sgn(x)?(z):(y))

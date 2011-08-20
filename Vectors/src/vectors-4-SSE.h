@@ -313,9 +313,9 @@ static const union {
 #  define k4ifpos(x,y,z) (_mm_blendv_ps(y,z,x))
 #else
 #  ifdef __cplusplus
-#    define Vectors_SGN(x) std::signbit(x)
+#    define k4sgn(x) ({ using namespace std; signbit(x); })
 #  else
-#    define Vectors_SGN(x) signbit(x)
+#    define k4sgn(x) (signbit(x))
 #  endif
 #  define k4ifpos(x,y,z)                                                \
   ({                                                                    \
@@ -325,9 +325,9 @@ static const union {
     CCTK_REAL4_VEC const y=yy;                                          \
     CCTK_REAL4_VEC const zz=(z_);                                       \
     CCTK_REAL4_VEC const z=zz;                                          \
-    vec4_set(Vectors_SGN(vec4_elt0(x)) ? vec4_elt0(z) : vec4_elt0(y),   \
-             Vectors_SGN(vec4_elt1(x)) ? vec4_elt1(z) : vec4_elt1(y),   \
-             Vectors_SGN(vec4_elt2(x)) ? vec4_elt2(z) : vec4_elt2(y),   \
-             Vectors_SGN(vec4_elt3(x)) ? vec4_elt3(z) : vec4_elt3(y));  \
+    vec4_set(k4sgn(vec4_elt0(x)) ? vec4_elt0(z) : vec4_elt0(y),   \
+             k4sgn(vec4_elt1(x)) ? vec4_elt1(z) : vec4_elt1(y),   \
+             k4sgn(vec4_elt2(x)) ? vec4_elt2(z) : vec4_elt2(y),   \
+             k4sgn(vec4_elt3(x)) ? vec4_elt3(z) : vec4_elt3(y));  \
   })
 #endif

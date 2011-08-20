@@ -235,9 +235,9 @@ static const union {
   })
 #else
 #  ifdef __cplusplus
-#    define Vectors_SGN(x) std::signbit(x)
+#    define k8sgn(x) ({ using namespace std; signbit(x); })
 #  else
-#    define Vectors_SGN(x) signbit(x)
+#    define k4sgn(x) (signbit(x))
 #  endif
 #  define k8ifpos(x_,y_,z_)                                             \
   ({                                                                    \
@@ -247,7 +247,7 @@ static const union {
     CCTK_REAL8_VEC const y=yy;                                          \
     CCTK_REAL8_VEC const zz=(z_);                                       \
     CCTK_REAL8_VEC const z=zz;                                          \
-    vec8_set(Vectors_SGN(vec8_elt0(x)) ? vec8_elt0(z) : vec8_elt0(y),   \
-             Vectors_SGN(vec8_elt1(x)) ? vec8_elt1(z) : vec8_elt1(y));  \
+    vec8_set(k8sgn(vec8_elt0(x)) ? vec8_elt0(z) : vec8_elt0(y),   \
+             k8sgn(vec8_elt1(x)) ? vec8_elt1(z) : vec8_elt1(y));  \
   })
 #endif
