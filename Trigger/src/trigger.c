@@ -367,7 +367,7 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
     my_GH->checked_value[i]=Trigger_Checked_Value[i];
     info->trigger_number=i;
     info->input_output=0;
-    /* If it is no variable, try a parameter */
+    /* Are we looking for a variable or a parameter? */
     if (CCTK_EQUALS(Trigger_Checked_Variable[i],"param"))
     {
         if (!CCTK_ParameterGet(Trigger_Checked_Parameter_Name[i],
@@ -386,7 +386,7 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
                        "No variable with the name '%s' found",
                        Trigger_Checked_Variable[i]);
     info->input_output=1;
-    /* If it is no variable, try a parameter */
+    /* Are we looking for a variable of a parameter? */
     if (CCTK_EQUALS(Trigger_Output_Variables[i],"param"))
     {
         if (!CCTK_ParameterGet(Trigger_Steered_Parameter_Name[i],
