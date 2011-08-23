@@ -34,8 +34,8 @@ int Trigger_Write(const cGH *GH, int varindex, const char *method)
   full_name=CCTK_FullName(varindex);
   if (!full_name)
     return 0;
-  file_name = (char*) malloc(8+(int)strlen(CCTK_VarName(varindex))+1);
-  snprintf(file_name, 8+(int)strlen(CCTK_VarName(varindex))+1,
+  file_name = (char*) malloc(8+strlen(CCTK_VarName(varindex))+1);
+  snprintf(file_name, 8+strlen(CCTK_VarName(varindex))+1,
            "%s%s", "trigger_", CCTK_VarName(varindex));
   if (my_GH->debug)
     CCTK_VInfo(CCTK_THORNSTRING,
