@@ -372,7 +372,9 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
     {
         if (!CCTK_ParameterGet(Trigger_Checked_Parameter_Name[i],
                                Trigger_Checked_Parameter_Thorn[i],NULL))
-            CCTK_WARN(0,"No parameter with that name found");
+            CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                      "No parameter with the name '%s' found",
+                      Trigger_Checked_Parameter_Name[i]);
         my_GH->checked_variable[i]=-1;
         my_GH->checked_parameter_name[i] =Trigger_Checked_Parameter_Name[i];
         my_GH->checked_parameter_thorn[i]=Trigger_Checked_Parameter_Thorn[i];
@@ -380,14 +382,18 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
     else
         if (!CCTK_TraverseString(Trigger_Checked_Variable[i],
                                  Trigger_Transverse_Callback, info, CCTK_VAR))
-            CCTK_WARN(0,"No variable with that name found");
+            CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                       "No variable with the name '%s' found",
+                       Trigger_Checked_Variable[i]);
     info->input_output=1;
     /* If it is no variable, try a parameter */
     if (CCTK_EQUALS(Trigger_Output_Variables[i],"param"))
     {
         if (!CCTK_ParameterGet(Trigger_Steered_Parameter_Name[i],
                                Trigger_Steered_Parameter_Thorn[i],NULL))
-            CCTK_WARN(0,"No parameter with that name found");
+            CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                       "No parameter with the name '%s' found",
+                       Trigger_Steered_Parameter_Name[i]);
         my_GH->output_variables
                  [i*CCTK_NumVars() + my_GH->output_variables_number[i]]
               =-1;
@@ -397,7 +403,9 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
       if (!CCTK_TraverseString(Trigger_Output_Variables[i],
                                Trigger_Transverse_Callback,
                                info, CCTK_GROUP_OR_VAR))
-        CCTK_WARN(0,"No variable with that name found");
+        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "No variable with the name '%s' found",
+                   Trigger_Output_Variables[i]);
   }
   free(info);
   return my_GH;
