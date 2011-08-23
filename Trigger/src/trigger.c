@@ -38,8 +38,9 @@ int Trigger_Write(const cGH *GH, int varindex, const char *method)
   snprintf(file_name, 8+(int)strlen(CCTK_VarName(varindex))+1,
            "%s%s", "trigger_", CCTK_VarName(varindex));
   if (my_GH->debug)
-    printf("Doing tiggered output of %s with method %s in file %s.\n",
-           full_name, method, file_name);
+    CCTK_VInfo(CCTK_THORNSTRING,
+      "Doing tiggered output of %s with method %s in file %s.\n",
+      full_name, method, file_name);
   CCTK_OutputVarAsByMethod(GH, full_name, method, file_name);
   free(file_name);
   free(full_name);
@@ -64,11 +65,13 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
    * variables since they are only allocated if triggered output is
    * wanted and _later_ (OutputGH) they are not allocated anymore */
   if (my_GH->debug)
-    printf("last_checked: %d\n", my_GH->last_checked[trigger]);
+    CCTK_VInfo(CCTK_THORNSTRING,
+               "last_checked: %d\n", my_GH->last_checked[trigger]);
   if (my_GH->last_checked[trigger]>=GH->cctk_iteration)
   {
     if (my_GH->debug)
-      printf("not doing output for trigger %d twice\n", trigger);
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "not doing output for trigger %d twice\n", trigger);
     return 0;
   }
   /* do we have to use a reduction" */
@@ -85,11 +88,13 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
   if (reduction_handle)
   {
     if (my_GH->debug)
-      printf("reducing %d %d\n", reduction_handle, varindex);
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "reducing %d %d\n", reduction_handle, varindex);
     errno=CCTK_Reduce(not_const_GH, -1, reduction_handle, 1,
                       CCTK_VARIABLE_REAL, &value, 1, varindex);
     if (my_GH->debug)
-      printf("reducing was ok\n");
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "reducing was ok\n");
     if (errno)
       CCTK_WARN(0, "Reduce returned an error.");
   }
@@ -169,7 +174,8 @@ int Trigger_TimeForOutput(const cGH *GH, int varindex)
       if (my_GH->output_variables[i*CCTK_NumVars()+j]==varindex)
       {
         if (my_GH->debug)
-          printf("Trigger_TimeForOutput: requesting output for %d\n", varindex);
+          CCTK_VInfo(CCTK_THORNSTRING,
+            "Trigger_TimeForOutput: requesting output for %d\n", varindex);
         return 1;
       }
     }
@@ -187,7 +193,8 @@ int Trigger_TriggerOutput(const cGH *GH, int varindex)
   TriggerGH *my_GH;
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
   if (my_GH->debug)
-    printf("Trigger_TriggerOutput, varindex %d\n", varindex);
+    CCTK_VInfo(CCTK_THORNSTRING,
+               "Trigger_TriggerOutput, varindex %d\n", varindex);
   /* loop over all triggers */
   for (i=0; i<my_GH->number; i++)
   {
@@ -195,8 +202,9 @@ int Trigger_TriggerOutput(const cGH *GH, int varindex)
     for (handle=CCTK_NumIOMethods()-1; handle>=0; handle--)
     {
       if (my_GH->debug)
-        printf("io-method: %s, wanted:%s\n", CCTK_IOMethod(handle)->name,
-                                             my_GH->output_method[i]);
+        CCTK_VInfo(CCTK_THORNSTRING,
+                   "io-method: %s, wanted:%s\n", CCTK_IOMethod(handle)->name,
+                   my_GH->output_method[i]);
       /* check if we want to output using that io method */
       if (CCTK_EQUALS(CCTK_IOMethod(handle)->name, my_GH->output_method[i]))
       {
@@ -234,7 +242,7 @@ void Trigger_Check(CCTK_ARGUMENTS)
   TriggerGH *my_GH;
   my_GH = (TriggerGH*)CCTK_GHExtension(cctkGH, "Trigger");
   if (my_GH->debug)
-    printf("Testing triggers\n");
+    CCTK_VInfo(CCTK_THORNSTRING, "Testing triggers\n");
   /* refresh internal variables */
   trigger_cctk_iteration[0]=(CCTK_REAL)cctk_iteration;
   trigger_cctk_time[0]=(CCTK_REAL)cctk_time;
@@ -261,13 +269,13 @@ void Trigger_Check(CCTK_ARGUMENTS)
         {
           free(valstr);
           if (my_GH->debug)
-            printf("Steering parameter\n");
+            CCTK_VInfo(CCTK_THORNSTRING, "Steering parameter\n");
           ret=CCTK_ParameterSet(Trigger_Steered_Parameter_Name[i],
                                 Trigger_Steered_Parameter_Thorn[i],
                                 Trigger_Steered_Parameter_Value[i]);
           switch(ret)
           {
-            case  0: printf("Parameter steered\n"); break;
+            case  0: CCTK_VInfo(CCTK_THORNSTRING, "Parameter steered\n"); break;
             case -1: CCTK_WARN(1,"Parameter is out of range."); break;
             case -2: CCTK_WARN(0,"Parameter was not found."); break;
             case -3: CCTK_WARN(0,"Parameter is not steerable."); break;
