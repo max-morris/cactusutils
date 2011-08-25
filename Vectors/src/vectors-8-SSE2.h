@@ -16,16 +16,26 @@
 #ifdef __SSE4A__
 // AMD's SSE 4a
 #  include <ammintrin.h>
+
+// Intel compilers don't support SSE 4a. Here is how we can implement
+// these instructions in assembler instead:
+
+// inline void __attribute__((__always_inline__))
+//   _mm_stream_sd (double *p, __m128d x)
+// {
+//   asm ("movntsd %[x],%[p]" : "=m" (*p) : [p] "m" (*p), [x] "x" (x));
+// }
+
 #endif
 
 
 
 #ifdef __SSE4_1__
-#define vec8_architecture "SSE4.1 (64-bit precision)"
+#  define vec8_architecture "SSE4.1 (64-bit precision)"
 #elif defined(__SSE4A__)
-#define vec8_architecture "SSE4A (64-bit precision)"
+#  define vec8_architecture "SSE4A (64-bit precision)"
 #else
-#define vec8_architecture "SSE2 (64-bit precision)"
+#  define vec8_architecture "SSE2 (64-bit precision)"
 #endif
 
 // Vector type corresponding to CCTK_REAL

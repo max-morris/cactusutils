@@ -21,11 +21,11 @@
 
 
 #ifdef __SSE4_1__
-#define vec4_architecture "SSE4.1 (32-bit precision)"
+#  define vec4_architecture "SSE4.1 (32-bit precision)"
 #elif defined(__SSE4A__)
-#define vec4_architecture "SSE4A (32-bit precision)"
+#  define vec4_architecture "SSE4A (32-bit precision)"
 #else
-#define vec4_architecture "SSE (32-bit precision)"
+#  define vec4_architecture "SSE (32-bit precision)"
 #endif
 
 // Vector type corresponding to CCTK_REAL
