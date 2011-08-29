@@ -39,9 +39,11 @@ STRING Trigger_Reduction[10] "valid reduction method" STEERABLE=ALWAYS
   "^$" :: "An empty string for no reduction (for scalars)"
 } "norm2"
 
-STRING Trigger_Reaction[10] "how to react on a positive trigger" STEERABLE=ALWAYS
+KEYWORD Trigger_Reaction[10] "how to react on a positive trigger" STEERABLE=ALWAYS
 {
-  ".+" :: "'output' for file output, 'steer' to steer a parameter"
+  "output"     :: "enable output"
+  "steerparam" :: "steer parameter"
+  "steerscalar":: "steer grid scalar"
 } "output"
 
 STRING Trigger_Output_Method[10] "IO-output method for this trigger" STEERABLE=ALWAYS
@@ -71,6 +73,23 @@ STRING Trigger_Steered_Parameter_Name[10] "parameter name to be changed" STEERAB
 STRING Trigger_Steered_Parameter_Value[10] "parameter value to be changed to" STEERABLE=ALWAYS
 {
   ".+" :: "parameter value"
+  "^$" :: "can be empty"
+} ""
+
+STRING Trigger_Steered_Scalar[10] "Scalar to be changed" STEERABLE=ALWAYS
+{
+  ".+" :: "scalar name"
+  "^$" :: "can be empty"
+} ""
+
+INT Trigger_Steered_Scalar_Index[10] "Scalar index to be changed" STEERABLE=ALWAYS
+{
+  0:* :: ">=0"
+} 0
+
+STRING Trigger_Steered_Scalar_Value[10] "Scalar value to be changed to" STEERABLE=ALWAYS
+{
+  ".+" :: "scalar value"
   "^$" :: "can be empty"
 } ""
 

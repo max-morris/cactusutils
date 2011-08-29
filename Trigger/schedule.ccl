@@ -4,6 +4,11 @@ schedule Trigger_Startup at STARTUP
     LANG: C
 }   "Startup Routine"
 
+schedule Trigger_ParamCheck AT PARAMCHECK
+{
+    LANG: C
+}   "Parameter checking"
+
 schedule Trigger_Check at ANALYSIS before AHFinderDirect_setupupdate
 {
     LANG: C

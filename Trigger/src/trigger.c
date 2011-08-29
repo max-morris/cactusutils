@@ -13,12 +13,14 @@ typedef struct
   int *checked_variable;
   int *output_variables;
   int *output_variables_number;
+  int *steered_scalar;
   int *last_checked;
   const char **relation;
   const char **reduction;
   const char **checked_parameter_thorn;
   const char **checked_parameter_name;
   CCTK_REAL *checked_value;
+  const char **reaction;
   const char **output_method;
   const char *out_dir;
   int debug;
@@ -53,11 +55,12 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
 {
   TriggerGH *my_GH;
   int varindex, reduction_handle=0, errno, ret;
-  CCTK_REAL *tmp_value, value;
+  const CCTK_REAL *tmp_value;
+  CCTK_REAL value;
   cGH *not_const_GH;
 
   /* as long as GH in Reduce() is not const, we have to use a cast to
-   * prevent a waring while compiling */
+   * prevent a warning while compiling */
   not_const_GH=(cGH*) GH;
   
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
@@ -74,7 +77,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
                  "not doing output for trigger %d twice\n", trigger);
     return 0;
   }
-  /* do we have to use a reduction" */
+  /* do we have to use a reduction? */
   if (!CCTK_EQUALS(my_GH->reduction[trigger], ""))
   {
     /* get a reduction handle */
@@ -99,12 +102,12 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
       CCTK_WARN(0, "Reduce returned an error.");
   }
   else
-    // -1 indicates a paramter
+    // -1 indicates a parameter
     if (varindex>=0)
       value=((CCTK_REAL *)CCTK_VarDataPtrI(GH , 0, varindex))[0];
     else
     {
-      tmp_value=((CCTK_REAL *)CCTK_ParameterGet(
+      tmp_value=((const CCTK_REAL *)CCTK_ParameterGet(
                                my_GH->checked_parameter_name[trigger],
                                my_GH->checked_parameter_thorn[trigger],NULL));
       value=tmp_value[0];
@@ -257,7 +260,7 @@ void Trigger_Check(CCTK_ARGUMENTS)
   /* loop over all triggers */
   for (i=0; i<my_GH->number; i++)
   {
-    if (CCTK_EQUALS(Trigger_Output_Variables[i],"param"))
+    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
     {
       if (Trigger_TriggerFullFilled(cctkGH, i))
       {
@@ -285,15 +288,38 @@ void Trigger_Check(CCTK_ARGUMENTS)
         }
       }
     }
+    if (CCTK_EQUALS(Trigger_Reaction[i],"steerscalar"))
+    {
+      if (Trigger_TriggerFullFilled(cctkGH, i))
+      {
+        if (my_GH->debug)
+          CCTK_VInfo(CCTK_THORNSTRING, "Steering scalar\n");
+        int type = CCTK_VarTypeI(my_GH->steered_scalar[i]);
+        if (type == CCTK_VARIABLE_REAL)
+        {
+          CCTK_REAL *myVar = (CCTK_REAL *)(CCTK_VarDataPtrI(cctkGH,0,my_GH->steered_scalar[i]));
+          myVar[Trigger_Steered_Scalar_Index[i]] = atof(Trigger_Steered_Scalar_Value[i]);
+        }
+        else if (type == CCTK_VARIABLE_INT)
+        {
+          CCTK_INT *myVar = (CCTK_INT *)(CCTK_VarDataPtrI(cctkGH,0,my_GH->steered_scalar[i]));
+          myVar[Trigger_Steered_Scalar_Index[i]] = atoi(Trigger_Steered_Scalar_Value[i]);
+        }
+        else
+          CCTK_WARN(0, "Cannot handle other types than CCTK_REAL and CCTK_INT");
+      }
+    }
   }
 }
+
 
 /* This struct is (only) used to pass three arguments to the callback of
  * CCTK_TransverseString instead of one */
 typedef struct
 {
   int trigger_number;
-  int input_output;
+  enum enum_what_to_set {WTS_INPUT, WTS_OUTPUT, WTS_STEERSCALAR}
+    what_to_set;
   TriggerGH *my_GH;
 } transverse_info;
 
@@ -305,9 +331,13 @@ static void Trigger_Transverse_Callback(int varindex, const char *optstring,
   /* get the info back */
   info=(transverse_info*)arg;
   /* do we want to get the input or the output variables? */
-  if (info->input_output==0) /*input*/
+  if (info->what_to_set == WTS_INPUT)
     info->my_GH->checked_variable[info->trigger_number]=varindex;
-  else /* output */
+  else if (info->what_to_set == WTS_STEERSCALAR)
+  {
+    info->my_GH->steered_scalar[info->trigger_number] = varindex;
+  }
+  else if (info->what_to_set == WTS_OUTPUT)
   {
     info->my_GH->output_variables
                  [info->trigger_number*CCTK_NumVars()+
@@ -334,6 +364,8 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
                            calloc(Trigger_Number,sizeof(CCTK_INT));
   my_GH->checked_variable= (CCTK_INT*)   
                            calloc(Trigger_Number,sizeof(CCTK_INT));
+  my_GH->steered_scalar  = (CCTK_INT*)   
+                           calloc(Trigger_Number,sizeof(CCTK_INT));
   my_GH->output_variables= (CCTK_INT*)
                            calloc(Trigger_Number*CCTK_NumVars(),
                                   sizeof(CCTK_INT));
@@ -352,6 +384,8 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
                            calloc(Trigger_Number,sizeof(const char *));
   my_GH->output_method   = (const char**)
                            calloc(Trigger_Number,sizeof(const char *));
+  my_GH->reaction        = (const char**)
+                           calloc(Trigger_Number,sizeof(const char *));
 
   /* initialize datastructure */
   info->my_GH=my_GH;
@@ -360,13 +394,14 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
   /* loop over all triggers */
   for (i=Trigger_Number-1; i>=0; i--)
   {
-    my_GH->last_checked[i]=-1;
+    my_GH->last_checked [i]=-1;
     my_GH->output_method[i]=Trigger_Output_Method[i];
-    my_GH->relation[i]=Trigger_Relation[i];
-    my_GH->reduction[i]=Trigger_Reduction[i];
+    my_GH->reaction     [i]=Trigger_Reaction[i];
+    my_GH->relation     [i]=Trigger_Relation[i];
+    my_GH->reduction    [i]=Trigger_Reduction[i];
     my_GH->checked_value[i]=Trigger_Checked_Value[i];
     info->trigger_number=i;
-    info->input_output=0;
+    info->what_to_set = WTS_INPUT;
     /* Are we looking for a variable or a parameter? */
     if (CCTK_EQUALS(Trigger_Checked_Variable[i],"param"))
     {
@@ -385,38 +420,77 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
             CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
                        "No variable with the name '%s' found",
                        Trigger_Checked_Variable[i]);
-    info->input_output=1;
-    /* Are we looking for a variable of a parameter? */
-    if (CCTK_EQUALS(Trigger_Output_Variables[i],"param"))
+    /* What should be done when the trigger is positive? */
+    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
     {
         if (!CCTK_ParameterGet(Trigger_Steered_Parameter_Name[i],
                                Trigger_Steered_Parameter_Thorn[i],NULL))
             CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
                        "No parameter with the name '%s' found",
                        Trigger_Steered_Parameter_Name[i]);
+        /* TODO: check for steerability */
         my_GH->output_variables
                  [i*CCTK_NumVars() + my_GH->output_variables_number[i]]
               =-1;
         my_GH->output_variables_number[i]++;
     }
-    else
+    /* scalar */
+    else if (CCTK_EQUALS(Trigger_Reaction[i],"steerscalar"))
+    {
+      info->what_to_set = WTS_STEERSCALAR;
+      if (!CCTK_TraverseString(Trigger_Steered_Scalar[i],
+                               Trigger_Transverse_Callback,
+                               info, CCTK_VAR))
+        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "No scalar with the name '%s' found",
+                   Trigger_Steered_Scalar[i]);
+    }
+    /* output */
+    else if (CCTK_EQUALS(Trigger_Reaction[i],"output"))
+    {
+      info->what_to_set = WTS_OUTPUT;
       if (!CCTK_TraverseString(Trigger_Output_Variables[i],
                                Trigger_Transverse_Callback,
                                info, CCTK_GROUP_OR_VAR))
         CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
                    "No variable with the name '%s' found",
                    Trigger_Output_Variables[i]);
+    }
   }
   free(info);
   return my_GH;
 }
 
-/* This is the only routine, which is called from the scheduler.
+/* Register our own GH extension
  */
 int Trigger_Startup()
 {
   CCTK_RegisterGHExtensionSetupGH(CCTK_RegisterGHExtension("Trigger"),
                                   Trigger_SetupGH);
   return 0;
+}
+
+/* Check some parameters, especially their steerability */
+void Trigger_ParamCheck(CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_PARAMETERS
+  for (int i=Trigger_Number-1; i>=0; i--)
+    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
+    {
+      const cParamData *paramdata = CCTK_ParameterData(
+                                      Trigger_Steered_Parameter_Name[i],
+                                      Trigger_Steered_Parameter_Thorn[i]);
+      if (!paramdata)
+        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "Parameter '%s::%s' not found",
+                   Trigger_Steered_Parameter_Thorn[i],
+                   Trigger_Steered_Parameter_Name[i]);
+      if (paramdata->steerable != CCTK_STEERABLE_ALWAYS)
+        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "Parameter '%s::%s' not (always) steerable",
+                   Trigger_Steered_Parameter_Thorn[i],
+                   Trigger_Steered_Parameter_Name[i]);
+    }
+  return;
 }
 

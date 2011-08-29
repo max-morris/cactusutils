@@ -47,13 +47,25 @@ IOBasic::outInfo_vars  = "admbase::gxx"
 IOBasic::outScalar_every =  2      
 IOBasic::outScalar_vars  = "adm_bssn::adm_bs_gxx adm_bssn::adm_bs_Axx adm_bssn::adm_bs_phi adm_bssn::adm_bs_k adm_bssn::adm_bs_Gx admbase::gxx admbase::kxx admbase::alp"
 
-trigger::Trigger_Number              = 1
+trigger::Trigger_Number              = 2
+
 trigger::Trigger_Checked_Variable[0] = "adm_bssn::adm_bs_Axx"
 trigger::Trigger_Relation[0]         = ">"
 trigger::Trigger_Checked_Value[0]    = 0.005
 trigger::Trigger_Reduction[0]        = "maximum"
 trigger::Trigger_Output_Method[0]    = "Scalar"
 trigger::Trigger_Output_Variables[0] = "adm_bssn::adm_bs_Axx adm_bssn::adm_bs_gyy"
+
+trigger::Trigger_Checked_Variable[1] = "adm_bssn::adm_bs_Axx"
+trigger::Trigger_Relation[1]         = ">"
+trigger::Trigger_Checked_Value[1]    = 0.005
+trigger::Trigger_Reduction[1]        = "maximum"
+trigger::Trigger_Reaction[1]         = "steerscalar"
+trigger::Trigger_Steered_Scalar[1]   = "admbase::gxx"
+trigger::Trigger_Steered_Scalar_Index[1]= 0
+trigger::Trigger_Steered_Scalar_Value[1]= "1.02"
+
+
 trigger::Trigger_Debug               = 1
 
 ##################################################################
