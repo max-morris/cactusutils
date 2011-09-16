@@ -71,6 +71,7 @@ build directly accessible.  In order to check out a certain tag into a
 directory <name>, issue the following commands:
         cd <somewhere_else>
         git clone -o <name> $git_master_repo
-        git checkout <tag>"
+        git checkout <tag>
+"
     or die;
 close README or die;
