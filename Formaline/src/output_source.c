@@ -34,12 +34,14 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
+  size_t myproc, nprocs;
   char filename [10000];
   FILE * file;
   size_t count;
   struct datainfo const * datainfo;
 
-  if (CCTK_MyProc (cctkGH) != 0) return;
+  myproc = CCTK_MyProc (cctkGH);
+  nprocs = CCTK_nProcs (cctkGH);
 
   { CCTK_PRINTSEPARATOR }
   CCTK_VInfo (CCTK_THORNSTRING,
@@ -53,6 +55,8 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
   /* Output all thorns' tarballs */
   for (count = 0; cactus_source[count]; ++ count)
   {
+    if (count % nprocs != myproc) continue;
+
     snprintf (filename, sizeof filename,
               "%s/%s/Cactus-source-%s.tar.gz",
               out_dir, output_source_subdirectory,
@@ -73,15 +77,17 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
   }
 
   /* Add a README */
-  snprintf (filename, sizeof filename,
-            "%s/%s/README", out_dir, output_source_subdirectory);
-  file = fopen (filename, "w");
-  if (file == NULL)
+  if (myproc == nprocs - 1)
   {
-    CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                "Failed to open README file \"%s\" for writing", filename);
-  }
-  fprintf (file,
+    snprintf (filename, sizeof filename,
+              "%s/%s/README", out_dir, output_source_subdirectory);
+    file = fopen (filename, "w");
+    if (file == NULL)
+    {
+      CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "Failed to open README file \"%s\" for writing", filename);
+    }
+    fprintf (file,
 "README for the Cactus source tree\n"
 "\n"
 "This directory contains a complete Cactus source tree in several tarballs.\n"
@@ -99,6 +105,7 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
 "\n"
 "The files \"config-info\" and \"ThornList\" that were used to build the\n"
 "executable can then be found in the \"configs\" subdirectory.\n"
-           );
-  fclose (file);
+             );
+    fclose (file);
+  }
 }
