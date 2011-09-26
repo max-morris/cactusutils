@@ -248,15 +248,10 @@ static const union {
   __m128   v;
 } k4sign_mask_union = {{ 0x80000000U, 0x80000000U, 0x80000000U, 0x80000000U }};
 #define k4sign_mask (k4sign_mask_union.v)
-static const union {
-  unsigned i[4];
-  __m128   v;
-} k4abs_mask_union = {{ 0x7fffffffU, 0x7fffffffU, 0x7fffffffU, 0x7fffffffU }};
-#define k4abs_mask (k4abs_mask_union.v)
 
 // Operators
 #define k4pos(x) (x)
-#define k4neg(x) (_mm_xor_ps(x,k4sign_mask))
+#define k4neg(x) (_mm_xor_ps(k4sign_mask,x))
 // #define k4inv(x)
 // TODO: provide k4inv via rcp and Newton-Raphson
 // This is described in AMD's publication 47414.
@@ -275,10 +270,10 @@ static const union {
 #define k4nmsub(x,y,z) (k4sub(z,k4mul(x,y)))
 
 // Cheap functions
-#define k4fabs(x)   (_mm_and_ps(x,k4abs_mask))
+#define k4fabs(x)   (_mm_andnot_ps(k4sign_mask,x))
 #define k4fmax(x,y) (_mm_max_ps(x,y))
 #define k4fmin(x,y) (_mm_min_ps(x,y))
-#define k4fnabs(x)  (_mm_or_ps(x,k4sign_mask))
+#define k4fnabs(x)  (_mm_or_ps(k4sign_mask,x))
 // TODO: maybe use rsqrt and Newton-Raphson
 #define k4sqrt(x)   (_mm_sqrt_ps(x))
 
@@ -311,7 +306,7 @@ static const union {
 // Choice   [sign(x)>0 ? y : z]
 #ifdef __SSE4_1__
 #  define k4ifpos(x,y,z) (_mm_blendv_ps(y,z,x))
-#else
+#elif 0
 #  ifdef __cplusplus
 #    define k4sgn(x) ({ using namespace std; signbit(x); })
 #  else
@@ -329,5 +324,18 @@ static const union {
              k4sgn(vec4_elt1(x)) ? vec4_elt1(z) : vec4_elt1(y),   \
              k4sgn(vec4_elt2(x)) ? vec4_elt2(z) : vec4_elt2(y),   \
              k4sgn(vec4_elt3(x)) ? vec4_elt3(z) : vec4_elt3(y));  \
+  })
+#else
+#  define k4ifpos(x_,y_,z_)                                     \
+  ({                                                            \
+    CCTK_REAL4_VEC const xx=(x_);                               \
+    CCTK_REAL4_VEC const x=xx;                                  \
+    CCTK_REAL4_VEC const yy=(y_);                               \
+    CCTK_REAL4_VEC const y=yy;                                  \
+    CCTK_REAL4_VEC const zz=(z_);                               \
+    CCTK_REAL4_VEC const z=zz;                                  \
+    CCTK_REAL4_VEC const mask = _mm_srai_epi32(x, 31);          \
+    /* (y & ~mask) | (z & mask) */                              \
+    _mm_or_ps(_mm_andnot_ps(mask, y), _mm_and_ps(mask, z));     \
   })
 #endif
