@@ -1,0 +1,15 @@
+# Configuration definition for thorn OpenCLRunTime
+
+REQUIRES Carpet Vectors
+
+OPTIONAL MPI
+{
+}
+
+REQUIRES OpenCL
+
+PROVIDES OpenCLRunTime
+{
+  SCRIPT
+  LANG
+}

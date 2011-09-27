@@ -1,0 +1,33 @@
+# Interface definition for thorn OpenCLRunTime
+
+IMPLEMENTS: OpenCLRunTime
+
+INCLUDES HEADER: OpenCLRunTime.h IN OpenCLRunTime.h
+
+USES INCLUDE HEADER: carpet.hh
+USES INCLUDE HEADER: vectors.h
+
+
+
+CCTK_INT FUNCTION Accelerator_Cycle             \
+  (CCTK_POINTER_TO_CONST IN cctkGH)
+PROVIDES FUNCTION Accelerator_Cycle             \
+  WITH OpenCLRunTime_Cycle                      \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_PreSync           \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY        IN groups,             \
+   CCTK_INT              IN ngroups)
+PROVIDES FUNCTION Accelerator_PreSync           \
+  WITH OpenCLRunTime_PreSync                    \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_PostSync          \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY        IN groups,             \
+   CCTK_INT              IN ngroups)
+USES FUNCTION Accelerator_PostSync
+PROVIDES FUNCTION Accelerator_PostSync          \
+  WITH OpenCLRunTime_PostSync                   \
+  LANGUAGE C

@@ -1,0 +1,102 @@
+# Parameter definition for thorn OpenCLRunTime
+
+SHARES: IO
+
+USES STRING out_dir
+
+
+
+PRIVATE:
+
+BOOLEAN verbose "Output detailed device information" STEERABLE=always
+{
+} "no"
+
+BOOLEAN veryverbose "Output even more detailed information" STEERABLE=always
+{
+} "no"
+
+STRING opencl_options "OpenCL compiler options" STEERABLE=always
+{
+  "" :: ""
+} "-cl-mad-enable -cl-strict-aliasing -cl-fast-relaxed-math"
+
+KEYWORD opencl_device_type "Device type" STEERABLE=always
+{
+  "CPU" :: ""
+  "GPU" :: ""
+} "CPU"
+
+KEYWORD memory_model "Memory model" STEERABLE=recover
+{
+  "always-mapped" :: "CPU and GPU use the same memory (may violate standard)"
+  "copy"          :: "Copy buffers"
+  "map"           :: "Map buffers (requires same layout)"
+} "copy"
+
+BOOLEAN sync_copy_whole_buffer "Copy whole buffer before/after syncing" STEERABLE=always
+{
+} "no"
+
+
+
+CCTK_INT vector_size_x "Vector size in x direction" STEERABLE=always
+{
+  0   :: "use preferred vector size"
+  1:* :: ""
+} 0
+
+CCTK_INT vector_size_y "Vector size in y direction" STEERABLE=always
+{
+  1 :: ""
+} 1
+
+CCTK_INT vector_size_z "Vector size in z direction" STEERABLE=always
+{
+  1 :: ""
+} 1
+
+CCTK_INT unroll_size_x "Unroll size in x direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
+
+CCTK_INT unroll_size_y "Unroll size in y direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
+
+CCTK_INT unroll_size_z "Unroll size in z direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
+
+CCTK_INT group_size_x "Group size in x direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
+
+CCTK_INT group_size_y "Group size in y direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
+
+CCTK_INT group_size_z "Group size in z direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
+
+CCTK_INT tile_size_x "Tile size in x direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
+
+CCTK_INT tile_size_y "Tile size in y direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
+
+CCTK_INT tile_size_z "Tile size in z direction" STEERABLE=always
+{
+  1:* :: ""
+} 1
