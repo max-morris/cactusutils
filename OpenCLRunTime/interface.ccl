@@ -14,6 +14,28 @@ CCTK_INT FUNCTION Accelerator_Cycle             \
 PROVIDES FUNCTION Accelerator_Cycle             \
   WITH OpenCLRunTime_Cycle                      \
   LANGUAGE C
+  
+CCTK_INT FUNCTION Accelerator_CopyMoL           \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY        IN vars,               \
+   CCTK_INT              IN nvars)
+PROVIDES FUNCTION Accelerator_CopyMoL           \
+  WITH OpenCLRunTime_CopyMoL                    \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_PreCallFunction   \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_POINTER_TO_CONST IN attribute)
+PROVIDES FUNCTION Accelerator_PreCallFunction   \
+  WITH OpenCLRunTime_PreCallFunction            \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_PostCallFunction  \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_POINTER_TO_CONST IN attribute)
+PROVIDES FUNCTION Accelerator_PostCallFunction  \
+  WITH OpenCLRunTime_PostCallFunction           \
+  LANGUAGE C
 
 CCTK_INT FUNCTION Accelerator_PreSync           \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \

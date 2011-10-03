@@ -1,0 +1,593 @@
+#include "kernel.h"
+
+#include <cassert>
+#include <cstring>
+#include <fstream>
+#include <iomanip>
+
+
+
+namespace OpenCLRunTime {
+
+  
+  
+  extern "C"
+  char const *OpenCLMacros_GetSource();
+  
+  
+  
+  OpenCLKernel::OpenCLKernel(cGH const *const cctkGH,
+                             char const *const thorn,
+                             char const *const name_,
+                             char const *const sources[],
+                             char const *const groups[],
+                             int const varindices[],
+                             int const timelevels[],
+                             char const *const aliases[],
+                             int const nvars)
+  {
+    DECLARE_CCTK_PARAMETERS;
+    
+    cl_int errcode;
+    
+    assert(cctkGH);
+    assert(name_);
+    assert(sources);
+    
+    assert(device);
+    device->setup_grid(cctkGH);
+    
+    name = strdup(name_);
+    
+    /*** Determine arguments for calling the kernel ***************************/
+    
+    if (nvars == -1) {
+      // Determine arguments by group name
+      
+      assert(groups);
+      assert(not varindices);
+      assert(not timelevels);
+      assert(not aliases);
+      
+      for (int group=0; groups[group]; ++group) {
+        int const gi = CCTK_GroupIndex(groups[group]);
+        assert(gi>=0);
+        int const nv = CCTK_NumVarsInGroupI(gi);
+        assert(nv>=0);
+        if (nv > 0) {
+          int const v0 = CCTK_FirstVarIndexI(gi);
+          assert(v0>=0);
+          int const num_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
+          assert(num_tl >= 0);
+          for (int vi=v0; vi<v0+nv; ++vi) {
+            string alias(CCTK_VarName(vi));
+            for (int tl=0; tl<num_tl; ++tl) {
+              OpenCLKernel::arg_t const arg = {vi, tl, alias};
+              args.push_back(arg);
+              alias += "_p";
+            }
+          }
+        }
+      }
+      
+    } else {
+      // Arguments are given explicitly
+      
+      assert(nvars >= 0);
+      assert(not groups);
+      assert(varindices);
+      assert(timelevels);
+      assert(aliases);
+      
+      for (int var=0; var<nvars; ++var) {
+        int const vi = varindices[var];
+        assert(vi>=0 and vi<CCTK_NumVars());
+        int const tl = timelevels[var];
+        assert(tl>=0);
+        OpenCLKernel::arg_t const arg = {vi, tl, aliases[var]};
+        args.push_back(arg);
+      }
+      
+    }
+    
+    for (vector<OpenCLKernel::arg_t>::const_iterator
+           argi = args.begin(), arge = args.end(); argi != arge; ++argi)
+    {
+      int const vi = argi->vi;
+      int const tl = argi->tl;
+      int const gi = CCTK_GroupIndexFromVarI(vi);
+      if (CCTK_GroupTypeI(gi) != CCTK_GF) {
+        char *const group_name = CCTK_GroupName(gi);
+        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "OpenCL kernel %s uses the grid variable group %s, which is not a grid function",
+                   name, group_name);
+        free(group_name);
+      }
+      if (CCTK_VarTypeI(vi) != CCTK_VARIABLE_REAL) {
+        char *const group_name = CCTK_GroupName(gi);
+        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "OpenCL kernel %s uses the grid variable group %s, which is not of variable type CCTK_REAL",
+                   name, group_name);
+        free(group_name);
+      }
+      if (tl >= CCTK_ActiveTimeLevelsGI(cctkGH, gi)) {
+        char *const group_name = CCTK_GroupName(gi);
+        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "OpenCL kernel %s uses timelevel %d of the grid variable group %s, which does not exist",
+                   name, tl, group_name);
+        free(group_name);
+      }
+    }
+    
+    /*** Determine parameters for calling the kernel **************************/
+    
+    stringstream paramdecls, paramdefs;
+    vector<char> paramvalues;
+    
+    paramdecls << "typedef struct {\n";
+    paramdefs << "#define DECLARE_CCTK_PARAMETERS";
+    
+    // Emit CCTK_REAL parameters first, then CCTK_INT, to ensure
+    // proper alignment
+    int const param_types[] = {PARAMETER_REAL, PARAMETER_INT};
+    // TODO: all other parameter types are currently ignored; this
+    // should not be so
+    for (int param_type_idx=0; param_type_idx<2; ++param_type_idx) {
+      int const param_type = param_types[param_type_idx];
+      
+      int first = 1;
+      while (true) {
+        
+        cParamData const *data;
+        int const istat = CCTK_ParameterWalk(first, thorn, NULL, &data);
+        assert(istat>=0);
+        if (istat > 0) break;
+        assert(data->array_size==0);
+        first = 0;
+        
+        // Ignore all types except one in this param_type iteration
+        if (data->type != param_type) continue;
+        
+        void const *const paramval =
+          CCTK_ParameterGet(data->name, data->thorn, NULL);
+        
+        string type_name;
+        int type_size;
+        stringstream value_buf;
+        switch (data->type) {
+        case PARAMETER_INT:
+          type_name = "CCTK_INT";
+          type_size = sizeof(CCTK_INT);
+          value_buf << *static_cast<CCTK_INT const *>(paramval);
+          break;
+        case PARAMETER_REAL:
+          type_name = "CCTK_REAL";
+          type_size = sizeof(CCTK_REAL);
+          value_buf << setprecision(17)
+                    << *static_cast<CCTK_REAL const *>(paramval);
+          break;
+        default: assert(0);
+        }
+        string const value_str = value_buf.str();
+        
+        paramdecls << "  " << type_name << " " << data->name << ";\n";
+        
+#if 0
+        paramdefs << " \\\n"
+                  << "  " << type_name << " const " <<  data->name
+                  << " CCTK_ATTRIBUTE_UNUSED = "
+                  << "cctk_parameters->" << data->name << ";";
+#else
+        // Expand parameter values in-line
+        // TODO: This breaks if parameter values change and the kernel
+        // is not rebuilt
+        paramdefs << " \\\n"
+                  << "  " << type_name << " const " <<  data->name
+                  << " CCTK_ATTRIBUTE_UNUSED = "
+                  << value_str << ";";
+#endif
+        
+        size_t const oldpos = paramvalues.size();
+        paramvalues.resize(oldpos + type_size);
+        memcpy(&paramvalues.at(oldpos), paramval, type_size);
+      }
+      
+    }
+    
+    if (paramvalues.empty()) {
+      // Add dummy byte because OpenCL doesn't like zero-length memory
+      // objects
+      paramvalues.push_back('\0');
+    }
+    
+    paramdecls << "} cctk_parameters_t;\n";
+    paramdefs << "\n";
+    
+    /*** Create source ********************************************************/
+    
+    assert(sources[0]);
+    assert(sources[1]);
+    assert(not sources[2]);
+    
+    stringstream buf;
+    buf << "// -*-C-*-\n"
+        << "\n"
+        << "// Code generation choices:\n"
+        << "#define SIZEOF_PTRDIFF_T         " << sizeof(cl_ptrdiff_t) << "\n"
+        << "#define VECTORISE_ALIGNED_ARRAYS " << device->memory_aligned << "\n"
+        << "\n"
+        << "// Loop traversal choices:\n"
+        << "#define VECTOR_SIZE_I " << device->vector_size[0] << "\n"
+        << "#define VECTOR_SIZE_J " << device->vector_size[1] << "\n"
+        << "#define VECTOR_SIZE_K " << device->vector_size[2] << "\n"
+        << "#define UNROLL_SIZE_I " << device->unroll_size[0] << "\n"
+        << "#define UNROLL_SIZE_J " << device->unroll_size[1] << "\n"
+        << "#define UNROLL_SIZE_K " << device->unroll_size[2] << "\n"
+        << "#define GROUP_SIZE_I  " << device->group_size[0] << "\n"
+        << "#define GROUP_SIZE_J  " << device->group_size[1] << "\n"
+        << "#define GROUP_SIZE_K  " << device->group_size[2] << "\n"
+        << "#define TILE_SIZE_I   " << device->tile_size[0] << "\n"
+        << "#define TILE_SIZE_J   " << device->tile_size[1] << "\n"
+        << "#define TILE_SIZE_K   " << device->tile_size[2] << "\n"
+        << "\n"
+        << "// OpenCL RunTime definitions:\n"
+        << OpenCLMacros_GetSource()
+        << "\n"
+        << "// Cactus parameters:\n"
+        << paramdecls.str()
+        << paramdefs.str()
+        << "\n"
+        << "// Kranc's FD operators:\n"
+        << sources[0]
+        << "\n"
+        << "// Kernel Function:\n"
+        << "kernel\n"
+        << "__attribute__((vec_type_hint(CCTK_REAL_VEC)))\n"
+        << ("__attribute__((reqd_work_group_size"
+            "(GROUP_SIZE_I, GROUP_SIZE_J, GROUP_SIZE_K)))\n")
+        << "void " << name << "\n"
+        << " (cGH constant *restrict const cctkGH,\n"
+        << "   cctk_parameters_t constant *restrict const cctk_parameters";
+    // Cactus grid functions
+    for (int arg=0; arg<int(args.size()); ++arg) {
+      buf << ",\n"
+          << "   CCTK_REAL global *restrict const " << args[arg].alias;
+    }
+    buf << ")\n"
+        << "{\n"
+        << "  DECLARE_CCTK_ARGUMENTS;\n"
+        << "  DECLARE_CCTK_PARAMETERS;\n"
+        << "\n"
+        << "  // The Kernel:\n"
+        << sources[1]           // Kranc generated kernel code
+        << "}\n";
+    string const sbuf = buf.str();
+    
+    // Write source
+    {
+      stringstream filename;
+      filename << out_dir << "/" << name << ".cl";
+      ofstream file(filename.str().c_str());
+      file << sbuf;
+      file.close();
+    }
+    
+    /*** Build program from source ********************************************/
+    
+    char const *source[] = {sbuf.c_str()};
+    
+    checkErr((program =
+              clCreateProgramWithSource(device->context, 1, source, NULL,
+                                        &errcode),
+              errcode));
+    
+    // Ignore build errors
+    checkWarn(clBuildProgram(program, 1, &device->device_id,
+                             opencl_options, NULL, NULL));
+    size_t log_size;
+    checkErr(clGetProgramBuildInfo(program, device->device_id,
+                                   CL_PROGRAM_BUILD_LOG, 0, NULL, &log_size));
+    char build_log[log_size];
+    checkErr(clGetProgramBuildInfo(program, device->device_id,
+                                   CL_PROGRAM_BUILD_LOG,
+                                   log_size, build_log, NULL));
+    
+    // Write log
+    {
+      stringstream filename;
+      filename << out_dir << "/" << name << ".log";
+      ofstream file(filename.str().c_str());
+      file << build_log;
+      file.close();
+    }
+    
+    cl_build_status build_status;
+    checkErr(clGetProgramBuildInfo(program, device->device_id,
+                                   CL_PROGRAM_BUILD_STATUS,
+                                   sizeof build_status, &build_status, NULL));
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "Build status: %s",
+                 build_status == CL_BUILD_NONE        ? "none"        :
+                 build_status == CL_BUILD_ERROR       ? "error"       :
+                 build_status == CL_BUILD_SUCCESS     ? "success"     :
+                 build_status == CL_BUILD_IN_PROGRESS ? "in_progress" :
+                 NULL);
+    }
+    if (build_status == CL_BUILD_ERROR) {
+      CCTK_WARN(CCTK_WARN_ABORT, "Build error");
+    }
+    
+    // Create kernel from the program
+    checkErr((kernel =
+              clCreateKernel(program, name, &errcode),
+              errcode));
+    
+    /*** Assign buffers to all variables used by this kernel ******************/
+    
+    checkErr((mem_grid =
+              clCreateBuffer(device->context,
+                             CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
+                             sizeof grid, &grid, &errcode),
+              errcode));
+    
+    cl_mem_flags mem_flags;
+    switch (device->mem_model) {
+    case mm_always_mapped:
+      // Re-use the memory of the grid functions; we never map or copy
+      mem_flags = CL_MEM_USE_HOST_PTR;
+      break;
+    case mm_copy:
+      // Allocate memory, and copy (don't map) from/to grid functions
+      mem_flags = 0 /*CL_MEM_ALLOC_HOST_PTR*/;
+      break;
+    case mm_map:
+      // Allocate memory, and (don't copy) from/to grid functions
+      mem_flags = CL_MEM_ALLOC_HOST_PTR;
+      break;
+    default:
+      assert(0);
+    }
+    bool const need_ptr =
+      mem_flags &(CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR);
+    
+    int const np =
+      device->grid.lsh[0] * device->grid.lsh[1] * device->grid.lsh[2];
+    size_t offset[dim];
+    size_t length[dim];
+    for (int d=0; d<dim; ++d) {
+      offset[d] = 0;
+      length[d] = cctkGH->CCTK_LSSH(0,d);
+    }
+    int const dI = sizeof(CCTK_REAL);
+    int const dJ = dI * device->grid.lsh[0];
+    int const dK = dJ * device->grid.lsh[1];
+    int const di = sizeof(CCTK_REAL);
+    int const dj = di * cctkGH->cctk_lsh[0];
+    int const dk = dj * cctkGH->cctk_lsh[1];
+    offset[0] *= di;
+    length[0] *= di;
+    
+    for (int arg=0; arg<int(args.size()); ++arg) {
+      int const vi = args[arg].vi;
+      int const tl = args[arg].tl;
+      if (int(device->mems.at(vi).size()) <= tl) {
+        assert(int(device->mems.at(vi).size()) == tl);
+        device->mems.at(vi).resize(tl+1);
+        void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
+        checkErr((device->mems.at(vi).at(tl) =
+                  clCreateBuffer(device->context, mem_flags,
+                                 np*sizeof(CCTK_REAL), need_ptr ? ptr : NULL,
+                                 &errcode),
+                  errcode));
+        if (device->mem_model == mm_copy) {
+          // Copy data the first time an OpenCL kernel uses them
+          if (device->same_padding) {
+            checkErr(clEnqueueWriteBuffer(device->queue,
+                                          device->mems.at(vi).at(tl),
+                                          CL_FALSE,
+                                          0, np*sizeof(CCTK_REAL), ptr,
+                                          0, NULL, NULL));
+          } else {
+            checkErr(clEnqueueWriteBufferRect(device->queue,
+                                              device->mems.at(vi).at(tl),
+                                              CL_FALSE,
+                                              offset, offset, length,
+                                              dJ, dK, dj, dk,
+                                              ptr,
+                                              0, NULL, NULL));
+          }
+        }
+      }
+    }
+    
+    /*** Set up parameters for calling the kernel *****************************/
+    
+    checkErr((mem_params =
+              clCreateBuffer(device->context,
+                             CL_MEM_COPY_HOST_PTR | CL_MEM_READ_ONLY,
+                             paramvalues.size(), &paramvalues.front(),
+                             &errcode),
+              errcode));
+    
+    /*** Set up arguments for calling the kernel ******************************/
+    
+    checkErr(clSetKernelArg(kernel, 0,
+                            sizeof mem_grid, &mem_grid));
+    
+    checkErr(clSetKernelArg(kernel, 1,
+                            sizeof mem_params, &mem_params));
+    
+    for (int arg=0; arg<(args.size()); ++arg) {
+      int const vi = args[arg].vi;
+      int const tl = args[arg].tl;
+      checkErr(clSetKernelArg(kernel, arg+2,
+                              sizeof device->mems.at(vi).at(tl),
+                              &device->mems.at(vi).at(tl)));
+    }
+  }
+  
+  
+  
+  void OpenCLKernel::call(cGH const *const cctkGH,
+                          int const imin[],
+                          int const imax[])
+  {
+    DECLARE_CCTK_PARAMETERS;
+    
+    assert(device);
+    device->setup_grid(cctkGH);
+    
+    // Set up grid description
+    grid = device->grid;
+    
+    for (int d=0; d<dim; ++d) {
+      grid.imin[d] = imin[d];
+      grid.imax[d] = imax[d];
+      assert(grid.imin[d] >= 0);
+      assert(grid.imax[d] <= grid.lssh[d]);
+      assert(grid.imin[d] <= grid.imax[d]);
+    }
+    
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "Looping region minimum: %4d %4d %4d",
+                 (int)imin[0],
+                 (int)imin[1],
+                 (int)imin[2]);
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "Looping region maximum: %4d %4d %4d",
+                 (int)imax[0],
+                 (int)imax[1],
+                 (int)imax[2]);
+    }
+    
+    for (int d=0; d<dim; ++d) {
+      // alignment of lower bound
+      int const align_lo = device->vector_size[d];
+      // alignment of region size
+      int const align_sz = device->vector_size[d] * device->unroll_size[d];
+      grid.lmin[d] = grid.imin[d] / align_lo * align_lo;
+      grid.lmax[d] =
+        grid.lmin[d] + divup(grid.imax[d] - grid.lmin[d], align_sz) * align_sz;
+    }
+    for (int d=0; d<dim; ++d) {
+      assert(grid.lmin[d] >= 0);
+      assert(grid.imin[d] >= grid.lmin[d]);
+      assert(grid.imax[d] <= grid.lmax[d]);
+      assert(grid.lmax[d] <= grid.lsh[d]);
+      assert(grid.lmin[d] % device->vector_size[d] == 0);
+      assert((grid.lmax[d] - grid.lmin[d]) %
+             (device->vector_size[d] * device->unroll_size[d]) == 0);
+    }
+    
+    grid.time       = cctkGH->cctk_time;
+    grid.delta_time = cctkGH->cctk_delta_time;
+    
+    // We use a blocking write because the next call for the same
+    // kernel may have a different grid configuration, and we then
+    // overwrite the host memory where this is stored.
+    checkErr(clEnqueueWriteBuffer(device->queue, mem_grid, CL_TRUE,
+                                  0, sizeof grid, &grid,
+                                  0, NULL, NULL));
+    
+    // Calculate number of thread groups
+    
+    size_t local_work_size[dim];
+    for (int d=0; d<dim; ++d) {
+      local_work_size[d] = device->group_size[d];
+    }
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "Local work group size:  %4d %4d %4d",
+                 (int)local_work_size[0],
+                 (int)local_work_size[1],
+                 (int)local_work_size[2]);
+    }
+    
+    size_t global_work_size[dim];
+    for (int d=0; d<dim; ++d) {
+      global_work_size[d] =
+        divup(grid.lmax[d] - grid.lmin[d],
+              device->vector_size[d] * device->unroll_size[d] *
+              device->group_size[d] * device->tile_size[d]) *
+        local_work_size[d];
+    }
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "Global work group size: %4d %4d %4d",
+                 (int)global_work_size[0],
+                 (int)global_work_size[1],
+                 (int)global_work_size[2]);
+    }
+    
+    // Queue a single execution of the kernel
+    checkErr(clEnqueueNDRangeKernel(device->queue, kernel, dim,
+                                    NULL, global_work_size, local_work_size,
+                                    0, NULL, NULL));
+    
+    // This finish prevents nans on the outer boundary when running on
+    // multiple processes(with the Intel OpenCL implementation). I
+    // don't know why it is necessary. The nans appear randomly, so
+    // this is probably a timing issue.
+#if 1
+    checkErr(clFinish(device->queue));
+#endif
+  }
+  
+  
+  
+  //////////////////////////////////////////////////////////////////////////////
+  
+  
+  
+  void OpenCLRunTime_CallKernel(cGH const *const cctkGH,
+                                char const *const thorn,
+                                char const *const name,
+                                char const *const sources[],
+                                char const *const groups[],
+                                int const varindices[],
+                                int const timelevels[],
+                                char const *const aliases[],
+                                int const nvars, 
+                                int const imin[],
+                                int const imax[],
+                                OpenCLKernel **const pkernel)
+  {
+    DECLARE_CCTK_PARAMETERS;
+    
+    assert(cctkGH);
+    assert(pkernel);
+    
+    // If this is the first call for this kernel, build the kernel and
+    // set up all kernel data structures
+    if (not *pkernel) {
+      CCTK_VInfo(CCTK_THORNSTRING, "Setting up OpenCL kernel %s", name);
+      *pkernel = new OpenCLKernel(cctkGH, thorn, name, sources,
+                                  groups,
+                                  varindices, timelevels, aliases, nvars);
+    }
+    OpenCLKernel *restrict const kernel = *pkernel;
+    
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING, "Enqueuing OpenCL kernel %s", name);
+    }
+    
+    kernel->call(cctkGH, imin, imax);
+  }
+  
+  
+  
+  extern "C"
+  void OpenCLRunTime_Statistics(CCTK_ARGUMENTS)
+  {
+    DECLARE_CCTK_ARGUMENTS;
+    DECLARE_CCTK_PARAMETERS;
+    
+    assert(device);
+    device->setup_grid(cctkGH);
+    
+    // Do nothing(yet)
+  }
+  
+} // namespace OpenCLRunTime

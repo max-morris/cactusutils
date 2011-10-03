@@ -1,7 +1,6 @@
 // -*-C-*-
 
 // pown; note that Apple optimises pow(,2) but not pown(,2)
-// __builtin_expect
 // Boost, <boost/preprocessor/...>
 // mad
 
@@ -12,6 +11,11 @@
 
 
 ////////////////////////////////////////////////////////////////////////////////
+
+
+
+#define CCTK_ATTRIBUTE_UNUSED __attribute__((__unused__))
+#define CCTK_BUILTIN_EXPECT   __builtin_expect
 
 
 
@@ -116,7 +120,8 @@
 
 #  define vec_store_nta_partial(p, x)                                   \
   do {                                                                  \
-    if (__builtin_expect(lc_vec_any_I && lc_vec_any_J && lc_vec_any_K, true)) \
+    if (CCTK_BUILTIN_EXPECT(lc_vec_any_I && lc_vec_any_J && lc_vec_any_K, \
+                            true))                                      \
     {                                                                   \
       vec_store_nta(p, x);                                              \
     }                                                                   \
@@ -126,15 +131,16 @@
 
 #  define vec_store_nta_partial(p, x)                                   \
   do {                                                                  \
-    if (__builtin_expect(lc_vec_any_I && lc_vec_any_J && lc_vec_any_K, true)) \
+    if (CCTK_BUILTIN_EXPECT(lc_vec_any_I && lc_vec_any_J && lc_vec_any_K, \
+                            true))                                      \
     {                                                                   \
-      if (__builtin_expect(lc_vec_all_I, true)) {                       \
+      if (CCTK_BUILTIN_EXPECT(lc_vec_all_I, true)) {                    \
         vec_store_nta(p, x);                                            \
       } else {                                                          \
         if (lc_vec_lo_I) {                                              \
-          (&(p))[0] = (x).s[0];                                         \
+          (&(p))[0] = (x).s0;                                           \
         } else {                                                        \
-          (&(p))[1] = (x).s[1];                                         \
+          (&(p))[1] = (x).s1;                                           \
         }                                                               \
       }                                                                 \
     }                                                                   \
@@ -144,9 +150,10 @@
 
 #  define vec_store_nta_partial(p, x)                                   \
   do {                                                                  \
-    if (__builtin_expect(lc_vec_any_I && lc_vec_any_J && lc_vec_any_K, true)) \
+    if (CCTK_BUILTIN_EXPECT(lc_vec_any_I && lc_vec_any_J && lc_vec_any_K, \
+                            true))                                      \
     {                                                                   \
-      if (__builtin_expect(lc_vec_all_I, true)) {                       \
+      if (CCTK_BUILTIN_EXPECT(lc_vec_all_I, true)) {                    \
         vec_store_nta(p, x);                                            \
       } else {                                                          \
         /* select(a,b,c) = MSB(c) ? b : a */                            \
@@ -196,14 +203,14 @@
 #  undef pown
 #  define pown pow
 
-inline CCTK_REAL myfabs (CCTK_REAL x);
-inline CCTK_REAL myfabs (CCTK_REAL x)
+inline CCTK_REAL myfabs(CCTK_REAL x);
+inline CCTK_REAL myfabs(CCTK_REAL x)
 {
   return x>=0 ? x : -x;
 }
 
-inline CCTK_REAL mycos1 (CCTK_REAL x);
-inline CCTK_REAL mycos1 (CCTK_REAL x)
+inline CCTK_REAL mycos1(CCTK_REAL x);
+inline CCTK_REAL mycos1(CCTK_REAL x)
 {
   // 0<=x<=pi/2
   CCTK_REAL const c1 = +1.0;
@@ -224,8 +231,8 @@ inline CCTK_REAL mycos1 (CCTK_REAL x)
                (c7 + x2 * c8))))));
 }
 
-inline CCTK_REAL mycos (CCTK_REAL x);
-inline CCTK_REAL mycos (CCTK_REAL x)
+inline CCTK_REAL mycos(CCTK_REAL x);
+inline CCTK_REAL mycos(CCTK_REAL x)
 {
   x = myfabs(x);
   x = fmod(x,2*M_PI);
@@ -245,16 +252,16 @@ inline CCTK_REAL mycos (CCTK_REAL x)
 #  undef kcos
 // Apple's OpenCL compiler segfaults when calling cos on a vector, so
 // we serialise this operation explicitly
-inline CCTK_REAL_VEC kcos (CCTK_REAL_VEC const x);
+inline CCTK_REAL_VEC kcos(CCTK_REAL_VEC const x);
 #  if CCTK_REAL_VEC_SIZE==1
-inline CCTK_REAL_VEC kcos (CCTK_REAL_VEC const x)
+inline CCTK_REAL_VEC kcos(CCTK_REAL_VEC const x)
 {
   return cos(x);
 }
 #  elif CCTK_REAL_VEC_SIZE==2
-inline CCTK_REAL_VEC kcos (CCTK_REAL_VEC const x)
+inline CCTK_REAL_VEC kcos(CCTK_REAL_VEC const x)
 {
-  return (CCTK_REAL_VEC)(cos(x.s[0]), cos(x.s[1]));
+  return (CCTK_REAL_VEC)(cos(x.s0), cos(x.s1));
 }
 #  else
 #    error
@@ -305,16 +312,14 @@ typedef struct {
 
 // Cactus compatibility definitions
 
-#define CCTK_ATTRIBUTE_UNUSED __attribute__((__unused__))
-#define CCTK_BUILTIN_EXPECT   __builtin_expect
-
 #define DECLARE_CCTK_ARGUMENTS                                          \
   cl_ptrdiff_t constant *restrict const cctk_lbnd = cctkGH->cctk_lbnd;  \
   cl_ptrdiff_t constant *restrict const cctk_lsh  = cctkGH->cctk_lsh;   \
   cl_ptrdiff_t constant *restrict const imin      = cctkGH->imin;       \
   cl_ptrdiff_t constant *restrict const imax      = cctkGH->imax;       \
-  CCTK_REAL const cctk_time = cctkGH->cctk_time;
- 
+  CCTK_REAL const cctk_time = cctkGH->cctk_time;                        \
+  int const stress_energy_state1 = 0;
+
 #define CCTK_GFINDEX3D(cctkGH,i,j,k)                                    \
   ((i) + cctkGH->cctk_lsh[0] * ((j) + cctkGH->cctk_lsh[1] * (k)))
  
@@ -326,13 +331,35 @@ typedef struct {
 
 // Kranc compatibility definitions
 
-#define Pi        M_PI
-#define ToReal(x) ((CCTK_REAL_VEC)(x))
-#define INV(x)    (1.0/(x))
-#define SQR(x)    (pown((x),2))
+#define Pi            M_PI
+#define IfThen(c,x,y) ((c)?(x):(y))
+#define Sign(x)       (signbit(x)?-1:+1)
+#define ToReal(x)     ((CCTK_REAL_VEC)(CCTK_REAL)(x))
+#define INV(x)        (1.0/(x))
+#define SQR(x)        (pown((x),2))
 
 #define KRANC_GFOFFSET3D(u,i,j,k)                       \
   vec_loadu_maybe3(i,j,k,(u)[di*(i)+dj*(j)+dk*(k)])
+
+#define eTtt ((CCTK_REAL global const *)0)
+#define eTtx ((CCTK_REAL global const *)0)
+#define eTty ((CCTK_REAL global const *)0)
+#define eTtz ((CCTK_REAL global const *)0)
+#define eTxx ((CCTK_REAL global const *)0)
+#define eTxy ((CCTK_REAL global const *)0)
+#define eTxz ((CCTK_REAL global const *)0)
+#define eTyy ((CCTK_REAL global const *)0)
+#define eTyz ((CCTK_REAL global const *)0)
+#define eTzz ((CCTK_REAL global const *)0)
+#define jacobian_derivative_group ""
+#define jacobian_group            ""
+#define jacobian_identity_map     0
+#define stress_energy_state       (&stress_energy_state1)
+#define CCTK_IsFunctionAliased(x)            0
+#define CCTK_WARN(lev,msg)                   ((void)0)
+#define GenericFD_GroupDataPointers(a,b,c,d) ((void)0)
+#define MultiPatch_GetMap(x)                 0
+#define strlen(x)                            0
 
 
 
@@ -341,11 +368,11 @@ typedef struct {
 
 
 #define LC_SET_GROUP_VARS(D)                                            \
-  ptrdiff_t const ind##D __attribute__((__unused__)) =                  \
+  ptrdiff_t const ind##D CCTK_ATTRIBUTE_UNUSED =                        \
     (lc_off##D + VECTOR_SIZE_##D * UNROLL_SIZE_##D *                    \
      (lc_grp##D + GROUP_SIZE_##D *                                      \
       (lc_til##D + TILE_SIZE_##D * lc_grd##D)));                        \
-  bool const lc_grp_any_##D __attribute__((__unused__)) =               \
+  bool const lc_grp_any_##D CCTK_ATTRIBUTE_UNUSED =                     \
     ind##D + VECTOR_SIZE_##D * UNROLL_SIZE_##D - 1 >= lc_##D##min &&    \
     ind##D < lc_##D##max;
 
@@ -354,26 +381,26 @@ typedef struct {
 #define vecVK ((CCTK_LONG_VEC)0)
 
 #define LC_SET_VECTOR_VARS(IND,D)                                       \
-  ptrdiff_t const IND __attribute__((__unused__)) =                     \
+  ptrdiff_t const IND CCTK_ATTRIBUTE_UNUSED =                           \
     (lc_off##D + VECTOR_SIZE_##D *                                      \
      (lc_unr##D + UNROLL_SIZE_##D *                                     \
       (lc_grp##D + GROUP_SIZE_##D *                                     \
        (lc_til##D + TILE_SIZE_##D * lc_grd##D))));                      \
-  bool const lc_vec_trivial_##D __attribute__((__unused__)) =           \
+  bool const lc_vec_trivial_##D CCTK_ATTRIBUTE_UNUSED =                 \
     VECTOR_SIZE_##D * UNROLL_SIZE_##D == 1;                             \
-  bool const lc_vec_any_##D __attribute__((__unused__)) =               \
+  bool const lc_vec_any_##D CCTK_ATTRIBUTE_UNUSED =                     \
     lc_vec_trivial_##D ||                                               \
     (IND+VECTOR_SIZE_##D-1 >= lc_##D##min && IND < lc_##D##max);        \
-  bool const lc_vec_lo_##D __attribute__((__unused__)) =                \
+  bool const lc_vec_lo_##D CCTK_ATTRIBUTE_UNUSED =                      \
     lc_vec_trivial_##D ||                                               \
     IND >= lc_##D##min;                                                 \
-  bool const lc_vec_hi_##D __attribute__((__unused__)) =                \
+  bool const lc_vec_hi_##D CCTK_ATTRIBUTE_UNUSED =                      \
     lc_vec_trivial_##D ||                                               \
     IND+VECTOR_SIZE_##D-1 < lc_##D##max;                                \
-  bool const lc_vec_all_##D __attribute__((__unused__)) =               \
+  bool const lc_vec_all_##D CCTK_ATTRIBUTE_UNUSED =                     \
     lc_vec_trivial_##D ||                                               \
-    lc_vec_lo_##D && lc_vec_hi_##D;                                     \
-  CCTK_LONG_VEC const lc_vec_mask_##D __attribute__((__unused__)) =     \
+    (lc_vec_lo_##D && lc_vec_hi_##D);                                   \
+  CCTK_LONG_VEC const lc_vec_mask_##D CCTK_ATTRIBUTE_UNUSED =           \
     lc_vec_trivial_##D ?                                                \
     (CCTK_LONG_VEC)true :                                               \
     (CCTK_LONG_VEC)IND+vecV##D >= (CCTK_LONG_VEC)lc_##D##min &&         \

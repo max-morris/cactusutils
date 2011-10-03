@@ -1,16 +1,18 @@
 # Schedule definition for thorn OpenCLRunTime
 
-SCHEDULE OpenCLRunTime_Setup AT basegrid
+SCHEDULE OpenCLRunTime_Setup AT startup
 {
   LANG: C
 } "Set up OpenCL device"
 
-SCHEDULE OpenCLRunTime_Analyse AT analysis
+# Ensure this routine is called late
+SCHEDULE OpenCLRunTime_CopyBack AT analysis
 {
   LANG: C
 } "Copy OpenCL memory buffers back to host memory"
 
-SCHEDULE OpenCLRunTime_Terminate AT terminate
+SCHEDULE OpenCLRunTime_Statistics AT terminate
 {
   LANG: C
+  OPTIONS: global
 } "Output profiling information"
