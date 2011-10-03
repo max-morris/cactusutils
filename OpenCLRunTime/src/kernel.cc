@@ -1,4 +1,4 @@
-#include "kernel.h"
+#include "kernel.hh"
 
 #include <cassert>
 #include <cstring>

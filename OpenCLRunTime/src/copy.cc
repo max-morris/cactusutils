@@ -1,5 +1,5 @@
-#include "copy.h"
-#include "device.h"
+#include "copy.hh"
+#include "device.hh"
 
 #include <cctk_Parameters.h>
 

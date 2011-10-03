@@ -1,8 +1,10 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
-#include "defs.h"
-#include "device.h"
+// Handle kernels and their arguments
+
+#include "defs.hh"
+#include "device.hh"
 
 #include <vector>
 
@@ -18,15 +20,18 @@ namespace OpenCLRunTime {
   
   
   
+  // Define a kernel
   struct OpenCLKernel {
     char const *name;
     cl_program program;
     
+    // Arguments
     struct arg_t {
       int vi, tl;
       string alias;
     };
     vector<arg_t> args;
+    
     cl_kernel kernel;
     
     grid_t grid;

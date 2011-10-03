@@ -1,4 +1,4 @@
-#include "device.h"
+#include "device.hh"
 
 #include <vectors.h>
 

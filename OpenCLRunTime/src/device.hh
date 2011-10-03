@@ -1,7 +1,9 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include "defs.h"
+// Handle the device, including its memory layout
+
+#include "defs.hh"
 
 #include <cctk.h>
 
@@ -23,17 +25,18 @@ namespace OpenCLRunTime {
   
   
   
+  // Convert an OpenCL error code into a string
   char const *error_string(int const error_code);
   
-  void checkErr1(cl_int const errcode, char const *const cmd,
-                 char const *const file, int const line);
-  void checkWarn1(cl_int const errcode, char const *const cmd,
-                  char const *const file, int const line);
-  
+  // Check an OpenCL call for errors
 #define checkErr(cmd) checkErr1(cmd, #cmd, __FILE__, __LINE__)
   void checkErr1(cl_int const errcode, char const *const cmd,
                  char const *const file, int const line);
 #define checkWarn(cmd) checkWarn1(cmd, #cmd, __FILE__, __LINE__)
+  void checkWarn1(cl_int const errcode, char const *const cmd,
+                  char const *const file, int const line);
+  void checkErr1(cl_int const errcode, char const *const cmd,
+                 char const *const file, int const line);
   void checkWarn1(cl_int const errcode, char const *const cmd,
                   char const *const file, int const line);
   
@@ -86,8 +89,15 @@ namespace OpenCLRunTime {
   
   
   
+  // Out host/device memory model
   enum memory_model_t {
-    mm_always_mapped, mm_copy, mm_map
+    mm_always_mapped,           // device memory is directly
+                                // accessible (not supported by all
+                                // devices)
+    mm_copy,                    // we copy explicitly
+    mm_map                      // we map the device memory when the
+                                // host needs access (not yet
+                                // supported)
   };
   
   // Global data, defining platform, device etc.
