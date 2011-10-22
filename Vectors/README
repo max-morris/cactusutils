@@ -41,9 +41,12 @@ operations and corresponding vector-gather operations. This may be
 beneficial if unaligned load operations are slow, and if vector-gather
 operations are fast.
 
-VECTORISE_INLINE (default "yes"): Inline functions into the loop body
-as much as possible. (Disabling this may reduce code size, which can
-improve performance if the instruction cache is small.)
+VECTORISE_INLINE (default "no"): Inline functions into the loop body
+as much as possible.  This can cause some compilers to run out of
+memory for complex codes. (Enabling this may increase code size, which
+can degrade performance if the instruction cache is small, but may
+lead to increased performance due to omission of function-call
+overhead.)
 
 VECTORISE_STREAMING_STORES (default "yes"): Use streaming stores, i.e.
 use store operations that bypass the cache. (Disabling this produces

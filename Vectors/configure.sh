@@ -79,7 +79,7 @@ esac
 case $(echo "x$VECTORISE_INLINE" | tr '[:upper:]' '[:lower:]') in
     (xyes) VECTORISE_INLINE=1 ;;
     (xno)  VECTORISE_INLINE=0 ;;
-    (x)    VECTORISE_INLINE=1 ;; # default
+    (x)    VECTORISE_INLINE=0 ;; # default
     (*)    echo "BEGIN ERROR"
            echo "Illegal value of option VECTORISE_INLINE"
            echo "END ERROR"
