@@ -318,10 +318,11 @@ CONFIG-ID-FILE  = $(TOP)/CONFIG-ID
 git-push-everything: git-commit-everything $(BUILD-ID-FILE)
 	{ \
 	'$(GIT-BIN)/git-init-master-repo.pl' '$(GIT)' '$(GIT-MASTER-REPO)' && \
+	eval "$$('$(GIT-BIN)/git-get-localdir.pl' '$(GIT)')" && \
 	if [ -e "$(CCTK_HOME)/cactus.config" ]; then \
-		. "$(CCTK_HOME)/cactus.config"; \
+		source "$(CCTK_HOME)/cactus.config"; \
 	fi && \
-	export CACTUS_CENTRAL_GIT_REPO && \
+	export CACTUS_LOCAL_GIT_REPO CACTUS_CENTRAL_GIT_REPO && \
 	'$(GIT-BIN)/git-push-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-MASTER-REPO)'; \
 	} || echo "Formaline: WARNING: Error while pushing to master repository"
 

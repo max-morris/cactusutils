@@ -48,9 +48,9 @@ if ($?) {
 # Add a README
 open README, "> $git_master_repo/README" or die;
 my $today = `date`;
+chomp $today;
 print README "\
 This directory $git_master_repo
-
 is not empty -- it contains a git repository with the Cactus source
 trees of all previous builds, starting on $today.
 

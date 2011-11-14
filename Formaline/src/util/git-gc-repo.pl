@@ -1,7 +1,7 @@
 #! /usr/bin/perl -w
 
 # Collect garbage in the repository if it grown in size by more than a
-# factor of 10.
+# factor of two.
 
 # 2010-01-29 Erik Schnetter <schnetter@cct.lsu.edu>
 

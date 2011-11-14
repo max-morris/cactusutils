@@ -9,7 +9,7 @@
 FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/Formaline/bin
 
 FORMALINE_TAR_FILES = gethostname.pl makeblob.pl makemetablob.pl
-FORMALINE_GIT_FILES = git-add-thorn.pl git-commit-everything.pl git-gc-repo.pl git-init-master-repo.pl git-init-repo.pl git-lock.pl git-push-everything.pl git-rm-unused-thorns.pl git-rm-thorn.pl
+FORMALINE_GIT_FILES = git-add-thorn.pl git-commit-everything.pl git-gc-repo.pl git-get-localdir.pl git-init-local-repo.pl git-init-master-repo.pl git-init-repo.pl git-lock.pl git-push-everything.pl git-rm-unused-thorns.pl git-rm-thorn.pl
 
 $(CCTK_TARGET): $(FORMALINE_TAR_FILES:%=$(FORMALINE_BIN_DIR)/%) $(FORMALINE_GIT_FILES:%=$(FORMALINE_BIN_DIR)/%)
 

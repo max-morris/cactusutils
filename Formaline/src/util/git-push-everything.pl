@@ -11,7 +11,8 @@ use strict;
 $#ARGV == 2 or die;
 my ($git_cmd, $git_repo, $git_master_repo) = @ARGV;
 
-# Central Cactus repository
+# Local and central Cactus repositories
+my $git_local_repo = $ENV{'CACTUS_LOCAL_GIT_REPO'};
 my $git_central_repo = $ENV{'CACTUS_CENTRAL_GIT_REPO'};
 
 # Path where the git-*.pl commands are installed
@@ -56,6 +57,29 @@ print "Executing: '$bindir/git-gc-repo.pl' '$git_cmd' '$git_master_repo'\n"
 system "'$bindir/git-gc-repo.pl' '$git_cmd' '$git_master_repo' $silencer";
 if ($?) {
     die "Could not collect garbage\nCommand was\n   '$bindir/git-gc-repo.pl' '$git_cmd' '$git_master_repo'";
+}
+
+
+
+if (defined $git_local_repo) {
+    $ENV{'GIT_DIR'} = "$git_master_repo/.git";
+    
+    print "Formaline: Pushing to local repository $git_local_repo...\n";
+    
+    print "Executing: $git_cmd push -v -f --all '$git_local_repo'\n"
+        unless $silent;
+    system "$git_cmd push -v -f --all '$git_local_repo' $silencer";
+    if ($?) {
+        die "Could not push branches\nCommand was\n   $git_cmd push -v -f --all '$git_local_repo'";
+    }
+    
+    print "$git_cmd push -v -f --tags '$git_local_repo'\n" unless $silent;
+    system "$git_cmd push -v -f --tags '$git_local_repo' $silencer";
+    if ($?) {
+        die "Could not push tags\nCommand was\n   $git_cmd push -v -f --tags '$git_local_repo'";
+    }
+    
+    system "${bindir}/git-gc-repo.pl '$git_cmd' '$git_local_repo'";
 }
 
 
