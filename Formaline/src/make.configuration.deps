@@ -320,7 +320,7 @@ git-push-everything: git-commit-everything $(BUILD-ID-FILE)
 	'$(GIT-BIN)/git-init-master-repo.pl' '$(GIT)' '$(GIT-MASTER-REPO)' && \
 	eval "$$('$(GIT-BIN)/git-get-localdir.pl' '$(GIT)')" && \
 	if [ -e "$(CCTK_HOME)/cactus.config" ]; then \
-		source "$(CCTK_HOME)/cactus.config"; \
+		. "$(CCTK_HOME)/cactus.config"; \
 	fi && \
 	export CACTUS_LOCAL_GIT_REPO CACTUS_CENTRAL_GIT_REPO && \
 	'$(GIT-BIN)/git-push-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-MASTER-REPO)'; \
