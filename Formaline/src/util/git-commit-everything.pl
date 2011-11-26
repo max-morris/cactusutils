@@ -29,6 +29,11 @@ $ENV{'GIT_DIR'} = "$git_repo/.git";
 
 print "Formaline: Committing source tree to git repository...\n";
 
+# Invent a user id if there is none, since newer versions of git
+# insist on it
+system "$git_cmd config user.name || $git_cmd config user.name \"\${USER}\" $silencer";
+system "$git_cmd config user.email || $git_cmd config user.email \"\${USER}\@localhost\" $silencer";
+
 # Try to use the previous commit as parent, if possible
 print "Executing: $git_cmd commit -m $build_id\n" unless $silent;
 system "$git_cmd commit -m $build_id $silencer";
