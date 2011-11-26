@@ -111,7 +111,7 @@ void Vectors_Test(CCTK_ARGUMENTS)
   for (int d1=0; d1<CCTK_REAL_VEC_SIZE; ++d1) {
     for (int d2=0; d2<CCTK_REAL_VEC_SIZE; ++d2) {
       for (int d3=0; d3<CCTK_REAL_VEC_SIZE; ++d3) {
-        if (! VECTORISE_ALIGNED_ARRAYS || (d2==0 && d3==0)) {
+        if (! (VECTORISE && VECTORISE_ALIGNED_ARRAYS) || (d2==0 && d3==0)) {
           snprintf (testname, sizeof testname,
                     "vec_loadu_maybe3[%d,%d,%d]", d1,d2,d3);
           VECTEST(testname,
