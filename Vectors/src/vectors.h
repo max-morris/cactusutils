@@ -141,7 +141,23 @@
 #  error "Unknown CCTK_REAL_PRECISION"
 
 #endif
-  
+
+
+
+#if CCTK_REAL_VEC_SIZE == 1
+#  define vec_index vec_set(0)
+#elif CCTK_REAL_VEC_SIZE == 2
+#  define vec_index vec_set(0,1)
+#elif CCTK_REAL_VEC_SIZE == 4
+#  define vec_index vec_set(0,1,2,3)
+#elif CCTK_REAL_VEC_SIZE == 8
+#  define vec_index vec_set(0,1,2,3,4,5,6,7)
+#elif CCTK_REAL_VEC_SIZE == 16
+#  define vec_index vec_set(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)
+#else
+#  error "Unsupported vector size"
+#endif
+
   
 
 // Define a class template for easier access from C++
