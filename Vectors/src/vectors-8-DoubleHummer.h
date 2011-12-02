@@ -132,7 +132,6 @@
 // Functions and operators
 
 // Operators
-#define k8pos(x) (x)
 #define k8neg(x) (__fpneg(x))
 
 #define k8add(x,y) (__fpadd(x,y))

@@ -166,6 +166,11 @@
 
 // Functions and operators
 
+// static const union {
+//   unsigned long long i[2];
+//   __m128d            v;
+// } k8all_mask_union = {{ 0xfffffffffffffffULL, 0xfffffffffffffffULL }};
+// #define k8all_mask (k8all_mask_union.v)
 static const union {
   unsigned long long i[2];
   __m128d            v;
@@ -173,7 +178,24 @@ static const union {
 #define k8sign_mask (k8sign_mask_union.v)
 
 // Operators
-#define k8pos(x) (x)
+
+// #define k8inot(x) (_mm_xor_si128(k8all_mask,x))
+// 
+// #define k8iand(x,y) (_mm_and_si128(x,y))
+// #define k8ior(x,y)  (_mm_or_si128(x,y))
+// #define k8ixor(x,y) (_mm_xor_si128(x,y))
+// 
+// #define k8ineg(x) (_mm_xor_pd(k8sign_mask,x))
+// 
+// #define k8iadd(x,y) (_mm_add_epi64(x,y))
+// #define k8isub(x,y) (_mm_sub_epi64(x,y))
+// 
+// #define k8not(x) (_mm_xor_pd(k8all_mask,x))
+// 
+// #define k8and(x,y) (_mm_and_pd(x,y))
+// #define k8or(x,y)  (_mm_or_pd(x,y))
+// #define k8xor(x,y) (_mm_xor_pd(x,y))
+
 #define k8neg(x) (_mm_xor_pd(k8sign_mask,x))
 
 #define k8add(x,y) (_mm_add_pd(x,y))
@@ -212,9 +234,12 @@ static const union {
              f(vec8_elt1(x),a));                \
   })
 
+#define k8cos(x)   K8REPL(cos,x)
 #define k8exp(x)   K8REPL(exp,x)
 #define k8log(x)   K8REPL(log,x)
 #define k8pow(x,a) K8REPL2(pow,x,a)
+#define k8sin(x)   K8REPL(sin,x)
+#define k8tan(x)   K8REPL(tan,x)
 
 // Choice   [sign(x)>0 ? y : z]
 #ifdef __SSE4_1__

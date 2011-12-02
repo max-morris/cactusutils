@@ -147,7 +147,6 @@ void Vectors_Test(CCTK_ARGUMENTS)
     }
   }
 
-  VECTEST("kpos",   kpos(av),           +a[i]               );
   VECTEST("kneg",   kneg(av),           -a[i]               );
 
   VECTEST("kadd",   kadd(av, bv),       a[i] + b[i]         );
@@ -160,6 +159,7 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("knmadd", knmadd(av, bv, cv), -a[i] * b[i] - c[i] );
   VECTEST("knmsub", knmsub(av, bv, cv), -a[i] * b[i] + c[i] );
 
+  VECTEST("kcos",   kcos(av),           cos(a[i])           );
   VECTEST("kexp",   kexp(av),           exp(a[i])           );
   VECTEST("kfabs",  kfabs(av),          fabs(a[i])          );
   VECTEST("kfmax",  kfmax(av, bv),      fmax(a[i], b[i])    );
@@ -167,7 +167,9 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("kfnabs", kfnabs(av),         -fabs(a[i])         );
   VECTEST("klog",   klog(av),           log(a[i])           );
   VECTEST("kpow",   kpow(av, 3.14159),  pow(a[i], 3.14159)  );
+  VECTEST("ksin",   ksin(av),           sin(a[i])           );
   VECTEST("ksqrt",  ksqrt(av),          sqrt(a[i])          );
+  VECTEST("ktan",   ktan(av),           tan(a[i])           );
 
   VECTEST("kifpos positive",
           kifpos(av, bv, cv), my_signbit(a[i]) ? c[i] : b[i]);

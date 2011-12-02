@@ -154,7 +154,6 @@ static const k8const_t k8abs_mask_union =
   {{ K8_IMAX, K8_IMAX, K8_IMAX, K8_IMAX, }};
 
 // Operators
-#define k8pos(x) (x)
 #define k8neg(x) (_mm256_xor_pd(x,k8sign_mask_union.vd))
 
 #define k8add(x,y) (_mm256_add_pd(x,y))

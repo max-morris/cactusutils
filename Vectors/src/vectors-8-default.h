@@ -60,7 +60,6 @@
 
 
 // Operators
-#define k8pos(x) (+(x))
 #define k8neg(x) (-(x))
 
 #define k8add(x,y) ((x)+(y))
@@ -75,6 +74,7 @@
 #define k8nmsub(x,y,z) (-(x)*(y)+(z))
 
 // Functions
+#define k8cos(x)    (cos(x))
 #define k8exp(x)    (exp(x))
 #define k8fabs(x)   (fabs(x))
 #define k8fmax(x,y) (fmax(x,y))
@@ -82,7 +82,9 @@
 #define k8fnabs(x)  (-fabs(x))
 #define k8log(x)    (log(x))
 #define k8pow(x,a)  (pow(x,a))
+#define k8sin(x)    (sin(x))
 #define k8sqrt(x)   (sqrt(x))
+#define k8tan(x)    (tan(x))
 
 #ifdef __cplusplus
 #  define k8sgn(x) ({ using namespace std; signbit(x); })

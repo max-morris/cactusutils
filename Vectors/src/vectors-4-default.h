@@ -75,6 +75,7 @@
 #define k4nmsub(x,y,z) (-(x)*(y)+(z))
 
 // Functions
+#define k4cos(x)    (cosf(x))
 #define k4exp(x)    (expf(x))
 #define k4fabs(x)   (fabsf(x))
 #define k4fmax(x,y) (fmaxf(x,y))
@@ -82,7 +83,9 @@
 #define k4fnabs(x)  (-fabsf(x))
 #define k4log(x)    (logf(x))
 #define k4pow(x,a)  (powf(x,a))
+#define k4sin(x)    (sinf(x))
 #define k4sqrt(x)   (sqrtf(x))
+#define k4tan(x)    (tanf(x))
 
 #ifdef __cplusplus
 #  define k4sgn(x) ({ using namespace std; signbit(x); })

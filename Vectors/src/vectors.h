@@ -78,6 +78,7 @@
 #  define knmadd k4nmadd
 #  define knmsub k4nmsub
 
+#  define kcos   k4cos
 #  define kexp   k4exp
 #  define kfabs  k4fabs
 #  define kfmax  k4fmax
@@ -85,9 +86,12 @@
 #  define kfnabs k4fnabs
 #  define klog   k4log
 #  define kpow   k4pow
+#  define ksin   k4sin
 #  define ksqrt  k4sqrt
+#  define ktan   k4tan
 
 #  define kifpos k4ifpos
+#  define kifneg k4ifneg
 
 #elif defined(CCTK_REAL_PRECISION_8)
 
@@ -112,7 +116,6 @@
 #  define vec_store_nta_partial_hi  vec8_store_nta_partial_hi
 #  define vec_store_nta_partial_mid vec8_store_nta_partial_mid
 
-#  define kpos k8pos
 #  define kneg k8neg
 
 #  define kadd k8add
@@ -125,6 +128,7 @@
 #  define knmadd k8nmadd
 #  define knmsub k8nmsub
 
+#  define kcos   k8cos
 #  define kexp   k8exp
 #  define kfabs  k8fabs
 #  define kfmax  k8fmax
@@ -132,7 +136,9 @@
 #  define kfnabs k8fnabs
 #  define klog   k8log
 #  define kpow   k8pow
+#  define ksin   k8sin
 #  define ksqrt  k8sqrt
+#  define ktan   k8tan
 
 #  define kifpos k8ifpos
 
@@ -275,10 +281,6 @@ struct vecprops<CCTK_REAL8> {
   static inline scalar_t elt (vector_t const& x, int const d)
   {
     return vec8_elt(x,d);
-  }
-  static inline vector_t pos (vector_t const& x)
-  {
-    return k8pos(x);
   }
   static inline vector_t neg (vector_t const& x)
   {
