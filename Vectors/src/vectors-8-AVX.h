@@ -5,10 +5,9 @@
 
 
 
+#include <x86intrin.h>
 #if VECTORISE_EMULATE_AVX
 #  include "avxintrin_emu.h"
-#else
-#  include <immintrin.h>
 #endif
 
 
@@ -162,10 +161,17 @@ static const k8const_t k8abs_mask_union =
 #define k8div(x,y) (_mm256_div_pd(x,y))
 
 // Fused multiply-add, defined as [+-]x*y[+-]z
-#define k8madd(x,y,z)  (k8add(k8mul(x,y),z))
-#define k8msub(x,y,z)  (k8sub(k8mul(x,y),z))
-#define k8nmadd(x,y,z) (k8sub(k8neg(z),k8mul(x,y)))
-#define k8nmsub(x,y,z) (k8sub(z,k8mul(x,y)))
+#ifdef __FMA4__
+#  define k8madd(x,y,z)  (_mm256_macc_pd(x,y,z))
+#  define k8msub(x,y,z)  (_mm256_msub_pd(x,y,z))
+#  define k8nmadd(x,y,z) (_mm256_nmsub_pd(x,y,z))
+#  define k8nmsub(x,y,z) (_mm256_nmacc_pd(x,y,z))
+#else
+#  define k8madd(x,y,z)  (k8add(k8mul(x,y),z))
+#  define k8msub(x,y,z)  (k8sub(k8mul(x,y),z))
+#  define k8nmadd(x,y,z) (k8sub(k8neg(z),k8mul(x,y)))
+#  define k8nmsub(x,y,z) (k8sub(z,k8mul(x,y)))
+#endif
 
 // Cheap functions
 #define k8fabs(x)   (_mm256_and_pd(x,k8abs_mask_union.vd))

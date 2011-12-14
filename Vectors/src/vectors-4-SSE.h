@@ -8,25 +8,26 @@
 #include <assert.h>
 #include <math.h>
 
-#include <xmmintrin.h>
+#include <x86intrin.h>
+
+
+
 #ifdef __SSE4_1__
-// Intel's SSE 4.1
-#  include <smmintrin.h>
+#  define vec4_architecture_SSE4_1 "+SSE4.1"
+#else
+#  define vec4_architecture_SSE4_1 ""
 #endif
 #ifdef __SSE4A__
-// AMD's SSE 4a
-#  include <ammintrin.h>
-#endif
-
-
-
-#ifdef __SSE4_1__
-#  define vec4_architecture "SSE4.1 (32-bit precision)"
-#elif defined(__SSE4A__)
-#  define vec4_architecture "SSE4A (32-bit precision)"
+#  define vec4_architecture_SSE4a "+SSE4A"
 #else
-#  define vec4_architecture "SSE (32-bit precision)"
+#  define vec4_architecture_SSE4a ""
 #endif
+#ifdef __FMA4__
+#  define vec4_architecture_FMA4 "+FMA4"
+#else
+#  define vec4_architecture_FMA4 ""
+#endif
+#define vec4_architecture "SSE" vec4_architecture_SSE4_1 vec4_architecture_SSE4a vec4_architecture_FMA4 " (32-bit precision)"
 
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL4_VEC __m128

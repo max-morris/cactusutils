@@ -8,14 +8,7 @@
 #include <assert.h>
 #include <math.h>
 
-#include <emmintrin.h>
-#ifdef __SSE4_1__
-// Intel's SSE 4.1
-#  include <smmintrin.h>
-#endif
-#ifdef __SSE4A__
-// AMD's SSE 4a
-#  include <ammintrin.h>
+#include <x86intrin.h>
 
 // Intel compilers don't support SSE 4a. Here is how we can implement
 // these instructions in assembler instead:
@@ -26,17 +19,24 @@
 //   asm ("movntsd %[x],%[p]" : "=m" (*p) : [p] "m" (*p), [x] "x" (x));
 // }
 
-#endif
-
 
 
 #ifdef __SSE4_1__
-#  define vec8_architecture "SSE4.1 (64-bit precision)"
-#elif defined(__SSE4A__)
-#  define vec8_architecture "SSE4A (64-bit precision)"
+#  define vec8_architecture_SSE4_1 "+SSE4.1"
 #else
-#  define vec8_architecture "SSE2 (64-bit precision)"
+#  define vec8_architecture_SSE4_1 ""
 #endif
+#ifdef __SSE4A__
+#  define vec8_architecture_SSE4a "+SSE4A"
+#else
+#  define vec8_architecture_SSE4a ""
+#endif
+#ifdef __FMA4__
+#  define vec8_architecture_FMA4 "+FMA4"
+#else
+#  define vec8_architecture_FMA4 ""
+#endif
+#define vec8_architecture "SSE2" vec8_architecture_SSE4_1 vec8_architecture_SSE4a vec8_architecture_FMA4 " (64-bit precision)"
 
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL8_VEC __m128d
@@ -204,10 +204,17 @@ static const union {
 #define k8div(x,y) (_mm_div_pd(x,y))
 
 // Fused multiply-add, defined as [+-]x*y[+-]z
-#define k8madd(x,y,z)  (k8add(k8mul(x,y),z))
-#define k8msub(x,y,z)  (k8sub(k8mul(x,y),z))
-#define k8nmadd(x,y,z) (k8sub(k8neg(z),k8mul(x,y)))
-#define k8nmsub(x,y,z) (k8sub(z,k8mul(x,y)))
+#ifdef __FMA4__
+#  define k8madd(x,y,z)  (_mm_macc_pd(x,y,z))
+#  define k8msub(x,y,z)  (_mm_msub_pd(x,y,z))
+#  define k8nmadd(x,y,z) (_mm_nmsub_pd(x,y,z))
+#  define k8nmsub(x,y,z) (_mm_nmacc_pd(x,y,z))
+#else
+#  define k8madd(x,y,z)  (k8add(k8mul(x,y),z))
+#  define k8msub(x,y,z)  (k8sub(k8mul(x,y),z))
+#  define k8nmadd(x,y,z) (k8sub(k8neg(z),k8mul(x,y)))
+#  define k8nmsub(x,y,z) (k8sub(z,k8mul(x,y)))
+#endif
 
 // Cheap functions
 #define k8fabs(x)   (_mm_andnot_pd(k8sign_mask,x))
