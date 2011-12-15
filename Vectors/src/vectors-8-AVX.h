@@ -5,9 +5,13 @@
 
 
 
-#include <x86intrin.h>
 #if VECTORISE_EMULATE_AVX
 #  include "avxintrin_emu.h"
+#else
+#  include <immintrin.h>
+#endif
+#ifdef __FMA4__
+#  include <fma4intrin.h>
 #endif
 
 

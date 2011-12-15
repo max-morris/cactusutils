@@ -8,7 +8,14 @@
 #include <assert.h>
 #include <math.h>
 
-#include <x86intrin.h>
+#include <emmintrin.h>
+#ifdef __SSE4_1__
+// Intel's SSE 4.1
+#  include <smmintrin.h>
+#endif
+#ifdef __SSE4A__
+// AMD's SSE 4a
+#  include <ammintrin.h>
 
 // Intel compilers don't support SSE 4a. Here is how we can implement
 // these instructions in assembler instead:
@@ -18,6 +25,11 @@
 // {
 //   asm ("movntsd %[x],%[p]" : "=m" (*p) : [p] "m" (*p), [x] "x" (x));
 // }
+
+#endif
+#ifdef __FMA4__
+#  include <fma4intrin.h>
+#endif
 
 
 

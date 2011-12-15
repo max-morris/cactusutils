@@ -8,7 +8,18 @@
 #include <assert.h>
 #include <math.h>
 
-#include <x86intrin.h>
+#include <xmmintrin.h>
+#ifdef __SSE4_1__
+// Intel's SSE 4.1
+#  include <smmintrin.h>
+#endif
+#ifdef __SSE4A__
+// AMD's SSE 4a
+#  include <ammintrin.h>
+#endif
+#ifdef __FMA4__
+#  include <fma4intrin.h>
+#endif
 
 
 
@@ -265,10 +276,17 @@ static const union {
 #define k4div(x,y) (_mm_div_ps(x,y))
 
 // Fused multiply-add, defined as [+-]x*y[+-]z
-#define k4madd(x,y,z)  (k4add(k4mul(x,y),z))
-#define k4msub(x,y,z)  (k4sub(k4mul(x,y),z))
-#define k4nmadd(x,y,z) (k4sub(k4neg(z),k4mul(x,y)))
-#define k4nmsub(x,y,z) (k4sub(z,k4mul(x,y)))
+#ifdef __FMA4__
+#  define k4madd(x,y,z)  (_mm_macc_ps(x,y,z))
+#  define k4msub(x,y,z)  (_mm_msub_ps(x,y,z))
+#  define k4nmadd(x,y,z) (_mm_nmsub_ps(x,y,z))
+#  define k4nmsub(x,y,z) (_mm_nmacc_ps(x,y,z))
+#else
+#  define k4madd(x,y,z)  (k4add(k4mul(x,y),z))
+#  define k4msub(x,y,z)  (k4sub(k4mul(x,y),z))
+#  define k4nmadd(x,y,z) (k4sub(k4neg(z),k4mul(x,y)))
+#  define k4nmsub(x,y,z) (k4sub(z,k4mul(x,y)))
+#endif
 
 // Cheap functions
 #define k4fabs(x)   (_mm_andnot_ps(k4sign_mask,x))
