@@ -146,7 +146,7 @@
     CCTK_REAL8_VEC const x=xx;                          \
     CCTK_REAL8_VEC const rr=(r_);                       \
     CCTK_REAL8_VEC const r=rr;                          \
-    /* r + r * (vec8_set1(1.0) - x*r); */               \
+    /* r + r * (1 - x*r) */                             \
     k8madd(r, k8nmsub(x, r, vec8_set1(1.0)), r);        \
   })
 // Reciprocal: First estimate, then apply two Newton iterations
@@ -186,6 +186,35 @@
     __fpsel(k8sub(x,y),x,y);                    \
   })
 #define k8fnabs(x) (__fpnabs(x))
+// Estimate for reciprocal square root
+#define k8rsqrt_init(x) (__fprsqrt(x))
+// One Newton iteration for reciprocal square root
+#define k8rsqrt_iter(x_,rs_)                                    \
+  ({                                                            \
+    CCTK_REAL8_VEC const x__=(x_);                              \
+    CCTK_REAL8_VEC const x=x__;                                 \
+    CCTK_REAL8_VEC const rs__=(rs_);                            \
+    CCTK_REAL8_VEC const rs=rs__;                               \
+    /* rs (3/2 - x/2 rs^2) */                                   \
+    k8mul(rs, k8msub(vec8_set1(1.5), x2, k8mul(rs, rs)));       \
+  })
+// Reciprocal square root: First estimate, then apply two Newton iterations
+#define k8rsqrt(x_)                                     \
+  ({                                                    \
+    CCTK_REAL8_VEC const x__=(x_);                      \
+    CCTK_REAL8_VEC const x=x__;                         \
+    CCTK_REAL8_VEC const rs0 = k8rsqrt_init(x);         \
+    CCTK_REAL8_VEC const x2  = k8mul(vec8_set1(0.5),x); \
+    CCTK_REAL8_VEC const rs1 = k8rsqrt_iter(x2,rs0);    \
+    CCTK_REAL8_VEC const rs2 = k8rsqrt_iter(x2,rs1);    \
+    rs2;                                                \
+  })
+#define k8sqrt(x_)                              \
+  ({                                            \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    k8mul(x, k8rsqrt(x));                       \
+  })
 
 // Expensive functions
 #define K8REPL(f,x_)                            \
@@ -205,9 +234,11 @@
              f(vec8_elt1(x),a));                \
   })
 
+#define k8cos(x)   K8REPL(cos,x)
 #define k8exp(x)   K8REPL(exp,x)
 #define k8log(x)   K8REPL(log,x)
 #define k8pow(x,a) K8REPL2(pow,x,a)
-#define k8sqrt(x)  K8REPL(sqrt,x)
+#define k8sin(x)   K8REPL(sin,x)
+#define k8tan(x)   K8REPL(tan,x)
 
 #define k8ifpos(x,y,z) (__fpsel(x,z,y))
