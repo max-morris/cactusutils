@@ -16,7 +16,14 @@
 
 
 
-#define vec8_architecture "AVX"
+#ifdef __FMA4__
+#  define vec8_architecture_FMA4 "+FMA4"
+#else
+#  define vec8_architecture_FMA4 ""
+#endif
+#define vec8_architecture "AVX" vec8_architecture_FMA4 " (64-bit precision)"
+
+
 
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL8_VEC __m256d

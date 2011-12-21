@@ -40,6 +40,8 @@
 #endif
 #define vec4_architecture "SSE" vec4_architecture_SSE4_1 vec4_architecture_SSE4a vec4_architecture_FMA4 " (32-bit precision)"
 
+
+
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL4_VEC __m128
 

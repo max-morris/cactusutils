@@ -50,6 +50,8 @@
 #endif
 #define vec8_architecture "SSE2" vec8_architecture_SSE4_1 vec8_architecture_SSE4a vec8_architecture_FMA4 " (64-bit precision)"
 
+
+
 // Vector type corresponding to CCTK_REAL
 #define CCTK_REAL8_VEC __m128d
 
