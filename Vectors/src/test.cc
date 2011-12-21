@@ -13,33 +13,38 @@ inline int my_signbit (CCTK_REAL const x)
 }
 
 #define SCALARTEST(testname, vecexpr, scalarexpr)                       \
-do {                                                                    \
-  if (verbose)                                                          \
-    CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);              \
-  CCTK_REAL res = (scalarexpr);                                         \
-  CCTK_REAL vecres = (vecexpr);                                         \
-  if(vecres == res)                                                     \
-    passed++;                                                           \
-  else                                                                  \
-    CCTK_VParamWarn(CCTK_THORNSTRING, "Failed test %s", (testname));    \
-  numtests++;                                                           \
-} while(0)
-
-#define VECTEST(testname, vecexpr, scalarexpr)                          \
-do {                                                                    \
-  if (verbose)                                                          \
-    CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);              \
-  CCTK_REAL_VEC rv = (vecexpr);                                         \
-  for(int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                             \
+  do {                                                                  \
+    if (verbose)                                                        \
+      CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
     CCTK_REAL res = (scalarexpr);                                       \
-    CCTK_REAL vecres = vec_elt(rv,i);                                   \
+    CCTK_REAL vecres = (vecexpr);                                       \
     if(vecres == res)                                                   \
       passed++;                                                         \
     else                                                                \
-      CCTK_VParamWarn(CCTK_THORNSTRING, "Failed test %s", (testname));  \
+      CCTK_VParamWarn(CCTK_THORNSTRING,                                 \
+                      "Failed test %s: expected %.17g, received %.17g", \
+                      testname, (double)res, (double)vecres);           \
     numtests++;                                                         \
-  }                                                                     \
-} while(0)
+  } while(0)
+
+#define VECTEST(testname, vecexpr, scalarexpr)                          \
+  do {                                                                  \
+    if (verbose)                                                        \
+      CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
+    CCTK_REAL_VEC rv = (vecexpr);                                       \
+    for(int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                           \
+      CCTK_REAL res = (scalarexpr);                                     \
+      CCTK_REAL vecres = vec_elt(rv,i);                                 \
+      if(vecres == res)                                                 \
+        passed++;                                                       \
+      else                                                              \
+        CCTK_VParamWarn(CCTK_THORNSTRING,                               \
+                        "Failed test %s: "                              \
+                        "for element %d, expected %.17g, received %.17g", \
+                        testname, i, (double)res, (double)vecres);      \
+      numtests++;                                                       \
+    }                                                                   \
+  } while(0)
 
 extern "C"
 void Vectors_Test(CCTK_ARGUMENTS)
