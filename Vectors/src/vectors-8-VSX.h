@@ -88,17 +88,17 @@
 // Expensive functions
 #define K8REPL(f,x_)                            \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
     vec8_set(f(vec8_elt0(x)),                   \
              f(vec8_elt1(x)));                  \
   })
 #define K8REPL2(f,x_,a_)                        \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
-    CCTK_REAL8     const aa=(a_);               \
-    CCTK_REAL8     const a=aa;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8     const a__=(a_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8     const a=a__;                 \
     vec8_set(f(vec8_elt0(x),a),                 \
              f(vec8_elt1(x),a));                \
   })

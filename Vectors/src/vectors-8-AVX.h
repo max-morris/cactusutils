@@ -80,8 +80,8 @@ union k8const_t {
 #else
 #  define vec8_loadu_maybe(off,p_)              \
   ({                                            \
-    CCTK_REAL8 const& pp=(p_);                  \
-    CCTK_REAL8 const& p=pp;                     \
+    CCTK_REAL8 const& p__=(p_);                 \
+    CCTK_REAL8 const& p=p__;                    \
     (off) % CCTK_REAL8_VEC_SIZE == 0 ?          \
       vec8_load(p) :                            \
       vec8_load_off1(p);                        \
@@ -93,8 +93,8 @@ union k8const_t {
 #  else
 #    define vec8_loadu_maybe3(off1,off2,off3,p_)        \
   ({                                                    \
-    CCTK_REAL8 const& pp=(p_);                          \
-    CCTK_REAL8 const& p=pp;                             \
+    CCTK_REAL8 const& p__=(p_);                         \
+    CCTK_REAL8 const& p=p__;                            \
     ((off2) % CCTK_REAL8_VEC_SIZE != 0 or               \
      (off3) % CCTK_REAL8_VEC_SIZE != 0) ?               \
       vec8_loadu(p) :                                   \

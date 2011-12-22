@@ -32,8 +32,8 @@
 #define vec8_elt1(x) (__cimag(x))
 #define vec8_elt(x_,d)                          \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
     CCTK_REAL8 a;                               \
     switch (d) {                                \
     case 0: a=vec8_elt0(x); break;              \
@@ -52,16 +52,16 @@
 #if ! VECTORISE_ALWAYS_USE_ALIGNED_LOADS
 #  define vec8_load_off1(p_)                    \
   ({                                            \
-    CCTK_REAL8 const& pp=(p_);                  \
-    CCTK_REAL8 const& p=pp;                     \
+    CCTK_REAL8 const& p__=(p_);                 \
+    CCTK_REAL8 const& p=p__;                    \
     vec8_set((&p)[0],(&p)[1]);                  \
   })
 #else
 #if 0
 #  define vec8_load_off1(p_)                                    \
   ({                                                            \
-    CCTK_REAL8 const& pp=(p_);                                  \
-    CCTK_REAL8 const& p=pp;                                     \
+    CCTK_REAL8 const& p__=(p_);                                 \
+    CCTK_REAL8 const& p=p__;                                    \
     CCTK_REAL8_VEC const lo = __lfxd((CCTK_REAL8 *)(&p-1));     \
     CCTK_REAL8_VEC const hi = __lfxd((CCTK_REAL8 *)(&p+1));     \
     __fpsel(vec8_set(-1.0,+1.0),lo,hi);                         \
@@ -69,8 +69,8 @@
 #endif
 #  define vec8_load_off1(p_)                            \
   ({                                                    \
-    CCTK_REAL8 const& pp=(p_);                          \
-    CCTK_REAL8 const& p=pp;                             \
+    CCTK_REAL8 const& p__=(p_);                         \
+    CCTK_REAL8 const& p=p__;                            \
     CCTK_REAL8_VEC const lo = vec8_load((&p)[-1]);      \
     CCTK_REAL8_VEC const hi = vec8_load((&p)[+1]);      \
     __fxmr(__fpsel(vec8_set(+1.0,-1.0),lo,hi));         \
@@ -78,8 +78,8 @@
 #endif
 #define vec8_loadu(p_)                          \
   ({                                            \
-    CCTK_REAL8 const& pp=(p_);                  \
-    CCTK_REAL8 const& p=pp;                     \
+    CCTK_REAL8 const& p__=(p_);                 \
+    CCTK_REAL8 const& p=p__;                    \
     int const off = (ptrdiff_t)&p & 0xf;        \
     off==0 ? vec8_load(p) : vec8_load_off1(p);  \
   })
@@ -93,8 +93,8 @@
 #else
 #  define vec8_loadu_maybe(off,p_)              \
   ({                                            \
-    CCTK_REAL8 const& pp=(p_);                  \
-    CCTK_REAL8 const& p=pp;                     \
+    CCTK_REAL8 const& p__=(p_);                 \
+    CCTK_REAL8 const& p=p__;                    \
     (off) % CCTK_REAL8_VEC_SIZE == 0 ?          \
       vec8_load(p) :                            \
       vec8_load_off1(p);                        \
@@ -105,8 +105,8 @@
 #  else
 #    define vec8_loadu_maybe3(off1,off2,off3,p_)        \
   ({                                                    \
-    CCTK_REAL8 const& pp=(p_);                          \
-    CCTK_REAL8 const& p=pp;                             \
+    CCTK_REAL8 const& p__=(p_);                         \
+    CCTK_REAL8 const& p=p__;                            \
     ((off2) % CCTK_REAL8_VEC_SIZE != 0 ||               \
      (off3) % CCTK_REAL8_VEC_SIZE != 0) ?               \
       vec8_loadu(p) :                                   \
@@ -142,18 +142,18 @@
 // One Newton iteration for reciprocal
 #define k8inv_iter(x_,r_)                               \
   ({                                                    \
-    CCTK_REAL8_VEC const xx=(x_);                       \
-    CCTK_REAL8_VEC const x=xx;                          \
-    CCTK_REAL8_VEC const rr=(r_);                       \
-    CCTK_REAL8_VEC const r=rr;                          \
+    CCTK_REAL8_VEC const x__=(x_);                      \
+    CCTK_REAL8_VEC const r__=(r_);                      \
+    CCTK_REAL8_VEC const x=x__;                         \
+    CCTK_REAL8_VEC const r=r__;                         \
     /* r + r * (1 - x*r) */                             \
     k8madd(r, k8nmsub(x, r, vec8_set1(1.0)), r);        \
   })
 // Reciprocal: First estimate, then apply two Newton iterations
 #define k8inv(x_)                               \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
     CCTK_REAL8_VEC const r0 = k8inv_init(x);    \
     CCTK_REAL8_VEC const r1 = k8inv_iter(x,r0); \
     CCTK_REAL8_VEC const r2 = k8inv_iter(x,r1); \
@@ -171,29 +171,29 @@
 #define k8fabs(x) (__fpabs(x))
 #define k8fmax(x_,y_)                           \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
-    CCTK_REAL8_VEC const yy=(y_);               \
-    CCTK_REAL8_VEC const y=yy;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const y__=(y_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8_VEC const y=y__;                 \
     __fpsel(k8sub(y,x),x,y);                    \
   })
 #define k8fmin(x_,y_)                           \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
-    CCTK_REAL8_VEC const yy=(y_);               \
-    CCTK_REAL8_VEC const y=yy;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const y__=(y_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8_VEC const y=y__;                 \
     __fpsel(k8sub(x,y),x,y);                    \
   })
 #define k8fnabs(x) (__fpnabs(x))
 // Estimate for reciprocal square root
-#define k8rsqrt_init(x) (__fprsqrt(x))
+#define k8rsqrt_init(x) (__fprsqrte(x))
 // One Newton iteration for reciprocal square root
 #define k8rsqrt_iter(x_,rs_)                                    \
   ({                                                            \
     CCTK_REAL8_VEC const x__=(x_);                              \
-    CCTK_REAL8_VEC const x=x__;                                 \
     CCTK_REAL8_VEC const rs__=(rs_);                            \
+    CCTK_REAL8_VEC const x=x__;                                 \
     CCTK_REAL8_VEC const rs=rs__;                               \
     /* rs (3/2 - x/2 rs^2) */                                   \
     k8mul(rs, k8msub(vec8_set1(1.5), x2, k8mul(rs, rs)));       \
@@ -219,17 +219,17 @@
 // Expensive functions
 #define K8REPL(f,x_)                            \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
     vec8_set(f(vec8_elt0(x)),                   \
              f(vec8_elt1(x)));                  \
   })
 #define K8REPL2(f,x_,a_)                        \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
-    CCTK_REAL8     const aa=(a_);               \
-    CCTK_REAL8     const a=aa;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8     const a__=(a_);              \
+    CCTK_REAL8     const a=a__;                 \
     vec8_set(f(vec8_elt0(x),a),                 \
              f(vec8_elt1(x),a));                \
   })

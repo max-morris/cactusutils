@@ -68,8 +68,8 @@
 // original order is 01
 #define vec8_swap10(x_)                         \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
     _mm_shuffle_pd(x,x, _MM_SHUFFLE2(0,1));     \
   })
 
@@ -90,8 +90,8 @@
 #else
 #  define vec8_load_off1(p_)                                    \
   ({                                                            \
-    CCTK_REAL8 const& pp=(p_);                                  \
-    CCTK_REAL8 const& p=pp;                                     \
+    CCTK_REAL8 const& p__=(p_);                                 \
+    CCTK_REAL8 const& p=p__;                                    \
     _mm_shuffle_pd(vec8_load((&p)[-1]),                         \
                    vec8_load((&p)[+1]), _MM_SHUFFLE2(0,1));     \
   })
@@ -106,8 +106,8 @@
 #else
 #  define vec8_loadu_maybe(off,p_)              \
   ({                                            \
-    CCTK_REAL8 const& pp=(p_);                  \
-    CCTK_REAL8 const& p=pp;                     \
+    CCTK_REAL8 const& p__=(p_);                 \
+    CCTK_REAL8 const& p=p__;                    \
     (off) % CCTK_REAL8_VEC_SIZE == 0 ?          \
       vec8_load(p) :                            \
       vec8_load_off1(p);                        \
@@ -119,8 +119,8 @@
 #  else
 #    define vec8_loadu_maybe3(off1,off2,off3,p_)        \
   ({                                                    \
-    CCTK_REAL8 const& pp=(p_);                          \
-    CCTK_REAL8 const& p=pp;                             \
+    CCTK_REAL8 const& p__=(p_);                         \
+    CCTK_REAL8 const& p=p__;                            \
     ((off2) % CCTK_REAL8_VEC_SIZE != 0 or               \
      (off3) % CCTK_REAL8_VEC_SIZE != 0) ?               \
       vec8_loadu(p) :                                   \
@@ -153,15 +153,15 @@
 // lines are usually larger than the CPU vector size)
 #    define vec8_store_nta_partial_lo(p_,x,n)   \
   ({                                            \
-    CCTK_REAL8& pp=(p_);                        \
-    CCTK_REAL8& p=pp;                           \
+    CCTK_REAL8& p__=(p_);                       \
+    CCTK_REAL8& p=p__;                          \
     _mm_storel_pd(&p,x);                        \
     /* _mm_clflush(&p); */                      \
   })
 #    define vec8_store_nta_partial_hi(p_,x,n)   \
   ({                                            \
-    CCTK_REAL8& pp=(p_);                        \
-    CCTK_REAL8& p=pp;                           \
+    CCTK_REAL8& p__=(p_);                       \
+    CCTK_REAL8& p=p__;                          \
     _mm_storeh_pd(&p+1,x);                      \
     /* _mm_clflush(&p+1); */                    \
   })
@@ -240,17 +240,17 @@ static const union {
 // Expensive functions
 #define K8REPL(f,x_)                            \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
     vec8_set(f(vec8_elt0(x)),                   \
              f(vec8_elt1(x)));                  \
   })
 #define K8REPL2(f,x_,a_)                        \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
-    CCTK_REAL8     const aa=(a_);               \
-    CCTK_REAL8     const a=aa;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8     const a__=(a_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8     const a=a__;                 \
     vec8_set(f(vec8_elt0(x),a),                 \
              f(vec8_elt1(x),a));                \
   })
@@ -268,12 +268,12 @@ static const union {
 #elif 0
 #  define k8ifpos(x_,y_,z_)                     \
   ({                                            \
-    CCTK_REAL8_VEC const xx=(x_);               \
-    CCTK_REAL8_VEC const x=xx;                  \
-    CCTK_REAL8_VEC const yy=(y_);               \
-    CCTK_REAL8_VEC const y=yy;                  \
-    CCTK_REAL8_VEC const zz=(z_);               \
-    CCTK_REAL8_VEC const z=zz;                  \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const y__=(y_);              \
+    CCTK_REAL8_VEC const z__=(z_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8_VEC const y=y__;                 \
+    CCTK_REAL8_VEC const z=z__;                 \
     int const m = _mm_movemask_pd(x);           \
     CCTK_REAL8_VEC r;                           \
     switch (m) {                                \
@@ -292,12 +292,12 @@ static const union {
 #  endif
 #  define k8ifpos(x_,y_,z_)                                             \
   ({                                                                    \
-    CCTK_REAL8_VEC const xx=(x_);                                       \
-    CCTK_REAL8_VEC const x=xx;                                          \
-    CCTK_REAL8_VEC const yy=(y_);                                       \
-    CCTK_REAL8_VEC const y=yy;                                          \
-    CCTK_REAL8_VEC const zz=(z_);                                       \
-    CCTK_REAL8_VEC const z=zz;                                          \
+    CCTK_REAL8_VEC const x__=(x_);                                      \
+    CCTK_REAL8_VEC const y__=(y_);                                      \
+    CCTK_REAL8_VEC const z__=(z_);                                      \
+    CCTK_REAL8_VEC const x=x__;                                         \
+    CCTK_REAL8_VEC const y=y__;                                         \
+    CCTK_REAL8_VEC const z=z__;                                         \
     vec8_set(k8sgn(vec8_elt0(x)) ? vec8_elt0(z) : vec8_elt0(y),         \
              k8sgn(vec8_elt1(x)) ? vec8_elt1(z) : vec8_elt1(y));        \
   })
@@ -307,19 +307,19 @@ static const union {
   double             d;
 } k8one_union = { 0x1ULL };
 #  define k8one (k8one_union.d)
-#  define k8ifpos(x_,y_,z_)                                             \
-  ({                                                                    \
-    CCTK_REAL8_VEC const xx=(x_);                                       \
-    CCTK_REAL8_VEC const x=xx;                                          \
-    CCTK_REAL8_VEC const yy=(y_);                                       \
-    CCTK_REAL8_VEC const y=yy;                                          \
-    CCTK_REAL8_VEC const zz=(z_);                                       \
-    CCTK_REAL8_VEC const z=zz;                                          \
-    /* there is no _mm_srai_epi64(x, 63) */                             \
-    CCTK_REAL8_VEC const imask =                                        \
-      (__m128d)_mm_sub_epi64(_mm_srli_epi64((__m128i)x, 63),            \
-                             (__m128i)_mm_set1_pd(k8one));              \
-    /* (y & ~mask) | (z & mask);   imask = ~mask */                     \
-    _mm_or_pd(_mm_and_pd(imask, y), _mm_andnot_pd(imask, z));           \
+#  define k8ifpos(x_,y_,z_)                                     \
+  ({                                                            \
+    CCTK_REAL8_VEC const x__=(x_);                              \
+    CCTK_REAL8_VEC const y__=(y_);                              \
+    CCTK_REAL8_VEC const z__=(z_);                              \
+    CCTK_REAL8_VEC const x=x__;                                 \
+    CCTK_REAL8_VEC const y=y__;                                 \
+    CCTK_REAL8_VEC const z=z__;                                 \
+    /* there is no _mm_srai_epi64(x, 63) */                     \
+    CCTK_REAL8_VEC const imask =                                \
+      (__m128d)_mm_sub_epi64(_mm_srli_epi64((__m128i)x, 63),    \
+                             (__m128i)_mm_set1_pd(k8one));      \
+    /* (y & ~mask) | (z & mask);   imask = ~mask */             \
+    _mm_or_pd(_mm_and_pd(imask, y), _mm_andnot_pd(imask, z));   \
   })
 #endif

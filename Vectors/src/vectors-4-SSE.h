@@ -58,20 +58,20 @@
 // original order is 0123
 #define vec4_swap1032(x_)                       \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
     _mm_shuffle_ps(x,x, _MM_SHUFFLE(2,3,0,1));  \
   })
 #define vec4_swap2301(x_)                       \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
     _mm_shuffle_ps(x,x, _MM_SHUFFLE(1,0,3,2));  \
   })
 #define vec4_swap3210(x_)                       \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
     _mm_shuffle_ps(x,x, _MM_SHUFFLE(0,1,2,3));  \
   })
 
@@ -92,8 +92,8 @@
 #if defined(__PGI)
 #  define vec4_elt(x_,d)                        \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
     CCTK_REAL4 a;                               \
     if (d==0)      a=vec4_elt0(x);              \
     else if (d==1) a=vec4_elt1(x);              \
@@ -104,8 +104,8 @@
 #else
 #  define vec4_elt(x_,d)                        \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
     CCTK_REAL4 a;                               \
     switch (d) {                                \
     case 0: a=vec4_elt0(x); break;              \
@@ -132,8 +132,8 @@
 #else
 #  define vec4_load_off1(p_)                                            \
   ({                                                                    \
-    CCTK_REAL4 const& pp=(p_);                                          \
-    CCTK_REAL4 const& p=pp;                                             \
+    CCTK_REAL4 const& p__=(p_);                                         \
+    CCTK_REAL4 const& p=p__;                                            \
     CCTK_REAL4_VEC const lo=vec4_load((&p)[-1]);                        \
     CCTK_REAL4_VEC const hi=vec4_load((&p)[+3]);                        \
     assert(0);                                                          \
@@ -142,16 +142,16 @@
   })
 #  define vec4_load_off2(p_)                            \
   ({                                                    \
-    CCTK_REAL4 const& pp=(p_);                          \
-    CCTK_REAL4 const& p=pp;                             \
+    CCTK_REAL4 const& p__=(p_);                         \
+    CCTK_REAL4 const& p=p__;                            \
     CCTK_REAL4_VEC const lo=vec4_load((&p)[-2]);        \
     CCTK_REAL4_VEC const hi=vec4_load((&p)[+2]);        \
     _mm_shuffle_ps(lo,hi, _MM_SHUFFLE(1,0,3,2));        \
   })
 #  define vec4_load_off1(p_)                                            \
   ({                                                                    \
-    CCTK_REAL4 const& pp=(p_);                                          \
-    CCTK_REAL4 const& p=pp;                                             \
+    CCTK_REAL4 const& p__=(p_);                                         \
+    CCTK_REAL4 const& p=p__;                                            \
     CCTK_REAL4_VEC const lo=vec4_load((&p)[-1]);                        \
     CCTK_REAL4_VEC const hi=vec4_load((&p)[+3]);                        \
     assert(0);                                                          \
@@ -169,8 +169,8 @@
 #else
 #  define vec4_loadu_maybe(off,p_)              \
   ({                                            \
-    CCTK_REAL4 const& pp=(p_);                  \
-    CCTK_REAL4 const& p=pp;                     \
+    CCTK_REAL4 const& p__=(p_);                 \
+    CCTK_REAL4 const& p=p__;                    \
     (off) % CCTK_REAL4_VEC_SIZE == 0 ?          \
       vec4_load(p) :                            \
       vec4_loadu(p);                            \
@@ -190,10 +190,10 @@
 #if ! VECTORISE_STREAMING_STORES || ! defined(__SSE4A__)
 #  define vec4_store_nta_partial_lo(p_,x_,n)                    \
   ({                                                            \
-    CCTK_REAL4 const& pp=(p_);                                  \
-    CCTK_REAL4 const& p=pp;                                     \
-    CCTK_REAL4_VEC const xx=(x_);                               \
-    CCTK_REAL4_VEC const x=xx;                                  \
+    CCTK_REAL4     const& p__=(p_);                             \
+    CCTK_REAL4_VEC const  x__=(x_);                             \
+    CCTK_REAL4     const& p=p__;                                \
+    CCTK_REAL4_VEC const  x=x__;                                \
     switch (n) {                                                \
     case 1: (&p)[0]=vec4_elt0(x); break;                        \
     case 2: _mm_storel_ps(&p,x); break;                         \
@@ -202,10 +202,10 @@
   })
 #  define vec4_store_nta_partial_hi(p_,x_,n)                    \
   ({                                                            \
-    CCTK_REAL4 const& pp=(p_);                                  \
-    CCTK_REAL4 const& p=pp;                                     \
-    CCTK_REAL4_VEC const xx=(x_);                               \
-    CCTK_REAL4_VEC const x=xx;                                  \
+    CCTK_REAL4     const& p__=(p_);                             \
+    CCTK_REAL4_VEC const  x__=(x_);                             \
+    CCTK_REAL4     const& p=p__;                                \
+    CCTK_REAL4_VEC const  x=x__;                                \
     switch (n) {                                                \
     case 1: (&p)[3]=vec4_elt3(x);  break;                       \
     case 2: _mm_storeh_ps(&p+2,x); break;                       \
@@ -215,10 +215,10 @@
 #else
 #  define vec4_store_nta_partial_lo(p_,x_,n)    \
   ({                                            \
-    CCTK_REAL4 const& pp=(p_);                  \
-    CCTK_REAL4 const& p=pp;                     \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4     const& p__=(p_);             \
+    CCTK_REAL4_VEC const  x__=(x_);             \
+    CCTK_REAL4     const& p=p__;                \
+    CCTK_REAL4_VEC const  x=x__;                \
     switch (n) {                                \
     case 1:                                     \
       _mm_stream_ss(&p,x);                      \
@@ -234,10 +234,10 @@
   })
 #  define vec4_store_nta_partial_hi(p_,x_,n)    \
   ({                                            \
-    CCTK_REAL4 const& pp=(p_);                  \
-    CCTK_REAL4 const& p=pp;                     \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4     const& p__=(p_);             \
+    CCTK_REAL4_VEC const  x__=(x_);             \
+    CCTK_REAL4     const& p=p__;                \
+    CCTK_REAL4_VEC const  x=x__;                \
     switch (n) {                                \
     case 1:                                     \
       _mm_stream_ss(&p+3, vec4_swap3210(x));    \
@@ -301,8 +301,8 @@ static const union {
 // Expensive functions
 #define K4REPL(f,x_)                            \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
     vec4_set(f(vec4_elt0(x)),                   \
              f(vec4_elt1(x)),                   \
              f(vec4_elt2(x)),                   \
@@ -310,10 +310,10 @@ static const union {
   })
 #define K4REPL2(f,x_,a_)                        \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
-    CCTK_REAL4     const aa=(a_);               \
-    CCTK_REAL4     const a=aa;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4     const a__=(a_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
+    CCTK_REAL4     const a=a__;                 \
     vec4_set(f(vec4_elt0(x),a),                 \
              f(vec4_elt1(x),a),                 \
              f(vec4_elt2(x),a),                 \
@@ -335,26 +335,26 @@ static const union {
 #  endif
 #  define k4ifpos(x,y,z)                                                \
   ({                                                                    \
-    CCTK_REAL4_VEC const xx=(x_);                                       \
-    CCTK_REAL4_VEC const x=xx;                                          \
-    CCTK_REAL4_VEC const yy=(y_);                                       \
-    CCTK_REAL4_VEC const y=yy;                                          \
-    CCTK_REAL4_VEC const zz=(z_);                                       \
-    CCTK_REAL4_VEC const z=zz;                                          \
-    vec4_set(k4sgn(vec4_elt0(x)) ? vec4_elt0(z) : vec4_elt0(y),   \
-             k4sgn(vec4_elt1(x)) ? vec4_elt1(z) : vec4_elt1(y),   \
-             k4sgn(vec4_elt2(x)) ? vec4_elt2(z) : vec4_elt2(y),   \
-             k4sgn(vec4_elt3(x)) ? vec4_elt3(z) : vec4_elt3(y));  \
+    CCTK_REAL4_VEC const x__=(x_);                                      \
+    CCTK_REAL4_VEC const y__=(y_);                                      \
+    CCTK_REAL4_VEC const z__=(z_);                                      \
+    CCTK_REAL4_VEC const x=x__;                                         \
+    CCTK_REAL4_VEC const y=y__;                                         \
+    CCTK_REAL4_VEC const z=z__;                                         \
+    vec4_set(k4sgn(vec4_elt0(x)) ? vec4_elt0(z) : vec4_elt0(y),         \
+             k4sgn(vec4_elt1(x)) ? vec4_elt1(z) : vec4_elt1(y),         \
+             k4sgn(vec4_elt2(x)) ? vec4_elt2(z) : vec4_elt2(y),         \
+             k4sgn(vec4_elt3(x)) ? vec4_elt3(z) : vec4_elt3(y));        \
   })
 #else
 #  define k4ifpos(x_,y_,z_)                                     \
   ({                                                            \
-    CCTK_REAL4_VEC const xx=(x_);                               \
-    CCTK_REAL4_VEC const x=xx;                                  \
-    CCTK_REAL4_VEC const yy=(y_);                               \
-    CCTK_REAL4_VEC const y=yy;                                  \
-    CCTK_REAL4_VEC const zz=(z_);                               \
-    CCTK_REAL4_VEC const z=zz;                                  \
+    CCTK_REAL4_VEC const x__=(x_);                              \
+    CCTK_REAL4_VEC const y__=(y_);                              \
+    CCTK_REAL4_VEC const z__=(z_);                              \
+    CCTK_REAL4_VEC const x=x__;                                 \
+    CCTK_REAL4_VEC const y=y__;                                 \
+    CCTK_REAL4_VEC const z=z__;                                 \
     CCTK_REAL4_VEC const mask = _mm_srai_epi32(x, 31);          \
     /* (y & ~mask) | (z & mask) */                              \
     _mm_or_ps(_mm_andnot_ps(mask, y), _mm_and_ps(mask, z));     \

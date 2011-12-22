@@ -67,10 +67,10 @@
 // the non-temporal hint is probably ignored
 #define vec4_store_nta_partial_lo(p_,x_,n)      \
   ({                                            \
-    CCTK_REAL4 const& pp=(p_);                  \
-    CCTK_REAL4 const& p=pp;                     \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4     const& p__=(p_);             \
+    CCTK_REAL4_VEC const  x__=(x_);             \
+    CCTK_REAL4     const& p=p__;                \
+    CCTK_REAL4_VEC const  x=x__;                \
     switch (n) {                                \
     case 3: (&p)[2]=x[2];                       \
     case 2: (&p)[1]=x[1];                       \
@@ -79,10 +79,10 @@
   })
 #define vec4_store_nta_partial_hi(p_,x_,n)      \
   ({                                            \
-    CCTK_REAL4 const& pp=(p_);                  \
-    CCTK_REAL4 const& p=pp;                     \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4     const& p__=(p_);             \
+    CCTK_REAL4_VEC const  x__=(x_);             \
+    CCTK_REAL4     const& p=p__;                \
+    CCTK_REAL4_VEC const  x=x__;                \
     switch (n) {                                \
     case 3: (&p)[1]=x[1];                       \
     case 2: (&p)[2]=x[2];                       \
@@ -91,14 +91,14 @@
   })
 #define vec4_store_nta_partial_mid(p_,x_,nlo_,nhi_)     \
   ({                                                    \
-    CCTK_REAL4 const& pp=(p_);                          \
-    CCTK_REAL4 const& p=pp;                             \
-    CCTK_REAL4_VEC const xx=(x_);                       \
-    CCTK_REAL4_VEC const x=xx;                          \
-    int const nnlo=(nlo_);                              \
-    int const nlo=nnlo;                                 \
-    int const nnhi=(nhi_);                              \
-    int const nhi=nnhi;                                 \
+    CCTK_REAL4     const& p__  =(p_);                   \
+    CCTK_REAL4_VEC const  x__  =(x_);                   \
+    int            const  nlo__=(nlo_);                 \
+    int            const  nhi__=(nhi_);                 \
+    CCTK_REAL4     const& p  =p__;                      \
+    CCTK_REAL4_VEC const  x  =x__;                      \
+    int            const  nlo=nlo__;                    \
+    int            const  nhi=nhi__;                    \
     if (nlo==3 and nhi==3) {                            \
       (&p)[1]=x[1];                                     \
       (&p)[2]=x[2];                                     \
@@ -137,8 +137,8 @@
 // Expensive functions
 #define K4REPL(f,x_)                            \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
     vec4_set(f(vec4_elt0(x)),                   \
              f(vec4_elt1(x)),                   \
              f(vec4_elt2(x)),                   \
@@ -146,10 +146,10 @@
   })
 #define K4REPL2(f,x_,a_)                        \
   ({                                            \
-    CCTK_REAL4_VEC const xx=(x_);               \
-    CCTK_REAL4_VEC const x=xx;                  \
-    CCTK_REAL4     const aa=(a_);               \
-    CCTK_REAL4     const a=aa;                  \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4     const a__=(a_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
+    CCTK_REAL4     const a=a__;                 \
     vec4_set(f(vec4_elt0(x),a),                 \
              f(vec4_elt1(x),a),                 \
              f(vec4_elt2(x),a),                 \
