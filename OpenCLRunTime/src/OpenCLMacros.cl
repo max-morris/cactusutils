@@ -14,8 +14,9 @@
 
 
 
-#define CCTK_ATTRIBUTE_UNUSED __attribute__((__unused__))
-#define CCTK_BUILTIN_EXPECT   __builtin_expect
+#define CCTK_ATTRIBUTE_UNUSED    __attribute__((__unused__))
+#define CCTK_BUILTIN_EXPECT(a,b) __builtin_expect(a,b)
+#define CCTK_UNROLL              _Pragma("unroll")
 
 
 
@@ -116,6 +117,8 @@
 #  define vec_store_nta(p, x) vec_storeu(p, x)
 #endif
 
+#define vec_store_partial_prepare(i, imin, imax)
+
 #if CCTK_REAL_VEC_SIZE == 1
 
 #  define vec_store_nta_partial(p, x)                                   \
@@ -166,7 +169,6 @@
 
 
 
-#define kpos(x) (+(x))
 #define kneg(x) (-(x))
 
 #define kadd(x,y) ((x)+(y))
@@ -188,16 +190,17 @@
 #define kcos(x)   cos(x)
 #define kexp(x)   exp(x)
 #define klog(x)   log(x)
-#define kpow(x,n) pown(x,n)
+#define kpow(x,a) pow(x,a)
 #define ksin(x)   sin(x)
 #define ktan(x)   tan(x)
 
 // Choice   [sign(x)>0 ? y : z]
 #define kifpos(x,y,z) select(y,z,x)
+#define kifneg(x,y,z) select(z,y,x)
 
 
 
-#ifdef __APPLE__
+#if 0 && defined(__APPLE__)
 
 // Apple's pow implementation is much better than their pown
 #  undef pown
@@ -228,7 +231,7 @@ inline CCTK_REAL mycos1(CCTK_REAL x)
             (c4 + x2 *
              (c5 + x2 *
               (c6 + x2 *
-               (c7 + x2 * c8))))));
+               (c7 + x2 * c8)))))));
 }
 
 inline CCTK_REAL mycos(CCTK_REAL x);
@@ -277,16 +280,6 @@ inline CCTK_REAL_VEC kcos(CCTK_REAL_VEC const x)
 
 #define dim 3
 
-#if SIZEOF_PTRDIFF_T == 4
-typedef unsigned int cl_size_t;
-typedef int          cl_ptrdiff_t;
-#elif SIZEOF_PTRDIFF_T == 8
-typedef unsigned long cl_size_t;
-typedef long          cl_ptrdiff_t;
-#else
-#  error
-#endif
-
 
 
 typedef struct {
@@ -297,15 +290,15 @@ typedef struct {
   double cctk_time;
   double cctk_delta_time;
   // Grid structure properties:
-  cl_ptrdiff_t cctk_gsh[dim];
-  cl_ptrdiff_t cctk_lbnd[dim];
-  cl_ptrdiff_t cctk_lssh[dim];
-  cl_ptrdiff_t cctk_lsh[dim];
+  int cctk_gsh[dim];
+  int cctk_lbnd[dim];
+  int cctk_lssh[dim];
+  int cctk_lsh[dim];
   // Loop settings:
-  cl_ptrdiff_t lmin[dim];       // loop region
-  cl_ptrdiff_t lmax[dim];
-  cl_ptrdiff_t imin[dim];       // active region
-  cl_ptrdiff_t imax[dim];
+  int lmin[dim];                 // loop region
+  int lmax[dim];
+  int imin[dim];                 // active region
+  int imax[dim];
 } cGH;
 
 
@@ -313,15 +306,19 @@ typedef struct {
 // Cactus compatibility definitions
 
 #define DECLARE_CCTK_ARGUMENTS                                          \
-  cl_ptrdiff_t constant *restrict const cctk_lbnd = cctkGH->cctk_lbnd;  \
-  cl_ptrdiff_t constant *restrict const cctk_lsh  = cctkGH->cctk_lsh;   \
-  cl_ptrdiff_t constant *restrict const imin      = cctkGH->imin;       \
-  cl_ptrdiff_t constant *restrict const imax      = cctkGH->imax;       \
+  ptrdiff_t const cctk_lbnd[] =                                         \
+    {cctkGH->cctk_lbnd[0], cctkGH->cctk_lbnd[1], cctkGH->cctk_lbnd[2]}; \
+  ptrdiff_t const cctk_lsh[] =                                          \
+    {cctkGH->cctk_lsh[0], cctkGH->cctk_lsh[1], cctkGH->cctk_lsh[2]};    \
+  ptrdiff_t const imin[] =                                              \
+    {cctkGH->imin[0], cctkGH->imin[1], cctkGH->imin[2]};                \
+  ptrdiff_t const imax[] =                                              \
+    {cctkGH->imax[0], cctkGH->imax[1], cctkGH->imax[2]};                \
   CCTK_REAL const cctk_time = cctkGH->cctk_time;                        \
-  int const stress_energy_state1 = 0;
+  bool const stress_energy_state1 = 0;
 
-#define CCTK_GFINDEX3D(cctkGH,i,j,k)                                    \
-  ((i) + cctkGH->cctk_lsh[0] * ((j) + cctkGH->cctk_lsh[1] * (k)))
+#define CCTK_GFINDEX3D(cctkGH,i,j,k)                    \
+  ((i) + cctk_lsh[0] * ((j) + cctk_lsh[1] * (k)))
  
 #define CCTK_ORIGIN_SPACE(d) (cctkGH->cctk_origin_space[d])
 #define CCTK_DELTA_SPACE(d)  (cctkGH->cctk_delta_space[d])
@@ -336,7 +333,8 @@ typedef struct {
 #define Sign(x)       (signbit(x)?-1:+1)
 #define ToReal(x)     ((CCTK_REAL_VEC)(CCTK_REAL)(x))
 #define INV(x)        (1.0/(x))
-#define SQR(x)        (pown((x),2))
+// #define SQR(x)        (pown((x),2))
+CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x) { return x*x; }
 
 #define KRANC_GFOFFSET3D(u,i,j,k)                       \
   vec_loadu_maybe3(i,j,k,(u)[di*(i)+dj*(j)+dk*(k)])
@@ -372,9 +370,11 @@ typedef struct {
     (lc_off##D + VECTOR_SIZE_##D * UNROLL_SIZE_##D *                    \
      (lc_grp##D + GROUP_SIZE_##D *                                      \
       (lc_til##D + TILE_SIZE_##D * lc_grd##D)));                        \
+  bool const lc_grp_done_##D CCTK_ATTRIBUTE_UNUSED =                    \
+    ind##D >= lc_##D##max;                                              \
   bool const lc_grp_any_##D CCTK_ATTRIBUTE_UNUSED =                     \
     ind##D + VECTOR_SIZE_##D * UNROLL_SIZE_##D - 1 >= lc_##D##min &&    \
-    ind##D < lc_##D##max;
+    !lc_grp_done_##D;
 
 #define vecVI indicesV
 #define vecVJ ((CCTK_LONG_VEC)0)
@@ -403,8 +403,8 @@ typedef struct {
   CCTK_LONG_VEC const lc_vec_mask_##D CCTK_ATTRIBUTE_UNUSED =           \
     lc_vec_trivial_##D ?                                                \
     (CCTK_LONG_VEC)true :                                               \
-    (CCTK_LONG_VEC)IND+vecV##D >= (CCTK_LONG_VEC)lc_##D##min &&         \
-    (CCTK_LONG_VEC)IND+vecV##D <  (CCTK_LONG_VEC)lc_##D##max;
+    ((CCTK_LONG_VEC)IND+vecV##D >= (CCTK_LONG_VEC)lc_##D##min) &        \
+    ((CCTK_LONG_VEC)IND+vecV##D <  (CCTK_LONG_VEC)lc_##D##max);
 
 #define LC_LOOP3VEC(name,                                               \
                     i,j,k,                                              \
@@ -435,37 +435,37 @@ typedef struct {
     ptrdiff_t const lc_imax = lc_Imax;                                  \
                                                                         \
     for (ptrdiff_t lc_tilK = 0; lc_tilK < TILE_SIZE_K; ++lc_tilK) {     \
+    LC_SET_GROUP_VARS(K);                                               \
+    if (lc_grp_done_K) break;                                           \
+    if (lc_grp_any_K) {                                                 \
     for (ptrdiff_t lc_tilJ = 0; lc_tilJ < TILE_SIZE_J; ++lc_tilJ) {     \
+    LC_SET_GROUP_VARS(J);                                               \
+    if (lc_grp_done_J) break;                                           \
+    if (lc_grp_any_J) {                                                 \
     for (ptrdiff_t lc_tilI = 0; lc_tilI < TILE_SIZE_I; ++lc_tilI) {     \
+    LC_SET_GROUP_VARS(I);                                               \
+    if (lc_grp_done_I) break;                                           \
+    if (lc_grp_any_I) {                                                 \
                                                                         \
-      LC_SET_GROUP_VARS(I);                                             \
-      LC_SET_GROUP_VARS(J);                                             \
-      LC_SET_GROUP_VARS(K);                                             \
-      if (lc_grp_any_K) {                                               \
-      if (lc_grp_any_J) {                                               \
-      if (lc_grp_any_I) {                                               \
+      CCTK_UNROLL                                                       \
+        for (ptrdiff_t lc_unrK = 0; lc_unrK < UNROLL_SIZE_K; ++lc_unrK) { \
+      LC_SET_VECTOR_VARS(k,K);                                          \
+      CCTK_UNROLL                                                       \
+        for (ptrdiff_t lc_unrJ = 0; lc_unrJ < UNROLL_SIZE_J; ++lc_unrJ) { \
+      LC_SET_VECTOR_VARS(j,J);                                          \
+      CCTK_UNROLL                                                       \
+        for (ptrdiff_t lc_unrI = 0; lc_unrI < UNROLL_SIZE_I; ++lc_unrI) { \
+      LC_SET_VECTOR_VARS(i,I);                                          \
                                                                         \
-        _Pragma("unroll")                                               \
-          for (ptrdiff_t lc_unrK = 0; lc_unrK < UNROLL_SIZE_K; ++lc_unrK) { \
-        _Pragma("unroll")                                               \
-          for (ptrdiff_t lc_unrJ = 0; lc_unrJ < UNROLL_SIZE_J; ++lc_unrJ) { \
-        _Pragma("unroll")                                               \
-          for (ptrdiff_t lc_unrI = 0; lc_unrI < UNROLL_SIZE_I; ++lc_unrI) { \
-                                                                        \
-          LC_SET_VECTOR_VARS(i,I);                                      \
-          LC_SET_VECTOR_VARS(j,J);                                      \
-          LC_SET_VECTOR_VARS(k,K);                                      \
-                                                                        \
-          {
-          
+        {
 #define LC_ENDLOOP3VEC(name)                            \
-          }                                             \
-        }                                               \
-        }                                               \
         }                                               \
       }                                                 \
       }                                                 \
       }                                                 \
+    }                                                   \
+    }                                                   \
+    }                                                   \
     }                                                   \
     }                                                   \
     }                                                   \

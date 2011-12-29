@@ -1,6 +1,8 @@
 #include "kernel.hh"
+#include "copy.hh"
 
 #include <cassert>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -8,11 +10,14 @@
 
 
 namespace OpenCLRunTime {
-
   
   
-  extern "C"
-  char const *OpenCLMacros_GetSource();
+  
+  extern "C" char const *const OpenCL_source_OpenCLRunTime_OpenCLMacros;
+  
+  
+  
+  list<OpenCLKernel*> OpenCLKernel::kernels;
   
   
   
@@ -38,6 +43,8 @@ namespace OpenCLRunTime {
     device->setup_grid(cctkGH);
     
     name = strdup(name_);
+    
+    kernels.push_back(this);
     
     /*** Determine arguments for calling the kernel ***************************/
     
@@ -213,7 +220,6 @@ namespace OpenCLRunTime {
     buf << "// -*-C-*-\n"
         << "\n"
         << "// Code generation choices:\n"
-        << "#define SIZEOF_PTRDIFF_T         " << sizeof(cl_ptrdiff_t) << "\n"
         << "#define VECTORISE_ALIGNED_ARRAYS " << device->memory_aligned << "\n"
         << "\n"
         << "// Loop traversal choices:\n"
@@ -231,7 +237,7 @@ namespace OpenCLRunTime {
         << "#define TILE_SIZE_K   " << device->tile_size[2] << "\n"
         << "\n"
         << "// OpenCL RunTime definitions:\n"
-        << OpenCLMacros_GetSource()
+        << OpenCL_source_OpenCLRunTime_OpenCLMacros
         << "\n"
         << "// Cactus parameters:\n"
         << paramdecls.str()
@@ -263,7 +269,7 @@ namespace OpenCLRunTime {
         << "}\n";
     string const sbuf = buf.str();
     
-    // Write source
+    // Output source
     {
       stringstream filename;
       filename << out_dir << "/" << name << ".cl";
@@ -292,7 +298,7 @@ namespace OpenCLRunTime {
                                    CL_PROGRAM_BUILD_LOG,
                                    log_size, build_log, NULL));
     
-    // Write log
+    // Output log
     {
       stringstream filename;
       filename << out_dir << "/" << name << ".log";
@@ -322,6 +328,36 @@ namespace OpenCLRunTime {
     checkErr((kernel =
               clCreateKernel(program, name, &errcode),
               errcode));
+    
+    // Output object code
+    size_t binary_sizes_size;
+    checkErr(clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,
+                              0, NULL, &binary_sizes_size));
+    size_t const num_devices = binary_sizes_size / sizeof(size_t);
+    vector<size_t> binary_sizes(num_devices);
+    checkErr(clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,
+                              num_devices * sizeof(size_t),
+                              &binary_sizes.front(),
+                              NULL));
+    vector<vector<char> > binaries(num_devices);
+    vector<char*> binary_ptrs(num_devices);
+    for (size_t n=0; n<num_devices; ++n) {
+      binaries.at(n).resize(binary_sizes.at(n));
+      binary_ptrs.at(n) = &binaries.at(n).front();
+    }
+    checkErr(clGetProgramInfo(program, CL_PROGRAM_BINARIES,
+                              num_devices * sizeof binary_ptrs[0],
+                              &binary_ptrs[0], NULL));
+    for (size_t n=0; n<num_devices; ++n) {
+      stringstream filename;
+      filename << out_dir << "/" << name << "." << n << ".o";
+      ofstream file(filename.str().c_str(), ofstream::binary);
+      file.write(binary_ptrs.at(n), binary_sizes.at(n));
+      file.close();
+    }
+    
+    // Output disassembled listing
+    disassemble();
     
     /*** Assign buffers to all variables used by this kernel ******************/
     
@@ -359,15 +395,16 @@ namespace OpenCLRunTime {
       offset[d] = 0;
       length[d] = cctkGH->CCTK_LSSH(0,d);
     }
-    int const dI = sizeof(CCTK_REAL);
-    int const dJ = dI * device->grid.lsh[0];
-    int const dK = dJ * device->grid.lsh[1];
+    // int const dI = sizeof(CCTK_REAL);
+    // int const dJ = dI * device->grid.lsh[0];
+    // int const dK = dJ * device->grid.lsh[1];
     int const di = sizeof(CCTK_REAL);
-    int const dj = di * cctkGH->cctk_lsh[0];
-    int const dk = dj * cctkGH->cctk_lsh[1];
+    // int const dj = di * cctkGH->cctk_lsh[0];
+    // int const dk = dj * cctkGH->cctk_lsh[1];
     offset[0] *= di;
     length[0] *= di;
     
+    vector<var_t> vars;
     for (int arg=0; arg<int(args.size()); ++arg) {
       int const vi = args[arg].vi;
       int const tl = args[arg].tl;
@@ -375,31 +412,18 @@ namespace OpenCLRunTime {
         assert(int(device->mems.at(vi).size()) == tl);
         device->mems.at(vi).resize(tl+1);
         void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
-        checkErr((device->mems.at(vi).at(tl) =
+        checkErr((device->mems.at(vi).at(tl).mem =
                   clCreateBuffer(device->context, mem_flags,
                                  np*sizeof(CCTK_REAL), need_ptr ? ptr : NULL,
                                  &errcode),
                   errcode));
-        if (device->mem_model == mm_copy) {
-          // Copy data the first time an OpenCL kernel uses them
-          if (device->same_padding) {
-            checkErr(clEnqueueWriteBuffer(device->queue,
-                                          device->mems.at(vi).at(tl),
-                                          CL_FALSE,
-                                          0, np*sizeof(CCTK_REAL), ptr,
-                                          0, NULL, NULL));
-          } else {
-            checkErr(clEnqueueWriteBufferRect(device->queue,
-                                              device->mems.at(vi).at(tl),
-                                              CL_FALSE,
-                                              offset, offset, length,
-                                              dJ, dK, dj, dk,
-                                              ptr,
-                                              0, NULL, NULL));
-          }
-        }
+        device->mems.at(vi).at(tl).host_valid = true; // assumption
+        device->mems.at(vi).at(tl).device_valid = false;
+        var_t const var = {vi, tl};
+        vars.push_back(var);
       }
     }
+    copy_to_device(cctkGH, vars);
     
     /*** Set up parameters for calling the kernel *****************************/
     
@@ -422,8 +446,8 @@ namespace OpenCLRunTime {
       int const vi = args[arg].vi;
       int const tl = args[arg].tl;
       checkErr(clSetKernelArg(kernel, arg+2,
-                              sizeof device->mems.at(vi).at(tl),
-                              &device->mems.at(vi).at(tl)));
+                              sizeof device->mems.at(vi).at(tl).mem,
+                              &device->mems.at(vi).at(tl).mem));
     }
   }
   
@@ -484,12 +508,24 @@ namespace OpenCLRunTime {
     grid.time       = cctkGH->cctk_time;
     grid.delta_time = cctkGH->cctk_delta_time;
     
+    static int timer_grid_copy = -1;
+    if (veryverbose) {
+      if (timer_grid_copy < 0) {
+        timer_grid_copy = CCTK_TimerCreate("OpenCLRunTime::grid::copy");
+        assert(timer_grid_copy>=0);
+      }
+      CCTK_TimerStartI(timer_grid_copy);
+    }
     // We use a blocking write because the next call for the same
     // kernel may have a different grid configuration, and we then
     // overwrite the host memory where this is stored.
     checkErr(clEnqueueWriteBuffer(device->queue, mem_grid, CL_TRUE,
                                   0, sizeof grid, &grid,
                                   0, NULL, NULL));
+    if (veryverbose) {
+      CCTK_TimerStopI(timer_grid_copy);
+      CCTK_TimerPrintDataI(timer_grid_copy, -1);
+    }
     
     // Calculate number of thread groups
     
@@ -521,10 +557,28 @@ namespace OpenCLRunTime {
                  (int)global_work_size[2]);
     }
     
+    // stringstream num_threads_buf;
+    // num_threads_buf
+    //   << local_work_size[0] * local_work_size[1] * local_work_size[2];
+    // string const num_threads = num_threads_buf.str();
+    // setenv("POCL_MAX_PTHREAD_COUNT", num_threads.c_str(), 1);
+    
+    static int timer_kernel_enqueue = -1;
+    if (veryverbose) {
+      if (timer_kernel_enqueue < 0) {
+        timer_kernel_enqueue =
+          CCTK_TimerCreate("OpenCLRunTime::kernel::enqueue");
+        assert(timer_kernel_enqueue>=0);
+      }
+      CCTK_TimerStartI(timer_kernel_enqueue);
+    }
+    
     // Queue a single execution of the kernel
+    cl_event event;
     checkErr(clEnqueueNDRangeKernel(device->queue, kernel, dim,
                                     NULL, global_work_size, local_work_size,
-                                    0, NULL, NULL));
+                                    0, NULL, &event));
+    events.push_back(event);
     
     // This finish prevents nans on the outer boundary when running on
     // multiple processes(with the Intel OpenCL implementation). I
@@ -533,6 +587,11 @@ namespace OpenCLRunTime {
 #if 1
     checkErr(clFinish(device->queue));
 #endif
+    
+    if (veryverbose) {
+      CCTK_TimerStopI(timer_kernel_enqueue);
+      CCTK_TimerPrintDataI(timer_kernel_enqueue, -1);
+    }
   }
   
   
@@ -578,8 +637,36 @@ namespace OpenCLRunTime {
   
   
   
-  extern "C"
-  void OpenCLRunTime_Statistics(CCTK_ARGUMENTS)
+  struct stats_t {
+    CCTK_REAL precount, count, sum, sum2, minval, maxval;
+    stats_t(): precount(0.0), count(0.0), sum(0.0), sum2(0.0),
+               minval(numeric_limits<CCTK_REAL>::max()), maxval(0.0)
+    {
+    }
+    CCTK_REAL get_count() const { return count; }
+    CCTK_REAL get_min() const
+    { return minval==numeric_limits<CCTK_REAL>::max() ? 0.0 : minval; }
+    CCTK_REAL get_max() const { return maxval; }
+    CCTK_REAL get_avg() const { return count==0.0 ? 0.0 : sum/count; }
+    CCTK_REAL get_sdv() const
+    { return count==0.0 ? 0.0 : sqrt(sum2/count - pow(get_avg(),2)); }
+    void insert(CCTK_REAL const& val)
+    {
+      if (precount < 1) {
+        // Ignore the first call, because this presumably includes a
+        // significant amount of one-time setup overhead
+        ++ precount;
+      } else {
+        ++ count;
+        sum += val;
+        sum2 += pow(val,2);
+        minval = min(minval, val);
+        maxval = max(maxval, val);
+      }
+    }
+  };
+  
+  void OpenCLKernel::statistics(cGH const *const cctkGH)
   {
     DECLARE_CCTK_ARGUMENTS;
     DECLARE_CCTK_PARAMETERS;
@@ -587,7 +674,102 @@ namespace OpenCLRunTime {
     assert(device);
     device->setup_grid(cctkGH);
     
-    // Do nothing(yet)
+    // Finish, because we are done
+    checkErr(clFinish(device->queue));
+    
+    streamsize const oldprecision = cout.precision();
+    ios_base::fmtflags const oldflags = cout.flags();
+    cout.precision(0);
+    cout.flags(ios::fixed);
+    
+    double const nano = 1.0e-9;   // one nanosecond in seconds
+    
+    if (verbose) {
+      cout << "OpenCL profiling info (times in seconds):\n";
+      cout << "   "
+           << setw(50) << "Name" << "   "
+           << setw(12) << "Wait" << "   "
+           << setw(12) << "Startup" << "   "
+           << setw(12) << "Run" << endl;
+      for (list<OpenCLKernel*>::const_iterator
+             ki = kernels.begin(); ki != kernels.end(); ++ki)
+      {
+        OpenCLKernel const& kernel = **ki;
+        
+        for (list<cl_event>::const_iterator
+               ei = kernel.events.begin(); ei != kernel.events.end(); ++ei)
+        {
+          cl_event const& event = *ei;
+          
+          cl_ulong queued, submit, start, end;
+          size_t size;
+          checkErr(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_QUEUED,
+                                           sizeof queued, &queued, &size));
+          checkErr(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_SUBMIT,
+                                           sizeof submit, &submit, &size));
+          checkErr(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,
+                                           sizeof start, &start, &size));
+          checkErr(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END,
+                                           sizeof end, &end, &size));
+          cl_ulong const wait_time    = submit - queued;
+          cl_ulong const startup_time = start  - submit;
+          cl_ulong const run_time     = end    - start;
+          cout << "   "
+               << setw(50) << kernel.name << "   "
+               << setw(12) << nano * wait_time << "   "
+               << setw(12) << nano * startup_time << "   "
+               << setw(12) << nano * run_time << endl;
+        }
+        cout << "\n";
+      }
+    }
+    
+    cout << "OpenCL profiling info (times in seconds):\n";
+    cout << "   "
+         << setw(50) << "Name" << "   "
+         << setw(8) << "Count" << "   "
+         << setw(8) << "Average" << "   "
+         << setw(8) << "Std.Dev." << "   "
+         << setw(8) << "Minimum" << "   "
+         << setw(8) << "Maximum" << "\n";
+    for (list<OpenCLKernel*>::const_iterator
+           ki = kernels.begin(); ki != kernels.end(); ++ki)
+    {
+      OpenCLKernel const& kernel = **ki;
+      
+      stats_t stats;
+      for (list<cl_event>::const_iterator
+             ei = kernel.events.begin(); ei != kernel.events.end(); ++ei)
+      {
+        cl_event const& event = *ei;
+        
+        cl_ulong start, end;
+        size_t size;
+        checkErr(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,
+                                         sizeof start, &start, &size));
+        checkErr(clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END,
+                                         sizeof end, &end, &size));
+        cl_ulong const run_time = end - start;
+        stats.insert(run_time);
+      }
+      cout << "   "
+           << setw(50) << kernel.name << "   "
+           << setw(8) << stats.get_count() << "   "
+           << setw(8) << nano * stats.get_avg() << "   "
+           << setw(8) << nano * stats.get_sdv() << "   "
+           << setw(8) << nano * stats.get_min() << "   "
+           << setw(8) << nano * stats.get_max() << "\n";
+    }
+    
+    cout.precision(oldprecision);
+    cout.setf(oldflags);
+  }
+  
+  extern "C"
+  void OpenCLRunTime_Statistics(CCTK_ARGUMENTS)
+  {
+    DECLARE_CCTK_ARGUMENTS;
+    OpenCLKernel::statistics(cctkGH);
   }
   
 } // namespace OpenCLRunTime

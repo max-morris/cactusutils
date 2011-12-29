@@ -33,8 +33,8 @@ namespace OpenCLRunTime {
   void copy_cycle(cGH const *restrict const cctkGH,
                   vector<var_t> const& vars);
   // Copy from past to current timelevel (used by MoL)
-  void copy_mol(cGH const *restrict const cctkGH,
-                vector<var_t> const& vars);
+  void copy_from_past(cGH const *restrict const cctkGH,
+                      vector<var_t> const& vars);
   
 } // namespace OpenCLRunTime
 

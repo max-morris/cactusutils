@@ -15,12 +15,12 @@ PROVIDES FUNCTION Accelerator_Cycle             \
   WITH OpenCLRunTime_Cycle                      \
   LANGUAGE C
   
-CCTK_INT FUNCTION Accelerator_CopyMoL           \
+CCTK_INT FUNCTION Accelerator_CopyFromPast      \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY        IN vars,               \
    CCTK_INT              IN nvars)
-PROVIDES FUNCTION Accelerator_CopyMoL           \
-  WITH OpenCLRunTime_CopyMoL                    \
+PROVIDES FUNCTION Accelerator_CopyFromPast      \
+  WITH OpenCLRunTime_CopyFromPast               \
   LANGUAGE C
 
 CCTK_INT FUNCTION Accelerator_PreCallFunction   \

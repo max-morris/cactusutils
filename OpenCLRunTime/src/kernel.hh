@@ -22,6 +22,8 @@ namespace OpenCLRunTime {
   
   // Define a kernel
   struct OpenCLKernel {
+    static list<OpenCLKernel*> kernels;
+    
     char const *name;
     cl_program program;
     
@@ -33,6 +35,8 @@ namespace OpenCLRunTime {
     vector<arg_t> args;
     
     cl_kernel kernel;
+    
+    list<cl_event> events;
     
     grid_t grid;
     cl_mem mem_grid;
@@ -51,6 +55,10 @@ namespace OpenCLRunTime {
     void call(cGH const *const cctkGH,
               int const imin[],
               int const imax[]);
+    
+    void disassemble() const;
+    
+    static void statistics(cGH const *const cctkGH);
   };
   
   

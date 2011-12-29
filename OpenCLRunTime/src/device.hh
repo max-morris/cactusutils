@@ -54,19 +54,6 @@ namespace OpenCLRunTime {
   
   
   
-  // NOTE: Ensure that sizeof(cl_ptrdiff_t) <= CL_DEVICE_ADDRESS_BITS
-#if 0
-  // 32 bits
-  typedef cl_uint cl_size_t;
-  typedef cl_int  cl_ptrdiff_t;
-#else
-  // 64 bits
-  typedef cl_ulong cl_size_t;
-  typedef cl_long  cl_ptrdiff_t;
-#endif
-  
-  
-  
   // Equivalent of cGH for the kernel
   struct grid_t {
     // Doubles first, then ints, to ensure proper alignment
@@ -76,15 +63,15 @@ namespace OpenCLRunTime {
     double time;
     double delta_time;
     // Grid structure properties:
-    cl_ptrdiff_t gsh[dim];
-    cl_ptrdiff_t lbnd[dim];
-    cl_ptrdiff_t lssh[dim];
-    cl_ptrdiff_t lsh[dim];
+    int gsh[dim];
+    int lbnd[dim];
+    int lssh[dim];
+    int lsh[dim];
     // Loop settings:
-    cl_ptrdiff_t lmin[dim];     // loop region
-    cl_ptrdiff_t lmax[dim];
-    cl_ptrdiff_t imin[dim];     // active region
-    cl_ptrdiff_t imax[dim];
+    int lmin[dim];              // loop region
+    int lmax[dim];
+    int imin[dim];              // active region
+    int imax[dim];
   };
   
   
@@ -100,6 +87,11 @@ namespace OpenCLRunTime {
                                 // supported)
   };
   
+  struct mem_t {
+    cl_mem mem;
+    bool host_valid, device_valid;
+  };
+  
   // Global data, defining platform, device etc.
   struct OpenCLDevice {
     cl_device_type device_type;
@@ -111,9 +103,7 @@ namespace OpenCLRunTime {
     bool memory_aligned;        // device memory is aligned
     bool same_padding;          // host and device have same padding
     
-    vector<vector<cl_mem> > mems;  // [vi][tl]
-    vector<bool> mem_host_valid;   // host copy is valid
-    vector<bool> mem_device_valid; // device copy is valid
+    vector<vector<mem_t> > mems; // [vi][tl]
     
     // point  (smallest unit)
     // vector (same execution path)

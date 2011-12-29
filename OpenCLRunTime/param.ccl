@@ -16,6 +16,12 @@ BOOLEAN veryverbose "Output even more detailed information" STEERABLE=always
 {
 } "no"
 
+BOOLEAN disassemble_kernels "Disassemble kernels" STEERABLE=always
+{
+} "yes"
+
+
+
 STRING opencl_options "OpenCL compiler options" STEERABLE=always
 {
   "" :: ""
@@ -23,8 +29,10 @@ STRING opencl_options "OpenCL compiler options" STEERABLE=always
 
 KEYWORD opencl_device_type "Device type" STEERABLE=always
 {
-  "CPU" :: ""
-  "GPU" :: ""
+  "CPU"         :: ""
+  "GPU"         :: ""
+  "accelerator" :: ""
+  "any"         :: ""
 } "CPU"
 
 KEYWORD memory_model "Memory model" STEERABLE=recover

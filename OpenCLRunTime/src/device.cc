@@ -30,8 +30,12 @@ namespace OpenCLRunTime {
     case CL_IMAGE_FORMAT_NOT_SUPPORTED               : return "CL_IMAGE_FORMAT_NOT_SUPPORTED";
     case CL_BUILD_PROGRAM_FAILURE                    : return "CL_BUILD_PROGRAM_FAILURE";
     case CL_MAP_FAILURE                              : return "CL_MAP_FAILURE";
+#ifdef CL_MISALIGNED_SUB_BUFFER_OFFSET
     case CL_MISALIGNED_SUB_BUFFER_OFFSET             : return "CL_MISALIGNED_SUB_BUFFER_OFFSET";
+#endif
+#ifdef CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST
     case CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST: return "CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST";
+#endif
     case CL_INVALID_VALUE                            : return "CL_INVALID_VALUE";
     case CL_INVALID_DEVICE_TYPE                      : return "CL_INVALID_DEVICE_TYPE";
     case CL_INVALID_PLATFORM                         : return "CL_INVALID_PLATFORM";
@@ -66,7 +70,9 @@ namespace OpenCLRunTime {
     case CL_INVALID_BUFFER_SIZE                      : return "CL_INVALID_BUFFER_SIZE";
     case CL_INVALID_MIP_LEVEL                        : return "CL_INVALID_MIP_LEVEL";
     case CL_INVALID_GLOBAL_WORK_SIZE                 : return "CL_INVALID_GLOBAL_WORK_SIZE";
+#ifdef CL_INVALID_PROPERTY
     case CL_INVALID_PROPERTY                         : return "CL_INVALID_PROPERTY";
+#endif
     }
     return "unknown error";
   }
@@ -103,43 +109,58 @@ namespace OpenCLRunTime {
     
     cl_int errcode;
     
-    /*** Choose a platform ****************************************************/
+    /*** Choose a platform and a context (basically a device)******************/
     
     cl_uint num_platforms;
     checkErr(clGetPlatformIDs(0, NULL, &num_platforms));
-    cl_platform_id platforms[num_platforms];
-    checkErr(clGetPlatformIDs(num_platforms, &platforms[0], &num_platforms));
-    // Arbitrarily choose first platform
+    cl_platform_id platform_ids[num_platforms];
+    checkErr(clGetPlatformIDs(num_platforms, &platform_ids[0], &num_platforms));
     assert(num_platforms > 0);
-    cl_platform_id const platform = platforms[0];
-    size_t platform_name_size;
-    checkErr(clGetPlatformInfo(platform, CL_PLATFORM_NAME,
-                               0, NULL, &platform_name_size));
-    char platform_name[platform_name_size];
-    checkErr(clGetPlatformInfo(platform, CL_PLATFORM_NAME,
-                               platform_name_size, platform_name, NULL));
-    CCTK_VInfo(CCTK_THORNSTRING,
-               "Selected platform: %s", platform_name);
     
-    /*** Choose a context (basically a device) ********************************/
-    
+    cl_device_type want_device_types = 0;
     if (CCTK_EQUALS(opencl_device_type, "CPU")) {
-      device_type = CL_DEVICE_TYPE_CPU;
+      want_device_types = CL_DEVICE_TYPE_CPU;
     } else if (CCTK_EQUALS(opencl_device_type, "GPU")) {
-      device_type = CL_DEVICE_TYPE_GPU;
+      want_device_types = CL_DEVICE_TYPE_GPU;
+    } else if (CCTK_EQUALS(opencl_device_type, "acclerator")) {
+      want_device_types = CL_DEVICE_TYPE_ACCELERATOR;
+    } else if (CCTK_EQUALS(opencl_device_type, "any")) {
+      want_device_types =
+        CL_DEVICE_TYPE_CPU | CL_DEVICE_TYPE_GPU | CL_DEVICE_TYPE_ACCELERATOR;
     } else {
       CCTK_VWarn(CCTK_WARN_ALERT, __LINE__, __FILE__, CCTK_THORNSTRING,
                  "Unknown device type \"%s\" selected", opencl_device_type);
     }
-    cl_context_properties const cprops[] =
-      {CL_CONTEXT_PLATFORM, (cl_context_properties)platform, 0};
-    context =
-      clCreateContextFromType(cprops, device_type, NULL, NULL, &errcode);
-    if (errcode != CL_SUCCESS) {
-      CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
-                 "Could not create OpenCL context for device type \"%s\"",
-                 opencl_device_type);
+    
+    // Loop over all platforms
+    cl_platform_id platform_id;
+    for (cl_uint platform = 0; platform < num_platforms; ++platform) {
+      
+      platform_id = platform_ids[platform];
+      
+      cl_context_properties const cprops[] =
+        {CL_CONTEXT_PLATFORM, (cl_context_properties)platform_id, 0};
+      context =
+        clCreateContextFromType(cprops, want_device_types, NULL, NULL,
+                                &errcode);
+      if (errcode == CL_SUCCESS) goto found_context;
+      
     }
+    // Could not find a context on any platform, abort
+    CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+               "Could not create OpenCL context for device type \"%s\"",
+               opencl_device_type);
+    
+    // Found a context, continue
+  found_context:
+    size_t platform_name_size;
+    checkErr(clGetPlatformInfo(platform_id, CL_PLATFORM_NAME,
+                               0, NULL, &platform_name_size));
+    char platform_name[platform_name_size];
+    checkErr(clGetPlatformInfo(platform_id, CL_PLATFORM_NAME,
+                               platform_name_size, platform_name, NULL));
+    CCTK_VInfo(CCTK_THORNSTRING,
+               "Selected platform: %s", platform_name);
     size_t context_devices_size;
     checkErr(clGetContextInfo(context, CL_CONTEXT_DEVICES,
                               0, NULL, &context_devices_size));
@@ -158,14 +179,13 @@ namespace OpenCLRunTime {
                              device_name_size, device_name, NULL));
     CCTK_VInfo(CCTK_THORNSTRING,
                "Selected device: %s", device_name);
-    cl_device_type type;
     checkErr(clGetDeviceInfo(device_id, CL_DEVICE_TYPE,
-                             sizeof type, &type, NULL));
+                             sizeof device_type, &device_type, NULL));
     CCTK_VInfo(CCTK_THORNSTRING,
                "   Device type: %s",
-               type == CL_DEVICE_TYPE_CPU         ? "CPU"        :
-               type == CL_DEVICE_TYPE_GPU         ? "GPU"        :
-               type == CL_DEVICE_TYPE_ACCELERATOR ? "ACCELERATOR":
+               device_type == CL_DEVICE_TYPE_CPU         ? "CPU"         :
+               device_type == CL_DEVICE_TYPE_GPU         ? "GPU"         :
+               device_type == CL_DEVICE_TYPE_ACCELERATOR ? "ACCELERATOR" :
                NULL);
     
     /*** Create execution queue ***********************************************/
@@ -173,6 +193,9 @@ namespace OpenCLRunTime {
     checkErr((queue =
               clCreateCommandQueue(context, device_id,
                                    /*CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | */
+#ifdef CL_QUEUE_IMMEDIATE_EXECUTION_ENABLE_INTEL
+                                   CL_QUEUE_IMMEDIATE_EXECUTION_ENABLE_INTEL |
+#endif
                                    CL_QUEUE_PROFILING_ENABLE,
                                    &errcode),
               errcode));
@@ -192,8 +215,6 @@ namespace OpenCLRunTime {
     }
     
     mems.resize(CCTK_NumVars());
-    mem_host_valid.resize(CCTK_NumVars(), true);
-    mem_device_valid.resize(CCTK_NumVars(), false);
     
     have_grid = false;
   }
@@ -218,7 +239,7 @@ namespace OpenCLRunTime {
        vector_size_y == 1 and
        vector_size_z == 1) or
       ((VECTORISE and VECTORISE_ALIGNED_ARRAYS) and
-       vector_size_x <= CCTK_REAL_VEC_SIZE and
+       CCTK_REAL_VEC_SIZE % vector_size_x == 0 and
        vector_size_y == 1 and
        vector_size_z == 1);
     

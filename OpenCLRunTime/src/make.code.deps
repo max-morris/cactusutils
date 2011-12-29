@@ -1,19 +1,19 @@
 # Main make.code.deps file for thorn OpenCLRunTime
 
-wrapper-%.c: $(SRCDIR)/%.cl $(SRCDIR)/make.code.deps
-	@echo Generating $@
-	{							\
-	echo 'char const * $*_GetSource (void);' &&		\
-	echo 'char const * $*_GetSource (void) { return' &&	\
-	sed -e 's/\\/\\\\/g;s/"/\\"/g;s/\(.*\)/"\1\\n"/g'	\
-		< $(SRCDIR)/$*.cl &&				\
-	echo '; }';						\
-	} > $@.tmp
-	mv $@.tmp $@
-
-wrapper-%.c.o: wrapper-%.c
-	@echo Compiling $<
-	$(COMPILE_C)
-	@echo Postprocessing $<
-	$(POSTPROCESS_C)
-	@echo $(DIVIDER)
+#wrapper-%.c: $(SRCDIR)/%.cl $(SRCDIR)/make.code.deps
+#	@echo Generating $@
+#	{							\
+#	echo 'char const * $*_GetSource (void);' &&		\
+#	echo 'char const * $*_GetSource (void) { return' &&	\
+#	sed -e 's/\\/\\\\/g;s/"/\\"/g;s/\(.*\)/"\1\\n"/g'	\
+#		< $(SRCDIR)/$*.cl &&				\
+#	echo '; }';						\
+#	} > $@.tmp
+#	mv $@.tmp $@
+#
+#wrapper-%.c.o: wrapper-%.c
+#	@echo Compiling $<
+#	$(COMPILE_C)
+#	@echo Postprocessing $<
+#	$(POSTPROCESS_C)
+#	@echo $(DIVIDER)

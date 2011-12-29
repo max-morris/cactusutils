@@ -2,6 +2,7 @@
 #include "device.hh"
 
 #include <cctk_Parameters.h>
+#include <util_Table.h>
 
 #include <carpet.hh>
 
@@ -46,23 +47,33 @@ namespace OpenCLRunTime {
       assert(tl>=0);
       if (int(device->mems.at(vi).size()) > tl) {
         
+        if (device->mems.at(vi).at(tl).device_valid) continue;
+        
+        // TODO: Check this. For now, we just assume this is true,
+        // because we don't assume that all provides/requires
+        // information is complete and correct.
+        // assert(device->mems.at(vi).at(tl).host_valid);
+        device->mems.at(vi).at(tl).host_valid = true;
+        
         void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
         
         if (device->same_padding) {
           checkErr(clEnqueueWriteBuffer(device->queue,
-                                        device->mems.at(vi).at(tl),
+                                        device->mems.at(vi).at(tl).mem,
                                         CL_FALSE,
                                         0, np*sizeof(CCTK_REAL), ptr,
                                         0, NULL, NULL));
         } else {
           checkErr(clEnqueueWriteBufferRect(device->queue,
-                                            device->mems.at(vi).at(tl),
+                                            device->mems.at(vi).at(tl).mem,
                                             CL_FALSE,
                                             offset, offset, length,
                                             dJ, dK, dj, dk,
                                             ptr,
                                             0, NULL, NULL));
         }
+        
+        device->mems.at(vi).at(tl).device_valid = true;
         
       }
     } // for var
@@ -103,17 +114,25 @@ namespace OpenCLRunTime {
       assert(tl>=0);
       if (int(device->mems.at(vi).size()) > tl) {
         
+        if (device->mems.at(vi).at(tl).host_valid) continue;
+        
+        // TODO: Check this. For now, we just assume this is true,
+        // because we don't assume that all provides/requires
+        // information is complete and correct.
+        // assert(device->mems.at(vi).at(tl).device_valid);
+        device->mems.at(vi).at(tl).device_valid = true;
+        
         void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
         
         if (device->same_padding) {
           checkErr(clEnqueueReadBuffer(device->queue,
-                                       device->mems.at(vi).at(tl),
+                                       device->mems.at(vi).at(tl).mem,
                                        CL_FALSE,
                                        0, np*sizeof(CCTK_REAL), ptr,
                                        0, NULL, NULL));
         } else {
           checkErr(clEnqueueReadBufferRect(device->queue,
-                                           device->mems.at(vi).at(tl),
+                                           device->mems.at(vi).at(tl).mem,
                                            CL_FALSE,
                                            offset, offset, length,
                                            dJ, dK, dj, dk,
@@ -121,8 +140,13 @@ namespace OpenCLRunTime {
                                            0, NULL, NULL));
         }
         
+        device->mems.at(vi).at(tl).host_valid = true;
+        
       }
     } // for var
+    
+    // Finish, because we output
+    checkErr(clFinish(device->queue));
   }
   
   
@@ -201,7 +225,7 @@ namespace OpenCLRunTime {
             void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
             
             checkErr(clEnqueueReadBufferRect(device->queue,
-                                             device->mems.at(vi).at(tl),
+                                             device->mems.at(vi).at(tl).mem,
                                              CL_FALSE,
                                              offset, offset, length,
                                              dJ, dK, dj, dk,
@@ -213,6 +237,9 @@ namespace OpenCLRunTime {
       }     // for dir
       
     } // for var
+    
+    // Finish, because we sync
+    checkErr(clFinish(device->queue));
   }
   
   
@@ -283,7 +310,7 @@ namespace OpenCLRunTime {
             void const *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
             
             checkErr(clEnqueueWriteBufferRect(device->queue,
-                                              device->mems.at(vi).at(tl),
+                                              device->mems.at(vi).at(tl).mem,
                                               CL_FALSE,
                                               offset, offset, length,
                                               dJ, dK, dj, dk,
@@ -316,23 +343,32 @@ namespace OpenCLRunTime {
         for (int tl=num_tl-1; tl>0; --tl) {
           cl_event new_event;
           checkErr(clEnqueueCopyBuffer(device->queue,
-                                       device->mems.at(vi).at(tl-1),
-                                       device->mems.at(vi).at(tl),
+                                       device->mems.at(vi).at(tl-1).mem,
+                                       device->mems.at(vi).at(tl).mem,
                                        0, 0, NP*sizeof(CCTK_REAL),
                                        have_event ? 1 : 0,
                                        have_event ? &event : NULL,
                                        &new_event));
           event = new_event;
           have_event = true;
+          
+          device->mems.at(vi).at(tl).device_valid =
+            device->mems.at(vi).at(tl-1).device_valid;
+          // Cycle host information here as well
+          device->mems.at(vi).at(tl).host_valid =
+            device->mems.at(vi).at(tl-1).host_valid;
         }
+        device->mems.at(vi).at(0).device_valid = false;
+        // Cycle host information here as well
+        device->mems.at(vi).at(0).host_valid = false;
       }
     }
   }
   
   
   
-  void copy_mol(cGH const *restrict const cctkGH,
-                vector<var_t> const& vars)
+  void copy_from_past(cGH const *restrict const cctkGH,
+                      vector<var_t> const& vars)
   {
     assert(Carpet::is_local_mode());
     
@@ -347,12 +383,21 @@ namespace OpenCLRunTime {
       int const tl=vars.at(var).tl;
       assert(tl>=0);
       assert (tl+1 < int(device->mems.at(vi).size()));
+        
+      // TODO: Check this. For now, we just assume this is true,
+      // because we don't assume that all provides/requires
+      // information is complete and correct.
+      // assert(device->mems.at(vi).at(tl+1).device_valid);
+      device->mems.at(vi).at(tl+1).device_valid = true;
       
       checkErr(clEnqueueCopyBuffer(device->queue,
-                                   device->mems.at(vi).at(tl+1),
-                                   device->mems.at(vi).at(tl),
+                                   device->mems.at(vi).at(tl+1).mem,
+                                   device->mems.at(vi).at(tl).mem,
                                    0, 0, NP*sizeof(CCTK_REAL),
                                    0, NULL, NULL));
+      
+      device->mems.at(vi).at(tl).device_valid =
+        device->mems.at(vi).at(tl+1).device_valid;
       
     } // for var
   }
@@ -389,9 +434,9 @@ namespace OpenCLRunTime {
   
   
   extern "C"
-  CCTK_INT OpenCLRunTime_CopyMoL(CCTK_POINTER_TO_CONST const cctkGH_,
-                                 CCTK_INT const varindices[],
-                                 CCTK_INT const nvars)
+  CCTK_INT OpenCLRunTime_CopyFromPast(CCTK_POINTER_TO_CONST const cctkGH_,
+                                      CCTK_INT const varindices[],
+                                      CCTK_INT const nvars)
   {
     cGH const *restrict const cctkGH = static_cast<cGH const*>(cctkGH_);
     DECLARE_CCTK_PARAMETERS;
@@ -407,7 +452,7 @@ namespace OpenCLRunTime {
       vars.at(var).tl = 0;
     }
     
-    copy_mol(cctkGH, vars);
+    copy_from_past(cctkGH, vars);
     
     return 0;
   }
@@ -425,6 +470,108 @@ namespace OpenCLRunTime {
     assert(attribute_);
     cFunctionData const *restrict const attribute CCTK_ATTRIBUTE_UNUSED =
       static_cast<cFunctionData const*>(attribute_);
+    DECLARE_CCTK_PARAMETERS;
+    
+    // Don't do anything before the device has been set up. (Note that
+    // the device setup routine is called via CallFunction.)
+    if (not device) return 0;
+    
+    // Can only handle grid functions if called in local mode
+    if (not Carpet::is_local_mode()) return 0;
+    
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING, "PreCallFunction");
+      
+      cout << "[" << attribute->where << "] "
+           << attribute->thorn << "::" << attribute->routine << "\n";
+      
+      cout << "   SyncGroups:";
+      for (int n=0; n<attribute->n_SyncGroups; ++n) {
+        char *const groupname = CCTK_GroupName(attribute->SyncGroups[n]);
+        cout << " " << groupname;
+        free(groupname);
+      }
+      cout << "\n";
+      
+      cout << "   Triggers:";
+      for (int n=0; n<attribute->n_TriggerGroups; ++n) {
+        cout << " " << attribute->TriggerGroups[n];
+      }
+      cout << "\n";
+      
+      cout << "   Requires:";
+      for (int n=0; n<attribute->n_RequiresClauses; ++n) {
+        cout << " " << attribute->RequiresClauses[n];
+      }
+      cout << "\n";
+      
+      cout << "   Provides:";
+      for (int n=0; n<attribute->n_ProvidesClauses; ++n) {
+        cout << " " << attribute->ProvidesClauses[n];
+      }
+      cout << "\n";
+      
+      cout << "   Tags: ";
+      Util_TablePrintString(stdout, attribute->tags);
+      cout << "\n";
+    }
+    
+    // Is this an OpenCL routine?
+    CCTK_INT is_opencl;
+    int const ierr = Util_TableGetInt(attribute->tags, &is_opencl, "OpenCL");
+    if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
+      is_opencl = 0;            // default
+    } else if (ierr <= 0) {
+      CCTK_WARN (CCTK_WARN_ABORT, "Error with schedule tag \"OpenCL\"");
+    }
+    
+    // Copy all required variables to the device or to the host,
+    // depending on the language (OpenCL or not)
+    bool mem_t:: *valid;
+    void (*copy) (cGH const *restrict const cctkGH, vector<var_t> const& vars);
+    if (is_opencl) {
+      valid = &mem_t::device_valid;
+      copy = copy_to_device;
+    } else {
+      valid = &mem_t::host_valid;
+      copy = copy_to_host;
+    }
+    
+    vector<var_t> vars;
+    for (int n=0; n<attribute->n_RequiresClauses; ++n) {
+      int const gi = CCTK_GroupIndex(attribute->RequiresClauses[n]);
+      assert(gi>=0);
+      int const nv = CCTK_NumVarsInGroupI(gi);
+      assert(nv>=0);
+      if (nv > 0) {
+        int const v0 = CCTK_FirstVarIndexI(gi);
+        assert(v0>=0);
+        for (int vi=v0; vi<v0+nv; ++vi) {
+          int const tl=0;       // only copy current timelevel
+          if (int(device->mems.at(vi).size()) > tl) {
+            if (not (device->mems.at(vi).at(tl).*valid)) {
+              var_t const var = {vi, tl};
+              vars.push_back(var);
+            }
+          }
+        }
+      }
+    }
+    
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING, "Copying in");
+      cout << "[" << attribute->where << "] "
+           << attribute->thorn << "::" << attribute->routine << "\n";
+      cout << "   Copy in:";
+      for (size_t n=0; n<vars.size(); ++n) {
+        char *const fullname = CCTK_FullName(vars.at(n).vi);
+        cout << " " << fullname << "/" << vars.at(n).tl;
+        free(fullname);
+      }
+      cout << "\n";
+    }
+    
+    copy(cctkGH, vars);
     
     return 0;
   }
@@ -447,23 +594,128 @@ namespace OpenCLRunTime {
     // the device setup routine is called via CallFunction.)
     if (not device) return 0;
     
-    // Only copy back if called in local mode
+    // Can only handle grid functions if called in local mode
     if (not Carpet::is_local_mode()) return 0;
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "PostCallFunction");
+      
+      cout << "[" << attribute->where << "] "
+           << attribute->thorn << "::" << attribute->routine << "\n";
+      
+      cout << "   SyncGroups:";
+      for (int n=0; n<attribute->n_SyncGroups; ++n) {
+        char *const groupname = CCTK_GroupName(attribute->SyncGroups[n]);
+        cout << " " << groupname;
+        free(groupname);
+      }
+      cout << "\n";
+      
+      cout << "   Triggers:";
+      for (int n=0; n<attribute->n_TriggerGroups; ++n) {
+        cout << " " << attribute->TriggerGroups[n];
+      }
+      cout << "\n";
+      
+      cout << "   Requires:";
+      for (int n=0; n<attribute->n_RequiresClauses; ++n) {
+        cout << " " << attribute->RequiresClauses[n];
+      }
+      cout << "\n";
+      
+      cout << "   Provides:";
+      for (int n=0; n<attribute->n_ProvidesClauses; ++n) {
+        cout << " " << attribute->ProvidesClauses[n];
+      }
+      cout << "\n";
+      
+      cout << "   Tags: ";
+      Util_TablePrintString(stdout, attribute->tags);
+      cout << "\n";
     }
     
-    vector<var_t> vars;
-    for (int vi=0; vi<int(device->mems.size()); ++vi) {
-      int const tl=0;           // only copy current timelevel
-      if (int(device->mems.at(vi).size()) > tl) {
-        var_t const var = {vi, tl};
-        vars.push_back(var);
+    // Is this an OpenCL routine?
+    CCTK_INT is_opencl;
+    int const ierr = Util_TableGetInt(attribute->tags, &is_opencl, "OpenCL");
+    if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
+      is_opencl = 0;            // default
+    } else if (ierr <= 0) {
+      CCTK_WARN (CCTK_WARN_ABORT, "Error with schedule tag \"OpenCL\"");
+    }
+    
+    // Mark all provided variables as valid, and mark them as invalid
+    // on the other end
+    bool mem_t:: *valid;
+    bool mem_t:: *invalid;
+    if (is_opencl) {
+      valid = &mem_t::device_valid;
+      invalid = &mem_t::host_valid;
+    } else {
+      valid = &mem_t::host_valid;
+      invalid = &mem_t::device_valid;
+    }
+    
+    for (int n=0; n<attribute->n_ProvidesClauses; ++n) {
+      int const gi = CCTK_GroupIndex(attribute->ProvidesClauses[n]);
+      assert(gi>=0);
+      int const nv = CCTK_NumVarsInGroupI(gi);
+      assert(nv>=0);
+      if (nv > 0) {
+        int const v0 = CCTK_FirstVarIndexI(gi);
+        assert(v0>=0);
+        for (int vi=v0; vi<v0+nv; ++vi) {
+          int const tl=0;       // only mark current timelevel
+          if (int(device->mems.at(vi).size()) > tl) {
+            device->mems.at(vi).at(tl).*valid = true;
+            device->mems.at(vi).at(tl).*invalid = false;
+          }
+        }
       }
     }
     
-    copy_to_host(cctkGH, vars);
+    // If we are in the analysis bin, and if this is an OpenCL
+    // routine, then copy back all provided variables since they may
+    // be output. Otherwise, do nothing.
+    // TODO: Add a hook to the flesh to do this only when an I/O
+    // method has been called, and then copy only those variables
+    // necessary.
+    if (Carpet::in_analysis_bin and is_opencl) {
+      
+      vector<var_t> vars;
+      for (int n=0; n<attribute->n_ProvidesClauses; ++n) {
+        int const gi = CCTK_GroupIndex(attribute->ProvidesClauses[n]);
+        assert(gi>=0);
+        int const nv = CCTK_NumVarsInGroupI(gi);
+        assert(nv>=0);
+        if (nv > 0) {
+          int const v0 = CCTK_FirstVarIndexI(gi);
+          assert(v0>=0);
+          for (int vi=v0; vi<v0+nv; ++vi) {
+            int const tl=0;       // only copy current timelevel
+            if (int(device->mems.at(vi).size()) > tl) {
+              var_t const var = {vi, tl};
+              vars.push_back(var);
+            }
+          }
+        }
+      }
+      
+      if (veryverbose) {
+        CCTK_VInfo(CCTK_THORNSTRING, "Copying out");
+        cout << "[" << attribute->where << "] "
+             << attribute->thorn << "::" << attribute->routine << "\n";
+        cout << "   Copy in:";
+        for (size_t n=0; n<vars.size(); ++n) {
+          char *const fullname = CCTK_FullName(vars.at(n).vi);
+          cout << " " << fullname << "/" << vars.at(n).tl;
+          free(fullname);
+        }
+        cout << "\n";
+      }
+      
+      copy_to_host(cctkGH, vars);
+      
+    }
     
     return 0;
   }
