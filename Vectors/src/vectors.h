@@ -315,6 +315,9 @@ struct vecprops<CCTK_REAL8> {
 #  define KRANC_DIFF_FUNCTIONS
 #endif
 
+#undef Pi
+#define Pi (ToReal(M_PI))
+
 #undef ToReal
 #define ToReal(x) (vec_set1((CCTK_REAL)(x)))
 
