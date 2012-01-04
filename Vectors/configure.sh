@@ -1,7 +1,9 @@
 #! /bin/bash
 
 # Set up shell
-set -x                          # Output commands
+if [ "$(echo ${VERBOSE} | tr '[:upper:]' '[:lower:]')" = 'yes' ]; then
+    set -x                      # Output commands
+fi
 set -e                          # Abort on errors
 
 
