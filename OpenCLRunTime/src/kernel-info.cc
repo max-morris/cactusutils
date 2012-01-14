@@ -7,6 +7,9 @@
 #include <sstream>
 #include <string>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 
 namespace OpenCLRunTime {
@@ -26,7 +29,17 @@ namespace OpenCLRunTime {
     // Disassemble in a subprocess because it may be slow
     pid_t const cpid = fork();
     if (cpid > 0) {
-      cout << "Disassembling kernels in process " << cpid << "\n";
+      cout << "Disassembling kernel in process " << cpid << "\n";
+      
+      if (not disassemble_in_background) {
+        cout << "Waiting for disassembling to finish...";
+        cout.flush();
+        int status;
+        waitpid(cpid, &status, 0);
+        cout << " done\n";
+        cout.flush();
+      }
+      
       return;
     }
     
@@ -39,7 +52,7 @@ namespace OpenCLRunTime {
     char platform_name[platform_name_size];
     checkErr(clGetPlatformInfo(platform_id, CL_PLATFORM_NAME,
                                platform_name_size, platform_name, NULL));
-    enum vendor_t { v_AMD, v_Apple, v_Intel, v_NVidia };
+    enum vendor_t { v_AMD, v_Apple, v_Intel, v_NVidia, v_pocl };
     vendor_t vendor;
     if (strcasestr(platform_name, "AMD")) {
       vendor = v_AMD;
@@ -49,6 +62,8 @@ namespace OpenCLRunTime {
       vendor = v_Intel;
     } else if (strcasestr(platform_name, "NVidia")) {
       vendor = v_NVidia;
+    } else if (strcasestr(platform_name, "pocl")) {
+      vendor = v_pocl;
     } else {
       CCTK_WARN(CCTK_WARN_ALERT, "Unknown OpenCL architecture");
       _exit(0);
@@ -56,7 +71,8 @@ namespace OpenCLRunTime {
     
     switch (vendor) {
       
-    case v_NVidia: {
+    case v_NVidia:
+    case v_pocl: {
       // Don't do anything, because the "binary" is already an
       // assembler listing
       break;

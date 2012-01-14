@@ -378,14 +378,14 @@ namespace OpenCLRunTime {
       mem_flags = 0 /*CL_MEM_ALLOC_HOST_PTR*/;
       break;
     case mm_map:
-      // Allocate memory, and (don't copy) from/to grid functions
-      mem_flags = CL_MEM_ALLOC_HOST_PTR;
+      // Re-use the memory of the grid functions; map if necessary
+      mem_flags = CL_MEM_USE_HOST_PTR;
       break;
     default:
       assert(0);
     }
     bool const need_ptr =
-      mem_flags &(CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR);
+      mem_flags & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR);
     
     int const np =
       device->grid.lsh[0] * device->grid.lsh[1] * device->grid.lsh[2];
@@ -581,7 +581,7 @@ namespace OpenCLRunTime {
     events.push_back(event);
     
     // This finish prevents nans on the outer boundary when running on
-    // multiple processes(with the Intel OpenCL implementation). I
+    // multiple processes (with the Intel OpenCL implementation). I
     // don't know why it is necessary. The nans appear randomly, so
     // this is probably a timing issue.
 #if 1
@@ -638,24 +638,24 @@ namespace OpenCLRunTime {
   
   
   struct stats_t {
-    CCTK_REAL precount, count, sum, sum2, minval, maxval;
-    stats_t(): precount(0.0), count(0.0), sum(0.0), sum2(0.0),
+    CCTK_REAL count, sum, sum2, minval, maxval;
+    stats_t(): count(-1.0), sum(0.0), sum2(0.0),
                minval(numeric_limits<CCTK_REAL>::max()), maxval(0.0)
     {
     }
     CCTK_REAL get_count() const { return count; }
     CCTK_REAL get_min() const
-    { return minval==numeric_limits<CCTK_REAL>::max() ? 0.0 : minval; }
+    { return minval==numeric_limits<CCTK_REAL>::max() ? -1.0 : minval; }
     CCTK_REAL get_max() const { return maxval; }
-    CCTK_REAL get_avg() const { return count==0.0 ? 0.0 : sum/count; }
+    CCTK_REAL get_avg() const { return count<=0.0 ? -1.0 : sum/count; }
     CCTK_REAL get_sdv() const
-    { return count==0.0 ? 0.0 : sqrt(sum2/count - pow(get_avg(),2)); }
+    { return count<=0.0 ? -1.0 : sqrt(sum2/count - pow(get_avg(),2)); }
     void insert(CCTK_REAL const& val)
     {
-      if (precount < 1) {
+      if (count < 0.0) {
         // Ignore the first call, because this presumably includes a
         // significant amount of one-time setup overhead
-        ++ precount;
+        ++ count;
       } else {
         ++ count;
         sum += val;
@@ -678,19 +678,16 @@ namespace OpenCLRunTime {
     checkErr(clFinish(device->queue));
     
     streamsize const oldprecision = cout.precision();
-    ios_base::fmtflags const oldflags = cout.flags();
-    cout.precision(0);
-    cout.flags(ios::fixed);
     
     double const nano = 1.0e-9;   // one nanosecond in seconds
     
     if (verbose) {
-      cout << "OpenCL profiling info (times in seconds):\n";
+      cout << "OpenCL detailed profiling info (times in seconds):\n";
       cout << "   "
-           << setw(50) << "Name" << "   "
            << setw(12) << "Wait" << "   "
            << setw(12) << "Startup" << "   "
-           << setw(12) << "Run" << endl;
+           << setw(12) << "Run" << "   "
+           << "Name\n";
       for (list<OpenCLKernel*>::const_iterator
              ki = kernels.begin(); ki != kernels.end(); ++ki)
       {
@@ -715,23 +712,23 @@ namespace OpenCLRunTime {
           cl_ulong const startup_time = start  - submit;
           cl_ulong const run_time     = end    - start;
           cout << "   "
-               << setw(50) << kernel.name << "   "
-               << setw(12) << nano * wait_time << "   "
-               << setw(12) << nano * startup_time << "   "
-               << setw(12) << nano * run_time << endl;
+               << setw(12) << setprecision(9) << nano * wait_time << "   "
+               << setw(12) << setprecision(9) << nano * startup_time << "   "
+               << setw(12) << setprecision(9) << nano * run_time << "   "
+               << kernel.name << "\n";
         }
         cout << "\n";
       }
     }
     
-    cout << "OpenCL profiling info (times in seconds):\n";
+    cout << "OpenCL summary profiling info (times in seconds):\n";
     cout << "   "
-         << setw(50) << "Name" << "   "
-         << setw(8) << "Count" << "   "
-         << setw(8) << "Average" << "   "
-         << setw(8) << "Std.Dev." << "   "
-         << setw(8) << "Minimum" << "   "
-         << setw(8) << "Maximum" << "\n";
+         << setw(6) << "Count" << "   "
+         << setw(10) << "Average" << "   "
+         << setw(10) << "Std.Dev." << "   "
+         << setw(10) << "Minimum" << "   "
+         << setw(10) << "Maximum" << "   "
+         << "Name" << "\n";
     for (list<OpenCLKernel*>::const_iterator
            ki = kernels.begin(); ki != kernels.end(); ++ki)
     {
@@ -753,16 +750,16 @@ namespace OpenCLRunTime {
         stats.insert(run_time);
       }
       cout << "   "
-           << setw(50) << kernel.name << "   "
-           << setw(8) << stats.get_count() << "   "
-           << setw(8) << nano * stats.get_avg() << "   "
-           << setw(8) << nano * stats.get_sdv() << "   "
-           << setw(8) << nano * stats.get_min() << "   "
-           << setw(8) << nano * stats.get_max() << "\n";
+           << setw(6) << setprecision(0) << stats.get_count() << "   "
+           << setw(10) << setprecision(6) << nano * stats.get_avg() << "   "
+           << setw(10) << setprecision(6) << nano * stats.get_sdv() << "   "
+           << setw(10) << setprecision(6) << nano * stats.get_min() << "   "
+           << setw(10) << setprecision(6) << nano * stats.get_max() << "   "
+           << kernel.name << "\n";
     }
     
     cout.precision(oldprecision);
-    cout.setf(oldflags);
+    cout.flush();
   }
   
   extern "C"

@@ -188,15 +188,24 @@ namespace OpenCLRunTime {
                device_type == CL_DEVICE_TYPE_ACCELERATOR ? "ACCELERATOR" :
                NULL);
     
+    // TODO: use clCreateSubdevicesEXT and CL_AFFINITY_DOMAIN_NUMA_EXT
+    // to distribute threads across NUMA units. Also create memory
+    // objects with USE_HOST_PTR.
+    
     /*** Create execution queue ***********************************************/
     
-    checkErr((queue =
-              clCreateCommandQueue(context, device_id,
-                                   /*CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | */
+    cl_command_queue_properties const command_queue_properties =
+      // We want an in-order queue:
+      //    CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE |
 #ifdef CL_QUEUE_IMMEDIATE_EXECUTION_ENABLE_INTEL
-                                   CL_QUEUE_IMMEDIATE_EXECUTION_ENABLE_INTEL |
+      // We don't want "immediate execution":
+      //    CL_QUEUE_IMMEDIATE_EXECUTION_ENABLE_INTEL |
 #endif
-                                   CL_QUEUE_PROFILING_ENABLE,
+      // We do want profiling
+      CL_QUEUE_PROFILING_ENABLE |
+      0;
+    checkErr((queue =
+              clCreateCommandQueue(context, device_id, command_queue_properties,
                                    &errcode),
               errcode));
     
@@ -280,6 +289,8 @@ namespace OpenCLRunTime {
                unroll_size[2]);
     
     // Closely coupled threads (aka OpenCL groups)
+    // TODO: use CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE and
+    // clGetKernelWorkGroupInfo
     group_size[0] = group_size_x;
     group_size[1] = group_size_y;
     group_size[2] = group_size_z;

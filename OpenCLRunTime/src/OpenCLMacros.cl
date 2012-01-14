@@ -179,7 +179,7 @@
 #define kmadd(x,y,z)  mad(x,y,z)   // faster than fma(x,y,z)
 #define kmsub(x,y,z)  mad(x,y,-(z))
 #define knmadd(x,y,z) (-mad(x,y,z))
-#define knmsub(x,y,z) (-mad(x,y,(-z)))
+#define knmsub(x,y,z) (-mad(x,y,-(z)))
 
 #define kfabs(x)   fabs(x)
 #define kfmax(x,y) fmax(x,y)
@@ -371,10 +371,7 @@ CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x) { return x*x; }
      (lc_grp##D + GROUP_SIZE_##D *                                      \
       (lc_til##D + TILE_SIZE_##D * lc_grd##D)));                        \
   bool const lc_grp_done_##D CCTK_ATTRIBUTE_UNUSED =                    \
-    ind##D >= lc_##D##max;                                              \
-  bool const lc_grp_any_##D CCTK_ATTRIBUTE_UNUSED =                     \
-    ind##D + VECTOR_SIZE_##D * UNROLL_SIZE_##D - 1 >= lc_##D##min &&    \
-    !lc_grp_done_##D;
+    ind##D >= lc_##D##max;
 
 #define vecVI indicesV
 #define vecVJ ((CCTK_LONG_VEC)0)
@@ -389,8 +386,9 @@ CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x) { return x*x; }
   bool const lc_vec_trivial_##D CCTK_ATTRIBUTE_UNUSED =                 \
     VECTOR_SIZE_##D * UNROLL_SIZE_##D == 1;                             \
   bool const lc_vec_any_##D CCTK_ATTRIBUTE_UNUSED =                     \
-    lc_vec_trivial_##D ||                                               \
-    (IND+VECTOR_SIZE_##D-1 >= lc_##D##min && IND < lc_##D##max);        \
+    /*TODO because unroll size is 1*/                                   \
+    1 /*TODO lc_vec_trivial_##D ||                                      \
+        (IND+VECTOR_SIZE_##D-1 >= lc_##D##min && IND < lc_##D##max)*/;  \
   bool const lc_vec_lo_##D CCTK_ATTRIBUTE_UNUSED =                      \
     lc_vec_trivial_##D ||                                               \
     IND >= lc_##D##min;                                                 \
@@ -424,9 +422,10 @@ CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x) { return x*x; }
     ptrdiff_t const lc_offI = cctkGH->lmin[0]; /* offset */             \
     ptrdiff_t const lc_offJ = cctkGH->lmin[1];                          \
     ptrdiff_t const lc_offK = cctkGH->lmin[2];                          \
-    ptrdiff_t const lc_grpI = get_local_id(0); /* index in group */     \
-    ptrdiff_t const lc_grpJ = get_local_id(1);                          \
-    ptrdiff_t const lc_grpK = get_local_id(2);                          \
+    /*TODO because group size is 1*/                                    \
+    ptrdiff_t const lc_grpI = 0 /*TODO get_local_id(0)*/; /* index in group */ \
+    ptrdiff_t const lc_grpJ = 0 /*TODO get_local_id(1)*/;               \
+    ptrdiff_t const lc_grpK = 0 /*TODO get_local_id(2)*/;               \
     ptrdiff_t const lc_grdI = get_group_id(0); /* index in grid */      \
     ptrdiff_t const lc_grdJ = get_group_id(1);                          \
     ptrdiff_t const lc_grdK = get_group_id(2);                          \
@@ -436,25 +435,25 @@ CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x) { return x*x; }
                                                                         \
     for (ptrdiff_t lc_tilK = 0; lc_tilK < TILE_SIZE_K; ++lc_tilK) {     \
     LC_SET_GROUP_VARS(K);                                               \
-    if (lc_grp_done_K) break;                                           \
-    if (lc_grp_any_K) {                                                 \
+    if (CCTK_BUILTIN_EXPECT(lc_grp_done_K, 0)) break;                   \
     for (ptrdiff_t lc_tilJ = 0; lc_tilJ < TILE_SIZE_J; ++lc_tilJ) {     \
     LC_SET_GROUP_VARS(J);                                               \
-    if (lc_grp_done_J) break;                                           \
-    if (lc_grp_any_J) {                                                 \
+    if (CCTK_BUILTIN_EXPECT(lc_grp_done_J, 0)) break;                   \
     for (ptrdiff_t lc_tilI = 0; lc_tilI < TILE_SIZE_I; ++lc_tilI) {     \
     LC_SET_GROUP_VARS(I);                                               \
-    if (lc_grp_done_I) break;                                           \
-    if (lc_grp_any_I) {                                                 \
+    if (CCTK_BUILTIN_EXPECT(lc_grp_done_I, 0)) break;                   \
                                                                         \
-      CCTK_UNROLL                                                       \
-        for (ptrdiff_t lc_unrK = 0; lc_unrK < UNROLL_SIZE_K; ++lc_unrK) { \
+      ptrdiff_t const lc_unrK = 0;                                      \
+      /*TODO CCTK_UNROLL                                                \
+        for (ptrdiff_t lc_unrK = 0; lc_unrK < UNROLL_SIZE_K; ++lc_unrK)*/ { \
       LC_SET_VECTOR_VARS(k,K);                                          \
-      CCTK_UNROLL                                                       \
-        for (ptrdiff_t lc_unrJ = 0; lc_unrJ < UNROLL_SIZE_J; ++lc_unrJ) { \
+      ptrdiff_t const lc_unrJ = 0;                                      \
+      /*TODO CCTK_UNROLL                                                \
+        for (ptrdiff_t lc_unrJ = 0; lc_unrJ < UNROLL_SIZE_J; ++lc_unrJ)*/ { \
       LC_SET_VECTOR_VARS(j,J);                                          \
-      CCTK_UNROLL                                                       \
-        for (ptrdiff_t lc_unrI = 0; lc_unrI < UNROLL_SIZE_I; ++lc_unrI) { \
+      ptrdiff_t const lc_unrI = 0;                                      \
+      /*TODO CCTK_UNROLL                                                \
+        for (ptrdiff_t lc_unrI = 0; lc_unrI < UNROLL_SIZE_I; ++lc_unrI)*/ { \
       LC_SET_VECTOR_VARS(i,I);                                          \
                                                                         \
         {
@@ -463,9 +462,6 @@ CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x) { return x*x; }
       }                                                 \
       }                                                 \
       }                                                 \
-    }                                                   \
-    }                                                   \
-    }                                                   \
     }                                                   \
     }                                                   \
     }                                                   \

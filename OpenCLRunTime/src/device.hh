@@ -81,10 +81,9 @@ namespace OpenCLRunTime {
     mm_always_mapped,           // device memory is directly
                                 // accessible (not supported by all
                                 // devices)
-    mm_copy,                    // we copy explicitly
-    mm_map                      // we map the device memory when the
-                                // host needs access (not yet
-                                // supported)
+    mm_copy,                    // copy explicitly
+    mm_map                      // map the device memory when the host
+                                // needs access
   };
   
   struct mem_t {

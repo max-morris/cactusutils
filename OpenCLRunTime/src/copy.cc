@@ -8,6 +8,12 @@
 
 #include <cassert>
 
+#ifdef CL_VERSION_1_1
+#  define HAVE_BUFFER_RECT_OPS 1
+#else
+#  define HAVE_BUFFER_RECT_OPS 0
+#endif
+
 
 
 namespace OpenCLRunTime {
@@ -19,64 +25,111 @@ namespace OpenCLRunTime {
   {
     assert(Carpet::is_local_mode());
     
-    if (device->mem_model == mm_always_mapped) return;
-    
-    int const np =
-      cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
-    
-    int const di = sizeof(CCTK_REAL);
-    int const dj = di * cctkGH->cctk_lsh[0];
-    int const dk = dj * cctkGH->cctk_lsh[1];
-    int const dI = sizeof(CCTK_REAL);
-    int const dJ = dI * device->grid.lsh[0];
-    int const dK = dJ * device->grid.lsh[1];
-    
-    size_t offset[dim];
-    size_t length[dim];
-    for (int d=0; d<dim; ++d) {
-      offset[d] = 0;
-      length[d] = cctkGH->CCTK_LSSH(0,d);
-    }
-    offset[0] *= di;
-    length[0] *= di;
-    
-    for (size_t var=0; var<vars.size(); ++var) {
-      int const vi=vars.at(var).vi;
-      assert(vi>=0);
-      int const tl=vars.at(var).tl;
-      assert(tl>=0);
-      if (int(device->mems.at(vi).size()) > tl) {
-        
-        if (device->mems.at(vi).at(tl).device_valid) continue;
-        
-        // TODO: Check this. For now, we just assume this is true,
-        // because we don't assume that all provides/requires
-        // information is complete and correct.
-        // assert(device->mems.at(vi).at(tl).host_valid);
-        device->mems.at(vi).at(tl).host_valid = true;
-        
-        void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
-        
-        if (device->same_padding) {
-          checkErr(clEnqueueWriteBuffer(device->queue,
-                                        device->mems.at(vi).at(tl).mem,
-                                        CL_FALSE,
-                                        0, np*sizeof(CCTK_REAL), ptr,
-                                        0, NULL, NULL));
-        } else {
-          checkErr(clEnqueueWriteBufferRect(device->queue,
-                                            device->mems.at(vi).at(tl).mem,
-                                            CL_FALSE,
-                                            offset, offset, length,
-                                            dJ, dK, dj, dk,
-                                            ptr,
-                                            0, NULL, NULL));
-        }
-        
-        device->mems.at(vi).at(tl).device_valid = true;
-        
+    switch (device->mem_model) {
+      
+    case mm_always_mapped:
+      // do nothing
+      break;
+      
+    case mm_copy: {
+      
+      int const np =
+        cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
+      
+      int const di = sizeof(CCTK_REAL);
+      int const dj = di * cctkGH->cctk_lsh[0];
+      int const dk = dj * cctkGH->cctk_lsh[1];
+      int const dI = sizeof(CCTK_REAL);
+      int const dJ = dI * device->grid.lsh[0];
+      int const dK = dJ * device->grid.lsh[1];
+      
+      size_t offset[dim];
+      size_t length[dim];
+      for (int d=0; d<dim; ++d) {
+        offset[d] = 0;
+        length[d] = cctkGH->CCTK_LSSH(0,d);
       }
-    } // for var
+      offset[0] *= di;
+      length[0] *= di;
+      
+      for (size_t var=0; var<vars.size(); ++var) {
+        int const vi=vars.at(var).vi;
+        assert(vi>=0);
+        int const tl=vars.at(var).tl;
+        assert(tl>=0);
+        if (int(device->mems.at(vi).size()) > tl) {
+          
+          if (device->mems.at(vi).at(tl).device_valid) continue;
+          
+          // TODO: Check this. For now, we just assume this is true,
+          // because we don't assume that all provides/requires
+          // information is complete and correct.
+          // assert(device->mems.at(vi).at(tl).host_valid);
+          device->mems.at(vi).at(tl).host_valid = true;
+          
+          void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
+          
+          if (HAVE_BUFFER_RECT_OPS and device->same_padding) {
+            checkErr(clEnqueueWriteBuffer(device->queue,
+                                          device->mems.at(vi).at(tl).mem,
+                                          CL_FALSE,
+                                          0, np*sizeof(CCTK_REAL), ptr,
+                                          0, NULL, NULL));
+          } else {
+#if HAVE_BUFFER_RECT_OPS
+            checkErr(clEnqueueWriteBufferRect(device->queue,
+                                              device->mems.at(vi).at(tl).mem,
+                                              CL_FALSE,
+                                              offset, offset, length,
+                                              dJ, dK, dj, dk,
+                                              ptr,
+                                              0, NULL, NULL));
+#endif
+          }
+          
+          device->mems.at(vi).at(tl).device_valid = true;
+          
+        }
+      } // for var
+      
+      break;
+    }
+      
+    case mm_map: {
+      for (size_t var=0; var<vars.size(); ++var) {
+        int const vi=vars.at(var).vi;
+        assert(vi>=0);
+        int const tl=vars.at(var).tl;
+        assert(tl>=0);
+        if (int(device->mems.at(vi).size()) > tl) {
+          
+          if (device->mems.at(vi).at(tl).device_valid) continue;
+          
+          // TODO: Check this. For now, we just assume this is true,
+          // because we don't assume that all provides/requires
+          // information is complete and correct.
+          // assert(device->mems.at(vi).at(tl).host_valid);
+          
+          void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
+          
+          assert (device->same_padding);
+          
+          checkErr(clEnqueueUnmapMemObject(device->queue,
+                                           device->mems.at(vi).at(tl).mem,
+                                           ptr,
+                                           0, NULL, NULL));
+          
+          device->mems.at(vi).at(tl).device_valid = true;
+          device->mems.at(vi).at(tl).host_valid   = false;
+          
+        }
+      } // for var
+      break;
+    }
+      
+    default:
+      assert(0);
+    }
   }
   
   
@@ -86,67 +139,120 @@ namespace OpenCLRunTime {
   {
     assert(Carpet::is_local_mode());
     
-    if (device->mem_model == mm_always_mapped) return;
-    
     int const np =
       cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
     
-    int const di = sizeof(CCTK_REAL);
-    int const dj = di * cctkGH->cctk_lsh[0];
-    int const dk = dj * cctkGH->cctk_lsh[1];
-    int const dI = sizeof(CCTK_REAL);
-    int const dJ = dI * device->grid.lsh[0];
-    int const dK = dJ * device->grid.lsh[1];
+    cl_int errcode;
     
-    size_t offset[dim];
-    size_t length[dim];
-    for (int d=0; d<dim; ++d) {
-      offset[d] = 0;
-      length[d] = cctkGH->CCTK_LSSH(0,d);
-    }
-    offset[0] *= di;
-    length[0] *= di;
-    
-    for (size_t var=0; var<vars.size(); ++var) {
-      int const vi=vars.at(var).vi;
-      assert(vi>=0);
-      int const tl=vars.at(var).tl;
-      assert(tl>=0);
-      if (int(device->mems.at(vi).size()) > tl) {
-        
-        if (device->mems.at(vi).at(tl).host_valid) continue;
-        
-        // TODO: Check this. For now, we just assume this is true,
-        // because we don't assume that all provides/requires
-        // information is complete and correct.
-        // assert(device->mems.at(vi).at(tl).device_valid);
-        device->mems.at(vi).at(tl).device_valid = true;
-        
-        void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
-        
-        if (device->same_padding) {
-          checkErr(clEnqueueReadBuffer(device->queue,
-                                       device->mems.at(vi).at(tl).mem,
-                                       CL_FALSE,
-                                       0, np*sizeof(CCTK_REAL), ptr,
-                                       0, NULL, NULL));
-        } else {
-          checkErr(clEnqueueReadBufferRect(device->queue,
-                                           device->mems.at(vi).at(tl).mem,
-                                           CL_FALSE,
-                                           offset, offset, length,
-                                           dJ, dK, dj, dk,
-                                           ptr,
-                                           0, NULL, NULL));
-        }
-        
-        device->mems.at(vi).at(tl).host_valid = true;
-        
+    switch (device->mem_model) {
+      
+    case mm_always_mapped:
+      // do nothing
+      break;
+      
+    case mm_copy: {
+      
+      int const di = sizeof(CCTK_REAL);
+      int const dj = di * cctkGH->cctk_lsh[0];
+      int const dk = dj * cctkGH->cctk_lsh[1];
+      int const dI = sizeof(CCTK_REAL);
+      int const dJ = dI * device->grid.lsh[0];
+      int const dK = dJ * device->grid.lsh[1];
+      
+      size_t offset[dim];
+      size_t length[dim];
+      for (int d=0; d<dim; ++d) {
+        offset[d] = 0;
+        length[d] = cctkGH->CCTK_LSSH(0,d);
       }
-    } // for var
-    
-    // Finish, because we output
-    checkErr(clFinish(device->queue));
+      offset[0] *= di;
+      length[0] *= di;
+      
+      for (size_t var=0; var<vars.size(); ++var) {
+        int const vi=vars.at(var).vi;
+        assert(vi>=0);
+        int const tl=vars.at(var).tl;
+        assert(tl>=0);
+        if (int(device->mems.at(vi).size()) > tl) {
+          
+          if (device->mems.at(vi).at(tl).host_valid) continue;
+          
+          // TODO: Check this. For now, we just assume this is true,
+          // because we don't assume that all provides/requires
+          // information is complete and correct.
+          // assert(device->mems.at(vi).at(tl).device_valid);
+          device->mems.at(vi).at(tl).device_valid = true;
+          
+          void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
+          
+          if (HAVE_BUFFER_RECT_OPS and device->same_padding) {
+            checkErr(clEnqueueReadBuffer(device->queue,
+                                         device->mems.at(vi).at(tl).mem,
+                                         CL_FALSE,
+                                         0, np*sizeof(CCTK_REAL), ptr,
+                                         0, NULL, NULL));
+          } else {
+#if HAVE_BUFFER_RECT_OPS
+            checkErr(clEnqueueReadBufferRect(device->queue,
+                                             device->mems.at(vi).at(tl).mem,
+                                             CL_FALSE,
+                                             offset, offset, length,
+                                             dJ, dK, dj, dk,
+                                             ptr,
+                                             0, NULL, NULL));
+#endif
+          }
+          
+          device->mems.at(vi).at(tl).host_valid = true;
+          
+        }
+      } // for var
+      
+      // Finish, because we output
+      checkErr(clFinish(device->queue));
+      
+      break;
+    }
+      
+    case mm_map: {
+      for (size_t var=0; var<vars.size(); ++var) {
+        int const vi=vars.at(var).vi;
+        assert(vi>=0);
+        int const tl=vars.at(var).tl;
+        assert(tl>=0);
+        if (int(device->mems.at(vi).size()) > tl) {
+          
+          if (device->mems.at(vi).at(tl).device_valid) continue;
+          
+          // TODO: Check this. For now, we just assume this is true,
+          // because we don't assume that all provides/requires
+          // information is complete and correct.
+          // assert(device->mems.at(vi).at(tl).host_valid);
+          
+          assert (device->same_padding);
+          
+          void *ptr;
+          checkErr((ptr = clEnqueueMapBuffer(device->queue,
+                                             device->mems.at(vi).at(tl).mem,
+                                             CL_FALSE,
+                                             CL_MAP_READ | CL_MAP_WRITE,
+                                             0, np*sizeof(CCTK_REAL),
+                                             0, NULL, NULL, &errcode),
+                    errcode));
+          
+          assert(ptr == CCTK_VarDataPtrI(cctkGH, tl, vi));
+          
+          device->mems.at(vi).at(tl).device_valid = true;
+          device->mems.at(vi).at(tl).host_valid   = false;
+          
+        }
+      } // for var
+      break;
+    }
+      
+    default:
+      assert(0);
+    }
   }
   
   
@@ -157,6 +263,7 @@ namespace OpenCLRunTime {
     assert(Carpet::is_local_mode());
     
     if (device->mem_model == mm_always_mapped) return;
+    assert (device->mem_model != mm_map);
     
     int const dI = sizeof(CCTK_REAL);
     int const dJ = dI * device->grid.lsh[0];
@@ -171,6 +278,10 @@ namespace OpenCLRunTime {
       int const tl=vars.at(var).tl;
       assert(tl>=0);
       assert (tl < int(device->mems.at(vi).size()));
+      
+      void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
+      
+#if HAVE_BUFFER_RECT_OPS
       
       for (int dir=0; dir<dim; ++dir) {
         for (int face=0; face<2; ++face) {
@@ -222,8 +333,6 @@ namespace OpenCLRunTime {
             offset[0] *= di;
             length[0] *= di;
             
-            void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
-            
             checkErr(clEnqueueReadBufferRect(device->queue,
                                              device->mems.at(vi).at(tl).mem,
                                              CL_FALSE,
@@ -235,6 +344,30 @@ namespace OpenCLRunTime {
           } // if bbox
         }   // for face
       }     // for dir
+      
+#else
+      
+      bool have_sync_bnd = false;
+      for (int dir=0; dir<dim; ++dir) {
+        for (int face=0; face<2; ++face) {
+          if (not cctkGH->cctk_bbox[2*dir+face]) {
+            have_sync_bnd = true;
+          }
+        }
+      }
+      
+      if (have_sync_bnd) {
+        int const np =
+          cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
+        
+        checkErr(clEnqueueReadBuffer(device->queue,
+                                     device->mems.at(vi).at(tl).mem,
+                                     CL_FALSE,
+                                     0, np*sizeof(CCTK_REAL), ptr,
+                                     0, NULL, NULL));
+      }
+      
+#endif
       
     } // for var
     
@@ -250,6 +383,7 @@ namespace OpenCLRunTime {
     assert(Carpet::is_local_mode());
     
     if (device->mem_model == mm_always_mapped) return;
+    assert (device->mem_model != mm_map);
     
     int const dI = sizeof(CCTK_REAL);
     int const dJ = dI * device->grid.lsh[0];
@@ -264,6 +398,10 @@ namespace OpenCLRunTime {
       int const tl=vars.at(var).tl;
       assert(tl>=0);
       assert (tl < int(device->mems.at(vi).size()));
+      
+      void const *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
+      
+#if HAVE_BUFFER_RECT_OPS
       
       for (int dir=0; dir<dim; ++dir) {
         for (int face=0; face<2; ++face) {
@@ -307,8 +445,6 @@ namespace OpenCLRunTime {
             offset[0] *= di;
             length[0] *= di;
             
-            void const *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
-            
             checkErr(clEnqueueWriteBufferRect(device->queue,
                                               device->mems.at(vi).at(tl).mem,
                                               CL_FALSE,
@@ -316,11 +452,35 @@ namespace OpenCLRunTime {
                                               dJ, dK, dj, dk,
                                               ptr,
                                               0, NULL, NULL));
-            
+
           } // if bbox
         }   // if face
       }     // if dir
       
+#else
+      
+      bool have_sync_bnd = false;
+      for (int dir=0; dir<dim; ++dir) {
+        for (int face=0; face<2; ++face) {
+          if (not cctkGH->cctk_bbox[2*dir+face]) {
+            have_sync_bnd = true;
+          }
+        }
+      }
+      
+      if (have_sync_bnd) {
+        int const np =
+          cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
+        
+        checkErr(clEnqueueWriteBuffer(device->queue,
+                                      device->mems.at(vi).at(tl).mem,
+                                      CL_FALSE,
+                                      0, np*sizeof(CCTK_REAL), ptr,
+                                      0, NULL, NULL));
+      }
+      
+#endif            
+            
     } // for var
   }
   
@@ -331,6 +491,7 @@ namespace OpenCLRunTime {
     assert(Carpet::is_local_mode());
     
     if (device->mem_model == mm_always_mapped) return;
+    assert(device->mem_model != mm_map);
     
     int const NP =
       device->grid.lsh[0] * device->grid.lsh[1] * device->grid.lsh[2];
@@ -373,6 +534,7 @@ namespace OpenCLRunTime {
     assert(Carpet::is_local_mode());
     
     if (device->mem_model == mm_always_mapped) return;
+    assert(device->mem_model != mm_map);
     
     int const NP =
       device->grid.lsh[0] * device->grid.lsh[1] * device->grid.lsh[2];
@@ -512,7 +674,7 @@ namespace OpenCLRunTime {
       cout << "\n";
       
       cout << "   Tags: ";
-      Util_TablePrintString(stdout, attribute->tags);
+      Util_TablePrintPretty(stdout, attribute->tags);
       cout << "\n";
     }
     
@@ -630,7 +792,7 @@ namespace OpenCLRunTime {
       cout << "\n";
       
       cout << "   Tags: ";
-      Util_TablePrintString(stdout, attribute->tags);
+      Util_TablePrintPretty(stdout, attribute->tags);
       cout << "\n";
     }
     

@@ -20,6 +20,10 @@ BOOLEAN disassemble_kernels "Disassemble kernels" STEERABLE=always
 {
 } "yes"
 
+BOOLEAN disassemble_in_background "Disassemble in the background (using fork)" STEERABLE=always
+{
+} "yes"
+
 
 
 STRING opencl_options "OpenCL compiler options" STEERABLE=always
