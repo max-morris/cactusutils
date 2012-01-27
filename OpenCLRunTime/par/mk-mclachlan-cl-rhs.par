@@ -1,0 +1,221 @@
+Cactus::cctk_run_title = "Minkowski"
+
+Cactus::cctk_full_warnings         = yes
+Cactus::highlight_warning_messages = no
+
+Cactus::cctk_itlast = 0 #TODO# 512
+
+
+
+ActiveThorns = "IOUtil"
+
+IO::out_dir = $parfile
+
+
+
+ActiveThorns = "GenericFD"
+
+ActiveThorns = "InitBase"
+
+ActiveThorns = "LoopControl"
+
+ActiveThorns = "OpenCLRunTime"
+
+OpenCLRunTime::verbose            = yes
+OpenCLRunTime::veryverbose        = yes
+#OpenCLRunTime::opencl_device_type = "any"
+
+
+
+ActiveThorns = "Carpet CarpetLib CarpetInterp CarpetReduce"
+
+Carpet::verbose           = no
+Carpet::veryverbose       = no
+Carpet::schedule_barriers = no
+Carpet::storage_verbose   = no
+Carpet::timers_verbose    = no
+CarpetLib::output_bboxes  = no
+
+Carpet::domain_from_coordbase = yes
+Carpet::max_refinement_levels = 10
+
+driver::ghost_size       = 3
+Carpet::use_buffer_zones = yes
+
+Carpet::prolongation_order_space = 5
+Carpet::prolongation_order_time  = 2
+
+Carpet::convergence_level = 0
+
+Carpet::init_fill_timelevels = yes
+
+Carpet::poison_new_timelevels = yes
+CarpetLib::poison_new_memory  = yes
+
+Carpet::output_timers_every      = 128
+CarpetLib::print_timestats_every = 128
+CarpetLib::print_memstats_every  = 128
+
+
+
+ActiveThorns = "Boundary CartGrid3D CoordBase SymBase"
+
+CoordBase::domainsize = "minmax"
+
+CoordBase::xmin = -10.0
+CoordBase::ymin = -10.0
+CoordBase::zmin = -10.0
+CoordBase::xmax = +10.0
+CoordBase::ymax = +10.0
+CoordBase::zmax = +10.0
+CoordBase::dx   =   1.0
+CoordBase::dy   =   1.0
+CoordBase::dz   =   1.0
+
+CoordBase::boundary_size_x_lower     = 3
+CoordBase::boundary_size_y_lower     = 3
+CoordBase::boundary_size_z_lower     = 3
+CoordBase::boundary_size_x_upper     = 3
+CoordBase::boundary_size_y_upper     = 3
+CoordBase::boundary_size_z_upper     = 3
+
+CartGrid3D::type = "coordbase"
+
+
+
+ActiveThorns = "SphericalSurface"
+
+
+
+ActiveThorns = "MoL MoLCL Time"
+
+MoL::ODE_Method             = "RK2"
+MoL::MoL_Intermediate_Steps = 2
+MoL::MoL_Num_Scratch_Levels = 0
+
+Time::dtfac = 0.25
+
+
+
+ActiveThorns = "ADMBase ADMCoupling ADMMacros CoordGauge SpaceMask StaticConformal TmunuBase"
+
+ADMBase::initial_data    = "Cartesian Minkowski"
+ADMBase::initial_lapse   = "one"
+ADMBase::initial_shift   = "zero"
+ADMBase::initial_dtlapse = "zero"
+ADMBase::initial_dtshift = "zero"
+
+
+
+ActiveThorns = "ML_BSSN_CL ML_BSSN_CL_Helper NewRad"
+
+ADMBase::evolution_method         = "ML_BSSN_CL"
+ADMBase::lapse_evolution_method   = "ML_BSSN_CL"
+ADMBase::shift_evolution_method   = "ML_BSSN_CL"
+ADMBase::dtlapse_evolution_method = "ML_BSSN_CL"
+ADMBase::dtshift_evolution_method = "ML_BSSN_CL"
+
+ML_BSSN_CL::timelevels = 3
+
+ML_BSSN_CL::harmonicF           = 2.0    # 1+log
+ML_BSSN_CL::harmonicN           = 1      # 1+log
+ML_BSSN_CL::ShiftGammaCoeff     = 0.75
+ML_BSSN_CL::AlphaDriver         = 1.0
+ML_BSSN_CL::BetaDriver          = 1.0
+ML_BSSN_CL::LapseACoeff         = 1
+ML_BSSN_CL::ShiftBCoeff         = 1
+ML_BSSN_CL::LapseAdvectionCoeff = 0
+ML_BSSN_CL::ShiftAdvectionCoeff = 0
+
+ML_BSSN_CL::EpsDiss = 0.2
+
+ML_BSSN_CL::my_initial_boundary_condition = "extrapolate-gammas"
+ML_BSSN_CL::my_rhs_boundary_condition     = "NewRad"
+Boundary::radpower                        = 2
+
+ML_BSSN_CL::MinimumLapse = 1.0e-8
+
+ML_BSSN_CL::dt_lapse_shift_method = "noLapseShiftAdvection"
+
+
+
+ActiveThorns = "CarpetIOBasic"
+
+IOBasic::outInfo_every      = 1
+IOBasic::outInfo_reductions = "norm2"
+IOBasic::outInfo_vars       = "
+        Carpet::physical_time_per_hour
+"
+
+
+
+ActiveThorns = "CarpetIOScalar"
+
+IOScalar::one_file_per_group = yes
+
+IOScalar::outScalar_every = 1
+IOScalar::outScalar_vars  = "
+        ADMBase::lapse
+"
+
+
+
+ActiveThorns = "CarpetIOASCII"
+
+IOASCII::one_file_per_group = yes
+
+IOASCII::out3D_ghosts = no
+
+IOASCII::out0D_every = 1
+IOASCII::out0D_vars  = "
+        Carpet::timing
+"
+
+IOASCII::out1D_every = 1
+IOASCII::out1D_vars  = "
+        ADMBase::metric
+        ADMBase::curv
+        ADMBase::lapse
+        ADMBase::shift
+        ADMBase::dtlapse
+        ADMBase::dtshift
+        ML_BSSN_CL::ML_curv
+        ML_BSSN_CL::ML_dtlapse
+        ML_BSSN_CL::ML_dtshift
+        ML_BSSN_CL::ML_Gamma
+        ML_BSSN_CL::ML_lapse
+        ML_BSSN_CL::ML_log_confac
+        ML_BSSN_CL::ML_metric
+        ML_BSSN_CL::ML_shift
+        ML_BSSN_CL::ML_trace_curv
+        ML_BSSN_CL::ML_curvrhs
+        ML_BSSN_CL::ML_dtlapserhs
+        ML_BSSN_CL::ML_dtshiftrhs
+        ML_BSSN_CL::ML_Gammarhs
+        ML_BSSN_CL::ML_lapserhs
+        ML_BSSN_CL::ML_log_confacrhs
+        ML_BSSN_CL::ML_metricrhs
+        ML_BSSN_CL::ML_shiftrhs
+        ML_BSSN_CL::ML_trace_curvrhs
+"
+
+IOASCII::out3D_every = 0 # 1
+IOASCII::out3D_vars  = "
+        ADMBase::lapse
+        ML_BSSN_CL::ML_lapse
+        ML_BSSN_CL::ML_lapserhs
+"
+
+
+
+ActiveThorns = "Formaline"
+
+
+
+ActiveThorns = "TimerReport"
+
+TimerReport::out_every                  = 128
+TimerReport::out_filename               = "TimerReport"
+TimerReport::output_all_timers_together = yes
+TimerReport::output_all_timers_readable = yes
+TimerReport::n_top_timers               = 20

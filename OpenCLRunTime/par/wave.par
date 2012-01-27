@@ -1,0 +1,105 @@
+ActiveThorns = "
+   Boundary
+   Carpet
+   CarpetIOASCII
+   CarpetIOBasic
+   CarpetIOScalar
+   CarpetLib
+   CarpetReduce
+   CartGrid3D
+   CoordBase
+   Formaline
+   GenericFD
+   GSL
+   IOUtil
+   InitBase
+   LoopControl
+   ML_WaveToy
+   MoL
+   OpenMPI
+   SymBase
+   Time
+   TimerReport
+   Vectors
+"
+
+#Cactus::cctk_itlast     = 0
+#Cactus::terminate       = "time"
+#Cactus::cctk_final_time = 10.0
+Cactus::cctk_itlast     = 10
+
+driver::ghost_size              = 2
+Carpet::domain_from_coordbase   = yes
+Carpet::prolongation_order_time = 1
+
+CoordBase::domainsize            = "minmax"
+CoordBase::xmin                  = -10.0
+CoordBase::ymin                  = -10.0
+CoordBase::zmin                  = -10.0
+CoordBase::xmax                  = +10.0
+CoordBase::ymax                  = +10.0
+CoordBase::zmax                  = +10.0
+CoordBase::dx                    =   0.1
+CoordBase::dy                    =   0.1
+CoordBase::dz                    =   0.1
+CoordBase::boundary_size_x_lower = 2
+CoordBase::boundary_size_y_lower = 2
+CoordBase::boundary_size_z_lower = 2
+CoordBase::boundary_size_x_upper = 2
+CoordBase::boundary_size_y_upper = 2
+CoordBase::boundary_size_z_upper = 2
+CartGrid3D::type                 = "coordbase"
+
+MoL::ODE_Method             = "RK2"
+MoL::MoL_Intermediate_Steps = 2
+Time::dtfac                 = 0.25
+
+LoopControl::verbose     = yes
+LoopControl::do_selftest = yes
+
+# vector size:  2
+# group size:   1
+# group count: 12 (2x2x3)   (number of OpenMP threads)
+# group count: 24 (2x3x4)   (number of OpenMP threads)
+LoopControl::thread_configuration = "explicit"
+LoopControl::lc_nthreads_i        =   2 # 2
+LoopControl::lc_nthreads_j        =   3 # 2
+LoopControl::lc_nthreads_k        =   4 # 3
+LoopControl::tiling_configuration = "explicit"
+LoopControl::lc_npoints_i         = 102 # 203/2, %2==0
+LoopControl::lc_npoints_j         =  68 # 203/3
+LoopControl::lc_npoints_k         =  51 # 203/4
+
+IO::out_dir            = $parfile
+IOBasic::outInfo_every = 10
+IOBasic::outInfo_vars  = "
+   ML_WaveToy::WT_u
+"
+IOScalar::outScalar_every = 10 # 100
+IOScalar::outScalar_vars  = "
+   ML_WaveToy::WT_u
+   ML_WaveToy::WT_rho
+   #ML_WaveToy::WT_eps
+"
+IOASCII::output_ghost_points   = no
+IOASCII::output_all_timelevels = no
+IOASCII::out1D_every           = 10 # 100
+IOASCII::out1D_vars            = "
+   ML_WaveToy::WT_u
+   ML_WaveToy::WT_rho
+   #ML_WaveToy::WT_eps
+"
+IOASCII::out3D_every = 0
+IOASCII::out3D_vars  = "
+   ML_WaveToy::WT_u
+   ML_WaveToy::WT_rho
+   ML_WaveToy::WT_urhs
+   ML_WaveToy::WT_rhorhs
+   #ML_WaveToy::WT_eps
+"
+
+TimerReport::out_every                  = 10 # 100
+TimerReport::out_filename               = "TimerReport"
+TimerReport::output_all_timers_together = yes
+TimerReport::output_all_timers_readable = yes
+TimerReport::n_top_timers               = 100

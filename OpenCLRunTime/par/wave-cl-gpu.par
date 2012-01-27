@@ -1,0 +1,113 @@
+ActiveThorns = "
+   Boundary
+   Carpet
+   CarpetIOASCII
+   CarpetIOBasic
+   CarpetIOScalar
+   CarpetLib
+   CarpetReduce
+   CartGrid3D
+   CoordBase
+   Formaline
+   GenericFD
+   GSL
+   IOUtil
+   InitBase
+   LoopControl
+   ML_WaveToy_CL
+   MoL
+   MoLCL
+   OpenCL
+   OpenCLRunTime
+   OpenMPI
+   SymBase
+   Time
+   TimerReport
+   Vectors
+"
+
+#Cactus::cctk_itlast     = 0
+Cactus::terminate       = "time"
+Cactus::cctk_final_time = 10.0
+
+driver::ghost_size              = 2
+Carpet::domain_from_coordbase   = yes
+Carpet::prolongation_order_time = 1
+
+CoordBase::domainsize            = "minmax"
+CoordBase::xmin                  = -10.0
+CoordBase::ymin                  = -10.0
+CoordBase::zmin                  = -10.0
+CoordBase::xmax                  = +10.0
+CoordBase::ymax                  = +10.0
+CoordBase::zmax                  = +10.0
+CoordBase::dx                    =   0.1
+CoordBase::dy                    =   0.1
+CoordBase::dz                    =   0.1
+CoordBase::boundary_size_x_lower = 2
+CoordBase::boundary_size_y_lower = 2
+CoordBase::boundary_size_z_lower = 2
+CoordBase::boundary_size_x_upper = 2
+CoordBase::boundary_size_y_upper = 2
+CoordBase::boundary_size_z_upper = 2
+CartGrid3D::type                 = "coordbase"
+
+MoL::ODE_Method             = "RK2"
+MoL::MoL_Intermediate_Steps = 2
+Time::dtfac                 = 0.25
+
+OpenCLRunTime::verbose                = no # yes
+OpenCLRunTime::veryverbose            = no
+OpenCLRunTime::disassemble_kernels    = no
+OpenCLRunTime::opencl_device_type     = "GPU"
+OpenCLRunTime::memory_model           = "copy"
+OpenCLRunTime::sync_copy_whole_buffer = no
+# vector size:  1
+# group size:  32
+# group count: 14 (12=2x2x3)
+OpenCLRunTime::vector_size_x =   0
+OpenCLRunTime::unroll_size_x =   1
+OpenCLRunTime::unroll_size_y =   1
+OpenCLRunTime::unroll_size_z =   1
+OpenCLRunTime::group_size_x  =  32
+OpenCLRunTime::group_size_y  =   1
+OpenCLRunTime::group_size_z  =   1
+OpenCLRunTime::tile_size_x   = 128 # 200/2, %32==0
+OpenCLRunTime::tile_size_y   = 100 # 200/2
+OpenCLRunTime::tile_size_z   =  67 # 200/3
+
+ML_WaveToy_CL::timelevels = 2
+
+IO::out_dir                    = $parfile
+IOBasic::outInfo_every         = 10
+IOBasic::outInfo_vars          = "
+   ML_WaveToy_CL::WT_u
+"
+IOScalar::outScalar_every      = 100
+IOScalar::outScalar_vars       = "
+   ML_WaveToy_CL::WT_u
+   ML_WaveToy_CL::WT_rho
+   #ML_WaveToy_CL::WT_eps
+"
+IOASCII::output_ghost_points   = no
+IOASCII::output_all_timelevels = no
+IOASCII::out1D_every           = 100
+IOASCII::out1D_vars            = "
+   ML_WaveToy_CL::WT_u
+   ML_WaveToy_CL::WT_rho
+   #ML_WaveToy_CL::WT_eps
+"
+IOASCII::out3D_every           = 0
+IOASCII::out3D_vars            = "
+   ML_WaveToy_CL::WT_u
+   ML_WaveToy_CL::WT_rho
+   ML_WaveToy_CL::WT_urhs
+   ML_WaveToy_CL::WT_rhorhs
+   #ML_WaveToy_CL::WT_eps
+"
+
+TimerReport::out_every                  = 100
+TimerReport::out_filename               = "TimerReport"
+TimerReport::output_all_timers_together = yes
+TimerReport::output_all_timers_readable = yes
+TimerReport::n_top_timers               = 100
