@@ -133,6 +133,15 @@ namespace OpenCLRunTime {
          << "[error " << errcode1 << "]" << endl;                       \
     }                                                                   \
   } while (0)
+#define PRINT_UNSP(os, device, FUNCTION, MACRO, NAME, OFFSET, LENGTH, TYPE) \
+  do {                                                                  \
+    string const spaces = "                                        ";   \
+    string const macro = string(NAME) + ": " + spaces;                  \
+    size_t const begin = macro.find('_', macro.find('_',0)+1)+1;        \
+    os << spaces.substr(0, OFFSET)                                      \
+       << macro.substr(begin, LENGTH+2)                                 \
+       << "[unsupported]" << endl;                                      \
+  } while (0)
   
   
   
@@ -184,6 +193,9 @@ namespace OpenCLRunTime {
 #define PRINT_DEVICE_INFO(MACRO, TYPE)                                  \
         PRINT_INFO(file, device,                                        \
                    clGetDeviceInfo, MACRO, #MACRO, 6, 29, TYPE);
+#define PRINT_DEVICE_UNSP(MACRO, TYPE)                                  \
+        PRINT_UNSP(file, device,                                        \
+                   clGetDeviceInfo, MACRO, #MACRO, 6, 29, TYPE);
         PRINT_DEVICE_INFO(CL_DEVICE_TYPE                         , device_type_t);
         PRINT_DEVICE_INFO(CL_DEVICE_VENDOR_ID                    , cl_uint);
         PRINT_DEVICE_INFO(CL_DEVICE_MAX_COMPUTE_UNITS            , cl_uint);
@@ -196,29 +208,45 @@ namespace OpenCLRunTime {
         PRINT_DEVICE_INFO(CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG  , cl_uint);
 #ifdef CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF
         PRINT_DEVICE_INFO(CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF  , cl_uint);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF  , cl_uint);
 #endif
         PRINT_DEVICE_INFO(CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT , cl_uint);
         PRINT_DEVICE_INFO(CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE, cl_uint);
 #ifdef CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR
         PRINT_DEVICE_INFO(CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR     , cl_uint);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR     , cl_uint);
 #endif
 #ifdef CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT
         PRINT_DEVICE_INFO(CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT    , cl_uint);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT    , cl_uint);
 #endif
 #ifdef CL_DEVICE_NATIVE_VECTOR_WIDTH_INT
         PRINT_DEVICE_INFO(CL_DEVICE_NATIVE_VECTOR_WIDTH_INT      , cl_uint);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_NATIVE_VECTOR_WIDTH_INT      , cl_uint);
 #endif
 #ifdef CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG
         PRINT_DEVICE_INFO(CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG     , cl_uint);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG     , cl_uint);
 #endif
 #ifdef CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF
         PRINT_DEVICE_INFO(CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF     , cl_uint);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF     , cl_uint);
 #endif
 #ifdef CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT
         PRINT_DEVICE_INFO(CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT    , cl_uint);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT    , cl_uint);
 #endif
 #ifdef CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE
         PRINT_DEVICE_INFO(CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE   , cl_uint);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE   , cl_uint);
 #endif
         PRINT_DEVICE_INFO(CL_DEVICE_MAX_CLOCK_FREQUENCY          , cl_uint);
         PRINT_DEVICE_INFO(CL_DEVICE_ADDRESS_BITS                 , cl_uint);
@@ -238,9 +266,13 @@ namespace OpenCLRunTime {
         PRINT_DEVICE_INFO(CL_DEVICE_SINGLE_FP_CONFIG             , device_fp_config_t);
 #ifdef CL_DEVICE_DOUBLE_FP_CONFIG
         PRINT_DEVICE_INFO(CL_DEVICE_DOUBLE_FP_CONFIG             , device_fp_config_t);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_DOUBLE_FP_CONFIG             , device_fp_config_t);
 #endif
 #ifdef CL_DEVICE_HALF_FP_CONFIG
         PRINT_DEVICE_INFO(CL_DEVICE_HALF_FP_CONFIG               , device_fp_config_t);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_HALF_FP_CONFIG               , device_fp_config_t);
 #endif
         PRINT_DEVICE_INFO(CL_DEVICE_GLOBAL_MEM_CACHE_TYPE        , device_mem_cache_type_t);
         PRINT_DEVICE_INFO(CL_DEVICE_GLOBAL_MEM_CACHELINE_SIZE    , cl_uint);
@@ -253,6 +285,8 @@ namespace OpenCLRunTime {
         PRINT_DEVICE_INFO(CL_DEVICE_ERROR_CORRECTION_SUPPORT     , cl_bool);
 #ifdef CL_DEVICE_HOST_UNIFIED_MEMORY
         PRINT_DEVICE_INFO(CL_DEVICE_HOST_UNIFIED_MEMORY          , cl_bool);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_HOST_UNIFIED_MEMORY          , cl_bool);
 #endif
         PRINT_DEVICE_INFO(CL_DEVICE_PROFILING_TIMER_RESOLUTION   , size_t);
         PRINT_DEVICE_INFO(CL_DEVICE_ENDIAN_LITTLE                , cl_bool);
@@ -268,6 +302,8 @@ namespace OpenCLRunTime {
         PRINT_DEVICE_INFO(CL_DEVICE_VERSION                      , char_arr);
 #ifdef CL_DEVICE_OPENCL_C_VERSION
         PRINT_DEVICE_INFO(CL_DEVICE_OPENCL_C_VERSION             , char_arr);
+#else
+        PRINT_DEVICE_UNSP(CL_DEVICE_OPENCL_C_VERSION             , char_arr);
 #endif
         PRINT_DEVICE_INFO(CL_DEVICE_EXTENSIONS                   , char_arr);
         
