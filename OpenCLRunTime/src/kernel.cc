@@ -6,6 +6,7 @@
 #include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <map>
 
 
 
@@ -563,6 +564,11 @@ namespace OpenCLRunTime {
     // string const num_threads = num_threads_buf.str();
     // setenv("POCL_MAX_PTHREAD_COUNT", num_threads.c_str(), 1);
     
+    // Finish the queue before starting the timer
+#if 1
+    checkErr(clFinish(device->queue));
+#endif
+    
     static int timer_kernel_enqueue = -1;
     if (veryverbose) {
       if (timer_kernel_enqueue < 0) {
@@ -570,7 +576,28 @@ namespace OpenCLRunTime {
           CCTK_TimerCreate("OpenCLRunTime::kernel::enqueue");
         assert(timer_kernel_enqueue>=0);
       }
+    }
+    
+    static map<string,int> timer_kernels;
+    int this_timer = -1;
+    if (veryverbose) {
+      string const name_string = name;
+      map<string,int>::iterator const iter = timer_kernels.find(name_string);
+      if (iter != timer_kernels.end()) {
+        this_timer = iter->second;
+      } else {
+        string const timer_name =
+          string("OpenCLRunTime::kernel::enqueue::") + name_string;
+        this_timer = CCTK_TimerCreate(timer_name.c_str());
+        assert(this_timer>=0);
+        timer_kernels.insert(timer_kernels.begin(),
+                             pair<string,int>(name_string, this_timer));
+      }
+    }
+    
+    if (veryverbose) {
       CCTK_TimerStartI(timer_kernel_enqueue);
+      CCTK_TimerStartI(this_timer);
     }
     
     // Queue a single execution of the kernel
@@ -589,7 +616,9 @@ namespace OpenCLRunTime {
 #endif
     
     if (veryverbose) {
+      CCTK_TimerStopI(this_timer);
       CCTK_TimerStopI(timer_kernel_enqueue);
+      CCTK_TimerPrintDataI(this_timer, -1);
       CCTK_TimerPrintDataI(timer_kernel_enqueue, -1);
     }
   }
