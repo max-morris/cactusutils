@@ -242,16 +242,6 @@ namespace OpenCLRunTime {
     
     /*** Choose looping configuration *****************************************/
     
-    memory_aligned =
-      mem_model == mm_copy or
-      (vector_size_x == 1 and
-       vector_size_y == 1 and
-       vector_size_z == 1) or
-      ((VECTORISE and VECTORISE_ALIGNED_ARRAYS) and
-       CCTK_REAL_VEC_SIZE % vector_size_x == 0 and
-       vector_size_y == 1 and
-       vector_size_z == 1);
-    
     // Vector size
     vector_size[0] = vector_size_x;
     vector_size[1] = vector_size_y;
@@ -311,6 +301,23 @@ namespace OpenCLRunTime {
                tile_size[2]);
     
     // Describe grid structure
+    memory_aligned =
+      // if we copy, the device memory is allocated independently, and
+      // hence is aligned
+      mem_model == mm_copy
+      or
+      // if the vector size is 1, then we don't need any particular
+      // alignment, and hence the device memory is aligned
+      (vector_size[0] == 1 and vector_size[1] == 1 and vector_size[2] == 1)
+      or
+      // if the host aligns the memory, and the host vector size is a
+      // multiple of the device vector size, then the device memory is
+      // aligned
+      ((VECTORISE and VECTORISE_ALIGNED_ARRAYS) and
+       CCTK_REAL_VEC_SIZE % vector_size[0] == 0 and
+       vector_size[1] == 1 and
+       vector_size[2] == 1);
+    
     same_padding = true;
     for (int d=0; d<dim; ++d) {
       grid.gsh[d] = cctkGH->cctk_gsh[d];
