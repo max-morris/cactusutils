@@ -104,7 +104,15 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
   else
     // -1 indicates a parameter
     if (varindex>=0)
-      value=((CCTK_REAL *)CCTK_VarDataPtrI(GH , 0, varindex))[0];
+    {
+      CCTK_REAL *myVar = (CCTK_REAL *)CCTK_VarDataPtrI(GH , 0, varindex);
+      if (myVar == NULL)
+      {
+        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                  "Variable '%s' has no storage", CCTK_FullName(varindex));
+      }
+      value=myVar[0];
+    }
     else
     {
       tmp_value=((const CCTK_REAL *)CCTK_ParameterGet(
@@ -298,11 +306,22 @@ void Trigger_Check(CCTK_ARGUMENTS)
         if (type == CCTK_VARIABLE_REAL)
         {
           CCTK_REAL *myVar = (CCTK_REAL *)(CCTK_VarDataPtrI(cctkGH,0,my_GH->steered_scalar[i]));
+          if (myVar == NULL)
+          {
+            CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                      "Variable '%s' has no storage", CCTK_FullName(my_GH->steered_scalar[i]));
+          }
+
           myVar[Trigger_Steered_Scalar_Index[i]] = atof(Trigger_Steered_Scalar_Value[i]);
         }
         else if (type == CCTK_VARIABLE_INT)
         {
           CCTK_INT *myVar = (CCTK_INT *)(CCTK_VarDataPtrI(cctkGH,0,my_GH->steered_scalar[i]));
+          if (myVar == NULL)
+          {
+            CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                      "Variable '%s' has no storage", CCTK_FullName(my_GH->steered_scalar[i]));
+          }
           myVar[Trigger_Steered_Scalar_Index[i]] = atoi(Trigger_Steered_Scalar_Value[i]);
         }
         else
