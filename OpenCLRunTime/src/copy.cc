@@ -62,7 +62,7 @@ namespace OpenCLRunTime {
           if (device->mems.at(vi).at(tl).device_valid) continue;
           
           // TODO: Check this. For now, we just assume this is true,
-          // because we don't assume that all provides/requires
+          // because we don't assume that all writes/reads
           // information is complete and correct.
           // assert(device->mems.at(vi).at(tl).host_valid);
           device->mems.at(vi).at(tl).host_valid = true;
@@ -106,7 +106,7 @@ namespace OpenCLRunTime {
           if (device->mems.at(vi).at(tl).device_valid) continue;
           
           // TODO: Check this. For now, we just assume this is true,
-          // because we don't assume that all provides/requires
+          // because we don't assume that all writes/reads
           // information is complete and correct.
           // assert(device->mems.at(vi).at(tl).host_valid);
           
@@ -178,7 +178,7 @@ namespace OpenCLRunTime {
           if (device->mems.at(vi).at(tl).host_valid) continue;
           
           // TODO: Check this. For now, we just assume this is true,
-          // because we don't assume that all provides/requires
+          // because we don't assume that all writes/reads
           // information is complete and correct.
           // assert(device->mems.at(vi).at(tl).device_valid);
           device->mems.at(vi).at(tl).device_valid = true;
@@ -225,7 +225,7 @@ namespace OpenCLRunTime {
           if (device->mems.at(vi).at(tl).device_valid) continue;
           
           // TODO: Check this. For now, we just assume this is true,
-          // because we don't assume that all provides/requires
+          // because we don't assume that all writes/reads
           // information is complete and correct.
           // assert(device->mems.at(vi).at(tl).host_valid);
           
@@ -547,7 +547,7 @@ namespace OpenCLRunTime {
       assert (tl+1 < int(device->mems.at(vi).size()));
         
       // TODO: Check this. For now, we just assume this is true,
-      // because we don't assume that all provides/requires
+      // because we don't assume that all writes/reads
       // information is complete and correct.
       // assert(device->mems.at(vi).at(tl+1).device_valid);
       device->mems.at(vi).at(tl+1).device_valid = true;
@@ -661,15 +661,15 @@ namespace OpenCLRunTime {
       }
       cout << "\n";
       
-      cout << "   Requires:";
-      for (int n=0; n<attribute->n_RequiresClauses; ++n) {
-        cout << " " << attribute->RequiresClauses[n];
+      cout << "   Reads:";
+      for (int n=0; n<attribute->n_ReadsClauses; ++n) {
+        cout << " " << attribute->ReadsClauses[n];
       }
       cout << "\n";
       
-      cout << "   Provides:";
-      for (int n=0; n<attribute->n_ProvidesClauses; ++n) {
-        cout << " " << attribute->ProvidesClauses[n];
+      cout << "   Writes:";
+      for (int n=0; n<attribute->n_WritesClauses; ++n) {
+        cout << " " << attribute->WritesClauses[n];
       }
       cout << "\n";
       
@@ -700,8 +700,8 @@ namespace OpenCLRunTime {
     }
     
     vector<var_t> vars;
-    for (int n=0; n<attribute->n_RequiresClauses; ++n) {
-      int const gi = CCTK_GroupIndex(attribute->RequiresClauses[n]);
+    for (int n=0; n<attribute->n_ReadsClauses; ++n) {
+      int const gi = CCTK_GroupIndex(attribute->ReadsClauses[n]);
       assert(gi>=0);
       int const nv = CCTK_NumVarsInGroupI(gi);
       assert(nv>=0);
@@ -779,15 +779,15 @@ namespace OpenCLRunTime {
       }
       cout << "\n";
       
-      cout << "   Requires:";
-      for (int n=0; n<attribute->n_RequiresClauses; ++n) {
-        cout << " " << attribute->RequiresClauses[n];
+      cout << "   Reads:";
+      for (int n=0; n<attribute->n_ReadsClauses; ++n) {
+        cout << " " << attribute->ReadsClauses[n];
       }
       cout << "\n";
       
-      cout << "   Provides:";
-      for (int n=0; n<attribute->n_ProvidesClauses; ++n) {
-        cout << " " << attribute->ProvidesClauses[n];
+      cout << "   Writes:";
+      for (int n=0; n<attribute->n_WritesClauses; ++n) {
+        cout << " " << attribute->WritesClauses[n];
       }
       cout << "\n";
       
@@ -817,8 +817,8 @@ namespace OpenCLRunTime {
       invalid = &mem_t::device_valid;
     }
     
-    for (int n=0; n<attribute->n_ProvidesClauses; ++n) {
-      int const gi = CCTK_GroupIndex(attribute->ProvidesClauses[n]);
+    for (int n=0; n<attribute->n_WritesClauses; ++n) {
+      int const gi = CCTK_GroupIndex(attribute->WritesClauses[n]);
       assert(gi>=0);
       int const nv = CCTK_NumVarsInGroupI(gi);
       assert(nv>=0);
@@ -844,8 +844,8 @@ namespace OpenCLRunTime {
     if (Carpet::in_analysis_bin and is_opencl) {
       
       vector<var_t> vars;
-      for (int n=0; n<attribute->n_ProvidesClauses; ++n) {
-        int const gi = CCTK_GroupIndex(attribute->ProvidesClauses[n]);
+      for (int n=0; n<attribute->n_WritesClauses; ++n) {
+        int const gi = CCTK_GroupIndex(attribute->WritesClauses[n]);
         assert(gi>=0);
         int const nv = CCTK_NumVarsInGroupI(gi);
         assert(nv>=0);
