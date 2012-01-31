@@ -8,14 +8,6 @@
 
 #include <cassert>
 
-#ifdef CL_VERSION_1_1
-#  define HAVE_BUFFER_RECT_OPS 1
-#else
-#  define HAVE_BUFFER_RECT_OPS 0
-#endif
-
-
-
 namespace Accelerator {
   
   void copy_to_device(cGH const *restrict const cctkGH,
