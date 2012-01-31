@@ -1,0 +1,2 @@
+
+SRCS = copy.cc device.cc

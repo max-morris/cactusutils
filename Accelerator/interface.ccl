@@ -1,0 +1,31 @@
+
+IMPLEMENTS: Accelerator
+
+USES INCLUDE HEADER: carpet.hh
+USES INCLUDE HEADER: vectors.h
+
+CCTK_INT FUNCTION Accelerator_PreCallFunction   \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_POINTER_TO_CONST IN attribute)
+PROVIDES FUNCTION Accelerator_PreCallFunction   \
+  WITH AcceleratorThorn_PreCallFunction         \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_PostCallFunction  \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_POINTER_TO_CONST IN attribute)
+PROVIDES FUNCTION Accelerator_PostCallFunction  \
+  WITH AcceleratorThorn_PostCallFunction        \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_CopyToDevice      \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT IN var,                             \
+   CCTK_INT IN tl)
+REQUIRES FUNCTION Accelerator_CopyToDevice
+
+CCTK_INT FUNCTION Accelerator_CopyToHost        \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT IN var,                             \
+   CCTK_INT IN tl)
+REQUIRES FUNCTION Accelerator_CopyToHost

@@ -1,0 +1,9 @@
+PRIVATE:
+
+BOOLEAN verbose "Output detailed device information" STEERABLE=always
+{
+} "no"
+
+BOOLEAN veryverbose "Output even more detailed information" STEERABLE=always
+{
+} "no"
