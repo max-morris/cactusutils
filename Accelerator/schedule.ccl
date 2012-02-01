@@ -1,0 +1,12 @@
+# Schedule definition for thorn OpenCLRunTime
+
+SCHEDULE Accelerator_Init AT startup
+{
+  LANG: C
+} "Initialise Accelerator thorn"
+
+# Ensure this routine is called late
+SCHEDULE Accelerator_CopyBack AT analysis
+{
+  LANG: C
+} "Copy memory buffers back to host memory"

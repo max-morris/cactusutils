@@ -1,3 +1,5 @@
+# Parameter definition for thorn OpenCLRunTime
+
 PRIVATE:
 
 BOOLEAN verbose "Output detailed device information" STEERABLE=always

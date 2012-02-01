@@ -1,8 +1,43 @@
+# Interface definition for thorn Accelerator
 
 IMPLEMENTS: Accelerator
 
 USES INCLUDE HEADER: carpet.hh
-USES INCLUDE HEADER: vectors.h
+
+
+
+# Functions for hooks provided by Carpet and MoL
+
+CCTK_INT FUNCTION Accelerator_Cycle             \
+  (CCTK_POINTER_TO_CONST IN cctkGH)
+PROVIDES FUNCTION Accelerator_Cycle             \
+  WITH AcceleratorThorn_Cycle                   \
+  LANGUAGE C
+  
+CCTK_INT FUNCTION Accelerator_CopyFromPast      \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY        IN vars,               \
+   CCTK_INT              IN nvars)
+PROVIDES FUNCTION Accelerator_CopyFromPast      \
+  WITH AcceleratorThorn_CopyFromPast            \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_PreSync           \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY        IN groups,             \
+   CCTK_INT              IN ngroups)
+PROVIDES FUNCTION Accelerator_PreSync           \
+  WITH AcceleratorThorn_PreSync                 \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_PostSync          \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY        IN groups,             \
+   CCTK_INT              IN ngroups)
+USES FUNCTION Accelerator_PostSync
+PROVIDES FUNCTION Accelerator_PostSync          \
+  WITH AcceleratorThorn_PostSync                \
+  LANGUAGE C
 
 CCTK_INT FUNCTION Accelerator_PreCallFunction   \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
@@ -20,12 +55,73 @@ PROVIDES FUNCTION Accelerator_PostCallFunction  \
 
 CCTK_INT FUNCTION Accelerator_CopyToDevice      \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT IN var,                             \
-   CCTK_INT IN tl)
-REQUIRES FUNCTION Accelerator_CopyToDevice
+   CCTK_INT ARRAY        IN vis,                \
+   CCTK_INT ARRAY        IN tls,                \
+   CCTK_INT              IN nvars)
+PROVIDES FUNCTION Accelerator_CopyToDevice      \
+  WITH AcceleratorThorn_CopyToDevice            \
+  LANGUAGE C
 
-CCTK_INT FUNCTION Accelerator_CopyToHost        \
+
+
+# Low-level driver functions, to be implemented by CUDA/OpenCL drivers
+
+# Cycle all timelevels on the device
+# (This routine should not block.)
+CCTK_INT FUNCTION Device_CopyCycle              \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT IN var,                             \
-   CCTK_INT IN tl)
-REQUIRES FUNCTION Accelerator_CopyToHost
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+REQUIRES FUNCTION Device_CopyCycle
+
+# Copy past to current time level on the device
+# (This routine should not block.)
+CCTK_INT FUNCTION Device_CopyFromPast           \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+REQUIRES FUNCTION Device_CopyFromPast
+
+# Copy data from the host to the device.
+# The return argument indicates whether the data have been copied or moved.
+# (This routine should not block.)
+CCTK_INT FUNCTION Device_CopyToDevice           \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars,                           \
+   CCTK_INT OUT moved)
+REQUIRES FUNCTION Device_CopyToDevice
+
+# Copy data from the device back to the host.
+# The return argument indicates whether the data have been copied or moved.
+# (This routine should block until all data have been copied.)
+CCTK_INT FUNCTION Device_CopyToHost             \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars,                           \
+   CCTK_INT OUT moved)
+REQUIRES FUNCTION Device_CopyToHost
+
+# Copy those data from the device back to the host that will be
+# needed for synchronization (i.e. inter-process synchronization;
+# AMR is not yet supported).
+# (This routine should block until all data have been copied.)
+CCTK_INT FUNCTION Device_CopyPreSync            \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+REQUIRES FUNCTION Device_CopyPreSync
+
+# Copy the ghost zones to the device.
+# (This routine should not block.)
+CCTK_INT FUNCTION Device_CopyPostSync           \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+REQUIRES FUNCTION Device_CopyPostSync
