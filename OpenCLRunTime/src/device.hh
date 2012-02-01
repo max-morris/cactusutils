@@ -88,7 +88,7 @@ namespace OpenCLRunTime {
   
   struct mem_t {
     cl_mem mem;
-    bool host_valid, device_valid;
+    // bool host_valid, device_valid;
   };
   
   // Global data, defining platform, device etc.

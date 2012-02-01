@@ -405,7 +405,7 @@ namespace OpenCLRunTime {
     offset[0] *= di;
     length[0] *= di;
     
-    vector<var_t> vars;
+    vars_t vars;
     for (int arg=0; arg<int(args.size()); ++arg) {
       int const vi = args[arg].vi;
       int const tl = args[arg].tl;
@@ -418,13 +418,11 @@ namespace OpenCLRunTime {
                                  np*sizeof(CCTK_REAL), need_ptr ? ptr : NULL,
                                  &errcode),
                   errcode));
-        device->mems.at(vi).at(tl).host_valid = true; // assumption
-        device->mems.at(vi).at(tl).device_valid = false;
-        var_t const var = {vi, tl};
-        vars.push_back(var);
+        vars.push_back(vi, tl);
       }
     }
-    copy_to_device(cctkGH, vars);
+    Accelerator_CopyToDevice
+      (cctkGH, vars.vi_ptr(), vars.tl_ptr(), vars.nvars());
     
     /*** Set up parameters for calling the kernel *****************************/
     

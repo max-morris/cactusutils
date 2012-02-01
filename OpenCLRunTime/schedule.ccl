@@ -10,12 +10,6 @@ SCHEDULE OpenCLRunTime_DeviceInfo AT wragh
   LANG: C
 } "Output OpenCL device information"
 
-# Ensure this routine is called late
-SCHEDULE OpenCLRunTime_CopyBack AT analysis
-{
-  LANG: C
-} "Copy OpenCL memory buffers back to host memory"
-
 SCHEDULE OpenCLRunTime_Statistics AT terminate
 {
   LANG: C

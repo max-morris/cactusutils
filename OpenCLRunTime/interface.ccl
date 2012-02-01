@@ -9,47 +9,67 @@ USES INCLUDE HEADER: vectors.h
 
 
 
-CCTK_INT FUNCTION Accelerator_Cycle             \
-  (CCTK_POINTER_TO_CONST IN cctkGH)
-PROVIDES FUNCTION Accelerator_Cycle             \
-  WITH OpenCLRunTime_Cycle                      \
-  LANGUAGE C
-  
-CCTK_INT FUNCTION Accelerator_CopyFromPast      \
+CCTK_INT FUNCTION Accelerator_CopyToDevice      \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT ARRAY        IN vars,               \
+   CCTK_INT ARRAY        IN vis,                \
+   CCTK_INT ARRAY        IN tls,                \
    CCTK_INT              IN nvars)
-PROVIDES FUNCTION Accelerator_CopyFromPast      \
+REQUIRES FUNCTION Accelerator_CopyToDevice
+
+
+
+CCTK_INT FUNCTION Device_CopyCycle              \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+PROVIDES FUNCTION Device_CopyCycle              \
+  WITH OpenCLRunTime_CopyCycle                  \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Device_CopyFromPast           \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+PROVIDES FUNCTION Device_CopyFromPast           \
   WITH OpenCLRunTime_CopyFromPast               \
   LANGUAGE C
 
-CCTK_INT FUNCTION Accelerator_PreCallFunction   \
+CCTK_INT FUNCTION Device_CopyToDevice           \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_POINTER_TO_CONST IN attribute)
-PROVIDES FUNCTION Accelerator_PreCallFunction   \
-  WITH OpenCLRunTime_PreCallFunction            \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars,                           \
+   CCTK_INT OUT moved)
+PROVIDES FUNCTION Device_CopyToDevice           \
+  WITH OpenCLRunTime_CopyToDevice               \
   LANGUAGE C
 
-CCTK_INT FUNCTION Accelerator_PostCallFunction  \
+CCTK_INT FUNCTION Device_CopyToHost             \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_POINTER_TO_CONST IN attribute)
-PROVIDES FUNCTION Accelerator_PostCallFunction  \
-  WITH OpenCLRunTime_PostCallFunction           \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars,                           \
+   CCTK_INT OUT moved)
+PROVIDES FUNCTION Device_CopyToHost             \
+  WITH OpenCLRunTime_CopyToHost                 \
   LANGUAGE C
 
-CCTK_INT FUNCTION Accelerator_PreSync           \
+CCTK_INT FUNCTION Device_CopyPreSync            \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT ARRAY        IN groups,             \
-   CCTK_INT              IN ngroups)
-PROVIDES FUNCTION Accelerator_PreSync           \
-  WITH OpenCLRunTime_PreSync                    \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+PROVIDES FUNCTION Device_CopyPreSync            \
+  WITH OpenCLRunTime_CopyPreSync                \
   LANGUAGE C
 
-CCTK_INT FUNCTION Accelerator_PostSync          \
+CCTK_INT FUNCTION Device_CopyPostSync           \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT ARRAY        IN groups,             \
-   CCTK_INT              IN ngroups)
-USES FUNCTION Accelerator_PostSync
-PROVIDES FUNCTION Accelerator_PostSync          \
-  WITH OpenCLRunTime_PostSync                   \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+PROVIDES FUNCTION Device_CopyPostSync           \
+  WITH OpenCLRunTime_CopyPostSync               \
   LANGUAGE C
