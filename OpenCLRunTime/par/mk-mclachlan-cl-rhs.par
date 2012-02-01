@@ -19,8 +19,10 @@ ActiveThorns = "InitBase"
 
 ActiveThorns = "LoopControl"
 
-ActiveThorns = "OpenCLRunTime"
+ActiveThorns = "Accelerator OpenCLRunTime"
 
+Accelerator::verbose              = yes
+Accelerator::veryverbose          = yes
 OpenCLRunTime::verbose            = yes
 OpenCLRunTime::veryverbose        = yes
 #OpenCLRunTime::opencl_device_type = "any"

@@ -23,8 +23,10 @@ ActiveThorns = "InitBase"
 
 ActiveThorns = "LoopControl"
 
-ActiveThorns = "OpenCLRunTime"
+ActiveThorns = "Accelerator OpenCLRunTime"
 
+Accelerator::verbose              = yes
+Accelerator::veryverbose          = no # yes
 OpenCLRunTime::verbose            = yes
 OpenCLRunTime::veryverbose        = no # yes
 OpenCLRunTime::opencl_device_type = "CPU"
