@@ -236,19 +236,24 @@ namespace Accelerator {
         assert(v0>=0);
         for (int vi=v0; vi<v0+nv; ++vi) {
           int const tl=0;       // only copy current timelevel
-          if (int(device->mems.at(vi).size()) > tl) {
-            if (not (device->mems.at(vi).at(tl).*dst_valid)) {
-              
-              // TODO: Check this. For now, we just assume this is
-              // true, because we don't assume that all
-              // provides/requires information is complete and
-              // correct.
-              // assert(device->mems.at(vi).at(tl).*src_valid);
-              device->mems.at(vi).at(tl).*src_valid = true;
-              
-              vars.push_back(vi, tl);
-              device->mems.at(vi).at(tl).*dst_valid = true;
-            }
+          
+          if (int(device->mems.at(vi).size()) <= tl) {
+            device->mems.at(vi).resize(tl+1);
+            // We see this variable for the first time -- we assume it
+            // is valid on the host
+            device->mems.at(vi).at(tl).host_valid = true;
+            device->mems.at(vi).at(tl).device_valid = false;
+          }
+          
+          if (not (device->mems.at(vi).at(tl).*dst_valid)) {
+            // TODO: Check this. For now, we just assume this is true,
+            // because we don't assume that all provides/requires
+            // information is complete and correct.
+            // assert(device->mems.at(vi).at(tl).*src_valid);
+            device->mems.at(vi).at(tl).*src_valid = true;
+            
+            vars.push_back(vi, tl);
+            device->mems.at(vi).at(tl).*dst_valid = true;
           }
         }
       }
@@ -574,12 +579,14 @@ namespace Accelerator {
         device->mems.at(vi).at(tl).device_valid = false;
       }
       
-      // TODO: Check this. For now, we just assume this is true,
-      // because we don't assume that all provides/requires
-      // information is complete and correct.
-      device->mems.at(vi).at(tl).host_valid = true;
-      
-      device->mems.at(vi).at(tl).device_valid = true;
+      if (not device->mems.at(vi).at(tl).device_valid) {
+        // TODO: Check this. For now, we just assume this is true,
+        // because we don't assume that all provides/requires
+        // information is complete and correct.
+        device->mems.at(vi).at(tl).host_valid = true;
+        
+        device->mems.at(vi).at(tl).device_valid = true;
+      }
     }
     
     CCTK_INT moved;
