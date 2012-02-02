@@ -198,24 +198,24 @@ namespace Accelerator {
       cout << "\n";
     }
     
-    // Is this an OpenCL routine?
-    CCTK_INT is_opencl;
-    int const ierr = Util_TableGetInt(attribute->tags, &is_opencl, "OpenCL");
+    // Is this a device routine?
+    CCTK_INT is_device;
+    int const ierr = Util_TableGetInt(attribute->tags, &is_device, "Device");
     if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
-      is_opencl = 0;            // default
+      is_device = 0;            // default
     } else if (ierr <= 0) {
-      CCTK_WARN (CCTK_WARN_ABORT, "Error with schedule tag \"OpenCL\"");
+      CCTK_WARN (CCTK_WARN_ABORT, "Error with schedule tag \"Device\"");
     }
     
     // Copy all required variables to the device or to the host,
-    // depending on the language (OpenCL or not)
+    // depending on the language (device or not)
     bool mem_t::*dst_valid, mem_t::*src_valid;
     CCTK_INT (*copy) (CCTK_POINTER_TO_CONST cctkGH,
                       CCTK_INT const *vars,
                       CCTK_INT const *tls,
                       CCTK_INT nvars,
                       CCTK_INT *moved);
-    if (is_opencl) {
+    if (is_device) {
       dst_valid = &mem_t::device_valid;
       src_valid = &mem_t::host_valid;
       copy = Device_CopyToDevice;
@@ -346,20 +346,20 @@ namespace Accelerator {
       cout << "\n";
     }
     
-    // Is this an OpenCL routine?
-    CCTK_INT is_opencl;
-    int const ierr = Util_TableGetInt(attribute->tags, &is_opencl, "OpenCL");
+    // Is this an Device routine?
+    CCTK_INT is_device;
+    int const ierr = Util_TableGetInt(attribute->tags, &is_device, "Device");
     if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
-      is_opencl = 0;            // default
+      is_device = 0;            // default
     } else if (ierr <= 0) {
-      CCTK_WARN (CCTK_WARN_ABORT, "Error with schedule tag \"OpenCL\"");
+      CCTK_WARN (CCTK_WARN_ABORT, "Error with schedule tag \"Device\"");
     }
     
     // Mark all provided variables as valid, and mark them as invalid
     // on the other end
     bool mem_t:: *valid;
     bool mem_t:: *invalid;
-    if (is_opencl) {
+    if (is_device) {
       valid = &mem_t::device_valid;
       invalid = &mem_t::host_valid;
     } else {
@@ -385,13 +385,13 @@ namespace Accelerator {
       }
     }
     
-    // If we are in the analysis bin, and if this is an OpenCL
+    // If we are in the analysis bin, and if this is a device
     // routine, then copy back all provided variables since they may
     // be output. Otherwise, do nothing.
     // TODO: Add a hook to the flesh to do this only when an I/O
     // method has been called, and then copy only those variables
     // necessary.
-    if (Carpet::in_analysis_bin and is_opencl) {
+    if (Carpet::in_analysis_bin and is_device) {
       
       vars_t vars;
       for (int n=0; n<attribute->n_WritesClauses; ++n) {
