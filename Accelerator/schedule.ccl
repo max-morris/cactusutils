@@ -1,4 +1,4 @@
-# Schedule definition for thorn OpenCLRunTime
+# Schedule definition for thorn Accelerator
 
 SCHEDULE Accelerator_Init AT startup
 {
