@@ -239,8 +239,13 @@ namespace Accelerator {
           
           if (int(device->mems.at(vi).size()) <= tl) {
             device->mems.at(vi).resize(tl+1);
-            // We see this variable for the first time -- we assume it
-            // is valid on the host
+            // We see this variable for the first time here, which
+            // means that the function which generated it does not
+            // declare the variable in WRITES (otherwise we would have
+            // seen it in PostCall).  This must be a host function, as
+            // all device functions presumably have valid WRITES
+            // lists.  Therefore we assume the variable is valid on
+            // the host.
             device->mems.at(vi).at(tl).host_valid = true;
             device->mems.at(vi).at(tl).device_valid = false;
           }
@@ -253,6 +258,7 @@ namespace Accelerator {
             device->mems.at(vi).at(tl).*src_valid = true;
             
             vars.push_back(vi, tl);
+            // This will be true after the copy operation below
             device->mems.at(vi).at(tl).*dst_valid = true;
           }
         }
@@ -346,7 +352,7 @@ namespace Accelerator {
       cout << "\n";
     }
     
-    // Is this an Device routine?
+    // Is this a device routine?
     CCTK_INT is_device;
     int const ierr = Util_TableGetInt(attribute->tags, &is_device, "Device");
     if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
