@@ -383,10 +383,17 @@ namespace Accelerator {
         assert(v0>=0);
         for (int vi=v0; vi<v0+nv; ++vi) {
           int const tl=0;       // only mark current timelevel
-          if (int(device->mems.at(vi).size()) > tl) {
-            device->mems.at(vi).at(tl).*valid = true;
-            device->mems.at(vi).at(tl).*invalid = false;
+
+          // We see the variable for the first time
+          if (int(device->mems.at(vi).size()) <= tl) {
+            device->mems.at(vi).resize(tl+1);
           }
+
+          // This variable was written by the function which just
+          // executed, therefore it is valid there and invalid
+          // elsewhere.
+          device->mems.at(vi).at(tl).*valid = true;
+          device->mems.at(vi).at(tl).*invalid = false;
         }
       }
     }
