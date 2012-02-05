@@ -139,6 +139,34 @@
 #  define vec8_store_nta(p,x) (_mm_stream_pd(&(p),x))
 #endif
 
+// Store a partial vector (aligned and non-temporal)
+#define vec8_store_partial_prepare(i,imin,imax)                 \
+  bool const v8stp_lo = (i)>=(imin);                            \
+  bool const v8stp_hi = (i)+CCTK_REAL_VEC_SIZE<(imax)
+#if VECTORISE_STREAMING_STORES && defined(__SSE4A__)
+#  define vec8_store_nta_partial(p,x)                           \
+  ({                                                            \
+    if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) {     \
+      vec8_store_nta(p,x);                                      \
+    } else if (v8stp_lo) {                                      \
+      _mm_stream_sd(&p,x);                                      \
+    } else if (v8stp_hi) {                                      \
+      _mm_stream_sd(&p+1, vec8_swap10(x));                      \
+    }                                                           \
+  })
+#else
+#  define vec8_store_nta_partial(p,x)                           \
+  ({                                                            \
+    if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) {     \
+      vec8_store_nta(p,x);                                      \
+    } else if (v8stp_lo) {                                      \
+      _mm_storel_pd(&p,x);                                      \
+    } else if (v8stp_hi) {                                      \
+      _mm_storeh_pd(&p+1,x);                                    \
+    }                                                           \
+  })
+#endif
+
 // Store a lower or higher partial vector (aligned and non-temporal)
 #if ! VECTORISE_STREAMING_STORES
 #  define vec8_store_nta_partial_lo(p,x,n) (_mm_storel_pd(&(p),x))
@@ -264,9 +292,10 @@ static const union {
 
 // Choice   [sign(x)>0 ? y : z]
 #ifdef __SSE4_1__
-#  define k8ifpos(x,y,z) (_mm_blendv_pd(y,z,x))
+#  define k8ifmsb(x,y,z) (_mm_blendv_pd(z,y,x))
 #elif 0
-#  define k8ifpos(x_,y_,z_)                     \
+// This is slow
+#  define k8ifmsb(x_,y_,z_)                     \
   ({                                            \
     CCTK_REAL8_VEC const x__=(x_);              \
     CCTK_REAL8_VEC const y__=(y_);              \
@@ -278,8 +307,8 @@ static const union {
     CCTK_REAL8_VEC r;                           \
     switch (m) {                                \
     case 0: r = y; break;                       \
-    case 1: r = _mm_move_sd(y,z); break;        \
-    case 2: r = _mm_move_sd(z,y); break;        \
+    case 1: r = _mm_move_sd(y,z); break;      \
+    case 2: r = _mm_move_sd(z,y); break;      \
     case 3: r = z; break;                       \
     }                                           \
     r;                                          \
@@ -290,7 +319,7 @@ static const union {
 #  else
 #    define k4sgn(x) (signbit(x))
 #  endif
-#  define k8ifpos(x_,y_,z_)                                             \
+#  define k8ifmsb(x_,y_,z_)                                             \
   ({                                                                    \
     CCTK_REAL8_VEC const x__=(x_);                                      \
     CCTK_REAL8_VEC const y__=(y_);                                      \
@@ -298,8 +327,8 @@ static const union {
     CCTK_REAL8_VEC const x=x__;                                         \
     CCTK_REAL8_VEC const y=y__;                                         \
     CCTK_REAL8_VEC const z=z__;                                         \
-    vec8_set(k8sgn(vec8_elt0(x)) ? vec8_elt0(z) : vec8_elt0(y),         \
-             k8sgn(vec8_elt1(x)) ? vec8_elt1(z) : vec8_elt1(y));        \
+    vec8_set(k8sgn(vec8_elt0(x)) ? vec8_elt0(y) : vec8_elt0(z),         \
+             k8sgn(vec8_elt1(x)) ? vec8_elt1(y) : vec8_elt1(z));        \
   })
 #else
 static const union {
@@ -307,7 +336,7 @@ static const union {
   double             d;
 } k8one_union = { 0x1ULL };
 #  define k8one (k8one_union.d)
-#  define k8ifpos(x_,y_,z_)                                     \
+#  define k8ifmsb(x_,y_,z_)                                     \
   ({                                                            \
     CCTK_REAL8_VEC const x__=(x_);                              \
     CCTK_REAL8_VEC const y__=(y_);                              \
@@ -319,7 +348,7 @@ static const union {
     CCTK_REAL8_VEC const imask =                                \
       (__m128d)_mm_sub_epi64(_mm_srli_epi64((__m128i)x, 63),    \
                              (__m128i)_mm_set1_pd(k8one));      \
-    /* (y & ~mask) | (z & mask);   imask = ~mask */             \
-    _mm_or_pd(_mm_and_pd(imask, y), _mm_andnot_pd(imask, z));   \
+    /* (z & ~mask) | (y & mask);   imask = ~mask */             \
+    _mm_or_pd(_mm_and_pd(imask, z), _mm_andnot_pd(imask, y));   \
   })
 #endif

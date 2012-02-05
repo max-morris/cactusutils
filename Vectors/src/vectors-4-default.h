@@ -49,6 +49,7 @@
 // Unaligned store
 #define vec4_store_nta(p,x) ((p)=(x))
 
+#define vec4_store_nta_partial(p,x,i,imin,imax) (vec4_store_nta(p,x))
 // Store the n lower elements of a vector to memory
 #define vec4_store_nta_partial_lo(p,x,n) (assert(0))
 // Store the n higher elements of a vector into memory. This stores
@@ -93,4 +94,4 @@
 #  define k4sgn(x) (signbit(x))
 #endif
 
-#define k4ifpos(x,y,z) (k4sgn(x)?(z):(y))
+#define k4ifmsb(x,y,z) (k4sgn(x)?(y):(z))

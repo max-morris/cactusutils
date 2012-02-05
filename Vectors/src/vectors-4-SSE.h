@@ -326,14 +326,14 @@ static const union {
 
 // Choice   [sign(x)>0 ? y : z]
 #ifdef __SSE4_1__
-#  define k4ifpos(x,y,z) (_mm_blendv_ps(y,z,x))
+#  define k4ifmsb(x,y,z) (_mm_blendv_ps(z,y,x))
 #elif 0
 #  ifdef __cplusplus
 #    define k4sgn(x) ({ using namespace std; signbit(x); })
 #  else
 #    define k4sgn(x) (signbit(x))
 #  endif
-#  define k4ifpos(x,y,z)                                                \
+#  define k4ifmsb(x,y,z)                                                \
   ({                                                                    \
     CCTK_REAL4_VEC const x__=(x_);                                      \
     CCTK_REAL4_VEC const y__=(y_);                                      \
@@ -341,13 +341,13 @@ static const union {
     CCTK_REAL4_VEC const x=x__;                                         \
     CCTK_REAL4_VEC const y=y__;                                         \
     CCTK_REAL4_VEC const z=z__;                                         \
-    vec4_set(k4sgn(vec4_elt0(x)) ? vec4_elt0(z) : vec4_elt0(y),         \
-             k4sgn(vec4_elt1(x)) ? vec4_elt1(z) : vec4_elt1(y),         \
-             k4sgn(vec4_elt2(x)) ? vec4_elt2(z) : vec4_elt2(y),         \
-             k4sgn(vec4_elt3(x)) ? vec4_elt3(z) : vec4_elt3(y));        \
+    vec4_set(k4sgn(vec4_elt0(x)) ? vec4_elt0(y) : vec4_elt0(z),         \
+             k4sgn(vec4_elt1(x)) ? vec4_elt1(y) : vec4_elt1(z),         \
+             k4sgn(vec4_elt2(x)) ? vec4_elt2(y) : vec4_elt2(z),         \
+             k4sgn(vec4_elt3(x)) ? vec4_elt3(y) : vec4_elt3(z));        \
   })
 #else
-#  define k4ifpos(x_,y_,z_)                                     \
+#  define k4ifmsb(x_,y_,z_)                                     \
   ({                                                            \
     CCTK_REAL4_VEC const x__=(x_);                              \
     CCTK_REAL4_VEC const y__=(y_);                              \
@@ -356,7 +356,7 @@ static const union {
     CCTK_REAL4_VEC const y=y__;                                 \
     CCTK_REAL4_VEC const z=z__;                                 \
     CCTK_REAL4_VEC const mask = _mm_srai_epi32(x, 31);          \
-    /* (y & ~mask) | (z & mask) */                              \
-    _mm_or_ps(_mm_andnot_ps(mask, y), _mm_and_ps(mask, z));     \
+    /* (z & ~mask) | (y & mask) */                              \
+    _mm_or_ps(_mm_andnot_ps(mask, z), _mm_and_ps(mask, y));     \
   })
 #endif

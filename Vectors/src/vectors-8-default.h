@@ -49,6 +49,8 @@
 // Unaligned store
 #define vec8_store_nta(p,x) ((p)=(x))
 
+#define vec8_store_partial_prepare(i,imin,imax) ((void)0)
+#define vec8_store_nta_partial(p,x) (vec8_store_nta(p,x))
 // Store the n lower elements of a vector to memory
 #define vec8_store_nta_partial_lo(p,x,n) (assert(0))
 // Store the n higher elements of a vector into memory. This stores
@@ -92,4 +94,4 @@
 #  define k8sgn(x) (signbit(x))
 #endif
 
-#define k8ifpos(x,y,z) (k8sgn(x)?(z):(y))
+#define k8ifmsb(x,y,z) (k8sgn(x)?(y):(z))

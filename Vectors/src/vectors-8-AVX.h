@@ -113,8 +113,53 @@ union k8const_t {
 #  define vec8_store_nta(p,x) (_mm256_stream_pd(&(p),x))
 #endif
 
+// Store a partial vector (aligned and non-temporal)
+#define vec8_store_partial_prepare(i,imin_,imax_)                       \
+  bool v8stp_all;                                                       \
+  __m256i v8stp_mask;                                                   \
+  ({                                                                    \
+    ptrdiff_t const imin1=(imin_);                                      \
+    ptrdiff_t const imin=imin1;                                         \
+    ptrdiff_t const imax1=(imax_);                                      \
+    ptrdiff_t const imax=imax1;                                         \
+                                                                        \
+    v8stp_all = i>=imin and i+CCTK_REAL_VEC_SIZE<imax;                  \
+                                                                        \
+    if (not CCTK_BUILTIN_EXPECT(v8stp_all, true)) {                     \
+      /*                                                                \
+        __m256i const v8stp_mask =                                      \
+          _mm256_andnot_pd(_mm256_add_epi64(_mm256_set1_epi64x(i-imin), \
+                                            vec_index),                 \
+                           _mm256_add_epi64(_mm256_set1_epi64x(i-imax), \
+                                            vec_index));                \
+      */                                                                \
+      __m128i const termlo0 =                                           \
+        _mm_add_epi64(_mm_set1_epi64x(i-imin), _mm_set_epi64x(0,1));    \
+      __m128i const termup0 =                                           \
+        _mm_add_epi64(_mm_set1_epi64x(i-imax), _mm_set_epi64x(0,1));    \
+      __m128i const term0 = _mm_andnot_si128(termlo0, termup0);         \
+      __m128i const termlo1 =                                           \
+        _mm_add_epi64(_mm_set1_epi64x(i-imin), _mm_set_epi64x(2,3));    \
+      __m128i const termup1 =                                           \
+        _mm_add_epi64(_mm_set1_epi64x(i-imax), _mm_set_epi64x(2,3));    \
+      __m128i const term1 = _mm_andnot_si128(termlo1, termup1);         \
+      v8stp_mask =                                                      \
+        _mm256_insertf128_si256(_mm256_castsi128_si256(term0), term1, 1); \
+    }                                                                   \
+  })
+
+#define vec8_store_nta_partial(p,x)             \
+  ({                                            \
+    if (CCTK_BUILTIN_EXPECT(v8stp_all, true)) { \
+      vec8_store_nta(p,x);                      \
+    } else {                                    \
+      _mm256_maskstore_pd(&p,v8stp_mask,x);     \
+    }                                           \
+  })
+
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
+// Masks indicating which vector element should be stored:
 static const k8const_t k8store_lo_union[5] =
   {
     {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }},
@@ -131,7 +176,7 @@ static const k8const_t k8store_hi_union[5] =
     {{ K8_ZERO, K8_IMIN, K8_IMIN, K8_IMIN, }},
     {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }},
   };
-#if defined(__GNUC__) && __GNUC__==4 && __GNUC_MINOR__<=4
+#if !defined(__INTEL_COMPILER) && defined(__GNUC__) && __GNUC__==4 && __GNUC_MINOR__<=4
 // gcc 4.4 uses a wrong prototype for _mm256_maskstore_pd
 #  define vec8_store_nta_partial_lo(p,x,n)                              \
   (_mm256_maskstore_pd(&(p),_mm256_castsi256_pd(k8store_lo_union[n].vi),x))
@@ -147,10 +192,11 @@ static const k8const_t k8store_hi_union[5] =
   (_mm256_maskstore_pd(&(p),k8store_lo_union[n].vi,x))
 #  define vec8_store_nta_partial_hi(p,x,n)              \
   (_mm256_maskstore_pd(&(p),k8store_hi_union[n].vi,x))
-#  define vec8_store_nta_partial_mid(p,x,nlo,nhi)               \
-  (_mm256_maskstore_pd                                          \
-   (&(p),                                                       \
-    k8store_lo_union[nlo].vi & k8store_hi_union[nhi].vi,        \
+#  define vec8_store_nta_partial_mid(p,x,nlo,nhi)                       \
+  (_mm256_maskstore_pd                                                  \
+   (&(p),                                                               \
+    _mm256_castpd_si256(_mm256_and_pd(k8store_lo_union[nlo].vd,         \
+                                      k8store_hi_union[nhi].vd)),       \
     x))
 #endif
 
@@ -209,8 +255,12 @@ static const k8const_t k8abs_mask_union =
            f(vec8_elt2(xfunc),afunc),           \
            f(vec8_elt3(xfunc),afunc));          \
 })
+#define k8cos(x)   K8REPL(cos,x)
 #define k8exp(x)   K8REPL(exp,x)
 #define k8log(x)   K8REPL(log,x)
 #define k8pow(x,a) K8REPL2(pow,x,a)
+#define k8sin(x)   K8REPL(sin,x)
+#define k8tan(x)   K8REPL(tan,x)
 
-#define k8ifpos(x,y,z) (_mm256_blendv_pd(y,z,x))
+// Choice   [sign(x)>0 ? y : z]
+#define k8ifmsb(x,y,z) (_mm256_blendv_pd(z,y,x))

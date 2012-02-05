@@ -131,6 +131,18 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("vec_store", sv, b[i]);
   sv = av; vec_store_nta(*s, bv);
   VECTEST("vec_store_nta", sv, b[i]);
+  for (int dlo=-1; dlo<=CCTK_REAL_VEC_SIZE; ++dlo) {
+    for (int dhi=dlo; dhi<=CCTK_REAL_VEC_SIZE; ++dhi) {
+      if (dlo>0 and dhi>dlo and dhi<CCTK_REAL_VEC_SIZE) {
+        sv = av;
+        vec_store_partial_prepare(0, dlo, dhi);
+        vec_store_nta_partial(*s, bv);
+        snprintf (testname, sizeof testname,
+                  "vec_store_nta_partial[%d,%d]", dlo, dhi);
+        VECTEST(testname, sv, i>=dlo && i<dhi ? b[i] : a[i]);
+      }
+    }
+  }
   /* The partial stores are not implemented for d==0 and
      d==CCTK_REAL_VEC_SIZE-1 (because these are trivial) */
   for (int d=1; d<CCTK_REAL_VEC_SIZE-1; ++d) {
@@ -182,6 +194,13 @@ void Vectors_Test(CCTK_ARGUMENTS)
           kifpos(bv, bv, cv), my_signbit(b[i]) ? c[i] : b[i]);
   VECTEST("kifpos 0",  kifpos(vec_set1(0.),bv,cv),  b[i]);
   VECTEST("kifpos -0", kifpos(vec_set1(-0.),bv,cv), c[i]);
+
+  VECTEST("kifneg positive",
+          kifneg(av, bv, cv), my_signbit(a[i]) ? b[i] : c[i]);
+  VECTEST("kifneg negative",
+          kifneg(bv, bv, cv), my_signbit(b[i]) ? b[i] : c[i]);
+  VECTEST("kifneg 0",  kifneg(vec_set1(0.),bv,cv),  c[i]);
+  VECTEST("kifneg -0", kifneg(vec_set1(-0.),bv,cv), b[i]);
 
   if (passed != numtests)
     CCTK_VWarn(CCTK_WARN_ALERT, __LINE__, __FILE__, CCTK_THORNSTRING,

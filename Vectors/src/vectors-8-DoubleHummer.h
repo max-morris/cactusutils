@@ -241,4 +241,4 @@
 #define k8sin(x)   K8REPL(sin,x)
 #define k8tan(x)   K8REPL(tan,x)
 
-#define k8ifpos(x,y,z) (__fpsel(x,z,y))
+#define k8ifmsb(x,y,z) (__fpsel(x,y,z))

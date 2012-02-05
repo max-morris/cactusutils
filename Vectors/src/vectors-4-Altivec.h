@@ -161,5 +161,5 @@
 #define k4pow(x,a) K4REPL2(pow,x,a)
 #define k4sqrt(x)  K4REPL(sqrt,x)
 
-#define k4ifpos(x,y,z)                                                  \
-  (vec_sel((y), (z), vec_sra(vec_convert((x), &(vector int*)0), 31)))
+#define k4ifmsb(x,y,z)                                                  \
+  (vec_sel((z), (y), vec_sra(vec_convert((x), &(vector int*)0), 31)))

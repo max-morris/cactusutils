@@ -61,6 +61,8 @@
 #  define vec_loadu_maybe3          vec4_loadu_maybe3
 #  define vec_store                 vec4_store
 #  define vec_store_nta             vec4_store_nta
+#  define vec_store_partial_prepare vec4_store_partial_prepare
+#  define vec_store_nta_partial     vec4_store_nta_partial
 #  define vec_store_nta_partial_lo  vec4_store_nta_partial_lo
 #  define vec_store_nta_partial_hi  vec4_store_nta_partial_hi
 #  define vec_store_nta_partial_mid vec4_store_nta_partial_mid
@@ -90,8 +92,7 @@
 #  define ksqrt  k4sqrt
 #  define ktan   k4tan
 
-#  define kifpos k4ifpos
-#  define kifneg k4ifneg
+#  define kifmsb k4ifmsb
 
 #elif defined(CCTK_REAL_PRECISION_8)
 
@@ -111,7 +112,9 @@
 #  define vec_loadu_maybe           vec8_loadu_maybe
 #  define vec_loadu_maybe3          vec8_loadu_maybe3
 #  define vec_store                 vec8_store
+#  define vec_store_partial_prepare vec8_store_partial_prepare
 #  define vec_store_nta             vec8_store_nta
+#  define vec_store_nta_partial     vec8_store_nta_partial
 #  define vec_store_nta_partial_lo  vec8_store_nta_partial_lo
 #  define vec_store_nta_partial_hi  vec8_store_nta_partial_hi
 #  define vec_store_nta_partial_mid vec8_store_nta_partial_mid
@@ -140,13 +143,18 @@
 #  define ksqrt  k8sqrt
 #  define ktan   k8tan
 
-#  define kifpos k8ifpos
+#  define kifmsb k8ifmsb
 
 #else
 
 #  error "Unknown CCTK_REAL_PRECISION"
 
 #endif
+
+
+
+#define kifneg(a,b,c) kifmsb(a,b,c)
+#define kifpos(a,b,c) kifmsb(a,c,b)
 
 
 
@@ -310,20 +318,31 @@ struct vecprops<CCTK_REAL8> {
 
 // For Kranc
 
-#undef KRANC_DIFF_FUNCTIONS
-#if ! VECTORISE_INLINE
-#  define KRANC_DIFF_FUNCTIONS
-#endif
+#ifdef KRANC_C
 
-#undef Pi
-#define Pi (ToReal(M_PI))
+#  undef KRANC_DIFF_FUNCTIONS
+#  if ! VECTORISE_INLINE
+#    define KRANC_DIFF_FUNCTIONS
+#  endif
 
-#undef ToReal
-#define ToReal(x) (vec_set1((CCTK_REAL)(x)))
+#  undef E
+#  define E (ToReal(M_E))
 
-#undef Sign
-#define Sign(x) -999999999      // poison
+#  undef Pi
+#  define Pi (ToReal(M_PI))
 
+#  undef Sign
+#  define Sign(x) -999999999    // poison
 
+#  undef ToReal
+#  define ToReal(x) (vec_set1((CCTK_REAL)(x)))
+
+#  undef KRANC_GFOFFSET3D
+#  define KRANC_GFOFFSET3D(var,i,j,k)                                   \
+  vec_loadu_maybe3((i),(j),(k),                                         \
+                   *(CCTK_REAL const*)&                                 \
+                   ((char const*)(var))[cdi*(i)+cdj*(j)+cdk*(k)])
+
+#endif  // KRANC_C
 
 #endif  // #ifndef VECTORS_H
