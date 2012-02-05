@@ -142,7 +142,7 @@
 // Store a partial vector (aligned and non-temporal)
 #define vec8_store_partial_prepare(i,imin,imax)                 \
   bool const v8stp_lo = (i)>=(imin);                            \
-  bool const v8stp_hi = (i)+CCTK_REAL_VEC_SIZE<(imax)
+  bool const v8stp_hi = (i)+CCTK_REAL_VEC_SIZE-1<(imax)
 #if VECTORISE_STREAMING_STORES && defined(__SSE4A__)
 #  define vec8_store_nta_partial(p,x)                           \
   ({                                                            \
