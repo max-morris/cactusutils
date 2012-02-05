@@ -131,15 +131,24 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("vec_store", sv, b[i]);
   sv = av; vec_store_nta(*s, bv);
   VECTEST("vec_store_nta", sv, b[i]);
-  for (int dlo=-1; dlo<=CCTK_REAL_VEC_SIZE; ++dlo) {
-    for (int dhi=dlo; dhi<=CCTK_REAL_VEC_SIZE; ++dhi) {
-      if (dlo>0 and dhi>dlo and dhi<CCTK_REAL_VEC_SIZE) {
-        sv = av;
-        vec_store_partial_prepare(0, dlo, dhi);
-        vec_store_nta_partial(*s, bv);
+  int const arenaitems = 3;
+  int const arenasize = arenaitems * CCTK_REAL_VEC_SIZE;
+  for (int ilo=0; ilo<arenasize; ++ilo) {
+    for (int ihi=0; ihi<arenasize; ++ihi) {
+      // Initialise arena to a everywhere
+      for (int n=0; n<arenaitems; ++n) {
+        lv[n] = av;
+      }
+      // Set arena to b in the "interior"
+      for (int i=(ilo & -CCTK_REAL_VEC_SIZE); i<ihi; i+=CCTK_REAL_VEC_SIZE) {
+        vec_store_partial_prepare(i, ilo, ihi);
+        vec_store_nta_partial(l[i], bv);
+      }
+      for (int i=0; i<arenasize; ++i) {
         snprintf (testname, sizeof testname,
-                  "vec_store_nta_partial[%d,%d]", dlo, dhi);
-        VECTEST(testname, sv, i>=dlo && i<dhi ? b[i] : a[i]);
+                  "vec_store_nta_partial[%d,%d;%d]", ilo, ihi, i);
+        SCALARTEST(testname, l[i],
+                   (i>=ilo and i<ihi ? b : a)[i & (CCTK_REAL_VEC_SIZE-1)]);
       }
     }
   }
