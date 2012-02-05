@@ -62,6 +62,15 @@ PROVIDES FUNCTION Accelerator_CopyToDevice      \
   WITH AcceleratorThorn_CopyToDevice            \
   LANGUAGE C
 
+CCTK_INT FUNCTION Accelerator_DataWritten       \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT              IN vi,                \
+   CCTK_INT              IN tl,                \
+   CCTK_INT              IN onhost)
+PROVIDES FUNCTION Accelerator_DataWritten       \
+  WITH AcceleratorThorn_DataWritten             \
+  LANGUAGE C
+
 
 
 # Low-level driver functions, to be implemented by CUDA/OpenCL drivers

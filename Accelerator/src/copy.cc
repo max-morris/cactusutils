@@ -660,5 +660,31 @@ namespace Accelerator {
     }
     
   }
+
+
+  extern "C"
+  void AcceleratorThorn_DataWritten(CCTK_POINTER_TO_CONST const cctkGH_,
+                                    CCTK_INT const vi,
+                                    CCTK_INT const tl,
+                                    CCTK_INT const onhost)
+  {
+    cGH const *restrict const cctkGH = static_cast<cGH const*>(cctkGH_);
+
+    DECLARE_CCTK_PARAMETERS;
+
+    // Do we ever write to other than the current timelevel?  Maybe
+    // during initialisation for mesh refinement.  This code will need
+    // to be updated then.
+    assert(tl == 0);
+
+    if (int(device->mems.at(vi).size()) <= tl)
+      device->mems.at(vi).resize(tl+1);
+
+    device->mems.at(vi).at(tl).device_valid = (onhost == 0);
+    device->mems.at(vi).at(tl).host_valid = (onhost == 1);
+
+    if (verbose)
+      CCTK_VInfo(CCTK_THORNSTRING, "Data written to %s", onhost ? "host" : "device");
+  }
      
 } // namespace Accelerator
