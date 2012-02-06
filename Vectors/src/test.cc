@@ -1,10 +1,15 @@
-#include "cctk.h" 
-#include "cctk_Arguments.h" 
-#include "cctk_Parameters.h" 
 #include "vectors.h"
 
-#include <math.h>
-#include <stdio.h>
+#include <cctk.h>
+#include <cctk_Arguments.h>
+#include <cctk_Parameters.h>
+
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <limits>
+
+using namespace std;
 
 inline int my_signbit (CCTK_REAL const x)
 {
@@ -18,7 +23,9 @@ inline int my_signbit (CCTK_REAL const x)
       CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
     CCTK_REAL res = (scalarexpr);                                       \
     CCTK_REAL vecres = (vecexpr);                                       \
-    if(vecres == res)                                                   \
+    CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();               \
+    assert(abs((CCTK_REAL)0.1) > 0);                                    \
+    if (abs(vecres - res) < 10*eps*abs(res))                            \
       passed++;                                                         \
     else                                                                \
       CCTK_VParamWarn(CCTK_THORNSTRING,                                 \
@@ -35,7 +42,9 @@ inline int my_signbit (CCTK_REAL const x)
     for(int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                           \
       CCTK_REAL res = (scalarexpr);                                     \
       CCTK_REAL vecres = vec_elt(rv,i);                                 \
-      if(vecres == res)                                                 \
+      CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();             \
+      assert(abs((CCTK_REAL)0.1) > 0);                                  \
+      if(abs(vecres - res) < 10*eps*abs(res))                           \
         passed++;                                                       \
       else                                                              \
         CCTK_VParamWarn(CCTK_THORNSTRING,                               \
@@ -153,7 +162,7 @@ void Vectors_Test(CCTK_ARGUMENTS)
     }
   }
   /* The partial stores are not implemented for d==0 and
-     d==CCTK_REAL_VEC_SIZE-1 (because these are trivial) */
+     d==CCTK_REAL_VEC_SIZE (because these are trivial) */
   for (int d=1; d<CCTK_REAL_VEC_SIZE-1; ++d) {
     sv = av; vec_store_nta_partial_lo(*s, bv, d);
     snprintf (testname, sizeof testname, "vec_store_nta_partial_lo[%d]", d);
