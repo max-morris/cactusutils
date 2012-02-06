@@ -137,7 +137,7 @@
     CCTK_REAL4_VEC const lo=vec4_load((&p)[-1]);                        \
     CCTK_REAL4_VEC const hi=vec4_load((&p)[+3]);                        \
     assert(0);                                                          \
-    CCTK_REAL4_VEC const hi2=_mm_suffle_ps(lo,hi, _MM_SHUFFLE(0,1,2,3)); \
+    CCTK_REAL4_VEC const hi2=_mm_shuffle_ps(lo,hi, _MM_SHUFFLE(0,1,2,3)); \
     _mm_shuffle_ps(lo,hi2, _MM_SHUFFLE(2,1,3,0));                       \
   })
 #  define vec4_load_off2(p_)                            \
@@ -155,7 +155,7 @@
     CCTK_REAL4_VEC const lo=vec4_load((&p)[-1]);                        \
     CCTK_REAL4_VEC const hi=vec4_load((&p)[+3]);                        \
     assert(0);                                                          \
-    CCTK_REAL4_VEC const lo2=_mm_suffle_ps(lo,hi, _MM_SHUFFLE(0,1,2,3)); \
+    CCTK_REAL4_VEC const lo2=_mm_shuffle_ps(lo,hi, _MM_SHUFFLE(0,1,2,3)); \
     _mm_shuffle_ps(lo2,hi, _MM_SHUFFLE(3,0,2,1));                       \
   })
 #endif
@@ -185,73 +185,88 @@
 #  endif
 #endif
 
-// Store a lower or higher partial vector (aligned and non-temporal);
-// the non-temporal hint is probably ignored
-#if ! VECTORISE_STREAMING_STORES || ! defined(__SSE4A__)
-#  define vec4_store_nta_partial_lo(p_,x_,n)                    \
-  ({                                                            \
-    CCTK_REAL4     const& p__=(p_);                             \
-    CCTK_REAL4_VEC const  x__=(x_);                             \
-    CCTK_REAL4     const& p=p__;                                \
-    CCTK_REAL4_VEC const  x=x__;                                \
-    switch (n) {                                                \
-    case 1: (&p)[0]=vec4_elt0(x); break;                        \
-    case 2: _mm_storel_ps(&p,x); break;                         \
-    case 3: _mm_storel_ps(&p,x); (&p)[2]=vec4_elt2(x); break;   \
-    }                                                           \
-  })
-#  define vec4_store_nta_partial_hi(p_,x_,n)                    \
-  ({                                                            \
-    CCTK_REAL4     const& p__=(p_);                             \
-    CCTK_REAL4_VEC const  x__=(x_);                             \
-    CCTK_REAL4     const& p=p__;                                \
-    CCTK_REAL4_VEC const  x=x__;                                \
-    switch (n) {                                                \
-    case 1: (&p)[3]=vec4_elt3(x);  break;                       \
-    case 2: _mm_storeh_ps(&p+2,x); break;                       \
-    case 3: _mm_storeh_ps(&p+2,x); (&p)[1]=vec4_elt1(x); break; \
-    }                                                           \
-  })
+// Store a vector to memory (aligned and non-temporal); this stores to
+// a reference to a scalar
+#define vec4_store(p,x)  (_mm_store_ps(&(p),x))
+#define vec4_storeu(p,x) (_mm_storeu_ps(&(p),x))
+#if ! VECTORISE_STREAMING_STORES
+#  define vec4_store_nta(p,x) vec4_store(p,x)
 #else
-#  define vec4_store_nta_partial_lo(p_,x_,n)    \
-  ({                                            \
-    CCTK_REAL4     const& p__=(p_);             \
-    CCTK_REAL4_VEC const  x__=(x_);             \
-    CCTK_REAL4     const& p=p__;                \
-    CCTK_REAL4_VEC const  x=x__;                \
-    switch (n) {                                \
-    case 1:                                     \
-      _mm_stream_ss(&p,x);                      \
-      break;                                    \
-    case 2:                                     \
-      _mm_storel_ps(&p,x);                      \
-      break;                                    \
-    case 3:                                     \
-      _mm_storel_ps(&p,x);                      \
-      _mm_stream_ss(&p+2, vec4_swap2301(x));    \
-      break;                                    \
-    }                                           \
-  })
-#  define vec4_store_nta_partial_hi(p_,x_,n)    \
-  ({                                            \
-    CCTK_REAL4     const& p__=(p_);             \
-    CCTK_REAL4_VEC const  x__=(x_);             \
-    CCTK_REAL4     const& p=p__;                \
-    CCTK_REAL4_VEC const  x=x__;                \
-    switch (n) {                                \
-    case 1:                                     \
-      _mm_stream_ss(&p+3, vec4_swap3210(x));    \
-      break;                                    \
-    case 2:                                     \
-      _mm_storeh_ps(&p+2,x);                    \
-      break;                                    \
-    case 3:                                     \
-      _mm_storeh_ps(&p+2,x);                    \
-      _mm_stream_ss(&p+1, vec4_swap1032(x));    \
-      break;                                    \
-    }                                           \
-  })
+#  define vec4_store_nta(p,x) (_mm_stream_ps(&(p),x))
 #endif
+
+// Store a partial vector (aligned and non-temporal)
+#define vec4_store_partial_prepare(i,imin,imax)                         \
+  int v4stp_lo_skip = (imin)-(i);                                       \
+  int v4stp_hi_skip = (i)+CCTK_REAL_VEC_SIZE-(imax);                    \
+  if (CCTK_BUILTIN_EXPECT(v4stp_lo_skip < 0, true)) v4stp_lo_skip = 0;  \
+  if (CCTK_BUILTIN_EXPECT(v4stp_hi_skip < 0, true)) v4stp_hi_skip = 0;
+// Ignoring VECTORISE_STREAMING_STORES for partial stores
+#define vec4_store_nta_partial(p_,x_)                                   \
+  ({                                                                    \
+    CCTK_REAL4& p__=(p_);                                               \
+    CCTK_REAL4& p=p__;                                                  \
+    CCTK_REAL4_VEC const x__=(x_);                                      \
+    CCTK_REAL4_VEC const x=x__;                                         \
+    if (CCTK_BUILTIN_EXPECT(v4stp_lo_skip==0 and v4stp_hi_skip==0, true)) { \
+      vec4_store_nta(p,x);                                              \
+    } else {                                                            \
+      /* these cases fall through */                                    \
+      switch (v4stp_lo_skip) {                                          \
+      case 0:                                                           \
+        (&p)[0] = vec4_elt0(x);                                         \
+      case 1:                                                           \
+        if (v4stp_hi_skip>=3) break;                                    \
+        (&p)[1] = vec4_elt1(x);                                         \
+      case 2:                                                           \
+        if (v4stp_hi_skip>=2) break;                                    \
+        (&p)[2] = vec4_elt2(x);                                         \
+      case 3:                                                           \
+        if (v4stp_hi_skip>=1) break;                                    \
+        (&p)[3] = vec4_elt3(x);                                         \
+      }                                                                 \
+    }                                                                   \
+  })
+
+// Ignoring VECTORISE_STREAMING_STORES for partial stores
+#define vec4_store_nta_partial_lo(p_,x_,n)      \
+  ({                                            \
+    CCTK_REAL4          & p__=(p_);             \
+    CCTK_REAL4_VEC const  x__=(x_);             \
+    CCTK_REAL4          & p=p__;                \
+    CCTK_REAL4_VEC const  x=x__;                \
+    /* these cases fall through */              \
+    switch (n) {                                \
+    case 3: (&p)[2] = vec4_elt2(x);             \
+    case 2: (&p)[1] = vec4_elt1(x);             \
+    case 1: (&p)[0] = vec4_elt0(x);             \
+    }                                           \
+  })
+#define vec4_store_nta_partial_hi(p_,x_,n)      \
+  ({                                            \
+    CCTK_REAL4          & p__=(p_);             \
+    CCTK_REAL4_VEC const  x__=(x_);             \
+    CCTK_REAL4          & p=p__;                \
+    CCTK_REAL4_VEC const  x=x__;                \
+    /* these cases fall through */              \
+    switch (n) {                                \
+    case 3: (&p)[1]=vec4_elt1(x);               \
+    case 2: (&p)[2]=vec4_elt2(x);               \
+    case 1: (&p)[3]=vec4_elt3(x);               \
+    }                                           \
+  })
+#define vec4_store_nta_partial_mid(p_,x_,nlo,nhi)               \
+  ({                                                            \
+    CCTK_REAL4          & p__=(p_);                             \
+    CCTK_REAL4_VEC const  x__=(x_);                             \
+    CCTK_REAL4          & p=p__;                                \
+    CCTK_REAL4_VEC const  x=x__;                                \
+    /* these cases fall through */                              \
+    switch (nhi) {                                              \
+    case 3: if (nlo<2) break; (&p)[1] = vec4_elt1(x);           \
+    case 2: if (nlo<3) break; (&p)[2] = vec4_elt2(x);           \
+    }                                                           \
+  })
 
 
 
@@ -320,9 +335,12 @@ static const union {
              f(vec4_elt3(x),a));                \
   })
 
+#define k4cos(x)   K4REPL(cos,x)
 #define k4exp(x)   K4REPL(exp,x)
 #define k4log(x)   K4REPL(log,x)
 #define k4pow(x,a) K4REPL2(pow,x,a)
+#define k4sin(x)   K4REPL(sin,x)
+#define k4tan(x)   K4REPL(tan,x)
 
 // Choice   [sign(x)>0 ? y : z]
 #ifdef __SSE4_1__
