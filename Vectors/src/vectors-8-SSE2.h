@@ -144,8 +144,12 @@
   bool const v8stp_lo = (i)>=(imin);                            \
   bool const v8stp_hi = (i)+CCTK_REAL_VEC_SIZE-1<(imax)
 #if VECTORISE_STREAMING_STORES && defined(__SSE4A__)
-#  define vec8_store_nta_partial(p,x)                           \
+#  define vec8_store_nta_partial(p_,x_)                         \
   ({                                                            \
+    CCTK_REAL8& p__=(p_);                                       \
+    CCTK_REAL8& p=p__;                                          \
+    CCTK_REAL8_VEC const x__=(x_);                              \
+    CCTK_REAL8_VEC const x=x__;                                 \
     if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) {     \
       vec8_store_nta(p,x);                                      \
     } else if (v8stp_lo) {                                      \
@@ -155,8 +159,12 @@
     }                                                           \
   })
 #else
-#  define vec8_store_nta_partial(p,x)                           \
+#  define vec8_store_nta_partial(p_,x_)                         \
   ({                                                            \
+    CCTK_REAL8& p__=(p_);                                       \
+    CCTK_REAL8& p=p__;                                          \
+    CCTK_REAL8_VEC const x__=(x_);                              \
+    CCTK_REAL8_VEC const x=x__;                                 \
     if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) {     \
       vec8_store_nta(p,x);                                      \
     } else if (v8stp_lo) {                                      \
