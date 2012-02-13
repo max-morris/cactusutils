@@ -34,7 +34,6 @@ CCTK_INT FUNCTION Accelerator_PostSync          \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY        IN groups,             \
    CCTK_INT              IN ngroups)
-USES FUNCTION Accelerator_PostSync
 PROVIDES FUNCTION Accelerator_PostSync          \
   WITH AcceleratorThorn_PostSync                \
   LANGUAGE C
@@ -53,27 +52,32 @@ PROVIDES FUNCTION Accelerator_PostCallFunction  \
   WITH AcceleratorThorn_PostCallFunction        \
   LANGUAGE C
 
-CCTK_INT FUNCTION Accelerator_CopyToDevice      \
+# TODO: add a corresponding "RequestData" routine
+# TODO: change name to "NotifyDataModified"
+# TODO: change "onhost" to "ondevice"? (host should be the default.)
+# TODO: accept list of variables, same as all other routines
+CCTK_INT FUNCTION Accelerator_DataWritten       \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT ARRAY        IN vis,                \
-   CCTK_INT ARRAY        IN tls,                \
-   CCTK_INT              IN nvars)
-PROVIDES FUNCTION Accelerator_CopyToDevice      \
-  WITH AcceleratorThorn_CopyToDevice            \
-  LANGUAGE C
-
-CCTK_INT FUNCTION Accelerator_NotifyVariableWritten  \
-  (CCTK_POINTER_TO_CONST IN cctkGH,                  \
-   CCTK_INT              IN vi,                      \
-   CCTK_INT              IN tl,                      \
+   CCTK_INT              IN vi,                \
+   CCTK_INT              IN tl,                \
    CCTK_INT              IN onhost)
-PROVIDES FUNCTION Accelerator_NotifyVariableWritten  \
-  WITH AcceleratorThorn_NotifyVariableWritten        \
+PROVIDES FUNCTION Accelerator_DataWritten       \
+  WITH AcceleratorThorn_DataWritten             \
   LANGUAGE C
 
 
 
 # Low-level driver functions, to be implemented by CUDA/OpenCL drivers
+
+# Create (i.e. begin to track) a set of variables/timelevels
+# (This routine will be called exactly once before a variable/timelevel
+#  combination is mentioned to the device.)
+CCTK_INT FUNCTION Device_CreateVariables        \
+  (CCTK_POINTER_TO_CONST IN cctkGH,             \
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+REQUIRES FUNCTION Device_CreateVariables
 
 # Cycle all timelevels on the device
 # (This routine should not block.)

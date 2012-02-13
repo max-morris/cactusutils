@@ -9,3 +9,20 @@ BOOLEAN verbose "Output detailed device information" STEERABLE=always
 BOOLEAN veryverbose "Output even more detailed information" STEERABLE=always
 {
 } "no"
+
+BOOLEAN copy_back_all_timelevels "Copy all timelevels back to the host for output" STEERABLE=always
+{
+} "no"
+
+RESTRICTED:
+
+# TODO: Instead of using parameters, extend the syntax of schedule
+# reads/writes clauses to accept timelevel specifications
+
+BOOLEAN only_reads_current_timelevel "Assume that functions read only the current timelevel" STEERABLE=recover
+{
+} "no"
+
+BOOLEAN only_writes_current_timelevel "Assume that functions write only the current timelevel" STEERABLE=recover
+{
+} "no"

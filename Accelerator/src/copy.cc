@@ -15,10 +15,10 @@ using namespace std;
 
 
 
-// #define n_ReadsClauses  n_RequiresClauses
-// #define n_WritesClauses n_ProvidesClauses
-// #define ReadsClauses    RequiresClauses
-// #define WritesClauses   ProvidesClauses
+#define n_ReadsClauses  n_RequiresClauses
+#define n_WritesClauses n_ProvidesClauses
+#define ReadsClauses    RequiresClauses
+#define WritesClauses   ProvidesClauses
 
 
 
@@ -26,10 +26,6 @@ using namespace std;
 namespace Accelerator {
   
   device_t *device = NULL;
-  
-  
-  
-  //////////////////////////////////////////////////////////////////////////////
   
   
   
@@ -46,74 +42,36 @@ namespace Accelerator {
     
     vars_t vars;
     for (int vi=0; vi<CCTK_NumVars(); ++vi) {
+      
+      // Variables without storage or with only a single timelevels
+      // are not cycled
+      int const cactus_tl = CCTK_ActiveTimeLevelsVI(cctkGH, vi);
+      if (cactus_tl <= 1) continue;
+      
+      // NOTE: We do not introduce new timelevels while cycling. If
+      // the device needs a timelevel that has become valid through
+      // cycling, then this timelevel will be copied from the host.
+      // (This can happen only before the first iteration.) This
+      // requires that the host has valid data before the first
+      // iteration. (This condition is checked below.)
+      
       int const num_tl = device->mems.at(vi).size();
-      // Don't cycle single-timelevel variables
-      
-      // TODO: There is a suble bug here that (luckily) doesn't have
-      // any effect. For historic reasons, we do not track all
-      // timelevels of all variables, we only track those timelevels
-      // that we have "seen" before. However, time level cycling does
-      // not make us track an older timelevel that may now be valid.
-      // This means that we will assume this (old) timelevel to be
-      // invalid on the device, and will copy it from the host. (This
-      // can only occur at the first iteration.) Luckily, we copy all
-      // data back to the host at the end of every time step (for
-      // output), so that the host will have valid data.
-      
-      // For example, if we initialise the current time level on the
-      // device, it will be valid there. Timelevel cycling at the
-      // beginning of the first iteration should then "know" that the
-      // past timelevel is now also correct, but it won't (because of
-      // this bug). MoL will copy the past timelevel to the current
-      // timelevel, transferring data from the host to the device
-      // because the past timelevel on the device is not marked as
-      // valid. This works only if the past timelevel on the host is
-      // valid, i.e. if the current timelevel on the host was valid
-      // before timelevel cycling. This happens to be the case,
-      // because we copied it back to the host after analysis.
-      
-      // The "correct" solution is to track all timelevels of all
-      // variables at all times, e.g. in the driver, instead of in
-      // this thorn here.
-      
-      // Special case: if none of the timelevels are valid on the
-      // device, then we don't need to cycle them.  This is a cheeky
-      // way of finding those variables which the device code doesn't
-      // know anything about, and hence can't cycle.
-
-      bool any_valid_on_device = false;
-
-      for (int tl = 0; tl< num_tl; tl++) {
-        if (veryverbose)
-          CCTK_VInfo(CCTK_THORNSTRING, "device->mems.at(%s).at(%d).device_valid == %d",
-                     CCTK_FullName(vi), tl, device->mems.at(vi).at(tl).device_valid);
-        any_valid_on_device = any_valid_on_device || device->mems.at(vi).at(tl).device_valid;
-      }
-
-      if (veryverbose) {
-        if (any_valid_on_device)
-          CCTK_VInfo(CCTK_THORNSTRING, "%s has valid timelevels on device", CCTK_FullName(vi));
-        else
-          CCTK_VInfo(CCTK_THORNSTRING, "%s has no valid timelevels on device", CCTK_FullName(vi));
-      }
-
-      if (num_tl > 1 && any_valid_on_device) {
-        if (verbose)
-          CCTK_VInfo(CCTK_THORNSTRING, "Cycling %s on device", CCTK_VarName(vi));
-
-        for (int tl=num_tl-1; tl>0; --tl) {
+      for (int tl=num_tl-1; tl>0; --tl) {
+        
+        // Cycle those timelevels that are valid on the device
+        if (device->mems.at(vi).at(tl-1).device_valid) {
           vars.push_back(vi, tl);
-          
-          device->mems.at(vi).at(tl).device_valid =
-            device->mems.at(vi).at(tl-1).device_valid;
-          // Cycle host information here as well
-          device->mems.at(vi).at(tl).host_valid =
-            device->mems.at(vi).at(tl-1).host_valid;
         }
-        device->mems.at(vi).at(0).device_valid = false;
+        
+        device->mems.at(vi).at(tl).device_valid =
+          device->mems.at(vi).at(tl-1).device_valid;
         // Cycle host information here as well
-        device->mems.at(vi).at(0).host_valid = false;
+        device->mems.at(vi).at(tl).host_valid =
+          device->mems.at(vi).at(tl-1).host_valid;
       }
+      device->mems.at(vi).at(0).device_valid = false;
+      // Cycle host information here as well
+      device->mems.at(vi).at(0).host_valid = false;
     }
     
     BEGIN_LOCAL_MAP_LOOP(cctkGH, CCTK_GF) {
@@ -139,26 +97,53 @@ namespace Accelerator {
     DECLARE_CCTK_PARAMETERS;
     
     if (veryverbose) {
-      CCTK_VInfo(CCTK_THORNSTRING, "Cycle");
+      CCTK_VInfo(CCTK_THORNSTRING, "CopyFromPast");
     }
     
-    vars_t vars;
+    vars_t vars, unknowns;
     for (int var=0; var<nvars; ++var) {
       int const vi = vis[var];
       int const tl = 0;
       
-      // TODO: Check this. For now, we just assume this is true,
-      // because we don't assume that all provides/requires
-      // information is complete and correct. Also, we don't track
-      // validity over time level cycling quite correctly yet.
-      // assert(device->mems.at(vi).at(tl+1).device_valid);
-      device->mems.at(vi).at(tl+1).device_valid = true;
+      if (int(device->mems.at(vi).size()) <= tl) {
+        device->mems.at(vi).resize(tl+1);
+        // We assume the host does not have valid data (otherwise, why
+        // would the code copy to the current timelevel?)
+        device->mems.at(vi).at(tl).host_valid = false;
+        device->mems.at(vi).at(tl).device_valid = false;
+        unknowns.push_back(vi, tl);
+      }
       
-      vars.push_back(vi, tl);
+      if (int(device->mems.at(vi).size()) <= tl+1) {
+        device->mems.at(vi).resize(tl+2);
+        // We assume the host has valid data (otherwise, why would the
+        // code copy from the past timelevel?)
+        device->mems.at(vi).at(tl+1).host_valid = true;
+        device->mems.at(vi).at(tl+1).device_valid = false;
+        unknowns.push_back(vi, tl+1);
+      }
       
-      device->mems.at(vi).at(tl).device_valid =
-        device->mems.at(vi).at(tl+1).device_valid;
+      // Here we have a choice: Either we assume that the host copies
+      // as well if it has valid data (then we need to update the
+      // host's information), or we explicitly copy the host's data to
+      // the device.
+      
+#if 0
+      // We don't know which of these we want to do, so we hope for
+      // the best (and check for it!):
+      assert(device->mems.at(vi).at(tl+1).device_valid);
+#endif
+      
+      if (device->mems.at(vi).at(tl+1).device_valid) {
+        vars.push_back(vi, tl);
+        device->mems.at(vi).at(tl).device_valid =
+          device->mems.at(vi).at(tl+1).device_valid;
+      }      
     }
+    
+    Device_CreateVariables
+      (cctkGH, unknowns.vi_ptr(), unknowns.tl_ptr(), unknowns.nvars());
+    Device_CopyFromPast(cctkGH, vars.vi_ptr(), vars.tl_ptr(), vars.nvars());
     
     return 0;
   }
@@ -179,7 +164,9 @@ namespace Accelerator {
     DECLARE_CCTK_PARAMETERS;
     
     // Don't do anything before the device has been set up. (Note that
-    // the device setup routine is called via CallFunction.)
+    // the device setup routine is called via CallFunction.) This
+    // happens only early during startup, long before Cactus variables
+    // exist.
     if (not device) return 0;
     
     // Can only handle grid functions if called in local mode
@@ -249,7 +236,7 @@ namespace Accelerator {
       copy = Device_CopyToHost;
     }
     
-    vars_t vars;
+    vars_t vars, unknowns;
     for (int n=0; n<attribute->n_ReadsClauses; ++n) {
       int const gi = CCTK_GroupIndex(attribute->ReadsClauses[n]);
       assert(gi>=0);
@@ -258,36 +245,86 @@ namespace Accelerator {
       if (nv > 0) {
         int const v0 = CCTK_FirstVarIndexI(gi);
         assert(v0>=0);
+        
+        int const cactus_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
+        int const num_tl = only_reads_current_timelevel ? 1 : cactus_tl;
+        assert(num_tl <= cactus_tl);
+        
         for (int vi=v0; vi<v0+nv; ++vi) {
-          int const tl=0;       // only copy current timelevel
-          
-          if (int(device->mems.at(vi).size()) <= tl) {
-            device->mems.at(vi).resize(tl+1);
-            // We see this variable for the first time here, which
-            // means that the function which generated it does not
-            // declare the variable in WRITES (otherwise we would have
-            // seen it in PostCall).  This must be a host function, as
-            // all device functions presumably have valid WRITES
-            // lists.  Therefore we assume the variable is valid on
-            // the host.
-            device->mems.at(vi).at(tl).host_valid = true;
-            device->mems.at(vi).at(tl).device_valid = false;
-          }
-          
-          if (not (device->mems.at(vi).at(tl).*dst_valid)) {
-            // TODO: Check this. For now, we just assume this is true,
-            // because we don't assume that all provides/requires
-            // information is complete and correct.
-            // assert(device->mems.at(vi).at(tl).*src_valid);
-            device->mems.at(vi).at(tl).*src_valid = true;
+          for (int tl=0; tl<num_tl; ++tl) {
             
-            vars.push_back(vi, tl);
-            // This will be true after the copy operation below
-            device->mems.at(vi).at(tl).*dst_valid = true;
+            if (int(device->mems.at(vi).size()) <= tl) {
+              device->mems.at(vi).resize(tl+1);
+              // We see this variable for the first time here, which
+              // means that the function which generated it does not
+              // declare the variable in WRITES (otherwise we would
+              // have seen it in PostCall). This must be a host
+              // function, as all device functions presumably have
+              // valid WRITES lists. Therefore we assume the variable
+              // is valid on the host.
+              device->mems.at(vi).at(tl).host_valid = true;
+              device->mems.at(vi).at(tl).device_valid = false;
+              unknowns.push_back(vi, tl);
+            }
+            
+            if (not (device->mems.at(vi).at(tl).*dst_valid)) {
+              // TODO: Check this. For now, we just assume this is
+              // true, because we don't assume that all
+              // provides/requires information is complete and
+              // correct.
+              // assert(device->mems.at(vi).at(tl).*src_valid);
+              device->mems.at(vi).at(tl).*src_valid = true;
+              
+              vars.push_back(vi, tl);
+              // This will be true after the copy operation below
+              device->mems.at(vi).at(tl).*dst_valid = true;
+            }
+            
           }
         }
       }
     }
+    
+    for (int n=0; n<attribute->n_WritesClauses; ++n) {
+      int const gi = CCTK_GroupIndex(attribute->WritesClauses[n]);
+      assert(gi>=0);
+      int const nv = CCTK_NumVarsInGroupI(gi);
+      assert(nv>=0);
+      if (nv > 0) {
+        int const v0 = CCTK_FirstVarIndexI(gi);
+        assert(v0>=0);
+        
+        int const cactus_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
+        int const num_tl = only_writes_current_timelevel ? 1 : cactus_tl;
+        assert(num_tl <= cactus_tl);
+        
+        for (int vi=v0; vi<v0+nv; ++vi) {
+          for (int tl=0; tl<num_tl; ++tl) {
+            
+            if (int(device->mems.at(vi).size()) <= tl) {
+              device->mems.at(vi).resize(tl+1);
+              // We see this variable for the first time here, and it
+              // is not read by this function (otherwise it would have
+              // been generated in the loop above). We can therefore
+              // safely assume that this variable is undefined.
+              device->mems.at(vi).at(tl).host_valid = false;
+              device->mems.at(vi).at(tl).device_valid = false;
+              unknowns.push_back(vi, tl);
+            }
+            
+            // This variable was written by the function which will
+            // execute, therefore it will be valid there and invalid
+            // elsewhere.
+            device->mems.at(vi).at(tl).*dst_valid = true;
+            device->mems.at(vi).at(tl).*src_valid = false;
+            
+          }
+        }
+      }
+    }
+    
+    Device_CreateVariables
+      (cctkGH, unknowns.vi_ptr(), unknowns.tl_ptr(), unknowns.nvars());
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "Copying in");
@@ -333,7 +370,9 @@ namespace Accelerator {
     DECLARE_CCTK_PARAMETERS;
     
     // Don't do anything before the device has been set up. (Note that
-    // the device setup routine is called via CallFunction.)
+    // the device setup routine is called via CallFunction.) This
+    // happens only early during startup, long before Cactus variables
+    // exist.
     if (not device) return 0;
     
     // Can only handle grid functions if called in local mode
@@ -385,43 +424,6 @@ namespace Accelerator {
       CCTK_WARN (CCTK_WARN_ABORT, "Error with schedule tag \"Device\"");
     }
     
-    // Mark all provided variables as valid, and mark them as invalid
-    // on the other end
-    bool mem_t:: *valid;
-    bool mem_t:: *invalid;
-    if (is_device) {
-      valid = &mem_t::device_valid;
-      invalid = &mem_t::host_valid;
-    } else {
-      valid = &mem_t::host_valid;
-      invalid = &mem_t::device_valid;
-    }
-    
-    for (int n=0; n<attribute->n_WritesClauses; ++n) {
-      int const gi = CCTK_GroupIndex(attribute->WritesClauses[n]);
-      assert(gi>=0);
-      int const nv = CCTK_NumVarsInGroupI(gi);
-      assert(nv>=0);
-      if (nv > 0) {
-        int const v0 = CCTK_FirstVarIndexI(gi);
-        assert(v0>=0);
-        for (int vi=v0; vi<v0+nv; ++vi) {
-          int const tl=0;       // only mark current timelevel
-
-          // We see the variable for the first time
-          if (int(device->mems.at(vi).size()) <= tl) {
-            device->mems.at(vi).resize(tl+1);
-          }
-
-          // This variable was written by the function which just
-          // executed, therefore it is valid there and invalid
-          // elsewhere.
-          device->mems.at(vi).at(tl).*valid = true;
-          device->mems.at(vi).at(tl).*invalid = false;
-        }
-      }
-    }
-    
     // If we are in the analysis bin, and if this is a device
     // routine, then copy back all provided variables since they may
     // be output. Otherwise, do nothing.
@@ -439,10 +441,16 @@ namespace Accelerator {
         if (nv > 0) {
           int const v0 = CCTK_FirstVarIndexI(gi);
           assert(v0>=0);
+          
+          int const cactus_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
+          int const num_tl = copy_back_all_timelevels ? 1 : cactus_tl;
+          assert(num_tl <= cactus_tl);
+          
           for (int vi=v0; vi<v0+nv; ++vi) {
-            int const tl=0;       // only copy current timelevel
-            if (int(device->mems.at(vi).size()) > tl) {
-              vars.push_back(vi, tl);
+            for (int tl=0; tl<num_tl; ++tl) {
+              if (int(device->mems.at(vi).size()) > tl) {
+                vars.push_back(vi, tl);
+              }
             }
           }
         }
@@ -582,68 +590,6 @@ namespace Accelerator {
   
   
   
-  extern "C"
-  CCTK_INT
-  AcceleratorThorn_CopyToDevice(CCTK_POINTER_TO_CONST const cctkGH_,
-                                CCTK_INT const vis[],
-                                CCTK_INT const tls[],
-                                CCTK_INT const nvars)
-  {
-    cGH const *restrict const cctkGH = static_cast<cGH const*>(cctkGH_);
-    DECLARE_CCTK_PARAMETERS;
-    
-    if (veryverbose) {
-      stringstream buf;
-      for (int var=0; var<nvars; ++var) {
-        int const vi = vis[var];
-        int const tl = tls[var];
-        char *const fullname = CCTK_FullName(vi);
-        buf << " " << fullname << "[" << tl << "]";
-        free(fullname);
-      }
-      CCTK_VInfo(CCTK_THORNSTRING, "CopyToDevice%s", buf.str().c_str());
-    }
-    
-    for (int var=0; var<nvars; ++var) {
-      int const vi = vis[var];
-      int const tl = tls[var];
-      
-      if (int(device->mems.at(vi).size()) <= tl) {
-        device->mems.at(vi).resize(tl+1);
-        // We see this variable for the first time -- we assume it is
-        // valid on the host
-        device->mems.at(vi).at(tl).host_valid = true;
-        device->mems.at(vi).at(tl).device_valid = false;
-      }
-      
-      if (not device->mems.at(vi).at(tl).device_valid) {
-        // TODO: Check this. For now, we just assume this is true,
-        // because we don't assume that all provides/requires
-        // information is complete and correct.
-        device->mems.at(vi).at(tl).host_valid = true;
-        
-        device->mems.at(vi).at(tl).device_valid = true;
-      }
-    }
-    
-    CCTK_INT moved;
-    Device_CopyToDevice(cctkGH, vis, tls, nvars, &moved);
-    
-    // If the data were moved (instead of copied), mark them as
-    // invalid on the host
-    if (moved) {
-      for (int var=0; var<nvars; ++var) {
-        int const vi = vis[var];
-        int const tl = tls[var];
-        device->mems.at(vi).at(tl).host_valid = false;
-      }
-    }
-    
-    return 0;
-  }
-  
-  
-  
   //////////////////////////////////////////////////////////////////////////////
   
   
@@ -659,13 +605,20 @@ namespace Accelerator {
     }
     
     vars_t vars;
-    for (int vi=0; vi<int(device->mems.size()); ++vi) {
-      int const tl=0;           // only copy current timelevel
-      if (int(device->mems.at(vi).size()) > tl) {
-        if (not device->mems.at(vi).at(tl).host_valid &&
-            device->mems.at(vi).at(tl).device_valid) {
-          vars.push_back(vi, tl);
-          device->mems.at(vi).at(tl).host_valid = true;
+    for (int vi=0; vi<CCTK_NumVars(); ++vi) {
+      
+      int const cactus_tl = CCTK_ActiveTimeLevelsVI(cctkGH, vi);
+      int const num_tl = copy_back_all_timelevels ? 1 : cactus_tl;
+      assert(num_tl <= cactus_tl);
+      
+      for (int tl=0; tl<num_tl; ++tl) {
+        if (tl < int(device->mems.at(vi).size())) {
+          if (not device->mems.at(vi).at(tl).host_valid and
+              device->mems.at(vi).at(tl).device_valid)
+          {
+            vars.push_back(vi, tl);
+            device->mems.at(vi).at(tl).host_valid = true;
+          }
         }
       }
     }
@@ -688,27 +641,23 @@ namespace Accelerator {
 
 
   extern "C"
-  void AcceleratorThorn_NotifyVariableWritten(CCTK_POINTER_TO_CONST const cctkGH_,
-                                              CCTK_INT const vi,
-                                              CCTK_INT const tl,
-                                              CCTK_INT const onhost)
+  CCTK_INT AcceleratorThorn_DataWritten(CCTK_POINTER_TO_CONST const cctkGH_,
+                                        CCTK_INT const vi,
+                                        CCTK_INT const tl,
+                                        CCTK_INT const onhost)
   {
     cGH const *restrict const cctkGH = static_cast<cGH const*>(cctkGH_);
 
     DECLARE_CCTK_PARAMETERS;
 
+    // Do we ever write to other than the current timelevel?  Maybe
+    // during initialisation for mesh refinement.  This code will need
+    // to be updated then.
+    assert(tl == 0);
+
     if (int(device->mems.at(vi).size()) <= tl) {
-      int old_size = int(device->mems.at(vi).size());
+      assert(int(device->mems.at(vi).size()) == tl);
       device->mems.at(vi).resize(tl+1);
-      for (int tl2 = old_size; tl2 < tl; tl2++) {
-        // Since we have not seen these timelevels before, we know
-        // they are not valid on the device.
-        CCTK_VInfo(CCTK_THORNSTRING, "Registering %s[%d] as invalid on the device", CCTK_FullName(vi), tl2);
-        device->mems.at(vi).at(tl2).device_valid = 0;
-        // I'm not sure what to do here, but 1 seems safer than 0
-        CCTK_VInfo(CCTK_THORNSTRING, "Registering %s[%d] as valid on the host", CCTK_FullName(vi), tl2);
-        device->mems.at(vi).at(tl2).host_valid = 1;
-      }
     }
 
     device->mems.at(vi).at(tl).device_valid = (onhost == 0);
@@ -716,6 +665,8 @@ namespace Accelerator {
 
     if (verbose)
       CCTK_VInfo(CCTK_THORNSTRING, "Data written to %s", onhost ? "host" : "device");
+
+    return 0;
   }
      
 } // namespace Accelerator
