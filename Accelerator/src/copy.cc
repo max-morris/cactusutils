@@ -684,13 +684,17 @@ namespace Accelerator {
 
     DECLARE_CCTK_PARAMETERS;
 
-    // Do we ever write to other than the current timelevel?  Maybe
-    // during initialisation for mesh refinement.  This code will need
-    // to be updated then.
-    assert(tl == 0);
-
-    if (int(device->mems.at(vi).size()) <= tl)
+    if (int(device->mems.at(vi).size()) <= tl) {
+      int old_size = int(device->mems.at(vi).size());
       device->mems.at(vi).resize(tl+1);
+      for (int tl2 = old_size; tl2 < tl; tl2++) {
+        // Since we have not seen these timelevels before, we know
+        // they are not valid on the device.
+        device->mems.at(vi).at(tl2).device_valid = 0;
+        // I'm not sure what to do here, but 1 seems safer than 0
+        device->mems.at(vi).at(tl2).host_valid = 1;
+      }
+    }
 
     device->mems.at(vi).at(tl).device_valid = (onhost == 0);
     device->mems.at(vi).at(tl).host_valid = (onhost == 1);
