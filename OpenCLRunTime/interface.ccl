@@ -9,14 +9,14 @@ USES INCLUDE HEADER: vectors.h
 
 
 
-CCTK_INT FUNCTION Accelerator_CopyToDevice      \
+CCTK_INT FUNCTION Device_CreateVariables        \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT ARRAY        IN vis,                \
-   CCTK_INT ARRAY        IN tls,                \
-   CCTK_INT              IN nvars)
-REQUIRES FUNCTION Accelerator_CopyToDevice
-
-
+   CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN tls,                       \
+   CCTK_INT IN nvars)
+PROVIDES FUNCTION Device_CreateVariables        \
+  WITH OpenCLRunTime_CreateVariables            \
+  LANGUAGE C
 
 CCTK_INT FUNCTION Device_CopyCycle              \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \

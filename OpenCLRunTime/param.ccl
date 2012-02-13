@@ -6,6 +6,14 @@ USES STRING out_dir
 
 
 
+SHARES: Accelerator
+
+
+USES BOOLEAN only_reads_current_timelevel
+USES BOOLEAN only_writes_current_timelevel
+
+
+
 PRIVATE:
 
 BOOLEAN verbose "Output detailed device information" STEERABLE=always

@@ -368,62 +368,6 @@ namespace OpenCLRunTime {
                              sizeof grid, &grid, &errcode),
               errcode));
     
-    cl_mem_flags mem_flags;
-    switch (device->mem_model) {
-    case mm_always_mapped:
-      // Re-use the memory of the grid functions; we never map or copy
-      mem_flags = CL_MEM_USE_HOST_PTR;
-      break;
-    case mm_copy:
-      // Allocate memory, and copy (don't map) from/to grid functions
-      mem_flags = 0 /*CL_MEM_ALLOC_HOST_PTR*/;
-      break;
-    case mm_map:
-      // Re-use the memory of the grid functions; map if necessary
-      mem_flags = CL_MEM_USE_HOST_PTR;
-      break;
-    default:
-      assert(0);
-    }
-    bool const need_ptr =
-      mem_flags & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR);
-    
-    int const np =
-      device->grid.lsh[0] * device->grid.lsh[1] * device->grid.lsh[2];
-    size_t offset[dim];
-    size_t length[dim];
-    for (int d=0; d<dim; ++d) {
-      offset[d] = 0;
-      length[d] = cctkGH->CCTK_LSSH(0,d);
-    }
-    // int const dI = sizeof(CCTK_REAL);
-    // int const dJ = dI * device->grid.lsh[0];
-    // int const dK = dJ * device->grid.lsh[1];
-    int const di = sizeof(CCTK_REAL);
-    // int const dj = di * cctkGH->cctk_lsh[0];
-    // int const dk = dj * cctkGH->cctk_lsh[1];
-    offset[0] *= di;
-    length[0] *= di;
-    
-    vars_t vars;
-    for (int arg=0; arg<int(args.size()); ++arg) {
-      int const vi = args[arg].vi;
-      int const tl = args[arg].tl;
-      if (int(device->mems.at(vi).size()) <= tl) {
-        assert(int(device->mems.at(vi).size()) == tl);
-        device->mems.at(vi).resize(tl+1);
-        void *const ptr = CCTK_VarDataPtrI(cctkGH, tl, vi);
-        checkErr((device->mems.at(vi).at(tl).mem =
-                  clCreateBuffer(device->context, mem_flags,
-                                 np*sizeof(CCTK_REAL), need_ptr ? ptr : NULL,
-                                 &errcode),
-                  errcode));
-        vars.push_back(vi, tl);
-      }
-    }
-    Accelerator_CopyToDevice
-      (cctkGH, vars.vi_ptr(), vars.tl_ptr(), vars.nvars());
-    
     /*** Set up parameters for calling the kernel *****************************/
     
     checkErr((mem_params =
@@ -441,12 +385,52 @@ namespace OpenCLRunTime {
     checkErr(clSetKernelArg(kernel, 1,
                             sizeof mem_params, &mem_params));
     
-    for (int arg=0; arg<(args.size()); ++arg) {
+    for (int arg=0; arg<int(args.size()); ++arg) {
       int const vi = args[arg].vi;
       int const tl = args[arg].tl;
-      checkErr(clSetKernelArg(kernel, arg+2,
-                              sizeof device->mems.at(vi).at(tl).mem,
-                              &device->mems.at(vi).at(tl).mem));
+      
+      cl_mem const *memptr;
+      // We don't know which arguments are read and which are written,
+      // so we and only make assumptions about accessing past
+      // timelevels if both flags are set
+      if (only_reads_current_timelevel and only_writes_current_timelevel) {
+        // Only the current timelevel will be accessed. The current
+        // timelevel must be known. Other timelevels are set to null
+        // pointers.
+        if (tl==0) {
+          memptr = &device->mems.at(vi).at(tl).mem;
+        } else {
+          memptr = NULL;
+        }
+      } else if (only_reads_current_timelevel or
+                 only_writes_current_timelevel)
+      {
+        // All timelevels may be accessed. The current timelevel must
+        // be known, other timelevels may or may not be known. Unknown
+        // timelevels will be set to null pointers.
+        if (tl==0) {
+          memptr = &device->mems.at(vi).at(tl).mem;
+        } else {
+          if (tl < int(device->mems.at(vi).size())) {
+            memptr = &device->mems.at(vi).at(tl).mem;
+          } else {
+            memptr = NULL;
+          }
+        }
+      } else {
+        // All timelevels may be accessed, and all timelevels must be
+        // known. No null pointers will be passed.
+        memptr = &device->mems.at(vi).at(tl).mem;
+      }
+      
+      // It seems that passing NULL doesn't work will all OpenCL
+      // implementations (although documented). We pass a pointer to
+      // timelevel 0 instead.
+      if (not memptr) {
+        memptr = &device->mems.at(vi).at(0).mem;
+      }
+      
+      checkErr(clSetKernelArg(kernel, arg+2, sizeof *memptr, memptr));
     }
   }
   
