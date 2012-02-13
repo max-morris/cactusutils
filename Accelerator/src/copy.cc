@@ -76,7 +76,18 @@ namespace Accelerator {
       // variables at all times, e.g. in the driver, instead of in
       // this thorn here.
       
-      if (num_tl > 1) {
+      // Special case: if none of the timelevels are valid on the
+      // device, then we don't need to cycle them.  This is a cheeky
+      // way of finding those variables which the device code doesn't
+      // know anything about, and hence can't cycle.
+
+      bool any_valid_on_device = false;
+
+      for (int tl = 0; tl< num_tl; tl++) {
+        any_valid_on_device = any_valid_on_device || device->mems.at(vi).at(tl).device_valid;
+      }
+
+      if (num_tl > 1 && any_valid_on_device) {
         for (int tl=num_tl-1; tl>0; --tl) {
           vars.push_back(vi, tl);
           
