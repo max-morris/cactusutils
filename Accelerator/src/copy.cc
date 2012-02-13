@@ -649,7 +649,8 @@ namespace Accelerator {
     for (int vi=0; vi<int(device->mems.size()); ++vi) {
       int const tl=0;           // only copy current timelevel
       if (int(device->mems.at(vi).size()) > tl) {
-        if (not device->mems.at(vi).at(tl).host_valid) {
+        if (not device->mems.at(vi).at(tl).host_valid &&
+            device->mems.at(vi).at(tl).device_valid) {
           vars.push_back(vi, tl);
           device->mems.at(vi).at(tl).host_valid = true;
         }
