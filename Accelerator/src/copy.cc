@@ -84,10 +84,22 @@ namespace Accelerator {
       bool any_valid_on_device = false;
 
       for (int tl = 0; tl< num_tl; tl++) {
+        if (veryverbose)
+          CCTK_VInfo(CCTK_THORNSTRING, "device->mems.at(%s).at(%d).device_valid == %d",
+                     CCTK_FullName(vi), tl, device->mems.at(vi).at(tl).device_valid);
         any_valid_on_device = any_valid_on_device || device->mems.at(vi).at(tl).device_valid;
       }
 
+      if (veryverbose)
+        if (any_valid_on_device)
+          CCTK_VInfo(CCTK_THORNSTRING, "%s has valid timelevels on device", CCTK_FullName(vi));
+        else
+          CCTK_VInfo(CCTK_THORNSTRING, "%s has no valid timelevels on device", CCTK_FullName(vi));
+
       if (num_tl > 1 && any_valid_on_device) {
+        if (verbose)
+          CCTK_VInfo(CCTK_THORNSTRING, "Cycling %s on device", CCTK_VarName(vi));
+
         for (int tl=num_tl-1; tl>0; --tl) {
           vars.push_back(vi, tl);
           
@@ -690,8 +702,10 @@ namespace Accelerator {
       for (int tl2 = old_size; tl2 < tl; tl2++) {
         // Since we have not seen these timelevels before, we know
         // they are not valid on the device.
+        CCTK_VInfo(CCTK_THORNSTRING, "Registering %s[%d] as invalid on the device", CCTK_FullName(vi), tl2);
         device->mems.at(vi).at(tl2).device_valid = 0;
         // I'm not sure what to do here, but 1 seems safer than 0
+        CCTK_VInfo(CCTK_THORNSTRING, "Registering %s[%d] as valid on the host", CCTK_FullName(vi), tl2);
         device->mems.at(vi).at(tl2).host_valid = 1;
       }
     }
