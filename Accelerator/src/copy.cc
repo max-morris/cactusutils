@@ -253,6 +253,7 @@ namespace Accelerator {
         for (int vi=v0; vi<v0+nv; ++vi) {
           for (int tl=0; tl<num_tl; ++tl) {
             
+            assert(tl < int(device->mems.at(vi).size())+1);
             if (int(device->mems.at(vi).size()) <= tl) {
               device->mems.at(vi).resize(tl+1);
               // We see this variable for the first time here, which
@@ -301,6 +302,7 @@ namespace Accelerator {
         for (int vi=v0; vi<v0+nv; ++vi) {
           for (int tl=0; tl<num_tl; ++tl) {
             
+            assert(tl < int(device->mems.at(vi).size())+1);
             if (int(device->mems.at(vi).size()) <= tl) {
               device->mems.at(vi).resize(tl+1);
               // We see this variable for the first time here, and it
@@ -590,6 +592,177 @@ namespace Accelerator {
   
   
   
+  extern "C"
+  CCTK_INT
+  AcceleratorThorn_NotifyDataModified(CCTK_POINTER_TO_CONST const cctkGH_,
+                                      CCTK_INT const variables[],
+                                      CCTK_INT const tls[],
+                                      CCTK_INT const nvariables,
+                                      CCTK_INT const on_device)
+  {
+    assert(cctkGH_);
+    cGH const *restrict const cctkGH CCTK_ATTRIBUTE_UNUSED =
+      static_cast<cGH const*>(cctkGH_);
+    DECLARE_CCTK_PARAMETERS;
+    
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING, "NotifyDataModified");
+    }
+    
+    bool mem_t::*valid, mem_t::*invalid;
+    if (on_device) {
+      valid   = &mem_t::device_valid;
+      invalid = &mem_t::host_valid;
+    } else {
+      valid   = &mem_t::host_valid;
+      invalid = &mem_t::device_valid;
+    }
+    
+    for (int var=0; var<nvariables; ++var) {
+      int const vi = variables[var];
+      int const tl = tls[var];
+      device->mems.at(vi).at(tl).*valid   = true;
+      device->mems.at(vi).at(tl).*invalid = false;
+    }
+    
+    return 0;
+  }
+  
+
+  
+  extern "C"
+  CCTK_INT
+  AcceleratorThorn_RequireInvalidData(CCTK_POINTER_TO_CONST const cctkGH_,
+                                      CCTK_INT const variables[],
+                                      CCTK_INT const tls[],
+                                      CCTK_INT const nvariables,
+                                      CCTK_INT const on_device)
+  {
+    assert(cctkGH_);
+    cGH const *restrict const cctkGH CCTK_ATTRIBUTE_UNUSED =
+      static_cast<cGH const*>(cctkGH_);
+    DECLARE_CCTK_PARAMETERS;
+    
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING, "RequireInvalidData");
+    }
+    
+    // Ensure the variable exists on the device or on the host,
+    // depending on the language (device or not)
+    
+    vars_t unknowns;
+    for (int var=0; var<nvariables; ++var) {
+      int const vi = variables[var];
+      int const tl = tls[var];
+      
+      assert(tl < int(device->mems.at(vi).size())+1);
+      if (int(device->mems.at(vi).size()) <= tl) {
+        device->mems.at(vi).resize(tl+1);
+        // We see this variable for the first time here, and the
+        // caller does not expect valid data. We therefore assume the
+        // variable is invalid everywhere.
+        device->mems.at(vi).at(tl).host_valid = false;
+        device->mems.at(vi).at(tl).device_valid = false;
+        unknowns.push_back(vi, tl);
+      }
+    }
+    
+    Device_CreateVariables
+      (cctkGH, unknowns.vi_ptr(), unknowns.tl_ptr(), unknowns.nvars());
+    
+    return 0;
+  }
+  
+  
+  
+  extern "C"
+  CCTK_INT
+  AcceleratorThorn_RequireValidData(CCTK_POINTER_TO_CONST const cctkGH_,
+                                    CCTK_INT const variables[],
+                                    CCTK_INT const tls[],
+                                    CCTK_INT const nvariables,
+                                    CCTK_INT const on_device)
+  {
+    assert(cctkGH_);
+    cGH const *restrict const cctkGH CCTK_ATTRIBUTE_UNUSED =
+      static_cast<cGH const*>(cctkGH_);
+    DECLARE_CCTK_PARAMETERS;
+    
+    if (veryverbose) {
+      CCTK_VInfo(CCTK_THORNSTRING, "RequireValidData");
+    }
+    
+    // Copy all required variables to the device or to the host,
+    // depending on the language (device or not)
+    bool mem_t::*dst_valid, mem_t::*src_valid;
+    CCTK_INT (*copy) (CCTK_POINTER_TO_CONST cctkGH,
+                      CCTK_INT const *vars,
+                      CCTK_INT const *tls,
+                      CCTK_INT nvars,
+                      CCTK_INT *moved);
+    if (on_device) {
+      dst_valid = &mem_t::device_valid;
+      src_valid = &mem_t::host_valid;
+      copy = Device_CopyToDevice;
+    } else {
+      dst_valid = &mem_t::host_valid;
+      src_valid = &mem_t::device_valid;
+      copy = Device_CopyToHost;
+    }
+    
+    vars_t vars, unknowns;
+    for (int var=0; var<nvariables; ++var) {
+      int const vi = variables[var];
+      int const tl = tls[var];
+      
+      int const num_tl = CCTK_ActiveTimeLevelsVI(cctkGH, vi);
+      assert(tl < num_tl);
+      
+      assert(tl < int(device->mems.at(vi).size())+1);
+      if (int(device->mems.at(vi).size()) <= tl) {
+        device->mems.at(vi).resize(tl+1);
+        // We see this variable for the first time here, which means
+        // that the function which generated it does not declare the
+        // variable in WRITES (otherwise we would have seen it in
+        // PostCall). This must be a host function, as all device
+        // functions presumably have valid WRITES lists. Therefore we
+        // assume the variable is valid on the host.
+        device->mems.at(vi).at(tl).host_valid = true;
+        device->mems.at(vi).at(tl).device_valid = false;
+        unknowns.push_back(vi, tl);
+      }
+      
+      if (not (device->mems.at(vi).at(tl).*dst_valid)) {
+        // TODO: Check this. For now, we just assume this is true,
+        // because we don't assume that all provides/requires
+        // information is complete and correct.
+        // assert(device->mems.at(vi).at(tl).*src_valid);
+        device->mems.at(vi).at(tl).*src_valid = true;
+        
+        vars.push_back(vi, tl);
+      }
+    }
+    
+    Device_CreateVariables
+      (cctkGH, unknowns.vi_ptr(), unknowns.tl_ptr(), unknowns.nvars());
+    CCTK_INT moved;
+    copy(cctkGH, vars.vi_ptr(), vars.tl_ptr(), vars.nvars(), &moved);
+    
+    // If the data were moved (instead of copied), mark them as
+    // invalid on the source
+    if (moved) {
+      for (int var=0; var<vars.nvars(); ++var) {
+        int const vi = vars.vi_ptr()[var];
+        int const tl = vars.tl_ptr()[var];
+        device->mems.at(vi).at(tl).*src_valid = false;
+      }
+    }
+    
+    return 0;
+  }
+  
+  
+  
   //////////////////////////////////////////////////////////////////////////////
   
   
@@ -637,36 +810,6 @@ namespace Accelerator {
       }
     }
     
-  }
-
-
-  extern "C"
-  CCTK_INT AcceleratorThorn_DataWritten(CCTK_POINTER_TO_CONST const cctkGH_,
-                                        CCTK_INT const vi,
-                                        CCTK_INT const tl,
-                                        CCTK_INT const onhost)
-  {
-    cGH const *restrict const cctkGH = static_cast<cGH const*>(cctkGH_);
-
-    DECLARE_CCTK_PARAMETERS;
-
-    // Do we ever write to other than the current timelevel?  Maybe
-    // during initialisation for mesh refinement.  This code will need
-    // to be updated then.
-    assert(tl == 0);
-
-    if (int(device->mems.at(vi).size()) <= tl) {
-      assert(int(device->mems.at(vi).size()) == tl);
-      device->mems.at(vi).resize(tl+1);
-    }
-
-    device->mems.at(vi).at(tl).device_valid = (onhost == 0);
-    device->mems.at(vi).at(tl).host_valid = (onhost == 1);
-
-    if (verbose)
-      CCTK_VInfo(CCTK_THORNSTRING, "Data written to %s", onhost ? "host" : "device");
-
-    return 0;
   }
      
 } // namespace Accelerator

@@ -52,17 +52,34 @@ PROVIDES FUNCTION Accelerator_PostCallFunction  \
   WITH AcceleratorThorn_PostCallFunction        \
   LANGUAGE C
 
-# TODO: add a corresponding "RequestData" routine
-# TODO: change name to "NotifyDataModified"
-# TODO: change "onhost" to "ondevice"? (host should be the default.)
-# TODO: accept list of variables, same as all other routines
-CCTK_INT FUNCTION Accelerator_DataWritten       \
+CCTK_INT FUNCTION Accelerator_NotifyDataModified        \
+  (CCTK_POINTER_TO_CONST IN cctkGH,                     \
+   CCTK_INT ARRAY        IN variables,                  \
+   CCTK_INT ARRAY        IN tls,                        \
+   CCTK_INT              IN nvariables,                 \
+   CCTK_INT              IN on_device)
+PROVIDES FUNCTION Accelerator_NotifyDataModified        \
+  WITH AcceleratorThorn_NotifyDataModified              \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_RequireInvalidData        \
+  (CCTK_POINTER_TO_CONST IN cctkGH,                     \
+   CCTK_INT ARRAY        IN variables,                  \
+   CCTK_INT ARRAY        IN tls,                        \
+   CCTK_INT              IN nvariables,                 \
+   CCTK_INT              IN on_device)
+PROVIDES FUNCTION Accelerator_RequireInvalidData        \
+  WITH AcceleratorThorn_RequireInvalidData              \
+  LANGUAGE C
+
+CCTK_INT FUNCTION Accelerator_RequireValidData  \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT              IN vi,                \
-   CCTK_INT              IN tl,                \
-   CCTK_INT              IN onhost)
-PROVIDES FUNCTION Accelerator_DataWritten       \
-  WITH AcceleratorThorn_DataWritten             \
+   CCTK_INT ARRAY        IN variables,          \
+   CCTK_INT ARRAY        IN tls,                \
+   CCTK_INT              IN nvariables,         \
+   CCTK_INT              IN on_device)
+PROVIDES FUNCTION Accelerator_RequireValidData  \
+  WITH AcceleratorThorn_RequireValidData        \
   LANGUAGE C
 
 
