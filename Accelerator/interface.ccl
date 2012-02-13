@@ -62,13 +62,13 @@ PROVIDES FUNCTION Accelerator_CopyToDevice      \
   WITH AcceleratorThorn_CopyToDevice            \
   LANGUAGE C
 
-CCTK_INT FUNCTION Accelerator_DataWritten       \
-  (CCTK_POINTER_TO_CONST IN cctkGH,             \
-   CCTK_INT              IN vi,                \
-   CCTK_INT              IN tl,                \
+CCTK_INT FUNCTION Accelerator_NotifyVariableWritten  \
+  (CCTK_POINTER_TO_CONST IN cctkGH,                  \
+   CCTK_INT              IN vi,                      \
+   CCTK_INT              IN tl,                      \
    CCTK_INT              IN onhost)
-PROVIDES FUNCTION Accelerator_DataWritten       \
-  WITH AcceleratorThorn_DataWritten             \
+PROVIDES FUNCTION Accelerator_NotifyVariableWritten  \
+  WITH AcceleratorThorn_NotifyVariableWritten        \
   LANGUAGE C
 
 

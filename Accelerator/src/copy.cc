@@ -687,10 +687,10 @@ namespace Accelerator {
 
 
   extern "C"
-  void AcceleratorThorn_DataWritten(CCTK_POINTER_TO_CONST const cctkGH_,
-                                    CCTK_INT const vi,
-                                    CCTK_INT const tl,
-                                    CCTK_INT const onhost)
+  void AcceleratorThorn_NotifyVariableWritten(CCTK_POINTER_TO_CONST const cctkGH_,
+                                              CCTK_INT const vi,
+                                              CCTK_INT const tl,
+                                              CCTK_INT const onhost)
   {
     cGH const *restrict const cctkGH = static_cast<cGH const*>(cctkGH_);
 
