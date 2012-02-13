@@ -90,11 +90,12 @@ namespace Accelerator {
         any_valid_on_device = any_valid_on_device || device->mems.at(vi).at(tl).device_valid;
       }
 
-      if (veryverbose)
+      if (veryverbose) {
         if (any_valid_on_device)
           CCTK_VInfo(CCTK_THORNSTRING, "%s has valid timelevels on device", CCTK_FullName(vi));
         else
           CCTK_VInfo(CCTK_THORNSTRING, "%s has no valid timelevels on device", CCTK_FullName(vi));
+      }
 
       if (num_tl > 1 && any_valid_on_device) {
         if (verbose)
