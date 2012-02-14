@@ -15,14 +15,6 @@ using namespace std;
 
 
 
-#define n_ReadsClauses  n_RequiresClauses
-#define n_WritesClauses n_ProvidesClauses
-#define ReadsClauses    RequiresClauses
-#define WritesClauses   ProvidesClauses
-
-
-
-
 namespace Accelerator {
   
   device_t *device = NULL;
