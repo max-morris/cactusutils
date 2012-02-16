@@ -46,15 +46,12 @@ namespace OpenCLRunTime {
     cl_platform_id platform_id;
     checkErr(clGetDeviceInfo(device->device_id, CL_DEVICE_PLATFORM,
                              sizeof platform_id, &platform_id, NULL));
-    size_t const max_platform_name_size = 10000;
-    char platform_name[max_platform_name_size];
     size_t platform_name_size;
     checkErr(clGetPlatformInfo(platform_id, CL_PLATFORM_NAME,
-                               max_platform_name_size,
-                               platform_name, &platform_name_size));
-    if (platform_name_size > max_platform_name_size) {
-      CCTK_WARN(CCTK_WARN_ABORT, "insufficient platform name size");
-    }
+                               0, NULL, &platform_name_size));
+    char platform_name[platform_name_size];
+    checkErr(clGetPlatformInfo(platform_id, CL_PLATFORM_NAME,
+                               platform_name_size, platform_name, NULL));
     enum vendor_t { v_AMD, v_Apple, v_Intel, v_NVidia, v_pocl };
     vendor_t vendor;
     if (strcasestr(platform_name, "AMD")) {
