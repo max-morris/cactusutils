@@ -260,7 +260,10 @@ namespace Accelerator {
               unknowns.push_back(vi, tl);
             }
             
-            if (not (device->mems.at(vi).at(tl).*dst_valid)) {
+            if (not (device->mems.at(vi).at(tl).*dst_valid)
+               //MAREK's CHANGE; NO SENSE IN COMBINATION WITH LINES 64,66
+               && (device->mems.at(vi).at(tl).*src_valid)
+              ) {
               // TODO: Check this. For now, we just assume this is
               // true, because we don't assume that all
               // provides/requires information is complete and
