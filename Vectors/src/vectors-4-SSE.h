@@ -373,7 +373,8 @@ static const union {
     CCTK_REAL4_VEC const x=x__;                                 \
     CCTK_REAL4_VEC const y=y__;                                 \
     CCTK_REAL4_VEC const z=z__;                                 \
-    CCTK_REAL4_VEC const mask = _mm_srai_epi32(x, 31);          \
+    CCTK_REAL4_VEC const mask =                                 \
+      (__m128)_mm_srai_epi32((__m128i)x, 31);                   \
     /* (z & ~mask) | (y & mask) */                              \
     _mm_or_ps(_mm_andnot_ps(mask, z), _mm_and_ps(mask, y));     \
   })
