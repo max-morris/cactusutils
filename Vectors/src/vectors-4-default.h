@@ -46,10 +46,13 @@
 
 // Aligned store
 #define vec4_store(p,x) ((p)=(x))
+#define vec4_storeu(p,x) ((p)=(x))
+
 // Unaligned store
 #define vec4_store_nta(p,x) ((p)=(x))
 
-#define vec4_store_nta_partial(p,x,i,imin,imax) (vec4_store_nta(p,x))
+#define vec4_store_partial_prepare(i,imin,imax) (0)
+#define vec4_store_nta_partial(p,x) (vec4_store_nta(p,x))
 // Store the n lower elements of a vector to memory
 #define vec4_store_nta_partial_lo(p,x,n) (assert(0))
 // Store the n higher elements of a vector into memory. This stores
