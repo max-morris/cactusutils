@@ -34,7 +34,7 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  size_t myproc, nprocs;
+  size_t myproc, nprocs, nioprocs;
   char filename [10000];
   FILE * file;
   size_t count;
@@ -42,6 +42,7 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
 
   myproc = CCTK_MyProc (cctkGH);
   nprocs = CCTK_nProcs (cctkGH);
+  nioprocs = nprocs < 10 ? nprocs : 10;
 
   { CCTK_PRINTSEPARATOR }
   CCTK_VInfo (CCTK_THORNSTRING,
@@ -55,7 +56,7 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
   /* Output all thorns' tarballs */
   for (count = 0; cactus_source[count]; ++ count)
   {
-    if (count % nprocs != myproc) continue;
+    if (count % nioprocs != myproc) continue;
 
     snprintf (filename, sizeof filename,
               "%s/%s/Cactus-source-%s.tar.gz",
