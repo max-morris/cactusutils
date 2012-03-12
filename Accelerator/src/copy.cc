@@ -61,9 +61,12 @@ namespace Accelerator {
         device->mems.at(vi).at(tl).host_valid =
           device->mems.at(vi).at(tl-1).host_valid;
       }
-      device->mems.at(vi).at(0).device_valid = false;
-      // Cycle host information here as well
-      device->mems.at(vi).at(0).host_valid = false;
+      if(num_tl>0)
+      {
+      	device->mems.at(vi).at(0).device_valid = false;
+      	// Cycle host information here as well
+      	device->mems.at(vi).at(0).host_valid = false;
+      }
     }
     
     BEGIN_LOCAL_MAP_LOOP(cctkGH, CCTK_GF) {
