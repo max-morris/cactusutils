@@ -142,8 +142,43 @@ namespace Accelerator {
     
     return 0;
   }
-  
-  
+
+  // Given the |name| of a variable or group, add the corresponding
+  // variable indices to |vars|
+  void vars_from_rw_name(const char *name, vector<CCTK_INT> &vars) {
+    int const gi = CCTK_GroupIndex(name);
+    if (gi >= 0) {
+      // A group
+      int const v0 = CCTK_FirstVarIndexI(gi); assert(v0 >= 0);
+      int const nv = CCTK_NumVarsInGroupI(gi); assert(nv >= 0);
+      for (int v = v0; v < v0+nv; ++v) {
+        vars.push_back(v);
+      }
+    }
+    else {
+      // Not a group - should be a variable
+      const int v = CCTK_VarIndex(name); assert(v >= 0);
+      vars.push_back(v);
+    }
+  }
+
+  // Given a schedule |attribute| pointer, add the variable indices of
+  // all read variables to |vars|
+  void get_read_variables(cFunctionData const *restrict const attribute CCTK_ATTRIBUTE_UNUSED,
+                          vector<CCTK_INT> &vars) {
+    for (int n=0; n<attribute->n_ReadsClauses; ++n) {
+      vars_from_rw_name(attribute->ReadsClauses[n], vars);
+    }
+  }
+
+  // Given a schedule |attribute| pointer, add the variable indices of
+  // all written variables to |vars|
+  void get_written_variables(cFunctionData const *restrict const attribute CCTK_ATTRIBUTE_UNUSED,
+                          vector<CCTK_INT> &vars) {
+    for (int n=0; n<attribute->n_WritesClauses; ++n) {
+      vars_from_rw_name(attribute->WritesClauses[n], vars);
+    }
+  }
   
   extern "C"
   CCTK_INT
@@ -232,20 +267,23 @@ namespace Accelerator {
     }
     
     vars_t vars, unknowns;
-    for (int n=0; n<attribute->n_ReadsClauses; ++n) {
-      int const gi = CCTK_GroupIndex(attribute->ReadsClauses[n]);
-      assert(gi>=0);
-      int const nv = CCTK_NumVarsInGroupI(gi);
-      assert(nv>=0);
-      if (nv > 0) {
-        int const v0 = CCTK_FirstVarIndexI(gi);
-        assert(v0>=0);
-        
+
+    vector<CCTK_INT> vars_read;
+    get_read_variables(attribute,vars_read);
+
+    for (vector<int>::iterator iter = vars_read.begin();
+         iter != vars_read.end(); ++iter) {
+      int const vi = *iter;
+      assert(vi >= 0);
+      int const gi = CCTK_GroupIndexFromVarI(vi);
+      assert(gi >= 0);
+
+      { // Maintain indentation
         int const cactus_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
         int const num_tl = only_reads_current_timelevel ? 1 : cactus_tl;
         assert(num_tl <= cactus_tl);
         
-        for (int vi=v0; vi<v0+nv; ++vi) {
+        { // Maintain indentation
           for (int tl=0; tl<num_tl; ++tl) {
             
             assert(tl < int(device->mems.at(vi).size())+1);
@@ -284,20 +322,22 @@ namespace Accelerator {
       }
     }
     
-    for (int n=0; n<attribute->n_WritesClauses; ++n) {
-      int const gi = CCTK_GroupIndex(attribute->WritesClauses[n]);
-      assert(gi>=0);
-      int const nv = CCTK_NumVarsInGroupI(gi);
-      assert(nv>=0);
-      if (nv > 0) {
-        int const v0 = CCTK_FirstVarIndexI(gi);
-        assert(v0>=0);
-        
+    vector<CCTK_INT> vars_written;
+    get_written_variables(attribute,vars_written);
+
+    for (vector<int>::iterator iter = vars_written.begin();
+         iter != vars_written.end(); ++iter) {
+      int const vi = *iter;
+      assert(vi >= 0);
+      int const gi = CCTK_GroupIndexFromVarI(vi);
+      assert(gi >= 0);
+
+      { // Maintain indentation
         int const cactus_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
         int const num_tl = only_writes_current_timelevel ? 1 : cactus_tl;
         assert(num_tl <= cactus_tl);
         
-        for (int vi=v0; vi<v0+nv; ++vi) {
+        { // Maintain indentation
           for (int tl=0; tl<num_tl; ++tl) {
             
             assert(tl < int(device->mems.at(vi).size())+1);
@@ -431,22 +471,23 @@ namespace Accelerator {
     // method has been called, and then copy only those variables
     // necessary.
     if (Carpet::in_analysis_bin and is_device) {
-      
       vars_t vars;
-      for (int n=0; n<attribute->n_WritesClauses; ++n) {
-        int const gi = CCTK_GroupIndex(attribute->WritesClauses[n]);
-        assert(gi>=0);
-        int const nv = CCTK_NumVarsInGroupI(gi);
-        assert(nv>=0);
-        if (nv > 0) {
-          int const v0 = CCTK_FirstVarIndexI(gi);
-          assert(v0>=0);
-          
+      vector<CCTK_INT> vars_written;
+      get_written_variables(attribute,vars_written);
+
+      for (vector<int>::iterator iter = vars_written.begin();
+           iter != vars_written.end(); ++iter) {
+        int const vi = *iter;
+        assert(vi >= 0);
+        int const gi = CCTK_GroupIndexFromVarI(vi);
+        assert(gi >= 0);
+
+        { // Maintain indentation
           int const cactus_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
           int const num_tl = copy_back_all_timelevels ? 1 : cactus_tl;
           assert(num_tl <= cactus_tl);
           
-          for (int vi=v0; vi<v0+nv; ++vi) {
+          { // Maintain indentation
             for (int tl=0; tl<num_tl; ++tl) {
               if (int(device->mems.at(vi).size()) > tl) {
                 vars.push_back(vi, tl);
