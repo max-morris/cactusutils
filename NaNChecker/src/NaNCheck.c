@@ -127,12 +127,12 @@ void NaNChecker_ResetCounter (CCTK_ARGUMENTS)
    @vio        in
    @endvar
 @@*/
-void NaNChecker_NaNCheck (CCTK_ARGUMENTS)
+static t_nanchecker_info info;
+void NaNChecker_NaNCheck_Prepare (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
   int i, nelems;
-  t_nanchecker_info info;
 
 
   if (cctk_iteration < check_after || cctk_iteration % check_every)
@@ -179,17 +179,37 @@ void NaNChecker_NaNCheck (CCTK_ARGUMENTS)
     info.check_for = CHECK_FOR_BOTH;
   }
 #endif
+}
+void NaNChecker_NaNCheck_Check (CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+
+  if (cctk_iteration < check_after || cctk_iteration % check_every || 
+      (info.NaNmask && cctk_iteration == last_iteration_output))
+  {
+    return;
+  }
 
   CCTK_TraverseString (check_vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR);
+}
+void NaNChecker_NaNCheck_Finish (CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+
+  if (cctk_iteration < check_after || cctk_iteration % check_every || 
+      (info.NaNmask && cctk_iteration == last_iteration_output))
+  {
+    return;
+  }
 
   /* reduce the NaN counter globally and accumulate in NaNChecker::NaNsFound */
-  {
-    int sum_handle = CCTK_ReductionHandle ("sum");
-    CCTK_INT count = 0;
-    CCTK_ReduceLocalScalar (cctkGH, -1, sum_handle, &info.count, &count,
-                            CCTK_VARIABLE_INT);
-    *NaNsFound += count;
-  }
+  int sum_handle = CCTK_ReductionHandle ("sum");
+  CCTK_INT count = 0;
+  CCTK_ReduceLocalScalar (cctkGH, -1, sum_handle, &info.count, &count,
+                          CCTK_VARIABLE_INT);
+  *NaNsFound += count;
 }
 
 

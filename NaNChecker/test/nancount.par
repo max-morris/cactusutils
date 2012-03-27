@@ -1,0 +1,18 @@
+ActiveThorns = "boundary idscalarwavec wavetoyc time CartGrid3D CoordBase SymBase ioutil iobasic localreduce PUGH PUGHReduce PUGHSlab nanchecker"
+ 
+idscalarwave::radius = inf
+idscalarwave::sigma = inf
+
+cactus::cctk_itlast = 0
+driver::ghost_size = 0
+
+IO::out_fileinfo  = "none"
+IO::parfile_write = "no"
+IO::out_dir = $parfile
+
+NaNChecker::check_vars = "all"
+NaNChecker::check_every = 1
+
+IOBasic::outScalar_vars = "NaNChecker::NaNsFound"
+IOBasic::outScalar_reductions = "maximum"
+IOBasic::outScalar_every = 1
