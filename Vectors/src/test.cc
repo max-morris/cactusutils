@@ -194,17 +194,27 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("knmadd", knmadd(av, bv, cv), -a[i] * b[i] - c[i] );
   VECTEST("knmsub", knmsub(av, bv, cv), -a[i] * b[i] + c[i] );
 
+  VECTEST("kacos",  kacos(av),          acos(a[i])          );
+  VECTEST("kacosh", kacosh(av),         acosh(a[i])         );
+  VECTEST("kasin",  kasin(av),          asin(a[i])          );
+  VECTEST("kasinh", kasinh(av),         asinh(a[i])         );
+  VECTEST("katan",  katan(av),          atan(a[i])          );
+  VECTEST("katan2", katan2(av, bv),     atan2(a[i], b[i])   );
+  VECTEST("katanh", katanh(av),         atanh(a[i])         );
   VECTEST("kcos",   kcos(av),           cos(a[i])           );
+  VECTEST("kcosh",  kcosh(av),          cosh(a[i])          );
   VECTEST("kexp",   kexp(av),           exp(a[i])           );
   VECTEST("kfabs",  kfabs(av),          fabs(a[i])          );
   VECTEST("kfmax",  kfmax(av, bv),      fmax(a[i], b[i])    );
   VECTEST("kfmin",  kfmin(av, bv),      fmin(a[i], b[i])    );
   VECTEST("kfnabs", kfnabs(av),         -fabs(a[i])         );
   VECTEST("klog",   klog(av),           log(a[i])           );
-  VECTEST("kpow",   kpow(av, 3.14159),  pow(a[i], 3.14159)  );
+  VECTEST("kpow",   kpow(av, b[0]),     pow(a[i], b[0])     );
   VECTEST("ksin",   ksin(av),           sin(a[i])           );
+  VECTEST("ksinh",  ksinh(av),          sinh(a[i])          );
   VECTEST("ksqrt",  ksqrt(av),          sqrt(a[i])          );
   VECTEST("ktan",   ktan(av),           tan(a[i])           );
+  VECTEST("ktanh",  ktanh(av),          tanh(a[i])          );
 
   VECTEST("kifpos positive",
           kifpos(av, bv, cv), my_signbit(a[i]) ? c[i] : b[i]);

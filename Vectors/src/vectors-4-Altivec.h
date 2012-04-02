@@ -144,7 +144,7 @@
              f(vec4_elt2(x)),                   \
              f(vec4_elt3(x)));                  \
   })
-#define K4REPL2(f,x_,a_)                        \
+#define K4REPL2S(f,x_,a_)                       \
   ({                                            \
     CCTK_REAL4_VEC const x__=(x_);              \
     CCTK_REAL4     const a__=(a_);              \
@@ -155,11 +155,34 @@
              f(vec4_elt2(x),a),                 \
              f(vec4_elt3(x),a));                \
   })
+#define K4REPL2(f,x_,y_)                        \
+  ({                                            \
+    CCTK_REAL4_VEC const x__=(x_);              \
+    CCTK_REAL4_VEC const y__=(y_);              \
+    CCTK_REAL4_VEC const x=x__;                 \
+    CCTK_REAL4_VEC const y=y__;                 \
+    vec4_set(f(vec4_elt0(x),vec4_elt0(y)),      \
+             f(vec4_elt1(x),vec4_elt1(y)),      \
+             f(vec4_elt2(x),vec4_elt2(y)),      \
+             f(vec4_elt3(x),vec4_elt3(y)));     \
+  })
 
-#define k4exp(x)   K4REPL(exp,x)
-#define k4log(x)   K4REPL(log,x)
-#define k4pow(x,a) K4REPL2(pow,x,a)
-#define k4sqrt(x)  K4REPL(sqrt,x)
+#define k4acos(x)    K4REPL(acosf,x)
+#define k4acosh(x)   K4REPL(acoshf,x)
+#define k4asin(x)    K4REPL(asinf,x)
+#define k4asinh(x)   K4REPL(asinhf,x)
+#define k4atan(x)    K4REPL(atanf,x)
+#define k4atan2(x,y) K4REPL2(atan2f,x,y)
+#define k4atanh(x)   K4REPL(atanhf,x)
+#define k4cos(x)     K4REPL(cosf,x)
+#define k4cosh(x)    K4REPL(coshf,x)
+#define k4exp(x)     K4REPL(expf,x)
+#define k4log(x)     K4REPL(logf,x)
+#define k4pow(x,a)   K4REPL2S(powf,x,a)
+#define k4sin(x)     K4REPL(sinf,x)
+#define k4sinh(x)    K4REPL(sinhf,x)
+#define k4tan(x)     K4REPL(tanf,x)
+#define k4tanh(x)    K4REPL(tanhf,x)
 
 #define k4ifmsb(x,y,z)                                                  \
   (vec_sel((z), (y), vec_sra(vec_convert((x), &(vector int*)0), 31)))

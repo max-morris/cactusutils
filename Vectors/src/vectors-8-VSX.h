@@ -93,7 +93,7 @@
     vec8_set(f(vec8_elt0(x)),                   \
              f(vec8_elt1(x)));                  \
   })
-#define K8REPL2(f,x_,a_)                        \
+#define K8REPL2S(f,x_,a_)                       \
   ({                                            \
     CCTK_REAL8_VEC const x__=(x_);              \
     CCTK_REAL8     const a__=(a_);              \
@@ -102,11 +102,32 @@
     vec8_set(f(vec8_elt0(x),a),                 \
              f(vec8_elt1(x),a));                \
   })
+#define K8REPL2(f,x_,y_)                        \
+  ({                                            \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const y__=(y_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8_VEC const y=y__;                 \
+    vec8_set(f(vec8_elt0(x),vec8_elt0(y)),      \
+             f(vec8_elt1(x),vec8_elt1(y)));     \
+  })
 
-#define k8exp(x)   K8REPL(exp,x)
-#define k8log(x)   K8REPL(log,x)
-#define k8pow(x,a) K8REPL2(pow,x,a)
-#define k8sqrt(x)  K8REPL(sqrt,x)
+#define k8acos(x)    K8REPL(acos,x)
+#define k8acosh(x)   K8REPL(acosh,x)
+#define k8asin(x)    K8REPL(asin,x)
+#define k8asinh(x)   K8REPL(asinh,x)
+#define k8atan(x)    K8REPL(atan,x)
+#define k8atan2(x,y) K8REPL2(atan2,x,y)
+#define k8atanh(x)   K8REPL(atanh,x)
+#define k8cos(x)     K8REPL(cos,x)
+#define k8cosh(x)    K8REPL(cosh,x)
+#define k8exp(x)     K8REPL(exp,x)
+#define k8log(x)     K8REPL(log,x)
+#define k8pow(x,a)   K8REPL2S(pow,x,a)
+#define k8sin(x)     K8REPL(sin,x)
+#define k8sinh(x)    K8REPL(sinh,x)
+#define k8tan(x)     K8REPL(tan,x)
+#define k8tanh(x)    K8REPL(tanh,x)
 
 #define k8ifmsb(x,y,z)                                                  \
   (vec_sel((z), (y), vec_sra(vec_convert((x), &(vector long long*)0), 63)))

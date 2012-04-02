@@ -80,7 +80,15 @@
 #  define knmadd k4nmadd
 #  define knmsub k4nmsub
 
+#  define kacos  k4acos
+#  define kacosh k4acosh
+#  define kasin  k4asin
+#  define kasinh k4asinh
+#  define katan  k4atan
+#  define katan2 k4atan2
+#  define katanh k4atanh
 #  define kcos   k4cos
+#  define kcosh  k4cosh
 #  define kexp   k4exp
 #  define kfabs  k4fabs
 #  define kfmax  k4fmax
@@ -89,8 +97,10 @@
 #  define klog   k4log
 #  define kpow   k4pow
 #  define ksin   k4sin
+#  define ksinh  k4sinh
 #  define ksqrt  k4sqrt
 #  define ktan   k4tan
+#  define ktanh  k4tanh
 
 #  define kifmsb k4ifmsb
 
@@ -131,7 +141,15 @@
 #  define knmadd k8nmadd
 #  define knmsub k8nmsub
 
+#  define kacos  k8acos
+#  define kacosh k8acosh
+#  define kasin  k8asin
+#  define kasinh k8asinh
+#  define katan  k8atan
+#  define katan2 k8atan2
+#  define katanh k8atanh
 #  define kcos   k8cos
+#  define kcosh  k8cosh
 #  define kexp   k8exp
 #  define kfabs  k8fabs
 #  define kfmax  k8fmax
@@ -140,8 +158,10 @@
 #  define klog   k8log
 #  define kpow   k8pow
 #  define ksin   k8sin
+#  define ksinh  k8sinh
 #  define ksqrt  k8sqrt
 #  define ktan   k8tan
+#  define ktanh  k8tanh
 
 #  define kifmsb k8ifmsb
 
@@ -324,12 +344,6 @@ struct vecprops<CCTK_REAL8> {
 #  if ! VECTORISE_INLINE
 #    define KRANC_DIFF_FUNCTIONS
 #  endif
-
-#  undef E
-#  define E (ToReal(M_E))
-
-#  undef Pi
-#  define Pi (ToReal(M_PI))
 
 #  undef Sign
 #  define Sign(x) -999999999    // poison

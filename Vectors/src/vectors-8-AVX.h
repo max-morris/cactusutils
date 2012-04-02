@@ -238,29 +238,54 @@ static const k8const_t k8abs_mask_union =
 #define k8sqrt(x)   (_mm256_sqrt_pd(x))
 
 // Expensive functions
-#define K8REPL(f,x)                             \
-({                                              \
-  CCTK_REAL8_VEC const xfunc=(x);               \
-  vec8_set(f(vec8_elt0(xfunc)),                 \
-           f(vec8_elt1(xfunc)),                 \
-           f(vec8_elt2(xfunc)),                 \
-           f(vec8_elt3(xfunc)));                \
-})
-#define K8REPL2(f,x,a)                          \
-({                                              \
-  CCTK_REAL8_VEC const xfunc=(x);               \
-  CCTK_REAL8     const afunc=(a);               \
-  vec8_set(f(vec8_elt0(xfunc),afunc),           \
-           f(vec8_elt1(xfunc),afunc),           \
-           f(vec8_elt2(xfunc),afunc),           \
-           f(vec8_elt3(xfunc),afunc));          \
-})
-#define k8cos(x)   K8REPL(cos,x)
-#define k8exp(x)   K8REPL(exp,x)
-#define k8log(x)   K8REPL(log,x)
-#define k8pow(x,a) K8REPL2(pow,x,a)
-#define k8sin(x)   K8REPL(sin,x)
-#define k8tan(x)   K8REPL(tan,x)
+#define K8REPL(f,x_)                            \
+  ({                                            \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    vec8_set(f(vec8_elt0(x)),                   \
+             f(vec8_elt1(x)),                   \
+             f(vec8_elt2(x)),                   \
+             f(vec8_elt3(x)));                  \
+  })
+#define K8REPL2S(f,x_,a_)                       \
+  ({                                            \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8     const a__=(a_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8     const a=a__;                 \
+    vec8_set(f(vec8_elt0(x),a),                 \
+             f(vec8_elt1(x),a),                 \
+             f(vec8_elt2(x),a),                 \
+             f(vec8_elt3(x),a));                \
+  })
+#define K8REPL2(f,x_,y_)                        \
+  ({                                            \
+    CCTK_REAL8_VEC const x__=(x_);              \
+    CCTK_REAL8_VEC const y__=(y_);              \
+    CCTK_REAL8_VEC const x=x__;                 \
+    CCTK_REAL8_VEC const y=y__;                 \
+    vec8_set(f(vec8_elt0(x),vec8_elt0(y)),      \
+             f(vec8_elt1(x),vec8_elt1(y)),      \
+             f(vec8_elt2(x),vec8_elt2(y)),      \
+             f(vec8_elt3(x),vec8_elt3(y)));     \
+  })
+
+#define k8acos(x)    K8REPL(acos,x)
+#define k8acosh(x)   K8REPL(acosh,x)
+#define k8asin(x)    K8REPL(asin,x)
+#define k8asinh(x)   K8REPL(asinh,x)
+#define k8atan(x)    K8REPL(atan,x)
+#define k8atan2(x,y) K8REPL2(atan2,x,y)
+#define k8atanh(x)   K8REPL(atanh,x)
+#define k8cos(x)     K8REPL(cos,x)
+#define k8cosh(x)    K8REPL(cosh,x)
+#define k8exp(x)     K8REPL(exp,x)
+#define k8log(x)     K8REPL(log,x)
+#define k8pow(x,a)   K8REPL2S(pow,x,a)
+#define k8sin(x)     K8REPL(sin,x)
+#define k8sinh(x)    K8REPL(sinh,x)
+#define k8tan(x)     K8REPL(tan,x)
+#define k8tanh(x)    K8REPL(tanh,x)
 
 // Choice   [sign(x)>0 ? y : z]
 #define k8ifmsb(x,y,z) (_mm256_blendv_pd(z,y,x))
