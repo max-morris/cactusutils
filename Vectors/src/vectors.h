@@ -7,7 +7,7 @@
 
 #if VECTORISE
 
-/* TOOD: support AVX */
+/* TODO: support AVX */
 #  if defined(__SSE__)          // Intel SSE
 #    include "vectors-4-SSE.h"
 #  elif defined(__ALTIVEC__)    // Power Altivec
