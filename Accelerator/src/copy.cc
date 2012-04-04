@@ -811,6 +811,36 @@ namespace Accelerator {
   
   
   
+  struct mark_var_t {
+    cGH const *cctkGH;
+    vars_t vars;
+  };
+  
+  static
+  void mark_var(int const vi, char const *const optstring, void *const args_)
+  {
+    mark_var_t& args = *(mark_var_t*)args_;
+    cGH const *const cctkGH = args.cctkGH;
+    DECLARE_CCTK_ARGUMENTS;
+    DECLARE_CCTK_PARAMETERS;
+    
+    int const cactus_tl = CCTK_ActiveTimeLevelsVI(cctkGH, vi);
+    int const num_tl = copy_back_all_timelevels ? 1 : cactus_tl;
+    assert(num_tl <= cactus_tl);
+    
+    vars_t& vars = args.vars;
+    for (int tl=0; tl<num_tl; ++tl) {
+      if (tl < int(device->mems.at(vi).size())) {
+        if (not device->mems.at(vi).at(tl).host_valid and
+            device->mems.at(vi).at(tl).device_valid)
+        {
+          vars.push_back(vi, tl);
+          device->mems.at(vi).at(tl).host_valid = true;
+        }
+      }
+    }
+  }
+  
   extern "C"
   void Accelerator_CopyBack(CCTK_ARGUMENTS)
   {
@@ -821,24 +851,13 @@ namespace Accelerator {
       CCTK_VInfo(CCTK_THORNSTRING, "CopyBack");
     }
     
-    vars_t vars;
-    for (int vi=0; vi<CCTK_NumVars(); ++vi) {
-      
-      int const cactus_tl = CCTK_ActiveTimeLevelsVI(cctkGH, vi);
-      int const num_tl = copy_back_all_timelevels ? 1 : cactus_tl;
-      assert(num_tl <= cactus_tl);
-      
-      for (int tl=0; tl<num_tl; ++tl) {
-        if (tl < int(device->mems.at(vi).size())) {
-          if (not device->mems.at(vi).at(tl).host_valid and
-              device->mems.at(vi).at(tl).device_valid)
-          {
-            vars.push_back(vi, tl);
-            device->mems.at(vi).at(tl).host_valid = true;
-          }
-        }
-      }
-    }
+    if (copy_back_every == 0) return;
+    if (cctk_iteration % copy_back_every != 0) return;
+    
+    mark_var_t args;
+    args.cctkGH = cctkGH;
+    CCTK_TraverseString(copy_back_vars, mark_var, NULL, CCTK_GROUP_OR_VAR);
+    vars_t& vars = args.vars;
     
     CCTK_INT moved;
     Device_CopyToHost

@@ -14,6 +14,17 @@ BOOLEAN copy_back_all_timelevels "Copy all timelevels back to the host for outpu
 {
 } "no"
 
+INT copy_back_every "When to copy variables back to the host" STEERABLE=always
+{
+  0   :: "never"
+  1:* :: "every so many iterations"
+} 1
+
+STRING copy_back_vars "Which variables to copy back" STEERABLE=always
+{
+  .* :: "list of group or variable names; empty to copy nothing, 'all' to copy all variables"
+} "all"
+
 RESTRICTED:
 
 # TODO: Instead of using parameters, extend the syntax of schedule
