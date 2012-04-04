@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 
@@ -18,6 +19,60 @@ using namespace std;
 namespace Accelerator {
   
   device_t *device = NULL;
+  
+  
+  
+  //////////////////////////////////////////////////////////////////////////////
+  
+  
+
+  // Given the |name| of a variable or group, add the corresponding
+  // variable indices to |vars|
+  void vars_from_rw_name(const char *name1, vector<CCTK_INT> &vars)
+  {
+    // Remove trailing "[...]" modifier, if any
+    char *const name = strdup(name1);
+    char *const p = strchr(name, '(');
+    if (p) *p = '\0';
+    int const gi = CCTK_GroupIndex(name);
+    if (gi >= 0) {
+      // A group
+      int const v0 = CCTK_FirstVarIndexI(gi); assert(v0 >= 0);
+      int const nv = CCTK_NumVarsInGroupI(gi); assert(nv >= 0);
+      for (int v = v0; v < v0+nv; ++v) {
+        vars.push_back(v);
+      }
+    } else {
+      // Not a group - should be a variable
+      const int v = CCTK_VarIndex(name); assert(v >= 0);
+      vars.push_back(v);
+    }
+    free(name);
+  }
+
+  // Given a schedule |attribute| pointer, add the variable indices of
+  // all read variables to |vars|
+  void get_read_variables(cFunctionData const *restrict const attribute,
+                          vector<CCTK_INT> &vars)
+  {
+    for (int n=0; n<attribute->n_ReadsClauses; ++n) {
+      vars_from_rw_name(attribute->ReadsClauses[n], vars);
+    }
+  }
+
+  // Given a schedule |attribute| pointer, add the variable indices of
+  // all written variables to |vars|
+  void get_written_variables(cFunctionData const *restrict const attribute,
+                             vector<CCTK_INT> &vars)
+  {
+    for (int n=0; n<attribute->n_WritesClauses; ++n) {
+      vars_from_rw_name(attribute->WritesClauses[n], vars);
+    }
+  }
+  
+  
+  
+  //////////////////////////////////////////////////////////////////////////////
   
   
   
@@ -61,8 +116,7 @@ namespace Accelerator {
         device->mems.at(vi).at(tl).host_valid =
           device->mems.at(vi).at(tl-1).host_valid;
       }
-      if(num_tl>0)
-      {
+      if (num_tl>0) {
       	device->mems.at(vi).at(0).device_valid = false;
       	// Cycle host information here as well
       	device->mems.at(vi).at(0).host_valid = false;
@@ -142,43 +196,8 @@ namespace Accelerator {
     
     return 0;
   }
-
-  // Given the |name| of a variable or group, add the corresponding
-  // variable indices to |vars|
-  void vars_from_rw_name(const char *name, vector<CCTK_INT> &vars) {
-    int const gi = CCTK_GroupIndex(name);
-    if (gi >= 0) {
-      // A group
-      int const v0 = CCTK_FirstVarIndexI(gi); assert(v0 >= 0);
-      int const nv = CCTK_NumVarsInGroupI(gi); assert(nv >= 0);
-      for (int v = v0; v < v0+nv; ++v) {
-        vars.push_back(v);
-      }
-    }
-    else {
-      // Not a group - should be a variable
-      const int v = CCTK_VarIndex(name); assert(v >= 0);
-      vars.push_back(v);
-    }
-  }
-
-  // Given a schedule |attribute| pointer, add the variable indices of
-  // all read variables to |vars|
-  void get_read_variables(cFunctionData const *restrict const attribute CCTK_ATTRIBUTE_UNUSED,
-                          vector<CCTK_INT> &vars) {
-    for (int n=0; n<attribute->n_ReadsClauses; ++n) {
-      vars_from_rw_name(attribute->ReadsClauses[n], vars);
-    }
-  }
-
-  // Given a schedule |attribute| pointer, add the variable indices of
-  // all written variables to |vars|
-  void get_written_variables(cFunctionData const *restrict const attribute CCTK_ATTRIBUTE_UNUSED,
-                          vector<CCTK_INT> &vars) {
-    for (int n=0; n<attribute->n_WritesClauses; ++n) {
-      vars_from_rw_name(attribute->WritesClauses[n], vars);
-    }
-  }
+  
+  
   
   extern "C"
   CCTK_INT
@@ -301,17 +320,8 @@ namespace Accelerator {
               unknowns.push_back(vi, tl);
             }
             
-            if (not (device->mems.at(vi).at(tl).*dst_valid)
-               //MAREK's CHANGE; NO SENSE IN COMBINATION WITH LINES 64,66
-               && (device->mems.at(vi).at(tl).*src_valid)
-              ) {
-              // TODO: Check this. For now, we just assume this is
-              // true, because we don't assume that all
-              // provides/requires information is complete and
-              // correct.
-              // assert(device->mems.at(vi).at(tl).*src_valid);
-              device->mems.at(vi).at(tl).*src_valid = true;
-              
+            if (not (device->mems.at(vi).at(tl).*dst_valid)) {
+              assert(device->mems.at(vi).at(tl).*src_valid);
               vars.push_back(vi, tl);
               // This will be true after the copy operation below
               device->mems.at(vi).at(tl).*dst_valid = true;
@@ -772,12 +782,7 @@ namespace Accelerator {
       }
       
       if (not (device->mems.at(vi).at(tl).*dst_valid)) {
-        // TODO: Check this. For now, we just assume this is true,
-        // because we don't assume that all provides/requires
-        // information is complete and correct.
-        // assert(device->mems.at(vi).at(tl).*src_valid);
-        device->mems.at(vi).at(tl).*src_valid = true;
-        
+        assert(device->mems.at(vi).at(tl).*src_valid);
         vars.push_back(vi, tl);
       }
     }
