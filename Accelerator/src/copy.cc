@@ -856,7 +856,7 @@ namespace Accelerator {
     
     mark_var_t args;
     args.cctkGH = cctkGH;
-    CCTK_TraverseString(copy_back_vars, mark_var, NULL, CCTK_GROUP_OR_VAR);
+    CCTK_TraverseString(copy_back_vars, mark_var, &args, CCTK_GROUP_OR_VAR);
     vars_t& vars = args.vars;
     
     CCTK_INT moved;
