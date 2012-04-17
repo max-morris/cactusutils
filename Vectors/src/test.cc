@@ -25,7 +25,8 @@ inline int my_signbit (CCTK_REAL const x)
     CCTK_REAL vecres = (vecexpr);                                       \
     CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();               \
     assert(abs((CCTK_REAL)0.1) > 0);                                    \
-    if (abs(vecres - res) < 10*eps*abs(res))                            \
+    if((abs(vecres - res) < 10*eps*abs(res)) ||                         \
+       (isnan(vecres) && isnan(res)))                                   \
       passed++;                                                         \
     else                                                                \
       CCTK_VParamWarn(CCTK_THORNSTRING,                                 \
@@ -44,7 +45,8 @@ inline int my_signbit (CCTK_REAL const x)
       CCTK_REAL vecres = vec_elt(rv,i);                                 \
       CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();             \
       assert(abs((CCTK_REAL)0.1) > 0);                                  \
-      if(abs(vecres - res) < 10*eps*abs(res))                           \
+      if((abs(vecres - res) < 10*eps*abs(res)) ||                       \
+         (isnan(vecres) && isnan(res)))                                 \
         passed++;                                                       \
       else                                                              \
         CCTK_VParamWarn(CCTK_THORNSTRING,                               \
