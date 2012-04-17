@@ -573,7 +573,9 @@ namespace Accelerator {
         assert(v0>=0);
         for (int vi=v0; vi<v0+nv; ++vi) {
           int const tl=0;       // only copy current timelevel
-          vars.push_back(vi, tl);
+          if (device->mems.at(vi).at(tl).device_valid) {
+            vars.push_back(vi, tl);
+          }
         }
       }
     }
@@ -623,7 +625,9 @@ namespace Accelerator {
         assert(v0>=0);
         for (int vi=v0; vi<v0+nv; ++vi) {
           int const tl=0;       // only copy current timelevel
-          vars.push_back(vi, tl);
+          if (device->mems.at(vi).at(tl).device_valid) {
+            vars.push_back(vi, tl);
+          }
         }
       }
     }
