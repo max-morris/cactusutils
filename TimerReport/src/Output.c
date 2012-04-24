@@ -7,24 +7,27 @@
    @enddesc
  @@*/
 
+#include <cctk.h>
+#include <cctk_Arguments.h>
+#include <cctk_Parameters.h>
+#include <cctk_Schedule.h>
+#include <util_String.h>
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "cctk.h"
-#include "cctk_Arguments.h"
-#include "cctk_Parameters.h"
-#include "cctk_Schedule.h"
-
-#include "util_String.h"
+#ifdef CCTK_MPI
+#  include <mpi.h>
+#endif
 
 /********************************************************************
  *********************     Local Data Types   ***********************
  ********************************************************************/
 
 struct timer_stats {
-  CCTK_REAL * restrict secs_local; /* process-local values */
+  char ** restrict names;          /* timer names */
   CCTK_REAL * restrict secs_avg;   /* global average */
   CCTK_REAL * restrict secs_min;   /* global minimum */
   CCTK_REAL * restrict secs_max;   /* global maximum */
@@ -391,7 +394,7 @@ static void OutputAllTimersTogether (CCTK_ARGUMENTS)
         fprintf(file_tsv, "simulation time");
         for (int i = 0; i < timers.ntimers; i++)
         {
-          const char * const name = CCTK_TimerName(i);
+          const char * const name = timers.names[i];
           fprintf(file, "# Column %d %s\n", 3*i+3, name ? name : "");
           char *const name_csv = QuoteForCSV(name ? name : "");
           fprintf(file_csv,
@@ -445,10 +448,13 @@ static void OutputAllTimersTogether (CCTK_ARGUMENTS)
     
   } /* if root processor */
   
-  free (timers.secs_local);
-  free (timers.secs_avg  );
-  free (timers.secs_min  );
-  free (timers.secs_max  );
+  for (int n=0; n<timers.ntimers; ++n)
+  {
+    free (timers.names[n]);
+  }
+  free (timers.secs_avg);
+  free (timers.secs_min);
+  free (timers.secs_max);
 }
 
 
@@ -496,7 +502,7 @@ static void OutputAllTimersReadable (CCTK_ARGUMENTS)
       }
       for (int i = 0; i < timers.ntimers; i++)
       {
-        const char * const name = CCTK_TimerName(i);
+        const char * const name = timers.names[i];
         fprintf(file, "%d %.15g\t%d\t%.15g %.15g %.15g\t%s\n",
                 cctk_iteration, (double)cctk_time,
                 i,
@@ -519,10 +525,13 @@ static void OutputAllTimersReadable (CCTK_ARGUMENTS)
     
   } /* if root processor */
   
-  free (timers.secs_local);
-  free (timers.secs_avg  );
-  free (timers.secs_min  );
-  free (timers.secs_max  );
+  for (int n=0; n<timers.ntimers; ++n)
+  {
+    free (timers.names[n]);
+  }
+  free (timers.secs_avg);
+  free (timers.secs_min);
+  free (timers.secs_max);
   
   return;
 }
@@ -606,118 +615,202 @@ static void PrintTopTimers (CCTK_ARGUMENTS)
            6-digits, timers.secs_avg[idx[i]],
            6-digits, timers.secs_min[idx[i]],
            6-digits, timers.secs_max[idx[i]],
-           CCTK_TimerName(idx[i]));
+           timers.names[idx[i]]);
   }
   printf("%s\n", sep);
+
+  for (int n=0; n<timers.ntimers; ++n)
+  {
+    free (timers.names[n]);
+  }
+  free (timers.secs_avg);
+  free (timers.secs_min);
+  free (timers.secs_max);
+  
+  return;
 }
 
 
 
-static int integer_same_on_all_procs(cGH const * restrict const cctkGH,
-                                     const CCTK_INT i,
-                                     CCTK_INT* restrict const iminp,
-                                     CCTK_INT* restrict const imaxp)
+/* Note: Timer names are truncated to 100 characters for simplicity */
+#define TIMERNAME_LENGTH 101    /* this includes the NUL character */
+
+static char (*compare_string_array)[TIMERNAME_LENGTH] = NULL;
+static int compare_string(void const *const a, void const *const b)
 {
-  /* There is no "equals" reduction operator, so we check that
-   * minimum and maximum are the same */
-  const int reduce_min = CCTK_ReductionArrayHandle ("minimum");
-  const int reduce_max = CCTK_ReductionArrayHandle ("maximum");
-  CCTK_INT min_i = 0;
-  CCTK_INT max_i = 0;
-
-  if (CCTK_ReduceLocScalar(cctkGH, -1 /* All processors */, reduce_min,
-                           &i, &min_i, CCTK_VARIABLE_INT)) 
-    CCTK_WARN (CCTK_WARN_ABORT, "Error in calling min reduction operator");
-
-  if (CCTK_ReduceLocScalar(cctkGH, -1 /* All processors */, reduce_max,
-                           &i, &max_i, CCTK_VARIABLE_INT))
-    CCTK_WARN (CCTK_WARN_ABORT, "Error in calling max reduction operator");
-  if (iminp) *iminp = min_i;
-  if (imaxp) *imaxp = max_i;
-  return min_i == max_i;
+  int const ia = *(int const*)a;
+  int const ib = *(int const*)b;
+  return strcmp(compare_string_array[ia], compare_string_array[ib]);
 }
+
 
 
 /* Collect timer information onto the root processor */
-static int CollectTimerInfo (cGH const * restrict const cctkGH,
-                             struct timer_stats * restrict const timers)
+static int CollectTimerInfo(cGH const *restrict const cctkGH,
+                            struct timer_stats *restrict const timers)
 {
   DECLARE_CCTK_PARAMETERS;
   
-  assert (timers);
+  assert(timers);
   
-  timers->ntimers = CCTK_NumTimers();
-  assert (timers->ntimers >= 0);
-
-  /* Check that the number of timers is consistent across processors */
-  CCTK_INT imin, imax;
-  if (!integer_same_on_all_procs(cctkGH, timers->ntimers, &imin, &imax))
-  {
-    CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                "Number of timers is inconsistent across processes; cannot collect timer information. Number of timers on processor %d: %d; overall minimum: %d; overall maximum: %d",
-                CCTK_MyProc(cctkGH), timers->ntimers, (int)imin, (int)imax);
-    return 0;
+  /* Gather number of timers from each process */
+  int const myproc = CCTK_MyProc(cctkGH);
+  int const nprocs = CCTK_nProcs(cctkGH);
+  
+  int my_ntimers = CCTK_NumTimers();
+  int all_ntimers[nprocs];
+#ifdef CCTK_MPI
+  MPI_Gather(&my_ntimers, 1, MPI_INT, all_ntimers, 1, MPI_INT, 0,
+             MPI_COMM_WORLD);
+#else
+  memcpy(all_ntimers, &my_ntimers, sizeof *all_ntimers);
+#endif
+  int total_ntimers = 0;
+  if (myproc == 0) {
+    for (int p=0; p<nprocs; ++p) {
+      total_ntimers += all_ntimers[p];
+    }
   }
-
-  timers->secs_local = malloc(timers->ntimers * sizeof *timers->secs_local);
-  assert (timers->ntimers==0 || timers->secs_local);
-  if (CCTK_MyProc(cctkGH) == 0)
-  {
-    timers->secs_avg   = malloc(timers->ntimers * sizeof *timers->secs_avg  );
-    timers->secs_min   = malloc(timers->ntimers * sizeof *timers->secs_min  );
-    timers->secs_max   = malloc(timers->ntimers * sizeof *timers->secs_max  );
-    assert (timers->ntimers==0 || timers->secs_avg  );
-    assert (timers->ntimers==0 || timers->secs_min  );
-    assert (timers->ntimers==0 || timers->secs_max  );
+  
+  /* Determine local timer names and their values */
+  char my_timernames[my_ntimers][TIMERNAME_LENGTH];
+  for (int n=0; n<my_ntimers; ++n) {
+    strncpy(my_timernames[n], CCTK_TimerName(n), TIMERNAME_LENGTH-1);
+    my_timernames[n][TIMERNAME_LENGTH-1] = '\0';
   }
-  else
+  double my_timervalues[my_ntimers];
   {
+    cTimerData *const td = CCTK_TimerCreateData();
+    for (int n=0; n<my_ntimers; ++n) {
+      CCTK_TimerI(n, td);
+      cTimerVal const *const tv = CCTK_GetClockValue(all_timers_clock, td);
+      if (!tv) {
+        CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "Clock \"%s\" not found for timer #%d \"%s\"",
+                   all_timers_clock, n, CCTK_TimerName(n));
+        my_timervalues[n] = -1;
+      } else {
+        my_timervalues[n] = CCTK_TimerClockSeconds(tv);
+      }
+    }
+    CCTK_TimerDestroyData(td);
+  }
+  
+  /* Gather timer names and values from each process */
+  char all_timernames[total_ntimers][TIMERNAME_LENGTH];
+  double all_timervalues[total_ntimers];
+  int name_displacements[nprocs], value_displacements[nprocs];
+  int name_counts[nprocs];
+  name_displacements[0] = 0;
+  value_displacements[0] = 0;
+  name_counts[0] = all_ntimers[0] * TIMERNAME_LENGTH;
+  for (int p=1; p<nprocs; ++p) {
+    name_displacements[p] =
+      name_displacements[p-1] + all_ntimers[p-1] * TIMERNAME_LENGTH;
+    value_displacements[p] = value_displacements[p-1] + all_ntimers[p-1];
+    name_counts[p] = all_ntimers[p] * TIMERNAME_LENGTH;
+  }
+#ifdef CCTK_MPI
+  MPI_Gatherv(my_timernames, my_ntimers*TIMERNAME_LENGTH, MPI_CHAR,
+              all_timernames, name_counts, name_displacements, MPI_CHAR,
+              0, MPI_COMM_WORLD);
+  MPI_Gatherv(my_timervalues, my_ntimers, MPI_DOUBLE,
+              all_timervalues, all_ntimers, value_displacements, MPI_DOUBLE,
+              0, MPI_COMM_WORLD);
+#else
+  memcpy(all_timernames, my_timernames, my_ntimers*TIMERNAME_LENGTH);
+  memcpy(all_timervalues, my_timervalues, my_ntimers*sizeof *all_timervalues);
+#endif
+  
+  /* Continue only on the root process */
+  if (myproc != 0) {
+    timers->ntimers  = 0;
+    timers->names    = NULL;
     timers->secs_avg = NULL;
     timers->secs_min = NULL;
     timers->secs_max = NULL;
+    
+    return 1;
   }
   
-  cTimerData * const td = CCTK_TimerCreateData();
-  for (int i = 0; i < timers->ntimers; i++)
-  {
-    CCTK_TimerI(i, td);
-    const cTimerVal * const tv = CCTK_GetClockValue(all_timers_clock, td);
-    if (tv)
-    {
-      timers->secs_local[i] = CCTK_TimerClockSeconds(tv);
-    }
-    else
-    {
-      CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                 "Clock \"%s\" not found for timer #%d \"%s\"",
-                 all_timers_clock, i, CCTK_TimerName(i));
-      timers->secs_local[i] = -1;
+  /* Construct global list of timers: sort, then unique */
+  /* TODO: sort the processes' timers separately (and in parallel),
+     then merge them */
+  int sort_index[total_ntimers];
+  for (int i=0; i<total_ntimers; ++i) {
+    sort_index[i] = i;
+  }
+  assert(!compare_string_array);
+  compare_string_array = all_timernames;
+  qsort(sort_index, total_ntimers, sizeof *sort_index, compare_string);
+  compare_string_array = NULL;
+  int unique_timers = 0;
+  if (total_ntimers > 0) {
+    unique_timers = 1;        /* first timer is always unique */
+    for (int i=1; i<total_ntimers; ++i) {
+      if (strcmp(all_timernames[sort_index[i]],
+                 all_timernames[sort_index[unique_timers-1]]) != 0)
+      {
+        sort_index[unique_timers++] = sort_index[i];
+      }
     }
   }
-  CCTK_TimerDestroyData(td);
   
-  const int reduce_avg = CCTK_ReductionArrayHandle ("average");
-  const int reduce_min = CCTK_ReductionArrayHandle ("minimum");
-  const int reduce_max = CCTK_ReductionArrayHandle ("maximum");
-  if (reduce_avg < 0 || reduce_min < 0 || reduce_max < 0)
-  {
-    CCTK_WARN (CCTK_WARN_ABORT,
-               "Reduction operators for average, minimum, or maximum not defined");
+  /* Allocate timer data structure */
+  timers->ntimers = unique_timers;
+  assert(timers->ntimers >= 0);
+  
+  timers->names    = malloc(timers->ntimers * sizeof *timers->names   );
+  timers->secs_avg = malloc(timers->ntimers * sizeof *timers->secs_avg);
+  timers->secs_min = malloc(timers->ntimers * sizeof *timers->secs_min);
+  timers->secs_max = malloc(timers->ntimers * sizeof *timers->secs_max);
+  assert(timers->ntimers==0 || timers->names   );
+  assert(timers->ntimers==0 || timers->secs_avg);
+  assert(timers->ntimers==0 || timers->secs_min);
+  assert(timers->ntimers==0 || timers->secs_max);
+  
+  for (int n=0; n<unique_timers; ++n) {
+    timers->names[n] = strdup(all_timernames[sort_index[n]]);
   }
-  const int ierr1 = CCTK_ReduceLocArrayToArray1D
-    (cctkGH, 0, reduce_avg,
-     timers->secs_local, timers->secs_avg, timers->ntimers, CCTK_VARIABLE_REAL);
-  const int ierr2 = CCTK_ReduceLocArrayToArray1D
-    (cctkGH, 0, reduce_min,
-     timers->secs_local, timers->secs_min, timers->ntimers, CCTK_VARIABLE_REAL);
-  const int ierr3 = CCTK_ReduceLocArrayToArray1D
-    (cctkGH, 0, reduce_max,
-     timers->secs_local, timers->secs_max, timers->ntimers, CCTK_VARIABLE_REAL);
-  if (ierr1 || ierr2 || ierr3)
-  {
-    CCTK_WARN (CCTK_WARN_ABORT,
-               "Error in calling reduction operators");
+  
+  /* Reduce timer values */
+  for (int n=0; n<timers->ntimers; ++n) {
+    double count  = 0.0;
+    double sum    = 0.0;
+    double minval = HUGE_VAL;
+    double maxval = 0.0;
+    /* Reduce over all processes */
+    for (int p=0; p<nprocs; ++p) {
+      int const name_offset = name_displacements[p] / TIMERNAME_LENGTH;
+      /* Look for this timer */
+      /* TODO: sort, then use bsearch */
+      int i;
+      for (i=0; i<all_ntimers[p]; ++i) {
+        if (strcmp(timers->names[n], all_timernames[name_offset+i]) == 0) break;
+      }
+      if (i < all_ntimers[p]) {
+        /* Found the timer */
+        double const value = all_timervalues[value_displacements[p]+i];
+        count += 1;
+        sum   += value;
+        minval = fmin(minval, value);
+        maxval = fmax(maxval, value);
+      } else {
+        /* Timer does not exist on this process -- ignore */
+      }
+    }
+    if (count == 0) {
+      /* Special case to make result look nicer */
+      timers->secs_avg[n] = -1; /* instead of nan */
+      timers->secs_min[n] = -1; /* instead of infinity */
+      timers->secs_max[n] = maxval; /* zero */
+    } else {
+      timers->secs_avg[n] = sum / count;
+      timers->secs_min[n] = minval;
+      timers->secs_max[n] = maxval;
+    }
   }
+  
   return 1;
 }
 
