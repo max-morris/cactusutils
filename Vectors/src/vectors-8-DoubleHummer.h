@@ -121,6 +121,25 @@
 #define vec8_storeu(p,x)    (__stfpd(&(p),x)) // this may not work
 #define vec8_store_nta(p,x) (__stfpd(&(p),x)) // this doesn't avoid the cache
 
+// Store a partial vector (aligned and non-temporal)
+#define vec8_store_partial_prepare(i,imin,imax)                 \
+  bool const v8stp_lo = (i)>=(imin);                            \
+  bool const v8stp_hi = (i)+CCTK_REAL_VEC_SIZE-1<(imax)
+#define vec8_store_nta_partial(p_,x_)                           \
+  ({                                                            \
+    CCTK_REAL8& p__=(p_);                                       \
+    CCTK_REAL8& p=p__;                                          \
+    CCTK_REAL8_VEC const x__=(x_);                              \
+    CCTK_REAL8_VEC const x=x__;                                 \
+    if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) {     \
+      vec8_store(p,x);                                          \
+    } else if (v8stp_lo) {                                      \
+      (&p)[0]=vec8_elt0(x);                                     \
+    } else if (v8stp_hi) {                                      \
+      (&p)[1]=vec8_elt1(x);                                     \
+    }                                                           \
+  })
+
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
 #define vec8_store_nta_partial_lo(p,x,n) ((&(p))[0]=vec8_elt0(x))
