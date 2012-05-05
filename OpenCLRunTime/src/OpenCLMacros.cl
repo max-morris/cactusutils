@@ -467,3 +467,17 @@ CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x) { return x*x; }
     }                                                   \
     typedef lc_loop3_##name lc_ensure_proper_nesting;   \
   } while(0)
+
+#define LC_LOOP3(name,                          \
+                 i,j,k,                         \
+                 imin,jmin,kmin,                \
+                 imax,jmax,kmax,                \
+                 ilsh,jlsh,klsh)                \
+  LC_LOOP3VEC(name,                             \
+              i,j,k,                            \
+              imin,jmin,kmin,                   \
+              imax,jmax,kmax,                   \
+              ilsh,jlsh,klsh,                   \
+              1)
+#define LC_ENDLOOP3(name)                       \
+  LC_ENDLOOP3VEC(name)
