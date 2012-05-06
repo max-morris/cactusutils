@@ -683,7 +683,7 @@ namespace OpenCLRunTime {
     DECLARE_CCTK_PARAMETERS;
     
     assert(device);
-    device->setup_grid(cctkGH);
+    // device->setup_grid(cctkGH);
     
     // Finish, because we are done
     checkErr(clFinish(device->queue));

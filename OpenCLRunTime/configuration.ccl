@@ -2,10 +2,6 @@
 
 REQUIRES Carpet Vectors
 
-OPTIONAL MPI
-{
-}
-
 REQUIRES OpenCL
 
 PROVIDES OpenCLRunTime

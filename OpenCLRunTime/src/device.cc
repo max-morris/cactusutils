@@ -238,7 +238,8 @@ namespace OpenCLRunTime {
     if (have_grid) return;
     have_grid = true;
     
-    assert(Carpet::is_local_mode());
+    // We can only set up the grid in local mode
+    assert(Carpet::is_local_mode()); 
     
     /*** Choose looping configuration *****************************************/
     
