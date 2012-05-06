@@ -1,0 +1,16 @@
+ActiveThorns = "
+   Carpet
+   CarpetLib
+   CoordBase
+   IOUtil
+   OpenCL
+   OpenCLRunTime
+"
+
+Cactus::cctk_itlast = 0
+
+IO::out_dir = $parfile
+
+# Output detailed device information into a file
+OpenCLRunTime::verbose     = yes
+OpenCLRunTime::veryverbose = yes
