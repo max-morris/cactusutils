@@ -1,9 +1,5 @@
 // -*-C-*-
 
-// pown; note that Apple optimises pow(,2) but not pown(,2)
-// Boost, <boost/preprocessor/...>
-// mad
-
 #pragma OPENCL EXTENSION cl_khr_fp64    : enable
 #pragma OPENCL EXTENSION cl_amd_printf  : enable
 #pragma OPENCL EXTENSION cl_intel_printf: enable
@@ -315,6 +311,11 @@ typedef struct {
   ptrdiff_t const imax[] =                                              \
     {cctkGH->imax[0], cctkGH->imax[1], cctkGH->imax[2]};                \
   CCTK_REAL const cctk_time = cctkGH->cctk_time;                        \
+  CCTK_REAL const cctk_delta_time = cctkGH->cctk_delta_time;            \
+  CCTK_REAL constant const *restrict const cctk_origin_space =          \
+    cctkGH->cctk_origin_space;                                          \
+  CCTK_REAL constant const *restrict const cctk_delta_space =           \
+    cctkGH->cctk_delta_space;                                           \
   bool const stress_energy_state1 = 0;
 
 #define CCTK_GFINDEX3D(cctkGH,i,j,k)                    \
@@ -330,11 +331,24 @@ typedef struct {
 
 #define Pi            M_PI
 #define IfThen(c,x,y) ((c)?(x):(y))
-#define Sign(x)       (signbit(x)?-1:+1)
 #define ToReal(x)     ((CCTK_REAL_VEC)(CCTK_REAL)(x))
-#define INV(x)        (1.0/(x))
-// #define SQR(x)        (pown((x),2))
-CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x) { return x*x; }
+
+CCTK_REAL_VEC INV(CCTK_REAL_VEC const x)
+{
+  return ToReal(1)/x;
+}
+CCTK_REAL_VEC Sign(CCTK_REAL_VEC const x)
+{
+  return x==ToReal(0) ? ToReal(0) : copysign(ToReal(1), x);
+}
+// CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x)
+// {
+//   return pown(x,2);
+// }
+CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x)
+{
+  return x*x;
+}
 
 #define KRANC_GFOFFSET3D(u,i,j,k)                       \
   vec_loadu_maybe3(i,j,k,(u)[di*(i)+dj*(j)+dk*(k)])
