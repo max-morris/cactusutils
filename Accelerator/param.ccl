@@ -2,7 +2,7 @@
 
 PRIVATE:
 
-BOOLEAN verbose "Output detailed device information" STEERABLE=always
+BOOLEAN verbose "Output detailed information" STEERABLE=always
 {
 } "no"
 
