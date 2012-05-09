@@ -1,7 +1,3 @@
 # Configuration definition for thorn Accelerator
 
 REQUIRES Carpet
-
-OPTIONAL MPI
-{
-}
