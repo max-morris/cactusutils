@@ -41,7 +41,7 @@ namespace OpenCLRunTime {
     assert(sources);
     
     assert(device);
-    device->setup_grid(cctkGH);
+    assert(device->have_grid());
     
     name = strdup(name_);
     
@@ -443,7 +443,7 @@ namespace OpenCLRunTime {
     DECLARE_CCTK_PARAMETERS;
     
     assert(device);
-    device->setup_grid(cctkGH);
+    assert(device->have_grid());
     
     // Set up grid description
     grid = device->grid;
@@ -683,7 +683,7 @@ namespace OpenCLRunTime {
     DECLARE_CCTK_PARAMETERS;
     
     assert(device);
-    // device->setup_grid(cctkGH);
+    // assert(device->have_grid());
     
     // Finish, because we are done
     checkErr(clFinish(device->queue));

@@ -104,6 +104,7 @@ namespace OpenCLRunTime {
   
   
   OpenCLDevice::OpenCLDevice()
+    : f_have_grid(false)
   {
     DECLARE_CCTK_PARAMETERS;
     
@@ -224,8 +225,6 @@ namespace OpenCLRunTime {
     }
     
     mems.resize(CCTK_NumVars());
-    
-    have_grid = false;
   }
   
   
@@ -235,8 +234,9 @@ namespace OpenCLRunTime {
     DECLARE_CCTK_ARGUMENTS;
     DECLARE_CCTK_PARAMETERS;
     
-    if (have_grid) return;
-    have_grid = true;
+    assert(not have_grid());
+    f_have_grid = true;
+    assert(have_grid());
     
     // We can only set up the grid in local mode
     assert(Carpet::is_local_mode()); 
@@ -374,6 +374,19 @@ namespace OpenCLRunTime {
     assert(not device);
     device = new OpenCLDevice;
     return 0;
+  }
+  
+  
+  
+  extern "C"
+  void OpenCLRunTime_SetupDeviceGH(CCTK_ARGUMENTS)
+  {
+    DECLARE_CCTK_ARGUMENTS;
+    DECLARE_CCTK_PARAMETERS;
+    
+    CCTK_INFO("Setting up OpenCL device grid hierarchy");
+    
+    device->setup_grid(cctkGH);
   }
   
   

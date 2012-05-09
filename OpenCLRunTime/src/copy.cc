@@ -55,9 +55,11 @@ namespace OpenCLRunTime {
                  vars_to_string(vis, tls, nvars).c_str());
     }
     
+    if (nvars==0) return 0;
+    
     assert(Carpet::is_local_mode());
     assert(device);
-    device->setup_grid(cctkGH);
+    assert(device->have_grid());
     
     cl_mem_flags mem_flags;
     switch (device->mem_model) {
@@ -125,9 +127,11 @@ namespace OpenCLRunTime {
                  vars_to_string(vis, tls, nvars).c_str());
     }
     
+    if (nvars==0) return 0;
+    
     assert(Carpet::is_local_mode());
     assert(device);
-    device->setup_grid(cctkGH);
+    assert(device->have_grid());
     
     if (device->mem_model == mm_always_mapped) return 0;
     assert(device->mem_model != mm_map);
@@ -144,7 +148,7 @@ namespace OpenCLRunTime {
       // Ensure we see variables in ascending and timelevels in
       // strictly descending order
       if (var>0) assert(vi >= vis[var-1]);
-      if (var>0 and vi==vis[var-1]) assert(tl > tls[var-1]);
+      if (var>0 and vi==vis[var-1]) assert(tl < tls[var-1]);
       
       // Track dependencies for each variable
       bool const have_old_event = var>0 and vi==vis[var-1];
@@ -179,9 +183,11 @@ namespace OpenCLRunTime {
                  vars_to_string(vis, tls, nvars).c_str());
     }
     
+    if (nvars==0) return 0;
+    
     assert(Carpet::is_local_mode());
     assert(device);
-    device->setup_grid(cctkGH);
+    assert(device->have_grid());
     
     if (device->mem_model == mm_always_mapped) return 0;
     assert(device->mem_model != mm_map);
@@ -224,11 +230,13 @@ namespace OpenCLRunTime {
                  vars_to_string(vis, tls, nvars).c_str());
     }
     
+    *moved = 0;
+    
+    if (nvars==0) return 0;
+    
     assert(Carpet::is_local_mode());
     assert(device);
-    device->setup_grid(cctkGH);
-    
-    *moved = 0;
+    assert(device->have_grid());
     
     switch (device->mem_model) {
       
@@ -338,14 +346,16 @@ namespace OpenCLRunTime {
                  vars_to_string(vis, tls, nvars).c_str());
     }
     
+    *moved = 0;
+    
+    if (nvars==0) return 0;
+    
     assert(Carpet::is_local_mode());
     assert(device);
-    device->setup_grid(cctkGH);
+    assert(device->have_grid());
     
     int const np =
       cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
-    
-    *moved = 0;
     
     cl_int errcode;
     
@@ -460,9 +470,11 @@ namespace OpenCLRunTime {
                  vars_to_string(vis, tls, nvars).c_str());
     }
     
+    if (nvars==0) return 0;
+    
     assert(Carpet::is_local_mode());
     assert(device);
-    device->setup_grid(cctkGH);
+    assert(device->have_grid());
     
     if (device->mem_model == mm_always_mapped) return 0;
     assert(device->mem_model != mm_map);
@@ -596,9 +608,11 @@ namespace OpenCLRunTime {
                  vars_to_string(vis, tls, nvars).c_str());
     }
     
+    if (nvars==0) return 0;
+    
     assert(Carpet::is_local_mode());
     assert(device);
-    device->setup_grid(cctkGH);
+    assert(device->have_grid());
     
     if (device->mem_model == mm_always_mapped) return 0;
     assert(device->mem_model != mm_map);

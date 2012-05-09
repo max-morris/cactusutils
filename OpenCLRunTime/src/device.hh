@@ -111,7 +111,9 @@ namespace OpenCLRunTime {
     // tile   (explicit kernel loop)
     // grid   (largest unit, loosely coupled threads, separate caches,
     //         "CUDA grid")
-    bool have_grid;
+  private:
+    bool f_have_grid;
+  public:
     cl_uint vector_size[dim];
     cl_uint unroll_size[dim];
     cl_uint group_size[dim];
@@ -120,6 +122,7 @@ namespace OpenCLRunTime {
     
     OpenCLDevice();
     void setup_grid(cGH const *restrict const cctkGH);
+    bool have_grid() const { return f_have_grid; }
   };
   
   
