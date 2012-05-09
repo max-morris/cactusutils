@@ -6,6 +6,7 @@
 
 #include <carpet.hh>
 
+#include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
@@ -829,7 +830,8 @@ namespace Accelerator {
     DECLARE_CCTK_PARAMETERS;
     
     int const cactus_tl = CCTK_ActiveTimeLevelsVI(cctkGH, vi);
-    int const num_tl = copy_back_all_timelevels ? 1 : cactus_tl;
+    bool const copy_all = copy_back_all_timelevels or cctkGH->cctk_iteration==0;
+    int const num_tl = copy_all ? cactus_tl : min(cactus_tl, 1);
     assert(num_tl <= cactus_tl);
     
     vars_t& vars = args.vars;
