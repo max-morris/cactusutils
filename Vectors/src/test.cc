@@ -19,40 +19,42 @@ inline int my_signbit (CCTK_REAL const x)
 
 #define SCALARTEST(testname, vecexpr, scalarexpr)                       \
   do {                                                                  \
-    if (verbose)                                                        \
+    if (verbose) {                                                      \
       CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
-    CCTK_REAL res = (scalarexpr);                                       \
-    CCTK_REAL vecres = (vecexpr);                                       \
-    CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();               \
+    }                                                                   \
+    CCTK_REAL const res = (scalarexpr);                                 \
+    CCTK_REAL const vecres = (vecexpr);                                 \
+    CCTK_REAL const eps = numeric_limits<CCTK_REAL>::epsilon();         \
     assert(abs((CCTK_REAL)0.1) > 0);                                    \
-    if((abs(vecres - res) < 10*eps*abs(res)) ||                         \
-       (isnan(vecres) && isnan(res)))                                   \
+    if ((abs(vecres - res) <= 10*eps) or (isnan(vecres) and isnan(res))) { \
       passed++;                                                         \
-    else                                                                \
+    } else {                                                            \
       CCTK_VParamWarn(CCTK_THORNSTRING,                                 \
                       "Failed test %s: expected %.17g, received %.17g", \
                       testname, (double)res, (double)vecres);           \
+    }                                                                   \
     numtests++;                                                         \
   } while(0)
 
 #define VECTEST(testname, vecexpr, scalarexpr)                          \
   do {                                                                  \
-    if (verbose)                                                        \
+    if (verbose) {                                                      \
       CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
+    }                                                                   \
     CCTK_REAL_VEC rv = (vecexpr);                                       \
-    for(int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                           \
+    for (int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                          \
       CCTK_REAL res = (scalarexpr);                                     \
       CCTK_REAL vecres = vec_elt(rv,i);                                 \
       CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();             \
       assert(abs((CCTK_REAL)0.1) > 0);                                  \
-      if((abs(vecres - res) < 10*eps*abs(res)) ||                       \
-         (isnan(vecres) && isnan(res)))                                 \
+      if ((abs(vecres - res) <= 10*eps) or (isnan(vecres) and isnan(res))) { \
         passed++;                                                       \
-      else                                                              \
+      } else {                                                          \
         CCTK_VParamWarn(CCTK_THORNSTRING,                               \
                         "Failed test %s: "                              \
                         "for element %d, expected %.17g, received %.17g", \
                         testname, i, (double)res, (double)vecres);      \
+      }                                                                 \
       numtests++;                                                       \
     }                                                                   \
   } while(0)
@@ -64,7 +66,7 @@ void Vectors_Test(CCTK_ARGUMENTS)
   DECLARE_CCTK_PARAMETERS;
 
   CCTK_INFO ("Testing vectorisation... [errors may result in segfaults]");
-  fflush (stdout);
+  fflush(stdout);
 
   char testname[100];
 
@@ -73,16 +75,25 @@ void Vectors_Test(CCTK_ARGUMENTS)
   CCTK_REAL a[CCTK_REAL_VEC_SIZE];
   CCTK_REAL b[CCTK_REAL_VEC_SIZE];
   CCTK_REAL c[CCTK_REAL_VEC_SIZE];
+  CCTK_REAL x[CCTK_REAL_VEC_SIZE]; // small
+  CCTK_REAL y[CCTK_REAL_VEC_SIZE]; // small and positive
+  CCTK_REAL z[CCTK_REAL_VEC_SIZE]; // >=1
 
-  for(int i=0; i<CCTK_REAL_VEC_SIZE; i++) {
+  for (int i=0; i<CCTK_REAL_VEC_SIZE; i++) {
     a[i] =  (i+1)*1.23456789;
     b[i] = -(i+1)*9.87654321;
     c[i] =  (i+1)*1.01010101;
+    x[i] =  (i+1)*0.00123 * (i%2 ? +1 : -1);
+    y[i] =  (i+1)*0.00234;
+    z[i] =  (i  )*0.00234 + 1.0;
   }
 
   CCTK_REAL_VEC av = vec_loadu(a[0]);
   CCTK_REAL_VEC bv = vec_loadu(b[0]);
   CCTK_REAL_VEC cv = vec_loadu(c[0]);
+  CCTK_REAL_VEC xv = vec_loadu(x[0]);
+  CCTK_REAL_VEC yv = vec_loadu(y[0]);
+  CCTK_REAL_VEC zv = vec_loadu(z[0]);
 
   /* l and lv are similar to a and av, except that it is larger, and
      guaranteed to be aligned */
@@ -110,24 +121,24 @@ void Vectors_Test(CCTK_ARGUMENTS)
 #endif
   SCALARTEST("vec_elt0", vec_elt0(av),    a[0]);
   for (int d=0; d<CCTK_REAL_VEC_SIZE; ++d) {
-    snprintf (testname, sizeof testname, "vec_elt[%d]", d);
+    snprintf(testname, sizeof testname, "vec_elt[%d]", d);
     SCALARTEST(testname, vec_elt(av,d), a[d]);
   }
 
   /* These tests will probably fail with a segfault, if they fail */
   VECTEST("vec_load", vec_load(*l), l[i]);
   for (int d=0; d<CCTK_REAL_VEC_SIZE; ++d) {
-    snprintf (testname, sizeof testname, "vec_loadu[%d]", d);
+    snprintf(testname, sizeof testname, "vec_loadu[%d]", d);
     VECTEST(testname, vec_loadu(l[d]), l[i+d]);
   }
   for (int d=0; d<CCTK_REAL_VEC_SIZE; ++d) {
-    snprintf (testname, sizeof testname, "vec_loadu_maybe[%d]", d);
+    snprintf(testname, sizeof testname, "vec_loadu_maybe[%d]", d);
     VECTEST(testname, vec_loadu_maybe(d,l[d]), l[i+d]);
   }
   for (int d1=0; d1<CCTK_REAL_VEC_SIZE; ++d1) {
     for (int d2=0; d2<CCTK_REAL_VEC_SIZE; ++d2) {
       for (int d3=0; d3<CCTK_REAL_VEC_SIZE; ++d3) {
-        if (! (VECTORISE && VECTORISE_ALIGNED_ARRAYS) || (d2==0 && d3==0)) {
+        if (not (VECTORISE and VECTORISE_ALIGNED_ARRAYS) or (d2==0 and d3==0)) {
           snprintf (testname, sizeof testname,
                     "vec_loadu_maybe3[%d,%d,%d]", d1,d2,d3);
           VECTEST(testname,
@@ -156,8 +167,8 @@ void Vectors_Test(CCTK_ARGUMENTS)
         vec_store_nta_partial(l[i], bv);
       }
       for (int i=0; i<arenasize; ++i) {
-        snprintf (testname, sizeof testname,
-                  "vec_store_nta_partial[%d,%d;%d]", ilo, ihi, i);
+        snprintf(testname, sizeof testname,
+                 "vec_store_nta_partial[%d,%d;%d]", ilo, ihi, i);
         SCALARTEST(testname, l[i],
                    (i>=ilo and i<ihi ? b : a)[i & (CCTK_REAL_VEC_SIZE-1)]);
       }
@@ -167,20 +178,20 @@ void Vectors_Test(CCTK_ARGUMENTS)
      d==CCTK_REAL_VEC_SIZE (because these are trivial) */
   for (int d=1; d<CCTK_REAL_VEC_SIZE-1; ++d) {
     sv = av; vec_store_nta_partial_lo(*s, bv, d);
-    snprintf (testname, sizeof testname, "vec_store_nta_partial_lo[%d]", d);
+    snprintf(testname, sizeof testname, "vec_store_nta_partial_lo[%d]", d);
     VECTEST(testname, sv, i<d ? b[i] : a[i]);
   }
   for (int d=1; d<CCTK_REAL_VEC_SIZE-1; ++d) {
     sv = av; vec_store_nta_partial_hi(*s, bv, d);
-    snprintf (testname, sizeof testname, "vec_store_nta_partial_hi[%d]", d);
+    snprintf(testname, sizeof testname, "vec_store_nta_partial_hi[%d]", d);
     VECTEST(testname, sv, i>=CCTK_REAL_VEC_SIZE-d ? b[i] : a[i]);
   }
   for (int dlo=1; dlo<CCTK_REAL_VEC_SIZE-1; ++dlo) {
     for (int dhi=1; dhi<CCTK_REAL_VEC_SIZE-1; ++dhi) {
       sv = av; vec_store_nta_partial_mid(*s, bv, dlo, dhi);
-      snprintf (testname, sizeof testname,
-                "vec_store_nta_partial_mid[%d,%d]", dlo, dhi);
-      VECTEST(testname, sv, i<dlo && i>=CCTK_REAL_VEC_SIZE-dhi ? b[i] : a[i]);
+      snprintf(testname, sizeof testname,
+               "vec_store_nta_partial_mid[%d,%d]", dlo, dhi);
+      VECTEST(testname, sv, i<dlo and i>=CCTK_REAL_VEC_SIZE-dhi ? b[i] : a[i]);
     }
   }
 
@@ -196,27 +207,27 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("knmadd", knmadd(av, bv, cv), -a[i] * b[i] - c[i] );
   VECTEST("knmsub", knmsub(av, bv, cv), -a[i] * b[i] + c[i] );
 
-  VECTEST("kacos",  kacos(av),          acos(a[i])          );
-  VECTEST("kacosh", kacosh(av),         acosh(a[i])         );
-  VECTEST("kasin",  kasin(av),          asin(a[i])          );
-  VECTEST("kasinh", kasinh(av),         asinh(a[i])         );
-  VECTEST("katan",  katan(av),          atan(a[i])          );
-  VECTEST("katan2", katan2(av, bv),     atan2(a[i], b[i])   );
-  VECTEST("katanh", katanh(av),         atanh(a[i])         );
-  VECTEST("kcos",   kcos(av),           cos(a[i])           );
-  VECTEST("kcosh",  kcosh(av),          cosh(a[i])          );
-  VECTEST("kexp",   kexp(av),           exp(a[i])           );
-  VECTEST("kfabs",  kfabs(av),          fabs(a[i])          );
-  VECTEST("kfmax",  kfmax(av, bv),      fmax(a[i], b[i])    );
-  VECTEST("kfmin",  kfmin(av, bv),      fmin(a[i], b[i])    );
-  VECTEST("kfnabs", kfnabs(av),         -fabs(a[i])         );
-  VECTEST("klog",   klog(av),           log(a[i])           );
-  VECTEST("kpow",   kpow(av, b[0]),     pow(a[i], b[0])     );
-  VECTEST("ksin",   ksin(av),           sin(a[i])           );
-  VECTEST("ksinh",  ksinh(av),          sinh(a[i])          );
-  VECTEST("ksqrt",  ksqrt(av),          sqrt(a[i])          );
-  VECTEST("ktan",   ktan(av),           tan(a[i])           );
-  VECTEST("ktanh",  ktanh(av),          tanh(a[i])          );
+  VECTEST("kacos",  kacos(xv),          acos(x[i])          );
+  VECTEST("kacosh", kacosh(zv),         acosh(z[i])         );
+  VECTEST("kasin",  kasin(xv),          asin(x[i])          );
+  VECTEST("kasinh", kasinh(xv),         asinh(x[i])         );
+  VECTEST("katan",  katan(xv),          atan(x[i])          );
+  VECTEST("katan2", katan2(xv, yv),     atan2(x[i], y[i])   );
+  VECTEST("katanh", katanh(xv),         atanh(x[i])         );
+  VECTEST("kcos",   kcos(xv),           cos(x[i])           );
+  VECTEST("kcosh",  kcosh(xv),          cosh(x[i])          );
+  VECTEST("kexp",   kexp(xv),           exp(x[i])           );
+  VECTEST("kfabs",  kfabs(xv),          fabs(x[i])          );
+  VECTEST("kfmax",  kfmax(xv, yv),      fmax(x[i], y[i])    );
+  VECTEST("kfmin",  kfmin(xv, yv),      fmin(x[i], y[i])    );
+  VECTEST("kfnabs", kfnabs(xv),         -fabs(x[i])         );
+  VECTEST("klog",   klog(yv),           log(y[i])           );
+  VECTEST("kpow",   kpow(yv, x[0]),     pow(y[i], x[0])     );
+  VECTEST("ksin",   ksin(xv),           sin(x[i])           );
+  VECTEST("ksinh",  ksinh(xv),          sinh(x[i])          );
+  VECTEST("ksqrt",  ksqrt(yv),          sqrt(y[i])          );
+  VECTEST("ktan",   ktan(xv),           tan(x[i])           );
+  VECTEST("ktanh",  ktanh(xv),          tanh(x[i])          );
 
   VECTEST("kifpos positive",
           kifpos(av, bv, cv), my_signbit(a[i]) ? c[i] : b[i]);
@@ -232,11 +243,10 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("kifneg 0",  kifneg(vec_set1(0.),bv,cv),  c[i]);
   VECTEST("kifneg -0", kifneg(vec_set1(-0.),bv,cv), b[i]);
 
-  if (passed != numtests)
+  if (passed != numtests) {
     CCTK_VWarn(CCTK_WARN_ALERT, __LINE__, __FILE__, CCTK_THORNSTRING,
       "Failed %d correctness tests", numtests - passed);
-  else
+  } else {
     CCTK_VInfo(CCTK_THORNSTRING, "%d/%d tests passed ", passed, numtests);
-
-  return;
+  }
 }
