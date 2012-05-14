@@ -12,6 +12,9 @@ schedule Trigger_ParamCheck AT PARAMCHECK
 schedule Trigger_Check at ANALYSIS before AHFinderDirect_setupupdate
 {
     LANG: C
+    # schedule global-early so that eg. output frequency parameters are taken
+    # into account for all grid functions
+    OPTIONS: global-early
 }   "test"
 
 STORAGE: Trigger_Vars
