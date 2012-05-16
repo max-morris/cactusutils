@@ -309,9 +309,14 @@ static void OutputAllTimers (CCTK_ARGUMENTS)
         }
         else
         {
+          const char *name = CCTK_TimerName(i);
+          
+          if (name == NULL)
+            name = "(null)";
+
           CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
                      "Clock \"%s\" not found for timer #%d \"%s\"",
-                     all_timers_clock, i, CCTK_TimerName(i));
+                     all_timers_clock, i, name);
           timer_secs = -1;
         }
       }
@@ -635,7 +640,8 @@ static void PrintTopTimers (CCTK_ARGUMENTS)
 /* Note: Timer names are truncated to 100 characters for simplicity */
 #define TIMERNAME_LENGTH 101    /* this includes the NUL character */
 
-static char (*compare_string_array)[TIMERNAME_LENGTH] = NULL;
+typedef char timername_t[TIMERNAME_LENGTH];
+static timername_t *compare_string_array = NULL;
 static int compare_string(void const *const a, void const *const b)
 {
   int const ia = *(int const*)a;
@@ -673,9 +679,16 @@ static int CollectTimerInfo(cGH const *restrict const cctkGH,
   }
   
   /* Determine local timer names and their values */
-  char my_timernames[my_ntimers][TIMERNAME_LENGTH];
+  timername_t *my_timernames = 
+    malloc(my_ntimers * sizeof(*my_timernames)); /* these arrays can be too large for the stack */
+  assert(my_timernames);
   for (int n=0; n<my_ntimers; ++n) {
-    strncpy(my_timernames[n], CCTK_TimerName(n), TIMERNAME_LENGTH-1);
+    const char *name = CCTK_TimerName(n);
+    
+    if (name == NULL)
+      snprintf(my_timernames[n], TIMERNAME_LENGTH-1, "DESTROYED TIMER %5d", n);
+    else
+      strncpy(my_timernames[n], name, TIMERNAME_LENGTH-1);
     my_timernames[n][TIMERNAME_LENGTH-1] = '\0';
   }
   double my_timervalues[my_ntimers];
@@ -685,9 +698,14 @@ static int CollectTimerInfo(cGH const *restrict const cctkGH,
       CCTK_TimerI(n, td);
       cTimerVal const *const tv = CCTK_GetClockValue(all_timers_clock, td);
       if (!tv) {
+        const char *name = CCTK_TimerName(n);
+    
+        if (name == NULL)
+          name = "(null)";
+
         CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
                    "Clock \"%s\" not found for timer #%d \"%s\"",
-                   all_timers_clock, n, CCTK_TimerName(n));
+                   all_timers_clock, n, name);
         my_timervalues[n] = -1;
       } else {
         my_timervalues[n] = CCTK_TimerClockSeconds(tv);
@@ -697,7 +715,9 @@ static int CollectTimerInfo(cGH const *restrict const cctkGH,
   }
   
   /* Gather timer names and values from each process */
-  char all_timernames[total_ntimers][TIMERNAME_LENGTH];
+  timername_t *all_timernames = 
+    malloc(total_ntimers * sizeof(*all_timernames)); /* these arrays can likely be too large for the stack */
+  assert(all_timernames);
   double all_timervalues[total_ntimers];
   int name_displacements[nprocs], value_displacements[nprocs];
   int name_counts[nprocs];
@@ -729,6 +749,8 @@ static int CollectTimerInfo(cGH const *restrict const cctkGH,
     timers->secs_avg = NULL;
     timers->secs_min = NULL;
     timers->secs_max = NULL;
+    free(all_timernames);
+    free(my_timernames);
     
     return 1;
   }
@@ -810,6 +832,9 @@ static int CollectTimerInfo(cGH const *restrict const cctkGH,
       timers->secs_max[n] = maxval;
     }
   }
+
+  free(all_timernames);
+  free(my_timernames);
   
   return 1;
 }
