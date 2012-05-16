@@ -447,6 +447,7 @@ static void OutputAllTimersTogether (CCTK_ARGUMENTS)
     }
     free(filename);
     free(filename_csv);
+    free(filename_tsv);
     
     first_time = 0;
     last_ntimers = timers.ntimers;
@@ -457,6 +458,7 @@ static void OutputAllTimersTogether (CCTK_ARGUMENTS)
   {
     free (timers.names[n]);
   }
+  free (timers.names);
   free (timers.secs_avg);
   free (timers.secs_min);
   free (timers.secs_max);
@@ -534,6 +536,7 @@ static void OutputAllTimersReadable (CCTK_ARGUMENTS)
   {
     free (timers.names[n]);
   }
+  free (timers.names);
   free (timers.secs_avg);
   free (timers.secs_min);
   free (timers.secs_max);
@@ -628,6 +631,7 @@ static void PrintTopTimers (CCTK_ARGUMENTS)
   {
     free (timers.names[n]);
   }
+  free (timers.names);
   free (timers.secs_avg);
   free (timers.secs_min);
   free (timers.secs_max);
