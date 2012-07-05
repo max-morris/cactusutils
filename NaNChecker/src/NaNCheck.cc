@@ -35,14 +35,16 @@ CCTK_FILEVERSION(CactusUtils_NaNChecker_NaNCheck_c)
 /********************************************************************
  ********************    External Routines   ************************
  ********************************************************************/
+extern "C" {
 void NaNChecker_ResetCounter (CCTK_ARGUMENTS);
 void NaNChecker_NaNCheck (CCTK_ARGUMENTS);
 void NaNChecker_TakeAction (CCTK_ARGUMENTS);
-
+}
 
 /********************************************************************
  ********************    Fortran Wrappers    ************************
  ********************************************************************/
+extern "C" {
 void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                            (int *ierror,
                             const cGH **GH,
@@ -52,6 +54,7 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
                            (int *ierror,
                             const cGH **GH,
                             ONE_FORTSTRING_ARG);
+}
 
 
 /********************************************************************
@@ -136,6 +139,7 @@ void NaNChecker_ResetCounter (CCTK_ARGUMENTS)
    @endvar
 @@*/
 static t_nanchecker_info info;
+extern "C"
 void NaNChecker_NaNCheck_Prepare (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
@@ -179,15 +183,15 @@ void NaNChecker_NaNCheck_Prepare (CCTK_ARGUMENTS)
 #ifdef HAVE_FINITE
   if (CCTK_Equals (check_for, "NaN"))
   {
-    info.check_for = CHECK_FOR_NAN;
+    info.check_for = t_nanchecker_info::CHECK_FOR_NAN;
   }
   else if (CCTK_Equals (check_for, "Inf"))
   {
-    info.check_for = CHECK_FOR_INF;
+    info.check_for = t_nanchecker_info::CHECK_FOR_INF;
   }
   else
   {
-    info.check_for = CHECK_FOR_BOTH;
+    info.check_for = t_nanchecker_info::CHECK_FOR_BOTH;
   }
 #endif
 }
@@ -239,6 +243,7 @@ void NaNChecker_NaNCheck_Finish (CCTK_ARGUMENTS)
    @vio        in
    @endvar
 @@*/
+extern "C"
 void NaNChecker_TakeAction (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
@@ -332,6 +337,7 @@ void NaNChecker_TakeAction (CCTK_ARGUMENTS)
                -4 if the 'vars' string couldn't be parsed
    @endreturndesc
 @@*/
+extern "C"
 int NaNChecker_CheckVarsForNaN (const cGH *GH,
                                 int report_max,
                                 const char *vars,
@@ -383,11 +389,11 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
 #ifdef HAVE_FINITE
   if (CCTK_Equals (check_for, "NaN"))
   {
-    info.check_for = CHECK_FOR_NAN;
+    info.check_for = t_nanchecker_info::CHECK_FOR_NAN;
   }
   else if (CCTK_Equals (check_for, "Inf"))
   {
-    info.check_for = CHECK_FOR_INF;
+    info.check_for = t_nanchecker_info::CHECK_FOR_INF;
   }
   else
   {
@@ -397,7 +403,7 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
                   "Invalid value '%s' passed for 'check_for' parameter. "
                   "Defaulting to 'both' instead.", check_for);
     }
-    info.check_for = CHECK_FOR_BOTH;
+    info.check_for = t_nanchecker_info::CHECK_FOR_BOTH;
   }
 #endif
 
@@ -432,6 +438,7 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
   return (info.count);
 }
 
+extern "C"
 void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                            (int *ierror,
                             const cGH **GH,
@@ -475,6 +482,7 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_CheckVarsForNaN)
                -2 if the 'vars' string couldn't be parsed
    @endreturndesc
 @@*/
+extern "C"
 int NaNChecker_SetVarsToNaN (const cGH *GH,
                              const char *vars)
 {
@@ -500,6 +508,7 @@ int NaNChecker_SetVarsToNaN (const cGH *GH,
   return (info.count);
 }
 
+extern "C"
 void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
                            (int *ierror,
                             const cGH **GH,
@@ -611,7 +620,7 @@ static void PrintWarning (const char *error_type,
   {
     /* assume max. 10 characters per index number and 40 characters per
        coordinate value (including separators) */
-    index_string = malloc (5 * 10 * gdata->dim);
+    index_string = (char *)malloc (5 * 10 * gdata->dim);
     coord_string = index_string + 10 * gdata->dim;
 
     amended_index = linear_index;
@@ -671,78 +680,45 @@ static void PrintWarning (const char *error_type,
    @vio        in
    @endvar
 @@*/
-#ifdef HAVE_ISNAN
-
-#ifdef HAVE_FINITE
-
-#define CHECK_DATA(cctk_type)                                                 \
-{                                                                             \
-  int _i;                                                                     \
-  const cctk_type *_data = data;                                              \
-                                                                              \
-                                                                              \
-  /* now loop over all elements and check against NaN's */                    \
-  for (_i = 0; _i < nelems; _i++)                                             \
-  {                                                                           \
-    if ((!CarpetWeights || CarpetWeights[_i] > 0.0) &&                        \
-       (! finite ((double) _data[_i]) && (info->check_for == CHECK_FOR_BOTH ||\
-        ((isnan ((double) _data[_i]) & 1) ^ info->check_for))))               \
-    {                                                                         \
-      nans_found++;                                                           \
-      if (info->action_if_found &&                                            \
-          (info->report_max < 0 || nans_found <= info->report_max))           \
-      {                                                                       \
-        PrintWarning (isnan ((double) _data[_i]) ? "NaN" : "Inf",             \
-                      info->verbose, _i, reflevel, cctk_iteration, fp_type,   \
-                      coords, fullname, &gdata);                              \
-      }                                                                       \
-      if (info->NaNmask && gtype == CCTK_GF)                                  \
-      {                                                                       \
-        info->NaNmask[_i] |= 1 << info->bitmask;                              \
-      }                                                                       \
-    }                                                                         \
-  }                                                                           \
+template<class cctk_type> static void
+CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights, 
+    const t_nanchecker_info *info, CCTK_INT &nans_found, 
+    int reflevel, CCTK_INT cctk_iteration, int fp_type, const CCTK_REAL * const *coords, 
+    const char *fullname, const cGroupDynamicData &gdata, CCTK_INT gtype)
+{
+  /* now loop over all elements and check against NaN's */
+#pragma omp parallel for schedule(dynamic)
+  for (int _i = 0; _i < nelems; _i++)
+  {
+    if ((!CarpetWeights || CarpetWeights[_i] > 0.0) && (
+#if defined(HAVE_ISNAN) && defined(HAVE_FINITE)
+        ! finite ((double) _data[_i]) && (info->check_for == t_nanchecker_info::CHECK_FOR_BOTH ||
+        ((isnan ((double) _data[_i]) & 1) ^ info->check_for))
+#elif defined(NAVE_ISNAN)
+        isnan ((double) _data[_i])
+#else
+        0
+#endif
+        ))
+    {
+#pragma omp critical
+      {
+      nans_found++;
+      if (info->action_if_found &&
+          (info->report_max < 0 || nans_found <= info->report_max))
+      {
+        PrintWarning (isnan ((double) _data[_i]) ? "NaN" : "Inf",
+                      info->verbose, _i, reflevel, cctk_iteration, fp_type,
+                      coords, fullname, &gdata);
+      }
+      if (info->NaNmask && gtype == CCTK_GF)
+      {
+        info->NaNmask[_i] |= 1 << info->bitmask;
+      }
+      }
+    }
+  }
 }
-
-#else /* ! HAVE_FINITE */
-
-#define CHECK_DATA(cctk_type)                                                 \
-{                                                                             \
-  int _i;                                                                     \
-  const cctk_type *_data = (const cctk_type *) data;                          \
-                                                                              \
-                                                                              \
-  /* now loop over all elements and check against NaN's */                    \
-  for (_i = 0; _i < nelems; _i++)                                             \
-  {                                                                           \
-    if ((!CarpetWeights || CarpetWeights[_i] > 0.0) &&                        \
-       (isnan ((double) _data[_i])))                                          \
-    {                                                                         \
-      nans_found++;                                                           \
-      if (info->action_if_found &&                                            \
-          (info->report_max < 0 || nans_found <= info->report_max))           \
-      {                                                                       \
-        PrintWarning ("NaN", info->verbose, _i, reflevel, cctk_iteration,     \
-                      fp_type, coords, fullname, &gdata);                     \
-      }                                                                       \
-      if (info->NaNmask)                                                      \
-      {                                                                       \
-        info->NaNmask[_i] |= 1 << info->bitmask;                              \
-      }                                                                       \
-    }                                                                         \
-  }                                                                           \
-}
-
-#endif /* ! HAVE_FINITE */
-
-#else /* ! HAVE_ISNAN */
-
-/* Do nothing because isnan() is not available */
-#define CHECK_DATA(cctk_type)                                                 \
-{                                                                             \
-}
-
-#endif /* ! HAVE_ISNAN */
 
 
 
@@ -883,7 +859,7 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
       sprintf (coord_system_name, "cart%dd", gdata.dim);
       if (CCTK_CoordSystemHandle (coord_system_name) >= 0)
       {
-        coords = malloc (gdata.dim * sizeof (const CCTK_REAL *));
+        coords = (const CCTK_REAL **)malloc (gdata.dim * sizeof (const CCTK_REAL *));
       }
     }
     for (i = 0; i < gdata.dim; i++)
@@ -910,6 +886,7 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
     if (NULL == CarpetWeights)
     {
       static char *warned_about = NULL;
+#pragma omp critical
       if (NULL == warned_about || strcmp(warned_about, restriction_mask) != 0)
       {
         if (NULL != warned_about)
@@ -930,24 +907,32 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
   nans_found = 0;
   if (vtype == CCTK_VARIABLE_REAL || vtype == CCTK_VARIABLE_COMPLEX)
   {
-    CHECK_DATA (CCTK_REAL);
+    CHECK_DATA((CCTK_REAL *)data, nelems, CarpetWeights, 
+               info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
+               fullname, gdata, gtype);
   }
 #ifdef CCTK_REAL4
   else if (vtype == CCTK_VARIABLE_REAL4 || vtype == CCTK_VARIABLE_COMPLEX8)
   {
-    CHECK_DATA (CCTK_REAL4);
+    CHECK_DATA((CCTK_REAL4 *)data, nelems, CarpetWeights, 
+               info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
+               fullname, gdata, gtype);
   }
 #endif
 #ifdef CCTK_REAL8
   else if (vtype == CCTK_VARIABLE_REAL8 || vtype == CCTK_VARIABLE_COMPLEX16)
   {
-    CHECK_DATA (CCTK_REAL8);
+    CHECK_DATA((CCTK_REAL8 *)data, nelems, CarpetWeights, 
+               info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
+               fullname, gdata, gtype);
   }
 #endif
 #ifdef CCTK_REAL16
   else if (vtype == CCTK_VARIABLE_REAL16 || vtype == CCTK_VARIABLE_COMPLEX32)
   {
-    CHECK_DATA (CCTK_REAL16);
+    CHECK_DATA((CCTK_REAL16 *)data, nelems, CarpetWeights, 
+               info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
+               fullname, gdata, gtype);
   }
 #endif
   else
@@ -1031,7 +1016,7 @@ static void SetToNaN (int vindex, const char *optstring, void *_info)
   cGroupDynamicData gdata;
 
 
-  info = _info;
+  info = (t_nanchecker_info *)_info;
 
   vtype = CCTK_VarTypeI (vindex);
   fullname = CCTK_FullName (vindex);

@@ -2,4 +2,4 @@
 # $Header$
 
 # Source files in this directory
-SRCS = NaNCheck.c
+SRCS = NaNCheck.cc
