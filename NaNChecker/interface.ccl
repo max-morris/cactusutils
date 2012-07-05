@@ -28,6 +28,12 @@ PROVIDES FUNCTION SetVarsToNaN           \
     WITH NaNChecker_SetVarsToNaN_Wrapper \
     LANGUAGE C
 
+CCTK_INT FUNCTION                         \
+    GetRefinementLevel                    \
+        (CCTK_POINTER_TO_CONST IN cctkGH)
+USES FUNCTION GetRefinementLevel
+
+
 
 
 private:

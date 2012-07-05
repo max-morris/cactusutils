@@ -6,13 +6,14 @@
               Routines to check CCTK real and complex variables
               against Not-a-Number values.
    @enddesc
-   @version   $Id$
+   @version   $Id: NaNCheck.c 101 2012-03-27 03:16:10Z rhaas $
  @@*/
 
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "cctk.h"
 #include "cctk_WarnLevel.h"
@@ -20,6 +21,8 @@
 #include "cctk_Parameters.h"
 #include "cctk_Termination.h"
 #include "cctk_FortranString.h"
+
+#include "util_String.h"
 
 #include "NaNCheck.h"
 
@@ -59,6 +62,8 @@ static void SetToNaN (int vindex, const char *optstring, void *arg);
 static void PrintWarning (const char *error_type,
                           int verbose,
                           int linear_index,
+                          int reflevel,
+                          int cctk_iteration,
                           int fp_type,
                           const CCTK_REAL *const coords[],
                           const char *fullname,
@@ -79,6 +84,9 @@ typedef struct
 #ifdef HAVE_FINITE
   enum {CHECK_FOR_NAN = 0, CHECK_FOR_INF = 1, CHECK_FOR_BOTH = 2} check_for;
 #endif
+  int cctk_iteration;
+  int ignore_restricted_points;
+  const char *restriction_mask;
 } t_nanchecker_info;
 
 
@@ -146,6 +154,9 @@ void NaNChecker_NaNCheck_Prepare (CCTK_ARGUMENTS)
   info.report_max = report_max;
   info.action_if_found = action_if_found;
   info.verbose = CCTK_Equals (verbose, "all");
+  info.cctk_iteration = cctk_iteration;
+  info.ignore_restricted_points = ignore_restricted_points;
+  info.restriction_mask = restriction_mask;
 
   info.NaNmask = out_NaNmask ? NaNmask : NULL;
   if (info.NaNmask)
@@ -327,6 +338,11 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
                                 const char *check_for,
                                 const char *action_if_found)
 {
+  CCTK_STRING verbose = (CCTK_STRING)CCTK_ParameterGet("verbose", "NaNChecker", NULL);
+  assert(verbose);
+  const CCTK_INT * ignore_restricted_points = (const CCTK_INT *)CCTK_ParameterGet("ignore_restricted_points", "NaNChecker", NULL);
+  assert(ignore_restricted_points);
+
   t_nanchecker_info info;
 
 
@@ -357,10 +373,12 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
   info.GH = GH;
   info.count = 0;
   info.bitmask = 0;
-  info.verbose = 0;
+  info.verbose = CCTK_Equals (verbose, "all");
   info.report_max = report_max;
   info.action_if_found = action_if_found;
   info.NaNmask = NULL;
+  info.cctk_iteration = GH->cctk_iteration;
+  info.ignore_restricted_points = *ignore_restricted_points;
 
 #ifdef HAVE_FINITE
   if (CCTK_Equals (check_for, "NaN"))
@@ -526,6 +544,16 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
    @vtype      int
    @vio        in
    @endvar
+   @var        reflevel
+   @vdesc      current refinement level (0 for unigrid)
+   @vtype      int
+   @vio        in
+   @endvar
+   @var        cctk_iteration
+   @vdesc      current iteration
+   @vtype      int
+   @vio        in
+   @endvar
    @var        fp_type
    @vdesc      indicates if variable of of real or complex type
    @vtype      int
@@ -550,6 +578,8 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
 static void PrintWarning (const char *error_type,
                           int verbose,
                           int linear_index,
+                          int reflevel,
+                          int cctk_iteration,
                           int fp_type,
                           const CCTK_REAL *const coords[],
                           const char *fullname,
@@ -607,15 +637,16 @@ static void PrintWarning (const char *error_type,
     if (coords)
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "%s caught in %svariable '%s' at index (%s) with coordinates "
-                  "(%s)", error_type, complex_part, fullname, index_string,
-                  coord_string);
+                  "%s caught in %svariable '%s' at index (%s) level %d with coordinates "
+                  "(%s) in iteration %d", error_type, complex_part, fullname, index_string,
+                  reflevel, coord_string, cctk_iteration);
     }
     else
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "%s caught in %svariable '%s' at (%s)",
-                  error_type, complex_part, fullname, index_string);
+                  "%s caught in %svariable '%s' at (%s) level %d in iteration %d",
+                  error_type, complex_part, fullname, index_string,
+                  reflevel, cctk_iteration);
     }
 
     free (index_string);
@@ -653,15 +684,17 @@ static void PrintWarning (const char *error_type,
   /* now loop over all elements and check against NaN's */                    \
   for (_i = 0; _i < nelems; _i++)                                             \
   {                                                                           \
-    if (! finite ((double) _data[_i]) && (info->check_for == CHECK_FOR_BOTH ||\
-        ((isnan ((double) _data[_i]) & 1) ^ info->check_for)))                \
+    if ((!CarpetWeights || CarpetWeights[_i] > 0.0) &&                        \
+       (! finite ((double) _data[_i]) && (info->check_for == CHECK_FOR_BOTH ||\
+        ((isnan ((double) _data[_i]) & 1) ^ info->check_for))))               \
     {                                                                         \
       nans_found++;                                                           \
       if (info->action_if_found &&                                            \
           (info->report_max < 0 || nans_found <= info->report_max))           \
       {                                                                       \
         PrintWarning (isnan ((double) _data[_i]) ? "NaN" : "Inf",             \
-                      info->verbose, _i, fp_type, coords, fullname, &gdata);  \
+                      info->verbose, _i, reflevel, cctk_iteration, fp_type,   \
+                      coords, fullname, &gdata);                              \
       }                                                                       \
       if (info->NaNmask && gtype == CCTK_GF)                                  \
       {                                                                       \
@@ -682,14 +715,15 @@ static void PrintWarning (const char *error_type,
   /* now loop over all elements and check against NaN's */                    \
   for (_i = 0; _i < nelems; _i++)                                             \
   {                                                                           \
-    if (isnan ((double) _data[_i]))                                           \
+    if ((!CarpetWeights || CarpetWeights[_i] > 0.0) &&                        \
+       (isnan ((double) _data[_i])))                                          \
     {                                                                         \
       nans_found++;                                                           \
       if (info->action_if_found &&                                            \
           (info->report_max < 0 || nans_found <= info->report_max))           \
       {                                                                       \
-        PrintWarning ("NaN", info->verbose, _i, fp_type, coords, fullname,    \
-                       &gdata);                                               \
+        PrintWarning ("NaN", info->verbose, _i, reflevel, cctk_iteration,     \
+                      fp_type, coords, fullname, &gdata);                     \
       }                                                                       \
       if (info->NaNmask)                                                      \
       {                                                                       \
@@ -755,12 +789,27 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
   const CCTK_REAL **coords;
   cGroupDynamicData gdata;
   const void *data;
+  CCTK_REAL *CarpetWeights;
+  int reflevel;
+  int cctk_iteration, ignore_restricted_points;
+  const char *restriction_mask;
 
 
-  info = _info;
+  info = (t_nanchecker_info *)_info;
+  cctk_iteration = info->cctk_iteration;
+  ignore_restricted_points = info->ignore_restricted_points;
+  restriction_mask = info->restriction_mask;
 
   vtype = CCTK_VarTypeI (vindex);
   fullname = CCTK_FullName (vindex);
+  if(CCTK_IsFunctionAliased("GetRefinementLevel"))
+  {
+    reflevel = GetRefinementLevel(info->GH);
+  }
+  else
+  {
+    reflevel = 0;
+  }
 
   /* check if the variable type is some floating point */
   vtypename = CCTK_VarTypeName (vtype);
@@ -855,6 +904,27 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
 
   /* get the pointer to the data (current time level) */
   data = CCTK_VarDataPtrI (info->GH, timelevel, vindex);
+  if (ignore_restricted_points)
+  {
+    CarpetWeights = (CCTK_REAL *)(CCTK_VarDataPtr(info->GH, timelevel, restriction_mask));
+    if (NULL == CarpetWeights)
+    {
+      static char *warned_about = NULL;
+      if (NULL == warned_about || strcmp(warned_about, restriction_mask) != 0)
+      {
+        if (NULL != warned_about)
+          free(warned_about);
+        warned_about = Util_Strdup(restriction_mask);
+        CCTK_VWarn (CCTK_WARN_ALERT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                    "Could not obtain pointer to restriction mask '%s', reverting to check all points",
+                    restriction_mask);
+      }
+    }
+  }
+  else
+  {
+    CarpetWeights = NULL;
+  }
 
   /* do the checking according to the variable's type */
   nans_found = 0;
