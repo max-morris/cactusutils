@@ -13,6 +13,7 @@
 #define NANCHECKER_NANCHECK_H 1
 
 #ifdef  __cplusplus
+namespace NaNChecker {
 extern "C"
 {
 #endif
@@ -28,6 +29,7 @@ int NaNChecker_SetVarsToNaN (const cGH *GH,
 
 #ifdef  __cplusplus
 }
+} // end namespace NaNChecker
 #endif
 
 #endif /* NANCHECKER_NANCHECK_H */

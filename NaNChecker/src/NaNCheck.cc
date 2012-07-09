@@ -6,14 +6,14 @@
               Routines to check CCTK real and complex variables
               against Not-a-Number values.
    @enddesc
-   @version   $Id: NaNCheck.c 101 2012-03-27 03:16:10Z rhaas $
+   @version   $Id$
  @@*/
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
 
 #include "cctk.h"
 #include "cctk_WarnLevel.h"
@@ -26,10 +26,10 @@
 
 #include "NaNCheck.h"
 
+using namespace std;
 
-/* the rcsid and the macro to use it */
-static const char *rcsid = "$Header$";
-CCTK_FILEVERSION(CactusUtils_NaNChecker_NaNCheck_c)
+namespace NaNChecker {
+
 
 
 /********************************************************************
@@ -60,17 +60,17 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
 /********************************************************************
  ********************    Internal Routines   ************************
  ********************************************************************/
-static void CheckForNaN (int vindex, const char *optstring, void *arg);
-static void SetToNaN (int vindex, const char *optstring, void *arg);
-static void PrintWarning (const char *error_type,
-                          int verbose,
-                          int linear_index,
-                          int reflevel,
-                          int cctk_iteration,
-                          int fp_type,
-                          const CCTK_REAL *const coords[],
-                          const char *fullname,
-                          const cGroupDynamicData *gdata);
+void CheckForNaN (int vindex, const char *optstring, void *arg);
+void SetToNaN (int vindex, const char *optstring, void *arg);
+void PrintWarning (const char *error_type,
+                   int verbose,
+                   int linear_index,
+                   int reflevel,
+                   int cctk_iteration,
+                   int fp_type,
+                   const CCTK_REAL *const coords[],
+                   const char *fullname,
+                   const cGroupDynamicData *gdata);
 
 /********************************************************************
  ********************    Internal Typedefs   ************************
@@ -96,7 +96,7 @@ typedef struct
 /********************************************************************
  ********************    Static Variables    ************************
  ********************************************************************/
-static int last_iteration_output = -1;
+int last_iteration_output = -1;
 
 
  /*@@
@@ -138,7 +138,7 @@ void NaNChecker_ResetCounter (CCTK_ARGUMENTS)
    @vio        in
    @endvar
 @@*/
-static t_nanchecker_info info;
+t_nanchecker_info info;
 extern "C"
 void NaNChecker_NaNCheck_Prepare (CCTK_ARGUMENTS)
 {
@@ -195,6 +195,8 @@ void NaNChecker_NaNCheck_Prepare (CCTK_ARGUMENTS)
   }
 #endif
 }
+
+extern "C"
 void NaNChecker_NaNCheck_Check (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
@@ -208,6 +210,8 @@ void NaNChecker_NaNCheck_Check (CCTK_ARGUMENTS)
 
   CCTK_TraverseString (check_vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR);
 }
+
+extern "C"
 void NaNChecker_NaNCheck_Finish (CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
@@ -584,15 +588,15 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
    @vio        in
    @endvar
 @@*/
-static void PrintWarning (const char *error_type,
-                          int verbose,
-                          int linear_index,
-                          int reflevel,
-                          int cctk_iteration,
-                          int fp_type,
-                          const CCTK_REAL *const coords[],
-                          const char *fullname,
-                          const cGroupDynamicData *gdata)
+void PrintWarning (const char *error_type,
+                   int verbose,
+                   int linear_index,
+                   int reflevel,
+                   int cctk_iteration,
+                   int fp_type,
+                   const CCTK_REAL *const coords[],
+                   const char *fullname,
+                   const cGroupDynamicData *gdata)
 {
   int i;
   char *index_string, *coord_string;
@@ -680,7 +684,7 @@ static void PrintWarning (const char *error_type,
    @vio        in
    @endvar
 @@*/
-template<class cctk_type> static void
+template<class cctk_type> void
 CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights, 
     const t_nanchecker_info *info, CCTK_INT &nans_found, 
     int reflevel, CCTK_INT cctk_iteration, int fp_type, const CCTK_REAL * const *coords, 
@@ -753,7 +757,7 @@ CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights,
    @vio        in
    @endvar
 @@*/
-static void CheckForNaN (int vindex, const char *optstring, void *_info)
+void CheckForNaN (int vindex, const char *optstring, void *_info)
 {
   t_nanchecker_info *info;
   int i, sum_handle;
@@ -1007,7 +1011,7 @@ static void CheckForNaN (int vindex, const char *optstring, void *_info)
    @vio        in
    @endvar
 @@*/
-static void SetToNaN (int vindex, const char *optstring, void *_info)
+void SetToNaN (int vindex, const char *optstring, void *_info)
 {
   t_nanchecker_info *info;
   int i, timelevel, vtype, gindex, nelems;
@@ -1106,6 +1110,7 @@ static void SetToNaN (int vindex, const char *optstring, void *_info)
  ********************    Schedule Wrappers    ***********************
  ********************************************************************/
 
+extern "C"
 CCTK_INT
 NaNChecker_CheckVarsForNaN_Wrapper (CCTK_POINTER_TO_CONST const cctkGH_,
                                     CCTK_INT              const report_max,
@@ -1118,6 +1123,7 @@ NaNChecker_CheckVarsForNaN_Wrapper (CCTK_POINTER_TO_CONST const cctkGH_,
                                      vars, check_for, action_if_found);
 }
 
+extern "C"
 CCTK_INT
 NaNChecker_SetVarsToNaN_Wrapper (CCTK_POINTER_TO_CONST const cctkGH_,
                                  CCTK_STRING           const vars)
@@ -1125,3 +1131,5 @@ NaNChecker_SetVarsToNaN_Wrapper (CCTK_POINTER_TO_CONST const cctkGH_,
   return NaNChecker_SetVarsToNaN ((cGH const *) cctkGH_,
                                   vars);
 }
+
+} // end namespace NaNChecker
