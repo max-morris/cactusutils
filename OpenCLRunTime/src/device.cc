@@ -323,18 +323,18 @@ namespace OpenCLRunTime {
     for (int d=0; d<dim; ++d) {
       grid.gsh[d] = cctkGH->cctk_gsh[d];
       grid.lbnd[d] = cctkGH->cctk_lbnd[d];
-      grid.lssh[d] = cctkGH->CCTK_LSSH(0,d);
+      grid.lsh[d] = cctkGH->cctk_lsh[d];
       int const granularity = vector_size[d];
-      int const good_lsh = divup(cctk_lsh[d], granularity) * granularity;
-      grid.lsh[d] = memory_aligned ? good_lsh : cctk_lsh[d];
-      same_padding &= grid.lsh[d] == cctk_lsh[d];
+      int const good_ash = divup(cctk_ash[d], granularity) * granularity;
+      grid.ash[d] = memory_aligned ? good_ash : cctk_ash[d];
+      same_padding &= grid.ash[d] == cctk_ash[d];
       assert(grid.gsh[d] >= 0);
       assert(grid.lbnd[d] >= 0);
       assert(grid.lbnd[d] <= grid.gsh[d]);
-      assert(grid.lssh[d] >= 0);
-      assert(grid.lbnd[d] + grid.lssh[d] <= grid.gsh[d]);
       assert(grid.lsh[d] >= 0);
-      assert(grid.lssh[d] <= grid.lsh[d]);
+      assert(grid.lbnd[d] + grid.lsh[d] <= grid.gsh[d]);
+      assert(grid.ash[d] >= 0);
+      assert(grid.lsh[d] <= grid.ash[d]);
       grid.origin_space[d] = cctkGH->cctk_origin_space[d];
       grid.delta_space[d] = cctkGH->cctk_delta_space[d];
     }
@@ -351,15 +351,15 @@ namespace OpenCLRunTime {
                (int)grid.lbnd[1],
                (int)grid.lbnd[2]);
     CCTK_VInfo(CCTK_THORNSTRING,
-               "lssh: %4d %4d %4d",
-               (int)grid.lssh[0],
-               (int)grid.lssh[1],
-               (int)grid.lssh[2]);
-    CCTK_VInfo(CCTK_THORNSTRING,
-               "lsh:  %4d %4d %4d",
+               "lsh: %4d %4d %4d",
                (int)grid.lsh[0],
                (int)grid.lsh[1],
                (int)grid.lsh[2]);
+    CCTK_VInfo(CCTK_THORNSTRING,
+               "ash:  %4d %4d %4d",
+               (int)grid.ash[0],
+               (int)grid.ash[1],
+               (int)grid.ash[2]);
   }
   
   

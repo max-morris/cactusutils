@@ -82,7 +82,7 @@ namespace OpenCLRunTime {
       mem_flags & (CL_MEM_COPY_HOST_PTR | CL_MEM_USE_HOST_PTR);
     
     int const NP =
-      device->grid.lsh[0] * device->grid.lsh[1] * device->grid.lsh[2];
+      device->grid.ash[0] * device->grid.ash[1] * device->grid.ash[2];
     
     for (int var=0; var<nvars; ++var) {
       int const vi = vis[var];
@@ -137,7 +137,7 @@ namespace OpenCLRunTime {
     assert(device->mem_model != mm_map);
     
     int const NP =
-      device->grid.lsh[0] * device->grid.lsh[1] * device->grid.lsh[2];
+      device->grid.ash[0] * device->grid.ash[1] * device->grid.ash[2];
     
     cl_event old_event;
     for (int var=0; var<nvars; ++var) {
@@ -193,7 +193,7 @@ namespace OpenCLRunTime {
     assert(device->mem_model != mm_map);
     
     int const NP =
-      device->grid.lsh[0] * device->grid.lsh[1] * device->grid.lsh[2];
+      device->grid.ash[0] * device->grid.ash[1] * device->grid.ash[2];
     
     for (int var=0; var<nvars; ++var) {
       int const vi=vis[var];
@@ -247,20 +247,20 @@ namespace OpenCLRunTime {
     case mm_copy: {
       
       int const np =
-        cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
+        cctkGH->cctk_ash[0] * cctkGH->cctk_ash[1] * cctkGH->cctk_ash[2];
       
       int const di = sizeof(CCTK_REAL);
-      int const dj = di * cctkGH->cctk_lsh[0];
-      int const dk = dj * cctkGH->cctk_lsh[1];
+      int const dj = di * cctkGH->cctk_ash[0];
+      int const dk = dj * cctkGH->cctk_ash[1];
       int const dI = sizeof(CCTK_REAL);
-      int const dJ = dI * device->grid.lsh[0];
-      int const dK = dJ * device->grid.lsh[1];
+      int const dJ = dI * device->grid.ash[0];
+      int const dK = dJ * device->grid.ash[1];
       
       size_t offset[dim];
       size_t length[dim];
       for (int d=0; d<dim; ++d) {
         offset[d] = 0;
-        length[d] = cctkGH->CCTK_LSSH(0,d);
+        length[d] = cctkGH->cctk_lsh[d];
       }
       offset[0] *= di;
       length[0] *= di;
@@ -355,7 +355,7 @@ namespace OpenCLRunTime {
     assert(device->have_grid());
     
     int const np =
-      cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
+      cctkGH->cctk_ash[0] * cctkGH->cctk_ash[1] * cctkGH->cctk_ash[2];
     
     cl_int errcode;
     
@@ -368,17 +368,17 @@ namespace OpenCLRunTime {
     case mm_copy: {
       
       int const di = sizeof(CCTK_REAL);
-      int const dj = di * cctkGH->cctk_lsh[0];
-      int const dk = dj * cctkGH->cctk_lsh[1];
+      int const dj = di * cctkGH->cctk_ash[0];
+      int const dk = dj * cctkGH->cctk_ash[1];
       int const dI = sizeof(CCTK_REAL);
-      int const dJ = dI * device->grid.lsh[0];
-      int const dK = dJ * device->grid.lsh[1];
+      int const dJ = dI * device->grid.ash[0];
+      int const dK = dJ * device->grid.ash[1];
       
       size_t offset[dim];
       size_t length[dim];
       for (int d=0; d<dim; ++d) {
         offset[d] = 0;
-        length[d] = cctkGH->CCTK_LSSH(0,d);
+        length[d] = cctkGH->cctk_lsh[d];
       }
       offset[0] *= di;
       length[0] *= di;
@@ -480,11 +480,11 @@ namespace OpenCLRunTime {
     assert(device->mem_model != mm_map);
     
     int const dI = sizeof(CCTK_REAL);
-    int const dJ = dI * device->grid.lsh[0];
-    int const dK = dJ * device->grid.lsh[1];
+    int const dJ = dI * device->grid.ash[0];
+    int const dK = dJ * device->grid.ash[1];
     int const di = sizeof(CCTK_REAL);
-    int const dj = di * cctkGH->cctk_lsh[0];
-    int const dk = dj * cctkGH->cctk_lsh[1];
+    int const dj = di * cctkGH->cctk_ash[0];
+    int const dk = dj * cctkGH->cctk_ash[1];
     
     for (int var=0; var<nvars; ++var) {
       int const vi=vis[var];
@@ -506,7 +506,7 @@ namespace OpenCLRunTime {
             for (int d=0; d<dim; ++d) {
               // Whole domain
               imin[d] = 0;
-              imax[d] = cctkGH->CCTK_LSSH(0,d);
+              imax[d] = cctkGH->cctk_lsh[d];
               // Skip ghost points
               if (not cctkGH->cctk_bbox[2*d+0]) {
                 imin[d] += cctkGH->cctk_nghostzones[d];
@@ -529,13 +529,13 @@ namespace OpenCLRunTime {
               imax[dir] = imin[dir] + cctkGH->cctk_nghostzones[dir];
             } else {
               imax[dir] =
-                cctkGH->CCTK_LSSH(0,dir) - cctkGH->cctk_nghostzones[dir];
+                cctkGH->cctk_lsh[dir] - cctkGH->cctk_nghostzones[dir];
               imin[dir] = imax[dir] - cctkGH->cctk_nghostzones[dir];
             }
             for (int d=0; d<dim; ++d) {
               assert(imin[d] >= 0);
               assert(imin[d] <= imax[d]);
-              assert(imax[d] <= cctkGH->CCTK_LSSH(0,d));
+              assert(imax[d] <= cctkGH->cctk_lsh[d]);
             }
             
             size_t offset[dim];
@@ -572,7 +572,7 @@ namespace OpenCLRunTime {
       
       if (have_sync_bnd) {
         int const np =
-          cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
+          cctkGH->cctk_ash[0] * cctkGH->cctk_ash[1] * cctkGH->cctk_ash[2];
         
         checkErr(clEnqueueReadBuffer(device->queue,
                                      device->mems.at(vi).at(tl).mem,
@@ -618,11 +618,11 @@ namespace OpenCLRunTime {
     assert(device->mem_model != mm_map);
     
     int const dI = sizeof(CCTK_REAL);
-    int const dJ = dI * device->grid.lsh[0];
-    int const dK = dJ * device->grid.lsh[1];
+    int const dJ = dI * device->grid.ash[0];
+    int const dK = dJ * device->grid.ash[1];
     int const di = sizeof(CCTK_REAL);
-    int const dj = di * cctkGH->cctk_lsh[0];
-    int const dk = dj * cctkGH->cctk_lsh[1];
+    int const dj = di * cctkGH->cctk_ash[0];
+    int const dk = dj * cctkGH->cctk_ash[1];
     
     for (int var=0; var<nvars; ++var) {
       int const vi=vis[var];
@@ -644,7 +644,7 @@ namespace OpenCLRunTime {
             for (int d=0; d<dim; ++d) {
               // Whole domain
               imin[d] = 0;
-              imax[d] = cctkGH->CCTK_LSSH(0,d);
+              imax[d] = cctkGH->cctk_lsh[d];
               // Skip points that will be copied via later directions
               if (d > dir) {
                 if (not cctkGH->cctk_bbox[2*d+0]) {
@@ -659,13 +659,13 @@ namespace OpenCLRunTime {
               imin[dir] = 0;
               imax[dir] = imin[dir] + cctkGH->cctk_nghostzones[dir];
             } else {
-              imax[dir] = cctkGH->CCTK_LSSH(0,dir);
+              imax[dir] = cctkGH->cctk_lsh[dir];
               imin[dir] = imax[dir] - cctkGH->cctk_nghostzones[dir];
             }
             for (int d=0; d<dim; ++d) {
               assert(imin[d] >= 0);
               assert(imin[d] <= imax[d]);
-              assert(imax[d] <= cctkGH->CCTK_LSSH(0,d));
+              assert(imax[d] <= cctkGH->cctk_lsh[d]);
             }
             
             size_t offset[dim];
@@ -702,7 +702,7 @@ namespace OpenCLRunTime {
       
       if (have_sync_bnd) {
         int const np =
-          cctkGH->cctk_lsh[0] * cctkGH->cctk_lsh[1] * cctkGH->cctk_lsh[2];
+          cctkGH->cctk_ash[0] * cctkGH->cctk_ash[1] * cctkGH->cctk_ash[2];
         
         checkErr(clEnqueueWriteBuffer(device->queue,
                                       device->mems.at(vi).at(tl).mem,

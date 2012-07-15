@@ -452,7 +452,7 @@ namespace OpenCLRunTime {
       grid.imin[d] = imin[d];
       grid.imax[d] = imax[d];
       assert(grid.imin[d] >= 0);
-      assert(grid.imax[d] <= grid.lssh[d]);
+      assert(grid.imax[d] <= grid.lsh[d]);
       assert(grid.imin[d] <= grid.imax[d]);
     }
     

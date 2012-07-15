@@ -288,8 +288,8 @@ typedef struct {
   // Grid structure properties:
   int cctk_gsh[dim];
   int cctk_lbnd[dim];
-  int cctk_lssh[dim];
   int cctk_lsh[dim];
+  int cctk_ash[dim];
   // Loop settings:
   int lmin[dim];                 // loop region
   int lmax[dim];

@@ -65,8 +65,8 @@ namespace OpenCLRunTime {
     // Grid structure properties:
     int gsh[dim];
     int lbnd[dim];
-    int lssh[dim];
     int lsh[dim];
+    int ash[dim];
     // Loop settings:
     int lmin[dim];              // loop region
     int lmax[dim];
