@@ -119,9 +119,13 @@ $(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/flesh-Cactus.c $(patsubst %,$(TARBA
 # Flesh
 ###############################################################################
 
+# Note: Build first the source files %-????.c, then the source file
+# $^, so that interruptions or build errors lead to a re-build
 $(TARBALL_DIR)/flesh-Cactus.o: $(TARBALL_DIR)/flesh-Cactus.c
 	@echo "Creating Formaline tarball for the flesh"
-	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c $^ $(^:%.c=%-????.c)
+	cd $(TARBALL_DIR) && \
+	$(CC) $(CFLAGS) -c $(^:%.c=%-????.c) && \
+	$(CC) $(CFLAGS) -c $^
 
 $(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION
 	$(RM) -f $(@:%.c=%-????.c)
@@ -178,9 +182,13 @@ $(TARBALL_DIR)/flesh-Cactus.ccldeps:
 # Thorns
 ###############################################################################
 
+# Note: Build first the source files %-????.c, then the source file
+# $^, so that interruptions or build errors lead to a re-build
 $(TARBALL_DIR)/thorn-%.o: $(TARBALL_DIR)/thorn-%.c
 	@echo "Creating Formaline tarball for thorn $*"
-	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^ $(^:%.c=%-????.c))
+	cd $(TARBALL_DIR) && \
+	$(CC) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.c)) && \
+	$(CC) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^)
 
 $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION
 	cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c)
