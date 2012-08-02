@@ -11,10 +11,14 @@
 
 using namespace std;
 
+inline int my_isnan (CCTK_REAL const x)
+{
+  return std::isnan(x);
+}
+
 inline int my_signbit (CCTK_REAL const x)
 {
-  using namespace std;
-  return signbit(x);
+  return std::signbit(x);
 }
 
 #define SCALARTEST(testname, vecexpr, scalarexpr)                       \
@@ -26,7 +30,9 @@ inline int my_signbit (CCTK_REAL const x)
     CCTK_REAL const vecres = (vecexpr);                                 \
     CCTK_REAL const eps = numeric_limits<CCTK_REAL>::epsilon();         \
     assert(abs((CCTK_REAL)0.1) > 0);                                    \
-    if ((abs(vecres - res) <= 10*eps) or (isnan(vecres) and isnan(res))) { \
+    if ((abs(vecres - res) <= 10*eps) or                                \
+        (my_isnan(vecres) and my_isnan(res)))                           \
+    {                                                                   \
       passed++;                                                         \
     } else {                                                            \
       CCTK_VParamWarn(CCTK_THORNSTRING,                                 \
@@ -47,7 +53,9 @@ inline int my_signbit (CCTK_REAL const x)
       CCTK_REAL vecres = vec_elt(rv,i);                                 \
       CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();             \
       assert(abs((CCTK_REAL)0.1) > 0);                                  \
-      if ((abs(vecres - res) <= 10*eps) or (isnan(vecres) and isnan(res))) { \
+      if ((abs(vecres - res) <= 10*eps) or                              \
+          (my_isnan(vecres) and my_isnan(res)))                         \
+      {                                                                 \
         passed++;                                                       \
       } else {                                                          \
         CCTK_VParamWarn(CCTK_THORNSTRING,                               \
