@@ -24,13 +24,13 @@ my $silencer = $silent ? '> /dev/null 2>&1' : '';
 
 
 # Obtain local machine name
-my $machine = `cd ${CCTK_HOME} && ${CCTK_HOME}/bin/sim whoami`;
+my $machine = `cd ${CCTK_HOME} && ${CCTK_HOME}/simfactory/bin/sim whoami`;
 chomp $machine;
 $machine =~ s{Current machine:\s*(.*)}{$1};
 exit 0 if $machine eq '';
 
 # Obtain sourcebasedir
-my @mdb=`cd ${CCTK_HOME} && ${CCTK_HOME}/bin/sim print-mdb "${machine}"`;
+my @mdb=`cd ${CCTK_HOME} && ${CCTK_HOME}/simfactory/bin/sim print-mdb "${machine}"`;
 @mdb = grep m{^\s*sourcebasedir\s*=}, @mdb;
 exit 1 if @mdb != 1;
 my $sourcebasedir = $mdb[0];
