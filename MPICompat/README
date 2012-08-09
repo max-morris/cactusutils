@@ -1,0 +1,16 @@
+Cactus Code Thorn MPICompat
+Author(s)    : Frank Löffler <knarf@cct.lsu.edu>
+Maintainer(s): Frank Löffler <knarf@cct.lsu.edu>
+Licence      : LGPL
+--------------------------------------------------------------------------
+
+1. Purpose
+
+This thorn fakes to provide the Cactus capability MPI (but actually doesn't). This is in general a very bad thing, but useful in one case: when using some private thorn which uses MPI with both checkouts using the new and the old MPI mechanism, that thorn has to require the Cactus capability MPI for the new checkout, but must not for the old. Unless you use this thorn that is. You would use this thorn (only) in the new checkout, to tell Cactus that the MPI capability is provided. This is in fact true, since the old Cactus version actually does, but does not announce that with the MPI capability - which is what this thorn works around.
+
+In short: you only need this thorn if
+- you have at least one thorn directly using mpi (e.g. including "mpi.h")
+- the same version of that thorn should be used with flesh versions using the old and the
+  new mechanism for MPI
+- you want to compile the old checkout
+
