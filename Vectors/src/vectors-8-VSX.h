@@ -129,5 +129,13 @@
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
-#define k8ifmsb(x,y,z)                                                  \
-  (vec_sel((z), (y), vec_sra(vec_convert((x), &(vector long long*)0), 63)))
+/* #define k8ifmsb(x,y,z)                                                  \ */
+/*   (vec_sel((z), (y), vec_sra(vec_convert((x), &(vector long long*)0), 63))) */
+
+#define k8lfalse        (vec_splats(+0LL))
+#define k8ltrue         (vec_splats(-1LL))
+#define k8lnot(x)       (vec_xor(x,k8ltrue))
+#define k8land(x,y,z)   (vec_and(x,y))
+#define k8lor(x,y,z)    (vec_or(x,y))
+#define k8lxor(x,y,z)   (vec_xor(x,y))
+#define k8ifthen(x,y,z) (vec_sel(z,y,x))

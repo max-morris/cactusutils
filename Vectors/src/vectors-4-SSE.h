@@ -50,6 +50,19 @@
 
 
 
+union k4const_t {
+  unsigned i[4];
+  float    f[4];
+  __m128i  vi;
+  __m128   vf;
+};
+
+#define K4_ZERO 0x00000000UL
+#define K4_IMIN 0x80000000UL
+#define K4_IMAX 0x7fffffffUL
+
+
+
 // Create vectors, extract vector elements
 
 #define vec4_set1(a)      (_mm_set1_ps(a))
@@ -272,15 +285,10 @@
 
 // Functions and operators
 
-static const union {
-  unsigned i[4];
-  __m128   v;
-} k4sign_mask_union = {{ 0x80000000U, 0x80000000U, 0x80000000U, 0x80000000U }};
-#define k4sign_mask (k4sign_mask_union.v)
+static const k4const_t k4sign_mask = {{ K4_IMIN, K4_IMIN, K4_IMIN, K4_IMIN, }};
 
 // Operators
-#define k4pos(x) (x)
-#define k4neg(x) (_mm_xor_ps(k4sign_mask,x))
+#define k4neg(x) (_mm_xor_ps(k4sign_mask.vf,x))
 // #define k4inv(x)
 // TODO: provide k4inv via rcp and Newton-Raphson
 // This is described in AMD's publication 47414.
@@ -306,10 +314,24 @@ static const union {
 #endif
 
 // Cheap functions
-#define k4fabs(x)   (_mm_andnot_ps(k4sign_mask,x))
+#define k4copysign(x,y)                                         \
+  (_mm_or_ps(_mm_andnot_ps(k4sign_mask.vf,x),                   \
+             _mm_and_ps(k4sign_mask.vf,y)))
+#define k4fabs(x)   (_mm_andnot_ps(k4sign_mask.vf,x))
 #define k4fmax(x,y) (_mm_max_ps(x,y))
 #define k4fmin(x,y) (_mm_min_ps(x,y))
-#define k4fnabs(x)  (_mm_or_ps(k4sign_mask,x))
+#define k4fnabs(x)  (_mm_or_ps(k4sign_mask.vf,x))
+static const k4const_t k4zero = { f: { 0.0f, 0.0f, 0.0f, 0.0f, }};
+static const k4const_t k4one  = { f: { 1.0f, 1.0f, 1.0f, 1.0f, }};
+#define k4sgn(x_)                                               \
+  ({                                                            \
+    CCTK_REAL_VEC const x__=(x_);                               \
+    CCTK_REAL_VEC const x=x__;                                  \
+    CCTK_REAL_VEC const iszero = _mm_cmpeq_ps(k4zero.vf, x);    \
+    CCTK_REAL_VEC const sign = _mm_and_ps(k4sign_mask.vf, x);   \
+    CCTK_REAL_VEC const signedone = _mm_or_ps(k4one.vf, sign);  \
+    k4ifthen(iszero, k4zero.vf, signedone);                     \
+  })
 // TODO: maybe use rsqrt and Newton-Raphson
 #define k4sqrt(x)   (_mm_sqrt_ps(x))
 
@@ -363,16 +385,22 @@ static const union {
 #define k4tan(x)     K4REPL(tanf,x)
 #define k4tanh(x)    K4REPL(tanhf,x)
 
-// Choice   [sign(x)>0 ? y : z]
+static const k4const_t k4lfalse = {{ +0U, +0U, +0U, +0U, }};
+static const k4const_t k4ltrue  = {{ -1U, -1U, -1U, -1U, }};
+#define k4lnot(x)   (_mm_xor_ps(k4ltrue,x))
+#define k4land(x,y) (_mm_and_ps(x,y))
+#define k4lor(x,y)  (_mm_or_ps(x,y))
+#define k4lxor(x,y) (_mm_xor_ps(x,y))
+
 #ifdef __SSE4_1__
-#  define k4ifmsb(x,y,z) (_mm_blendv_ps(z,y,x))
+#  define k4ifthen(x,y,z) (_mm_blendv_ps(z,y,x))
 #elif 0
 #  ifdef __cplusplus
-#    define k4sgn(x) ({ using namespace std; signbit(x); })
+#    define k4signbit(x) ({ using namespace std; signbit(x); })
 #  else
-#    define k4sgn(x) (signbitf(x))
+#    define k4signbit(x) (signbitf(x))
 #  endif
-#  define k4ifmsb(x,y,z)                                                \
+#  define k4ifthen(x,y,z)                                               \
   ({                                                                    \
     CCTK_REAL4_VEC const x__=(x_);                                      \
     CCTK_REAL4_VEC const y__=(y_);                                      \
@@ -380,13 +408,15 @@ static const union {
     CCTK_REAL4_VEC const x=x__;                                         \
     CCTK_REAL4_VEC const y=y__;                                         \
     CCTK_REAL4_VEC const z=z__;                                         \
-    vec4_set(k4sgn(vec4_elt0(x)) ? vec4_elt0(y) : vec4_elt0(z),         \
-             k4sgn(vec4_elt1(x)) ? vec4_elt1(y) : vec4_elt1(z),         \
-             k4sgn(vec4_elt2(x)) ? vec4_elt2(y) : vec4_elt2(z),         \
-             k4sgn(vec4_elt3(x)) ? vec4_elt3(y) : vec4_elt3(z));        \
+    vec4_set(k4signbit(vec4_elt0(x)) ? vec4_elt0(y) : vec4_elt0(z),     \
+             k4signbit(vec4_elt1(x)) ? vec4_elt1(y) : vec4_elt1(z),     \
+             k4signbit(vec4_elt2(x)) ? vec4_elt2(y) : vec4_elt2(z),     \
+             k4signbit(vec4_elt3(x)) ? vec4_elt3(y) : vec4_elt3(z));    \
   })
-#else
-#  define k4ifmsb(x_,y_,z_)                                     \
+#elif 0
+// We don't need to shift -- the condition (mask) will be either all
+// zeros or all ones
+#  define k4ifthen(x_,y_,z_)                                    \
   ({                                                            \
     CCTK_REAL4_VEC const x__=(x_);                              \
     CCTK_REAL4_VEC const y__=(y_);                              \
@@ -398,5 +428,17 @@ static const union {
       (__m128)_mm_srai_epi32((__m128i)x, 31);                   \
     /* (z & ~mask) | (y & mask) */                              \
     _mm_or_ps(_mm_andnot_ps(mask, z), _mm_and_ps(mask, y));     \
+  })
+#else
+#  define k4ifthen(x_,y_,z_)                                    \
+  ({                                                            \
+    CCTK_REAL4_VEC const x__=(x_);                              \
+    CCTK_REAL4_VEC const y__=(y_);                              \
+    CCTK_REAL4_VEC const z__=(z_);                              \
+    CCTK_REAL4_VEC const x=x__;                                 \
+    CCTK_REAL4_VEC const y=y__;                                 \
+    CCTK_REAL4_VEC const z=z__;                                 \
+    /* (z & ~mask) | (y & mask)   where imask = ~mask */        \
+    _mm_or_ps(_mm_and_ps(x, y), _mm_andnot_ps(x, z));           \
   })
 #endif

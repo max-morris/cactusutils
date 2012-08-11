@@ -22,10 +22,12 @@
 #    else
 #      include "vectors-8-SSE2.h"
 #    endif
-#  elif defined(_ARCH_450D)     // Blue Gene/P Double Hummer
-#    include "vectors-8-DoubleHummer.h"
+#  elif defined(_ARCH_QP)       // Blue Gene/Q QPX
+#    include "vectors-8-QPX.h"
 #  elif defined(__ALTIVEC__) && defined(_ARCH_PWR7) // Power VSX
 #    include "vectors-8-VSX.h"
+#  elif defined(_ARCH_450D)     // Blue Gene/P Double Hummer
+#    include "vectors-8-DoubleHummer.h"
 #  endif
 
 #endif
@@ -67,7 +69,6 @@
 #  define vec_store_nta_partial_hi  vec4_store_nta_partial_hi
 #  define vec_store_nta_partial_mid vec4_store_nta_partial_mid
 
-#  define kpos k4pos
 #  define kneg k4neg
 
 #  define kadd k4add
@@ -80,29 +81,31 @@
 #  define knmadd k4nmadd
 #  define knmsub k4nmsub
 
-#  define kacos  k4acos
-#  define kacosh k4acosh
-#  define kasin  k4asin
-#  define kasinh k4asinh
-#  define katan  k4atan
-#  define katan2 k4atan2
-#  define katanh k4atanh
-#  define kcos   k4cos
-#  define kcosh  k4cosh
-#  define kexp   k4exp
-#  define kfabs  k4fabs
-#  define kfmax  k4fmax
-#  define kfmin  k4fmin
-#  define kfnabs k4fnabs
-#  define klog   k4log
-#  define kpow   k4pow
-#  define ksin   k4sin
-#  define ksinh  k4sinh
-#  define ksqrt  k4sqrt
-#  define ktan   k4tan
-#  define ktanh  k4tanh
+#  define kacos     k4acos
+#  define kacosh    k4acosh
+#  define kasin     k4asin
+#  define kasinh    k4asinh
+#  define katan     k4atan
+#  define katan2    k4atan2
+#  define katanh    k4atanh
+#  define kcopysign k4copysign
+#  define kcos      k4cos
+#  define kcosh     k4cosh
+#  define kexp      k4exp
+#  define kfabs     k4fabs
+#  define kfmax     k4fmax
+#  define kfmin     k4fmin
+#  define kfnabs    k4fnabs
+#  define klog      k4log
+#  define kpow      k4pow
+#  define ksin      k4sin
+#  define ksinh     k4sinh
+#  define ksgn      k4sgn
+#  define ksqrt     k4sqrt
+#  define ktan      k4tan
+#  define ktanh     k4tanh
 
-#  define kifmsb k4ifmsb
+#  define kifthen k4ifthen
 
 #elif defined(CCTK_REAL_PRECISION_8)
 
@@ -141,29 +144,31 @@
 #  define knmadd k8nmadd
 #  define knmsub k8nmsub
 
-#  define kacos  k8acos
-#  define kacosh k8acosh
-#  define kasin  k8asin
-#  define kasinh k8asinh
-#  define katan  k8atan
-#  define katan2 k8atan2
-#  define katanh k8atanh
-#  define kcos   k8cos
-#  define kcosh  k8cosh
-#  define kexp   k8exp
-#  define kfabs  k8fabs
-#  define kfmax  k8fmax
-#  define kfmin  k8fmin
-#  define kfnabs k8fnabs
-#  define klog   k8log
-#  define kpow   k8pow
-#  define ksin   k8sin
-#  define ksinh  k8sinh
-#  define ksqrt  k8sqrt
-#  define ktan   k8tan
-#  define ktanh  k8tanh
+#  define kacos     k8acos
+#  define kacosh    k8acosh
+#  define kasin     k8asin
+#  define kasinh    k8asinh
+#  define katan     k8atan
+#  define katan2    k8atan2
+#  define katanh    k8atanh
+#  define kcopysign k8copysign
+#  define kcos      k8cos
+#  define kcosh     k8cosh
+#  define kexp      k8exp
+#  define kfabs     k8fabs
+#  define kfmax     k8fmax
+#  define kfmin     k8fmin
+#  define kfnabs    k8fnabs
+#  define klog      k8log
+#  define kpow      k8pow
+#  define ksin      k8sin
+#  define ksinh     k8sinh
+#  define ksgn      k8sgn
+#  define ksqrt     k8sqrt
+#  define ktan      k8tan
+#  define ktanh     k8tanh
 
-#  define kifmsb k8ifmsb
+#  define kifthen k8ifthen
 
 #else
 
@@ -173,6 +178,7 @@
 
 
 
+#define kifmsb(a,b,c) kifthen(a,b,c)
 #define kifneg(a,b,c) kifmsb(a,b,c)
 #define kifpos(a,b,c) kifmsb(a,c,b)
 
@@ -218,10 +224,6 @@ struct vecprops {
   {
     return x;
   }
-  static inline vector_t pos (vector_t const& x)
-  {
-    return +x;
-  }
   static inline vector_t neg (vector_t const& x)
   {
     return -x;
@@ -263,10 +265,6 @@ struct vecprops<CCTK_REAL4> {
   static inline scalar_t elt (vector_t const& x, int const d)
   {
     return vec4_elt(x,d);
-  }
-  static inline vector_t pos (vector_t const& x)
-  {
-    return k4pos(x);
   }
   static inline vector_t neg (vector_t const& x)
   {
@@ -345,11 +343,8 @@ struct vecprops<CCTK_REAL8> {
 #    define KRANC_DIFF_FUNCTIONS
 #  endif
 
-#  undef Sign
-#  define Sign(x) -999999999    // poison
-
 #  undef ToReal
-#  define ToReal(x) (vec_set1((CCTK_REAL)(x)))
+#  define ToReal(x) (vec_set1(CCTK_REAL(x)))
 
 #  undef KRANC_GFOFFSET3D
 #  define KRANC_GFOFFSET3D(var,i,j,k)                                   \

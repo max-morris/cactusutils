@@ -76,32 +76,40 @@
 #define k8nmsub(x,y,z) (-(x)*(y)+(z))
 
 // Functions
-#define k8acos(x)    (acos(x))
-#define k8acosh(x)   (acosh(x))
-#define k8asin(x)    (asin(x))
-#define k8asinh(x)   (asinh(x))
-#define k8atan(x)    (atan(x))
-#define k8atan2(x,y) (atan2(x,y))
-#define k8atanh(x)   (atanh(x))
-#define k8cos(x)     (cos(x))
-#define k8cosh(x)    (cosh(x))
-#define k8exp(x)     (exp(x))
-#define k8fabs(x)    (fabs(x))
-#define k8fmax(x,y)  (fmax(x,y))
-#define k8fmin(x,y)  (fmin(x,y))
-#define k8fnabs(x)   (-fabs(x))
-#define k8log(x)     (log(x))
-#define k8pow(x,a)   (pow(x,a))
-#define k8sin(x)     (sin(x))
-#define k8sinh(x)    (sinh(x))
-#define k8sqrt(x)    (sqrt(x))
-#define k8tan(x)     (tan(x))
-#define k8tanh(x)    (tanh(x))
+#define k8acos(x)       (acos(x))
+#define k8acosh(x)      (acosh(x))
+#define k8asin(x)       (asin(x))
+#define k8asinh(x)      (asinh(x))
+#define k8atan(x)       (atan(x))
+#define k8atan2(x,y)    (atan2(x,y))
+#define k8atanh(x)      (atanh(x))
+#define k8copysign(x,y) (copysign(x,y))
+#define k8cos(x)        (cos(x))
+#define k8cosh(x)       (cosh(x))
+#define k8exp(x)        (exp(x))
+#define k8fabs(x)       (fabs(x))
+#define k8fmax(x,y)     (fmax(x,y))
+#define k8fmin(x,y)     (fmin(x,y))
+#define k8fnabs(x)      (-fabs(x))
+#define k8log(x)        (log(x))
+#define k8pow(x,a)      (pow(x,a))
+#define k8sin(x)        (sin(x))
+#define k8sinh(x)       (sinh(x))
+#define k8sqrt(x)       (sqrt(x))
+#define k8tan(x)        (tan(x))
+#define k8tanh(x)       (tanh(x))
+
+#define k8sgn(x_)                                                       \
+  ({                                                                    \
+    CCTK_REAL x__=(x_);                                                 \
+    CCTK_REAL x=x__;                                                    \
+    x==(CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : copysign((CCTK_REAL)1.0, x);   \
+  })
 
 #ifdef __cplusplus
-#  define k8sgn(x) ({ using namespace std; signbit(x); })
+#  define k8signbit(x) ({ using namespace std; signbit(x); })
 #else
-#  define k8sgn(x) (signbit(x))
+#  define k8signbit(x) (signbit(x))
 #endif
 
-#define k8ifmsb(x,y,z) (k8sgn(x)?(y):(z))
+#define k8ifthen(x,y,z) (k8signbit(x)?(y):(z))

@@ -64,7 +64,6 @@
 
 
 // Operators
-#define k4pos(x) (+(x))
 #define k4neg(x) (-(x))
 
 #define k4add(x,y) ((x)+(y))
@@ -79,32 +78,40 @@
 #define k4nmsub(x,y,z) (-(x)*(y)+(z))
 
 // Functions
-#define k4acos(x)    (acosf(x))
-#define k4acosh(x)   (acoshf(x))
-#define k4asin(x)    (asinf(x))
-#define k4asinh(x)   (asinhf(x))
-#define k4atan(x)    (atanf(x))
-#define k4atan2(x,y) (atan2f(x,y))
-#define k4atanh(x)   (atanhf(x))
-#define k4cos(x)     (cosf(x))
-#define k4cosh(x)    (coshf(x))
-#define k4exp(x)     (expf(x))
-#define k4fabs(x)    (fabsf(x))
-#define k4fmax(x,y)  (fmaxf(x,y))
-#define k4fmin(x,y)  (fminf(x,y))
-#define k4fnabs(x)   (-fabsf(x))
-#define k4log(x)     (logf(x))
-#define k4pow(x,a)   (powf(x,a))
-#define k4sin(x)     (sinf(x))
-#define k4sinh(x)    (sinhf(x))
-#define k4sqrt(x)    (sqrtf(x))
-#define k4tan(x)     (tanf(x))
-#define k4tanh(x)    (tanhf(x))
+#define k4acos(x)       (acosf(x))
+#define k4acosh(x)      (acoshf(x))
+#define k4asin(x)       (asinf(x))
+#define k4asinh(x)      (asinhf(x))
+#define k4atan(x)       (atanf(x))
+#define k4atan2(x,y)    (atan2f(x,y))
+#define k4atanh(x)      (atanhf(x))
+#define k4copysign(x,y) (copysign(x,y))
+#define k4cos(x)        (cosf(x))
+#define k4cosh(x)       (coshf(x))
+#define k4exp(x)        (expf(x))
+#define k4fabs(x)       (fabsf(x))
+#define k4fmax(x,y)     (fmaxf(x,y))
+#define k4fmin(x,y)     (fminf(x,y))
+#define k4fnabs(x)      (-fabsf(x))
+#define k4log(x)        (logf(x))
+#define k4pow(x,a)      (powf(x,a))
+#define k4sin(x)        (sinf(x))
+#define k4sinh(x)       (sinhf(x))
+#define k4sqrt(x)       (sqrtf(x))
+#define k4tan(x)        (tanf(x))
+#define k4tanh(x)       (tanhf(x))
+
+#define k4sgn(x_)                                                       \
+  ({                                                                    \
+    CCTK_REAL x__=(x_);                                                 \
+    CCTK_REAL x=x__;                                                    \
+    x==(CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : copysign((CCTK_REAL)1.0, x);   \
+  })
 
 #ifdef __cplusplus
-#  define k4sgn(x) ({ using namespace std; signbit(x); })
+#  define k4signbit(x) ({ using namespace std; signbit(x); })
 #else
-#  define k4sgn(x) (signbit(x))
+#  define k4signbit(x) (signbit(x))
 #endif
 
-#define k4ifmsb(x,y,z) (k4sgn(x)?(y):(z))
+#define k4ifthen(x,y,z) (k4signbit(x)?(y):(z))

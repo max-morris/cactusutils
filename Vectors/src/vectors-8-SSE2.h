@@ -60,6 +60,17 @@
 
 
 
+union k8const_t {
+  long long i[2];
+  double    f[2];
+  __m128i   vi;
+  __m128d   vf;
+};
+
+#define K8_IMIN ((long long)0x8000000000000000ULL)
+
+
+
 // Create vectors, extract vector elements
 
 #define vec8_set1(a)  (_mm_set1_pd(a))
@@ -216,16 +227,7 @@
 
 // Functions and operators
 
-// static const union {
-//   unsigned long long i[2];
-//   __m128d            v;
-// } k8all_mask_union = {{ 0xfffffffffffffffULL, 0xfffffffffffffffULL }};
-// #define k8all_mask (k8all_mask_union.v)
-static const union {
-  unsigned long long i[2];
-  __m128d            v;
-} k8sign_mask_union = {{ 0x8000000000000000ULL, 0x8000000000000000ULL }};
-#define k8sign_mask (k8sign_mask_union.v)
+static const k8const_t k8sign_mask = {{ K8_IMIN, K8_IMIN, }};
 
 // Operators
 
@@ -246,7 +248,7 @@ static const union {
 // #define k8or(x,y)  (_mm_or_pd(x,y))
 // #define k8xor(x,y) (_mm_xor_pd(x,y))
 
-#define k8neg(x) (_mm_xor_pd(k8sign_mask,x))
+#define k8neg(x) (_mm_xor_pd(k8sign_mask.vf,x))
 
 #define k8add(x,y) (_mm_add_pd(x,y))
 #define k8sub(x,y) (_mm_sub_pd(x,y))
@@ -267,10 +269,24 @@ static const union {
 #endif
 
 // Cheap functions
-#define k8fabs(x)   (_mm_andnot_pd(k8sign_mask,x))
+#define k8copysign(x,y)                                         \
+  (_mm_or_pd(_mm_andnot_pd(k8sign_mask.vf,x),                   \
+             _mm_and_pd(k8sign_mask.vf,y)))
+#define k8fabs(x)   (_mm_andnot_pd(k8sign_mask.vf,x))
 #define k8fmax(x,y) (_mm_max_pd(x,y))
 #define k8fmin(x,y) (_mm_min_pd(x,y))
-#define k8fnabs(x)  (_mm_or_pd(k8sign_mask,x))
+#define k8fnabs(x)  (_mm_or_pd(k8sign_mask.vf,x))
+static const k8const_t k8zero = { f: { 0.0, 0.0, }};
+static const k8const_t k8one  = { f: { 1.0, 1.0, }};
+#define k8sgn(x_)                                               \
+  ({                                                            \
+    CCTK_REAL_VEC const x__=(x_);                               \
+    CCTK_REAL_VEC const x=x__;                                  \
+    CCTK_REAL_VEC const iszero = _mm_cmpeq_pd(k8zero.vf, x);    \
+    CCTK_REAL_VEC const sign = _mm_and_pd(k8sign_mask.vf, x);   \
+    CCTK_REAL_VEC const signedone = _mm_or_pd(k8one.vf, sign);  \
+    k8ifthen(iszero, k8zero.vf, signedone);                     \
+  })
 #define k8sqrt(x)   (_mm_sqrt_pd(x))
 
 // Expensive functions
@@ -317,12 +333,18 @@ static const union {
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
-// Choice   [sign(x)>0 ? y : z]
+static const k8const_t k8lfalse = {{ +0LL, +0LL, }};
+static const k8const_t k8ltrue  = {{ -1LL, -1LL, }};
+#define k8lnot(x)   (_mm_xor_pd(k8ltrue,x))
+#define k8land(x,y) (_mm_and_pd(x,y))
+#define k8lor(x,y)  (_mm_or_pd(x,y))
+#define k8lxor(x,y) (_mm_xor_pd(x,y))
+
 #ifdef __SSE4_1__
-#  define k8ifmsb(x,y,z) (_mm_blendv_pd(z,y,x))
+#  define k8ifthen(x,y,z) (_mm_blendv_pd(z,y,x))
 #elif 0
-// This is slow
-#  define k8ifmsb(x_,y_,z_)                     \
+// This is slow (but this is what Intel/PGI produce by themselves)
+#  define k8ifthen(x_,y_,z_)                     \
   ({                                            \
     CCTK_REAL8_VEC const x__=(x_);              \
     CCTK_REAL8_VEC const y__=(y_);              \
@@ -342,11 +364,11 @@ static const union {
   })
 #elif 0
 #  ifdef __cplusplus
-#    define k8sgn(x) ({ using namespace std; signbit(x); })
+#    define k8signbit(x) ({ using namespace std; signbit(x); })
 #  else
-#    define k4sgn(x) (signbit(x))
+#    define k8signbit(x) (signbit(x))
 #  endif
-#  define k8ifmsb(x_,y_,z_)                                             \
+#  define k8ifthen(x_,y_,z_)                                            \
   ({                                                                    \
     CCTK_REAL8_VEC const x__=(x_);                                      \
     CCTK_REAL8_VEC const y__=(y_);                                      \
@@ -354,16 +376,31 @@ static const union {
     CCTK_REAL8_VEC const x=x__;                                         \
     CCTK_REAL8_VEC const y=y__;                                         \
     CCTK_REAL8_VEC const z=z__;                                         \
-    vec8_set(k8sgn(vec8_elt0(x)) ? vec8_elt0(y) : vec8_elt0(z),         \
-             k8sgn(vec8_elt1(x)) ? vec8_elt1(y) : vec8_elt1(z));        \
+    vec8_set(k8signbit(vec8_elt0(x)) ? vec8_elt0(y) : vec8_elt0(z),     \
+             k8signbit(vec8_elt1(x)) ? vec8_elt1(y) : vec8_elt1(z));    \
+  })
+#elif 0
+// We don't need to shift -- the condition (mask) will be either all
+// zeros or all ones
+static const k8const_t k8ione  = {{ 0x1ULL, 0x1ULL, }};
+#  define k8ifthen(x_,y_,z_)                                            \
+  ({                                                                    \
+    CCTK_REAL8_VEC const x__=(x_);                                      \
+    CCTK_REAL8_VEC const y__=(y_);                                      \
+    CCTK_REAL8_VEC const z__=(z_);                                      \
+    CCTK_REAL8_VEC const x=x__;                                         \
+    CCTK_REAL8_VEC const y=y__;                                         \
+    CCTK_REAL8_VEC const z=z__;                                         \
+    /* there is no _mm_srai_epi64(x, 63); we therefore calculate srli(x)-1 */ \
+    __m128i const x_int = *(__m128i const*)&x;                          \
+    __m128i const imask_int =                                           \
+      _mm_sub_epi64(_mm_srli_epi64(x_int, 63), k8ione.vi);              \
+    CCTK_REAL8_VEC const imask = *(CCTK_REAL8_VEC const*)&imask_int;    \
+    /* (z & ~mask) | (y & mask)   where imask = ~mask */                \
+    _mm_or_pd(_mm_and_pd(imask, z), _mm_andnot_pd(imask, y));           \
   })
 #else
-static const union {
-  unsigned long long i;
-  double             d;
-} k8one_union = { 0x1ULL };
-#  define k8one (k8one_union.d)
-#  define k8ifmsb(x_,y_,z_)                                     \
+#  define k8ifthen(x_,y_,z_)                                    \
   ({                                                            \
     CCTK_REAL8_VEC const x__=(x_);                              \
     CCTK_REAL8_VEC const y__=(y_);                              \
@@ -371,11 +408,7 @@ static const union {
     CCTK_REAL8_VEC const x=x__;                                 \
     CCTK_REAL8_VEC const y=y__;                                 \
     CCTK_REAL8_VEC const z=z__;                                 \
-    /* there is no _mm_srai_epi64(x, 63) */                     \
-    CCTK_REAL8_VEC const imask =                                \
-      (__m128d)_mm_sub_epi64(_mm_srli_epi64((__m128i)x, 63),    \
-                             (__m128i)_mm_set1_pd(k8one));      \
-    /* (z & ~mask) | (y & mask);   imask = ~mask */             \
-    _mm_or_pd(_mm_and_pd(imask, z), _mm_andnot_pd(imask, y));   \
+    /* (z & ~mask) | (y & mask)   where imask = ~mask */        \
+    _mm_or_pd(_mm_and_pd(x, y), _mm_andnot_pd(x, z));           \
   })
 #endif

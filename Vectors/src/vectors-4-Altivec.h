@@ -114,7 +114,6 @@
 // Functions and operators
 
 // Operators
-#define k4pos(x) (+(x))
 #define k4neg(x) (-(x))
 
 #define k4add(x,y) ((x)+(y))

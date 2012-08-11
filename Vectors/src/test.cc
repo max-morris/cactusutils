@@ -11,6 +11,14 @@
 
 using namespace std;
 
+
+
+inline CCTK_REAL my_copysign (CCTK_REAL const x, CCTK_REAL const y)
+{
+  using namespace std;
+  return copysign(x, y);
+}
+
 inline int my_isnan (CCTK_REAL const x)
 {
   return std::isnan(x);
@@ -20,6 +28,14 @@ inline int my_signbit (CCTK_REAL const x)
 {
   return std::signbit(x);
 }
+
+inline CCTK_REAL my_sgn (CCTK_REAL const x)
+{
+  using namespace std;
+  return x == (CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : my_copysign((CCTK_REAL)1.0, x);
+}
+
+
 
 #define SCALARTEST(testname, vecexpr, scalarexpr)                       \
   do {                                                                  \
@@ -66,6 +82,8 @@ inline int my_signbit (CCTK_REAL const x)
       numtests++;                                                       \
     }                                                                   \
   } while(0)
+
+
 
 extern "C"
 void Vectors_Test(CCTK_ARGUMENTS)
@@ -215,27 +233,29 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("knmadd", knmadd(av, bv, cv), -a[i] * b[i] - c[i] );
   VECTEST("knmsub", knmsub(av, bv, cv), -a[i] * b[i] + c[i] );
 
-  VECTEST("kacos",  kacos(xv),          acos(x[i])          );
-  VECTEST("kacosh", kacosh(zv),         acosh(z[i])         );
-  VECTEST("kasin",  kasin(xv),          asin(x[i])          );
-  VECTEST("kasinh", kasinh(xv),         asinh(x[i])         );
-  VECTEST("katan",  katan(xv),          atan(x[i])          );
-  VECTEST("katan2", katan2(xv, yv),     atan2(x[i], y[i])   );
-  VECTEST("katanh", katanh(xv),         atanh(x[i])         );
-  VECTEST("kcos",   kcos(xv),           cos(x[i])           );
-  VECTEST("kcosh",  kcosh(xv),          cosh(x[i])          );
-  VECTEST("kexp",   kexp(xv),           exp(x[i])           );
-  VECTEST("kfabs",  kfabs(xv),          fabs(x[i])          );
-  VECTEST("kfmax",  kfmax(xv, yv),      fmax(x[i], y[i])    );
-  VECTEST("kfmin",  kfmin(xv, yv),      fmin(x[i], y[i])    );
-  VECTEST("kfnabs", kfnabs(xv),         -fabs(x[i])         );
-  VECTEST("klog",   klog(yv),           log(y[i])           );
-  VECTEST("kpow",   kpow(yv, x[0]),     pow(y[i], x[0])     );
-  VECTEST("ksin",   ksin(xv),           sin(x[i])           );
-  VECTEST("ksinh",  ksinh(xv),          sinh(x[i])          );
-  VECTEST("ksqrt",  ksqrt(yv),          sqrt(y[i])          );
-  VECTEST("ktan",   ktan(xv),           tan(x[i])           );
-  VECTEST("ktanh",  ktanh(xv),          tanh(x[i])          );
+  VECTEST("kacos",     kacos(xv),         acos(x[i])          );
+  VECTEST("kacosh",    kacosh(zv),        acosh(z[i])         );
+  VECTEST("kasin",     kasin(xv),         asin(x[i])          );
+  VECTEST("kasinh",    kasinh(xv),        asinh(x[i])         );
+  VECTEST("katan",     katan(xv),         atan(x[i])          );
+  VECTEST("katan2",    katan2(xv, yv),    atan2(x[i], y[i])   );
+  VECTEST("katanh",    katanh(xv),        atanh(x[i])         );
+  VECTEST("kcopysign", kcopysign(xv, yv), copysign(x[i], y[i]));
+  VECTEST("kcos",      kcos(xv),          cos(x[i])           );
+  VECTEST("kcosh",     kcosh(xv),         cosh(x[i])          );
+  VECTEST("kexp",      kexp(xv),          exp(x[i])           );
+  VECTEST("kfabs",     kfabs(xv),         fabs(x[i])          );
+  VECTEST("kfmax",     kfmax(xv, yv),     fmax(x[i], y[i])    );
+  VECTEST("kfmin",     kfmin(xv, yv),     fmin(x[i], y[i])    );
+  VECTEST("kfnabs",    kfnabs(xv),        -fabs(x[i])         );
+  VECTEST("klog",      klog(yv),          log(y[i])           );
+  VECTEST("kpow",      kpow(yv, x[0]),    pow(y[i], x[0])     );
+  VECTEST("ksin",      ksin(xv),          sin(x[i])           );
+  VECTEST("ksinh",     ksinh(xv),         sinh(x[i])          );
+  VECTEST("ksgn",      ksgn(xv),          my_sgn(x[i])        );
+  VECTEST("ksqrt",     ksqrt(yv),         sqrt(y[i])          );
+  VECTEST("ktan",      ktan(xv),          tan(x[i])           );
+  VECTEST("ktanh",     ktanh(xv),         tanh(x[i])          );
 
   VECTEST("kifpos positive",
           kifpos(av, bv, cv), my_signbit(a[i]) ? c[i] : b[i]);

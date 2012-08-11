@@ -23,6 +23,14 @@
 
 
 
+union k8const_t {
+  double             f[2];
+  unsigned long long i[2];
+  CCTK_REAL8_VEC     vf;
+};
+
+
+
 // Create vectors, extract vector elements
 
 #define vec8_set1(a)  (__cmplx(a,a))
@@ -107,7 +115,7 @@
   ({                                                    \
     CCTK_REAL8 const& p__=(p_);                         \
     CCTK_REAL8 const& p=p__;                            \
-    ((off2) % CCTK_REAL8_VEC_SIZE != 0 ||               \
+    ((off2) % CCTK_REAL8_VEC_SIZE != 0 or               \
      (off3) % CCTK_REAL8_VEC_SIZE != 0) ?               \
       vec8_loadu(p) :                                   \
       vec8_loadu_maybe(off1,p);                         \
@@ -205,6 +213,20 @@
     __fpsel(k8sub(x,y),x,y);                    \
   })
 #define k8fnabs(x) (__fpnabs(x))
+static const k8const_t k8zero = {{  0.0,  0.0, }};
+static const k8const_t k8one  = {{ +1.0, +1.0, }};
+static const k8const_t k8mone = {{ -1.0, -1.0, }};
+#define k8sgn(x_)                                                       \
+  ({                                                                    \
+    CCTK_REAL_VEC x__=(x_);                                             \
+    CCTK_REAL_VEC x=x__;                                                \
+    /* TODO: this assumes that __fpsel says -0>=+0;                     \
+       if this is not so, we need k8abs(x) instead of x for iszero. */  \
+    CCTK_REAL_VEC iszero = k8land(__fpsel(x, k8lfalse.vf, k8ltrue.vf),  \
+                                  __fpsel(k8neg(x), k8lfalse.vf, k8ltrue.vf)); \
+    CCTK_REAL_VEC signedone = __fpsel(x, k8mone.vf, k8one.vf);          \
+    k8ifthen(iszero, k8zero.vf, signedone);                             \
+  })
 // Estimate for reciprocal square root
 #define k8rsqrt_init(x) (__fprsqrte(x))
 // One Newton iteration for reciprocal square root
@@ -279,4 +301,10 @@
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
-#define k8ifmsb(x,y,z) (__fpsel(x,y,z))
+static const k8const_t k8lfalse = {{ -1.0, -1.0, }};
+static const k8const_t k8ltrue  = {{ +1.0, +1.0, }};
+#define k8lnot(x)       (__fpneg(x))
+#define k8land(x,y)     (k8ifthen(x,y,k8lfalse.vf))
+#define k8lor(x,y)      (k8ifthen(x,k8ltrue.vf,y))
+#define k8lxor(x,y)     (k8ifthen(x,k8lnot(y),y))
+#define k8ifthen(x,y,z) (__fpsel(x,z,y))

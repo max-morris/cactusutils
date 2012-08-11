@@ -35,9 +35,9 @@
 
 union k8const_t {
   unsigned long long i[4];
-  double             d[4];
+  double             f[4];
   __m256i            vi;
-  __m256d            vd;
+  __m256d            vf;
 };
 
 #define K8_ZERO 0x0000000000000000ULL
@@ -118,12 +118,12 @@ union k8const_t {
   bool v8stp_all;                                                       \
   __m256i v8stp_mask;                                                   \
   ({                                                                    \
-    ptrdiff_t const imin1=(imin_);                                      \
-    ptrdiff_t const imin=imin1;                                         \
-    ptrdiff_t const imax1=(imax_);                                      \
-    ptrdiff_t const imax=imax1;                                         \
+    ptrdiff_t const imin__=(imin_);                                     \
+    ptrdiff_t const imin=imin__;                                        \
+    ptrdiff_t const imax__=(imax_);                                     \
+    ptrdiff_t const imax=imax__;                                        \
                                                                         \
-    v8stp_all = i>=imin and i+CCTK_REAL_VEC_SIZE<imax;                  \
+    v8stp_all = i>=imin and i+CCTK_REAL_VEC_SIZE-1<imax;                \
                                                                         \
     if (not CCTK_BUILTIN_EXPECT(v8stp_all, true)) {                     \
       /*                                                                \
@@ -134,14 +134,14 @@ union k8const_t {
                                             vec_index));                \
       */                                                                \
       __m128i const termlo0 =                                           \
-        _mm_add_epi64(_mm_set1_epi64x(i-imin), _mm_set_epi64x(0,1));    \
+        _mm_add_epi64(_mm_set1_epi64x(i-imin), _mm_set_epi64x(1, 0));   \
       __m128i const termup0 =                                           \
-        _mm_add_epi64(_mm_set1_epi64x(i-imax), _mm_set_epi64x(0,1));    \
+        _mm_add_epi64(_mm_set1_epi64x(i-imax), _mm_set_epi64x(1, 0));   \
       __m128i const term0 = _mm_andnot_si128(termlo0, termup0);         \
       __m128i const termlo1 =                                           \
-        _mm_add_epi64(_mm_set1_epi64x(i-imin), _mm_set_epi64x(2,3));    \
+        _mm_add_epi64(_mm_set1_epi64x(i-imin), _mm_set_epi64x(3, 2));   \
       __m128i const termup1 =                                           \
-        _mm_add_epi64(_mm_set1_epi64x(i-imax), _mm_set_epi64x(2,3));    \
+        _mm_add_epi64(_mm_set1_epi64x(i-imax), _mm_set_epi64x(3, 2));   \
       __m128i const term1 = _mm_andnot_si128(termlo1, termup1);         \
       v8stp_mask =                                                      \
         _mm256_insertf128_si256(_mm256_castsi128_si256(term0), term1, 1); \
@@ -160,7 +160,7 @@ union k8const_t {
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
 // Masks indicating which vector element should be stored:
-static const k8const_t k8store_lo_union[5] =
+static const k8const_t k8store_lo[5] =
   {
     {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }},
     {{ K8_IMIN, K8_ZERO, K8_ZERO, K8_ZERO, }},
@@ -168,7 +168,7 @@ static const k8const_t k8store_lo_union[5] =
     {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_ZERO, }},
     {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }},
   };
-static const k8const_t k8store_hi_union[5] =
+static const k8const_t k8store_hi[5] =
   {
     {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }},
     {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_IMIN, }},
@@ -179,24 +179,24 @@ static const k8const_t k8store_hi_union[5] =
 #if !defined(__INTEL_COMPILER) && defined(__GNUC__) && __GNUC__==4 && __GNUC_MINOR__<=4
 // gcc 4.4 uses a wrong prototype for _mm256_maskstore_pd
 #  define vec8_store_nta_partial_lo(p,x,n)                              \
-  (_mm256_maskstore_pd(&(p),_mm256_castsi256_pd(k8store_lo_union[n].vi),x))
+  (_mm256_maskstore_pd(&(p),_mm256_castsi256_pd(k8store_lo[n].vi),x))
 #  define vec8_store_nta_partial_hi(p,x,n)                              \
-  (_mm256_maskstore_pd(&(p),_mm256_castsi256_pd(k8store_hi_union[n].vi),x))
+  (_mm256_maskstore_pd(&(p),_mm256_castsi256_pd(k8store_hi[n].vi),x))
 #  define vec8_store_nta_partial_mid(p,x,nlo,nhi)                       \
   (_mm256_maskstore_pd                                                  \
    (&(p),                                                               \
-    _mm256_castsi256_pd(k8store_lo_union[nlo].vi & k8store_hi_union[nhi].vi), \
+    _mm256_castsi256_pd(k8store_lo[nlo].vi & k8store_hi[nhi].vi),       \
     x))
 #else
 #  define vec8_store_nta_partial_lo(p,x,n)              \
-  (_mm256_maskstore_pd(&(p),k8store_lo_union[n].vi,x))
+  (_mm256_maskstore_pd(&(p),k8store_lo[n].vi,x))
 #  define vec8_store_nta_partial_hi(p,x,n)              \
-  (_mm256_maskstore_pd(&(p),k8store_hi_union[n].vi,x))
-#  define vec8_store_nta_partial_mid(p,x,nlo,nhi)                       \
-  (_mm256_maskstore_pd                                                  \
-   (&(p),                                                               \
-    _mm256_castpd_si256(_mm256_and_pd(k8store_lo_union[nlo].vd,         \
-                                      k8store_hi_union[nhi].vd)),       \
+  (_mm256_maskstore_pd(&(p),k8store_hi[n].vi,x))
+#  define vec8_store_nta_partial_mid(p,x,nlo,nhi)               \
+  (_mm256_maskstore_pd                                          \
+   (&(p),                                                       \
+    _mm256_castpd_si256(_mm256_and_pd(k8store_lo[nlo].vf,       \
+                                      k8store_hi[nhi].vf)),     \
     x))
 #endif
 
@@ -204,13 +204,10 @@ static const k8const_t k8store_hi_union[5] =
 
 // Functions and operators
 
-static const k8const_t k8sign_mask_union =
-  {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }};
-static const k8const_t k8abs_mask_union =
-  {{ K8_IMAX, K8_IMAX, K8_IMAX, K8_IMAX, }};
+static const k8const_t k8sign_mask = {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }};
 
 // Operators
-#define k8neg(x) (_mm256_xor_pd(x,k8sign_mask_union.vd))
+#define k8neg(x) (_mm256_xor_pd(x,k8sign_mask.vf))
 
 #define k8add(x,y) (_mm256_add_pd(x,y))
 #define k8sub(x,y) (_mm256_sub_pd(x,y))
@@ -231,10 +228,24 @@ static const k8const_t k8abs_mask_union =
 #endif
 
 // Cheap functions
-#define k8fabs(x)   (_mm256_and_pd(x,k8abs_mask_union.vd))
+#define k8copysign(x,y)                                 \
+  (_mm256_or_pd(_mm256_andnot_pd(k8sign_mask.vf,x),     \
+                _mm256_and_pd(k8sign_mask.vf,y)))
+#define k8fabs(x)   (_mm256_andnot_pd(k8sign_mask.vf,x))
 #define k8fmax(x,y) (_mm256_max_pd(x,y))
 #define k8fmin(x,y) (_mm256_min_pd(x,y))
-#define k8fnabs(x)  (_mm256_or_pd(x,k8sign_mask_union.vd))
+#define k8fnabs(x)  (_mm256_or_pd(x,k8sign_mask.vf))
+static const k8const_t k8zero = { f: { 0.0, 0.0, 0.0, 0.0, }};
+static const k8const_t k8one  = { f: { 1.0, 1.0, 1.0, 1.0, }};
+#define k8sgn(x_)                                                       \
+  ({                                                                    \
+    CCTK_REAL_VEC x__=(x_);                                             \
+    CCTK_REAL_VEC x=x__;                                                \
+    CCTK_REAL_VEC iszero = _mm256_cmp_pd(x, k8zero.vf, _CMP_EQ_OQ);     \
+    CCTK_REAL_VEC sign = _mm256_and_pd(k8sign_mask.vf, x);              \
+    CCTK_REAL_VEC signedone = _mm256_or_pd(sign, k8one.vf);             \
+    k8ifthen(iszero, k8zero.vf, signedone);                             \
+  })
 #define k8sqrt(x)   (_mm256_sqrt_pd(x))
 
 // Expensive functions
@@ -287,5 +298,10 @@ static const k8const_t k8abs_mask_union =
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
-// Choice   [sign(x)>0 ? y : z]
-#define k8ifmsb(x,y,z) (_mm256_blendv_pd(z,y,x))
+static const k8const_t k8lfalse = {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }};
+static const k8const_t k8ltrue  = {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }};
+#define k8lnot(x)       (_mm256_xor_pd(k8sign_mask,x))
+#define k8land(x,y)     (_mm256_and_pd(x,y))
+#define k8lor(x,y)      (_mm256_or_pd(x,y))
+#define k8lxor(x,y)     (_mm256_xor_pd(x,y))
+#define k8ifthen(x,y,z) (_mm256_blendv_pd(z,y,x))
