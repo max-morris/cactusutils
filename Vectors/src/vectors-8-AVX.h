@@ -40,9 +40,10 @@ union k8const_t {
   __m256d            vf;
 };
 
-#define K8_ZERO 0x0000000000000000ULL
-#define K8_IMIN 0x8000000000000000ULL
-#define K8_IMAX 0x7fffffffffffffffULL
+#define K8_ZERO    0x0000000000000000ULL
+#define K8_NOTZERO 0xffffffffffffffffULL
+#define K8_IMIN    0x8000000000000000ULL
+#define K8_IMAX    0x7fffffffffffffffULL
 
 
 
@@ -162,19 +163,19 @@ union k8const_t {
 // Masks indicating which vector element should be stored:
 static const k8const_t k8store_lo[5] =
   {
-    {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }},
-    {{ K8_IMIN, K8_ZERO, K8_ZERO, K8_ZERO, }},
-    {{ K8_IMIN, K8_IMIN, K8_ZERO, K8_ZERO, }},
-    {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_ZERO, }},
-    {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }},
+    {{ K8_ZERO   , K8_ZERO   , K8_ZERO   , K8_ZERO   , }},
+    {{ K8_NOTZERO, K8_ZERO   , K8_ZERO   , K8_ZERO   , }},
+    {{ K8_NOTZERO, K8_NOTZERO, K8_ZERO   , K8_ZERO   , }},
+    {{ K8_NOTZERO, K8_NOTZERO, K8_NOTZERO, K8_ZERO   , }},
+    {{ K8_NOTZERO, K8_NOTZERO, K8_NOTZERO, K8_NOTZERO, }},
   };
 static const k8const_t k8store_hi[5] =
   {
-    {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }},
-    {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_IMIN, }},
-    {{ K8_ZERO, K8_ZERO, K8_IMIN, K8_IMIN, }},
-    {{ K8_ZERO, K8_IMIN, K8_IMIN, K8_IMIN, }},
-    {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }},
+    {{ K8_ZERO   , K8_ZERO   , K8_ZERO   , K8_ZERO   , }},
+    {{ K8_ZERO   , K8_ZERO   , K8_ZERO   , K8_NOTZERO, }},
+    {{ K8_ZERO   , K8_ZERO   , K8_NOTZERO, K8_NOTZERO, }},
+    {{ K8_ZERO   , K8_NOTZERO, K8_NOTZERO, K8_NOTZERO, }},
+    {{ K8_NOTZERO, K8_NOTZERO, K8_NOTZERO, K8_NOTZERO, }},
   };
 #if !defined(__INTEL_COMPILER) && defined(__GNUC__) && __GNUC__==4 && __GNUC_MINOR__<=4
 // gcc 4.4 uses a wrong prototype for _mm256_maskstore_pd
