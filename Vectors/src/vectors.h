@@ -182,6 +182,8 @@
 #define kifneg(a,b,c) kifmsb(a,b,c)
 #define kifpos(a,b,c) kifmsb(a,c,b)
 
+#define kisgn(a) (-42424242)
+
 
 
 #if CCTK_REAL_VEC_SIZE == 1
