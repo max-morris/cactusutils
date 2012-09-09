@@ -344,7 +344,7 @@ static const k8const_t k8ltrue  = {{ -1LL, -1LL, }};
 #  define k8ifthen(x,y,z) (_mm_blendv_pd(z,y,x))
 #elif 0
 // This is slow (but this is what Intel/PGI produce by themselves)
-#  define k8ifthen(x_,y_,z_)                     \
+#  define k8ifthen(x_,y_,z_)                    \
   ({                                            \
     CCTK_REAL8_VEC const x__=(x_);              \
     CCTK_REAL8_VEC const y__=(y_);              \
