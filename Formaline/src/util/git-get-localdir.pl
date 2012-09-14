@@ -22,6 +22,10 @@ $silent = $silent !~ /^no$/i;
 my $silencer = $silent ? '> /dev/null 2>&1' : '';
 
 
+# Abort gracefully if simfactory is not found
+if (not -x "${CCTK_HOME}/simfactory/bin/sim") {
+    warn "Could not find simfactory in '${CCTK_HOME}/simfactory/bin/sim'. Local git repository will not be used.";
+}
 
 # Obtain local machine name
 my $machine = `cd ${CCTK_HOME} && ${CCTK_HOME}/simfactory/bin/sim whoami`;
