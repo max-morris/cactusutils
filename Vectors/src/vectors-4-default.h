@@ -19,6 +19,12 @@
 // Number of vector elements in a vector
 #define CCTK_REAL4_VEC_SIZE 1
 
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER4     CCTK_REAL4
+#define CCTK_BOOLEAN4     CCTK_REAL4
+#define CCTK_INTEGER4_VEC CCTK_REAL4_VEC
+#define CCTK_BOOLEAN4_VEC CCTK_REAL4_VEC
+
 
 
 // Create a vector replicating a scalar
@@ -114,4 +120,20 @@
 #  define k4signbit(x) (signbit(x))
 #endif
 
-#define k4ifthen(x,y,z) (k4signbit(x)?(y):(z))
+#define k4l2r(x_) ({ CCTK_INT4 x__=(x_); CCTK_INT4 x=x__; *(CCTK_REAL4*)&x; })
+#define k4r2l(x_) ({ CCTK_REAL4 x__=(x_); CCTK_REAL4 x=x__; *(CCTK_INT4*)&x; })
+#define k4lfalse k4l2r(0)
+#define k4ltrue  k4l2r(1)
+#define k4lnot(x)   k4l2r(!k4r2l(x))
+#define k4land(x,y) k4l2r(k4r2l(x) && k4r2l(y))
+#define k4lor(x,y)  k4l2r(k4r2l(x) || k4r2l(y))
+#define k4lxor(x,y) k4l2r(!k4r2l(x) != !k4r2l(y))
+
+#define k4ifthen(x,y,z) ((x)?(y):(z))
+
+#define k4cmpeq(x,y) k4l2r((x)==(y))
+#define k4cmpne(x,y) k4l2r((x)!=(y))
+#define k4cmpgt(x,y) k4l2r((x)>(y))
+#define k4cmpge(x,y) k4l2r((x)>=(y))
+#define k4cmplt(x,y) k4l2r((x)<(y))
+#define k4cmple(x,y) k4l2r((x)<=(y))

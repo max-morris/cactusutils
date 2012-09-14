@@ -31,6 +31,12 @@
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL8_VEC_SIZE 4
 
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER8     CCTK_REAL8
+#define CCTK_BOOLEAN8     CCTK_REAL8
+#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+#define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
+
 
 
 union k8const_t {
@@ -299,10 +305,21 @@ static const k8const_t k8one  = { f: { 1.0, 1.0, 1.0, 1.0, }};
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
-static const k8const_t k8lfalse = {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }};
-static const k8const_t k8ltrue  = {{ K8_IMIN, K8_IMIN, K8_IMIN, K8_IMIN, }};
-#define k8lnot(x)       (_mm256_xor_pd(k8sign_mask,x))
+static const k8const_t k8lfalse_ =
+  {{ K8_ZERO, K8_ZERO, K8_ZERO, K8_ZERO, }};
+static const k8const_t k8ltrue_  =
+  {{ K8_NOTZERO, K8_NOTZERO, K8_NOTZERO, K8_NOTZERO, }};
+#define k8lfalse        (k8lfalse_.vf)
+#define k8ltrue         (k8ltrue_.vf)
+#define k8lnot(x)       (_mm256_xor_pd(k8ltrue,x))
 #define k8land(x,y)     (_mm256_and_pd(x,y))
 #define k8lor(x,y)      (_mm256_or_pd(x,y))
 #define k8lxor(x,y)     (_mm256_xor_pd(x,y))
 #define k8ifthen(x,y,z) (_mm256_blendv_pd(z,y,x))
+
+#define k8cmpeq(x,y) (_mm256_cmp_pd(x,y,_CMP_EQ_OQ))
+#define k8cmpne(x,y) (_mm256_cmp_pd(x,y,_CMP_NEQ_OQ))
+#define k8cmpgt(x,y) (_mm256_cmp_pd(x,y,_CMP_GT_OQ))
+#define k8cmpge(x,y) (_mm256_cmp_pd(x,y,_CMP_GE_OQ))
+#define k8cmplt(x,y) (_mm256_cmp_pd(x,y,_CMP_LT_OQ))
+#define k8cmple(x,y) (_mm256_cmp_pd(x,y,_CMP_LE_OQ))

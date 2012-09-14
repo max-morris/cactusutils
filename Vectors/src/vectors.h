@@ -22,7 +22,7 @@
 #    else
 #      include "vectors-8-SSE2.h"
 #    endif
-#  elif defined(_ARCH_QP)       // Blue Gene/Q QPX
+#  elif defined(__bgq__) && defined(__VECTOR4DOUBLE__) // Blue Gene/Q QPX
 #    include "vectors-8-QPX.h"
 #  elif defined(__ALTIVEC__) && defined(_ARCH_PWR7) // Power VSX
 #    include "vectors-8-VSX.h"
@@ -50,6 +50,10 @@
 
 #  define CCTK_REAL_VEC      CCTK_REAL4_VEC
 #  define CCTK_REAL_VEC_SIZE CCTK_REAL4_VEC_SIZE
+#  define CCTK_INTEGER       CCTK_INTEGER4
+#  define CCTK_BOOLEAN       CCTK_BOOLEAN4
+#  define CCTK_INTEGER_VEC   CCTK_INTEGER4_VEC
+#  define CCTK_BOOLEAN_VEC   CCTK_BOOLEAN4_VEC
 
 #  define vec_set1 vec4_set1
 #  define vec_set  vec4_set
@@ -105,7 +109,20 @@
 #  define ktan      k4tan
 #  define ktanh     k4tanh
 
+#  define klfalse k4lfalse
+#  define kltrue  k4ltrue 
+#  define klnot   k4lnot  
+#  define kland   k4land  
+#  define klor    k4lor   
+#  define klxor   k4lxor  
 #  define kifthen k4ifthen
+
+#  define kcmpeq k4cmpeq
+#  define kcmpne k4cmpne
+#  define kcmpgt k4cmpgt
+#  define kcmpge k4cmpge
+#  define kcmplt k4cmplt
+#  define kcmple k4cmple
 
 #elif defined(CCTK_REAL_PRECISION_8)
 
@@ -113,6 +130,10 @@
 
 #  define CCTK_REAL_VEC      CCTK_REAL8_VEC
 #  define CCTK_REAL_VEC_SIZE CCTK_REAL8_VEC_SIZE
+#  define CCTK_INTEGER       CCTK_INTEGER8
+#  define CCTK_BOOLEAN       CCTK_BOOLEAN8
+#  define CCTK_INTEGER_VEC   CCTK_INTEGER8_VEC
+#  define CCTK_BOOLEAN_VEC   CCTK_BOOLEAN8_VEC
 
 #  define vec_set1 vec8_set1
 #  define vec_set  vec8_set
@@ -168,7 +189,20 @@
 #  define ktan      k8tan
 #  define ktanh     k8tanh
 
+#  define klfalse k8lfalse
+#  define kltrue  k8ltrue 
+#  define klnot   k8lnot  
+#  define kland   k8land  
+#  define klor    k8lor   
+#  define klxor   k8lxor  
 #  define kifthen k8ifthen
+
+#  define kcmpeq k8cmpeq
+#  define kcmpne k8cmpne
+#  define kcmpgt k8cmpgt
+#  define kcmpge k8cmpge
+#  define kcmplt k8cmplt
+#  define kcmple k8cmple
 
 #else
 
@@ -178,6 +212,7 @@
 
 
 
+// Deprecated
 #define kifmsb(a,b,c) kifthen(a,b,c)
 #define kifneg(a,b,c) kifmsb(a,b,c)
 #define kifpos(a,b,c) kifmsb(a,c,b)

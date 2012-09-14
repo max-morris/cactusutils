@@ -58,6 +58,12 @@
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL8_VEC_SIZE 2
 
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER8     CCTK_REAL8
+#define CCTK_BOOLEAN8     CCTK_REAL8
+#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+#define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
+
 
 
 union k8const_t {
@@ -333,8 +339,10 @@ static const k8const_t k8one  = { f: { 1.0, 1.0, }};
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
-static const k8const_t k8lfalse = {{ +0LL, +0LL, }};
-static const k8const_t k8ltrue  = {{ -1LL, -1LL, }};
+static const k8const_t k8lfalse_ = {{ +0LL, +0LL, }};
+static const k8const_t k8ltrue_  = {{ -1LL, -1LL, }};
+#define k8lfalse (k8lfalse_.vf)
+#define k8ltrue  (k8ltrue_.vf)
 #define k8lnot(x)   (_mm_xor_pd(k8ltrue,x))
 #define k8land(x,y) (_mm_and_pd(x,y))
 #define k8lor(x,y)  (_mm_or_pd(x,y))
@@ -412,3 +420,10 @@ static const k8const_t k8ione  = {{ 0x1ULL, 0x1ULL, }};
     _mm_or_pd(_mm_and_pd(x, y), _mm_andnot_pd(x, z));           \
   })
 #endif
+
+#define k8cmpeq(x,y) (_mm_cmpeq_pd(x,y))
+#define k8cmpne(x,y) (_mm_cmpneq_pd(x,y))
+#define k8cmpgt(x,y) (_mm_cmpgt_pd(x,y))
+#define k8cmpge(x,y) (_mm_cmpge_pd(x,y))
+#define k8cmplt(x,y) (_mm_cmplt_pd(x,y))
+#define k8cmple(x,y) (_mm_cmple_pd(x,y))

@@ -3,6 +3,8 @@
 // Use the type double _Complex directly, without introducing a wrapper class
 // Use macros instead of inline functions
 
+// See <http://publib.boulder.ibm.com/infocenter/compbgpl/v9v111/index.jsp>
+
 
 
 #include <assert.h>
@@ -20,6 +22,12 @@
 
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL8_VEC_SIZE 2
+
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER8     CCTK_REAL8
+#define CCTK_BOOLEAN8     CCTK_REAL8
+#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+#define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
 
 
 
@@ -195,7 +203,9 @@ union k8const_t {
 #define k8nmsub(x,y,z) (__fpnmsub(z,x,y))
 
 // Cheap functions
-#define k8fabs(x) (__fpabs(x))
+// TODO: handle -0 correctly
+#define k8copysign(x,y) (k8ifthen(y,k8fabs(x),k8fnabs(x)))
+#define k8fabs(x)       (__fpabs(x))
 #define k8fmax(x_,y_)                           \
   ({                                            \
     CCTK_REAL8_VEC const x__=(x_);              \
@@ -220,11 +230,8 @@ static const k8const_t k8mone = {{ -1.0, -1.0, }};
   ({                                                                    \
     CCTK_REAL_VEC x__=(x_);                                             \
     CCTK_REAL_VEC x=x__;                                                \
-    /* TODO: this assumes that __fpsel says -0>=+0;                     \
-       if this is not so, we need k8abs(x) instead of x for iszero. */  \
-    CCTK_REAL_VEC iszero = k8land(__fpsel(x, k8lfalse.vf, k8ltrue.vf),  \
-                                  __fpsel(k8neg(x), k8lfalse.vf, k8ltrue.vf)); \
-    CCTK_REAL_VEC signedone = __fpsel(x, k8mone.vf, k8one.vf);          \
+    CCTK_REAL_VEC iszero = k8fnabs(x);                                  \
+    CCTK_REAL_VEC signedone = k8ifthen(x, k8one.vf, k8mone.vf);         \
     k8ifthen(iszero, k8zero.vf, signedone);                             \
   })
 // Estimate for reciprocal square root
@@ -301,10 +308,21 @@ static const k8const_t k8mone = {{ -1.0, -1.0, }};
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
-static const k8const_t k8lfalse = {{ -1.0, -1.0, }};
-static const k8const_t k8ltrue  = {{ +1.0, +1.0, }};
-#define k8lnot(x)       (__fpneg(x))
-#define k8land(x,y)     (k8ifthen(x,y,k8lfalse.vf))
-#define k8lor(x,y)      (k8ifthen(x,k8ltrue.vf,y))
+// canonical true is +1.0, canonical false is -1.0
+// >=0 is true, -0 is true (?), nan is false (?)
+static const k8const_t k8lfalse_ = {{ -1.0, -1.0, }};
+static const k8const_t k8ltrue_  = {{ +1.0, +1.0, }};
+#define k8lfalse        (k8lfalse_.vf)
+#define k8ltrue         (k8ltrue_.vf)
+#define k8lnot(x)       (k8ifthen(x,k8lfalse,k8ltrue))
+#define k8land(x,y)     (k8ifthen(x,y,k8lfalse))
+#define k8lor(x,y)      (k8ifthen(x,k8ltrue,y))
 #define k8lxor(x,y)     (k8ifthen(x,k8lnot(y),y))
 #define k8ifthen(x,y,z) (__fpsel(x,z,y))
+
+#define k8cmpeq(x,y) (__fpnabs((x)-(y)))
+#define k8cmpne(x,y) (k8lnot(__fpnabs((x)-(y))))
+#define k8cmpgt(x,y) (k8lnot(k8cmple(x,y)))
+#define k8cmpge(x,y) ((x)-(y))
+#define k8cmplt(x,y) (k8lnot(k8cmpge(x,y)))
+#define k8cmple(x,y) ((y)-(x))

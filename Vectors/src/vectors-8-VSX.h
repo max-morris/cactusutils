@@ -3,6 +3,8 @@
 // Use the type vector double directly, without introducing a wrapper class
 // Use macros instead of inline functions
 
+// See <http://pic.dhe.ibm.com/infocenter/comphelp/v111v131/index.jsp>
+
 
 
 #include <altivec.h>
@@ -16,6 +18,12 @@
 
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL8_VEC_SIZE 2
+
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER8     long long
+#define CCTK_BOOLEAN8     long long
+#define CCTK_INTEGER8_VEC vector long long
+#define CCTK_BOOLEAN8_VEC vector bool long long
 
 
 
@@ -55,6 +63,25 @@
 // stvxl instruction doesn't exist for double precision
 #define vec8_store_nta(p,x) vec8_store(p,x)
 
+// Store a partial vector (aligned and non-temporal)
+#define vec8_store_partial_prepare(i,imin,imax)                 \
+  bool const v8stp_lo = (i)>=(imin);                            \
+  bool const v8stp_hi = (i)+CCTK_REAL8_VEC_SIZE-1<(imax)
+#define vec8_store_nta_partial(p_,x_)                           \
+  ({                                                            \
+    CCTK_REAL8& p__=(p_);                                       \
+    CCTK_REAL8& p=p__;                                          \
+    CCTK_REAL8_VEC const x__=(x_);                              \
+    CCTK_REAL8_VEC const x=x__;                                 \
+    if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) {     \
+      vec8_store(p,x);                                          \
+    } else if (v8stp_lo) {                                      \
+      (&p)[0]=vec8_elt0(x);                                     \
+    } else if (v8stp_hi) {                                      \
+      (&p)[1]=vec8_elt1(x);                                     \
+    }                                                           \
+  })
+
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
 #define vec8_store_nta_partial_lo(p,x,n) ((&(p))[0]=(x)[0])
@@ -80,10 +107,20 @@
 #define k8nmsub(x,y,z) (vec_nmsub(x,y,z))
 
 // Cheap functions
-#define k8fabs(x)   (vec_abs(x))
-#define k8fmax(x,y) (vec_max(x,y))
-#define k8fmin(x,y) (vec_min(x,y))
-#define k8fnabs(x)  (vec_nabs(x))
+#define k8copysign(x,y) (vec_cpsgn(y,x))
+#define k8fabs(x)       (vec_abs(x))
+#define k8fmax(x,y)     (vec_max(x,y))
+#define k8fmin(x,y)     (vec_min(x,y))
+#define k8fnabs(x)      (vec_nabs(x))
+#define k8sgn(x_)                                                       \
+  ({                                                                    \
+    CCTK_REAL8_VEC x__=(x_);                                            \
+    CCTK_REAL8_VEC x=x__;                                               \
+    CCTK_BOOLEAN8_VEC iszero = k8cmpeq(x,vec8_set1((CCTK_REAL8)0.0));   \
+    CCTK_REAL8_VEC signedone = k8copysign(vec8_set1((CCTK_REAL8)1.0),x); \
+    k8ifthen(iszero, vec8_set1((CCTK_REAL8)0.0), signedone);            \
+  })
+#define k8sqrt(x)       (vec_sqrt(x))
 
 // Expensive functions
 #define K8REPL(f,x_)                            \
@@ -129,13 +166,24 @@
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
-/* #define k8ifmsb(x,y,z)                                                  \ */
-/*   (vec_sel((z), (y), vec_sra(vec_convert((x), &(vector long long*)0), 63))) */
-
-#define k8lfalse        (vec_splats(+0LL))
-#define k8ltrue         (vec_splats(-1LL))
-#define k8lnot(x)       (vec_xor(x,k8ltrue))
-#define k8land(x,y,z)   (vec_and(x,y))
-#define k8lor(x,y,z)    (vec_or(x,y))
-#define k8lxor(x,y,z)   (vec_xor(x,y))
+// canonical true is -1LL, canonical false is 0LL
+// truth values are interpreted bit-wise
+#define k8lfalse        ({ CCTK_BOOLEAN8_VEC dummy; vec_xor(dummy,dummy); })
+#define k8ltrue         (k8lnot(k8lfalse))
+#define k8lnot(x_)                              \
+  ({                                            \
+    CCTK_BOOLEAN8_VEC x__=(x_);                 \
+    CCTK_BOOLEAN8_VEC x=x__;                    \
+    vec_nor(x,x);                               \
+  })
+#define k8land(x,y)     (vec_and(x,y))
+#define k8lor(x,y)      (vec_or(x,y))
+#define k8lxor(x,y)     (vec_xor(x,y))
 #define k8ifthen(x,y,z) (vec_sel(z,y,x))
+
+#define k8cmpeq(x,y) (vec_cmpeq(x,y))
+#define k8cmpne(x,y) (k8lnot(vec_cmpeq(x,y)))
+#define k8cmpgt(x,y) (vec_cmpgt(x,y))
+#define k8cmpge(x,y) (vec_cmpge(x,y))
+#define k8cmplt(x,y) (vec_cmplt(x,y))
+#define k8cmple(x,y) (vec_cmple(x,y))

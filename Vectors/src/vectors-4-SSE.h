@@ -48,6 +48,12 @@
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL4_VEC_SIZE 4
 
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER4     CCTK_REAL4
+#define CCTK_BOOLEAN4     CCTK_REAL4
+#define CCTK_INTEGER4_VEC CCTK_REAL4_VEC
+#define CCTK_BOOLEAN4_VEC CCTK_REAL4_VEC
+
 
 
 union k4const_t {
@@ -385,8 +391,10 @@ static const k4const_t k4one  = { f: { 1.0f, 1.0f, 1.0f, 1.0f, }};
 #define k4tan(x)     K4REPL(tanf,x)
 #define k4tanh(x)    K4REPL(tanhf,x)
 
-static const k4const_t k4lfalse = {{ +0U, +0U, +0U, +0U, }};
-static const k4const_t k4ltrue  = {{ -1U, -1U, -1U, -1U, }};
+static const k4const_t k4lfalse_ = {{ +0U, +0U, +0U, +0U, }};
+static const k4const_t k4ltrue_  = {{ -1U, -1U, -1U, -1U, }};
+#define k4lfalse (k4lfalse_.vf)
+#define k4ltrue  (k4ltrue_.vf)
 #define k4lnot(x)   (_mm_xor_ps(k4ltrue,x))
 #define k4land(x,y) (_mm_and_ps(x,y))
 #define k4lor(x,y)  (_mm_or_ps(x,y))
@@ -442,3 +450,10 @@ static const k4const_t k4ltrue  = {{ -1U, -1U, -1U, -1U, }};
     _mm_or_ps(_mm_and_ps(x, y), _mm_andnot_ps(x, z));           \
   })
 #endif
+
+#define k4cmpeq(x,y) (_mm_cmpeq_ps(x,y))
+#define k4cmpne(x,y) (_mm_cmpneq_ps(x,y))
+#define k4cmpgt(x,y) (_mm_cmpgt_ps(x,y))
+#define k4cmpge(x,y) (_mm_cmpge_ps(x,y))
+#define k4cmplt(x,y) (_mm_cmplt_ps(x,y))
+#define k4cmple(x,y) (_mm_cmple_ps(x,y))

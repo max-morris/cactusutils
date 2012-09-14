@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <limits>
 
 using namespace std;
@@ -21,17 +22,18 @@ inline CCTK_REAL my_copysign (CCTK_REAL const x, CCTK_REAL const y)
 
 inline int my_isnan (CCTK_REAL const x)
 {
-  return std::isnan(x);
+  using namespace std;
+  return isnan(x);
 }
 
 inline int my_signbit (CCTK_REAL const x)
 {
-  return std::signbit(x);
+  using namespace std;
+  return signbit(x);
 }
 
 inline CCTK_REAL my_sgn (CCTK_REAL const x)
 {
-  using namespace std;
   return x == (CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : my_copysign((CCTK_REAL)1.0, x);
 }
 
@@ -78,6 +80,27 @@ inline CCTK_REAL my_sgn (CCTK_REAL const x)
                         "Failed test %s: "                              \
                         "for element %d, expected %.17g, received %.17g", \
                         testname, i, (double)res, (double)vecres);      \
+      }                                                                 \
+      numtests++;                                                       \
+    }                                                                   \
+  } while(0)
+
+#define VECBITTEST(testname, vecexpr, scalarexpr)                       \
+  do {                                                                  \
+    if (verbose) {                                                      \
+      CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
+    }                                                                   \
+    CCTK_BOOLEAN_VEC rv = (vecexpr);                                    \
+    for (int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                          \
+      CCTK_BOOLEAN res = (scalarexpr);                                  \
+      CCTK_BOOLEAN vecres = vec_elt(rv,i);                              \
+      if (memcmp(&vecres, &res, sizeof vecres) == 0) {                  \
+        passed++;                                                       \
+      } else {                                                          \
+        CCTK_VParamWarn(CCTK_THORNSTRING,                               \
+                        "Failed test %s: "                              \
+                        "for element %d, expected %lld, received %lld", \
+                        testname, i, (long long)res, (long long)vecres);      \
       }                                                                 \
       numtests++;                                                       \
     }                                                                   \
@@ -257,6 +280,7 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("ktan",      ktan(xv),          tan(x[i])           );
   VECTEST("ktanh",     ktanh(xv),         tanh(x[i])          );
 
+#if 0
   VECTEST("kifpos positive",
           kifpos(av, bv, cv), my_signbit(a[i]) ? c[i] : b[i]);
   VECTEST("kifpos negative",
@@ -270,6 +294,35 @@ void Vectors_Test(CCTK_ARGUMENTS)
           kifneg(bv, bv, cv), my_signbit(b[i]) ? b[i] : c[i]);
   VECTEST("kifneg 0",  kifneg(vec_set1(0.),bv,cv),  c[i]);
   VECTEST("kifneg -0", kifneg(vec_set1(-0.),bv,cv), b[i]);
+#endif
+
+  CCTK_BOOLEAN_VEC testklfalse = klfalse;
+  CCTK_BOOLEAN_VEC testkltrue  = kltrue;
+  CCTK_BOOLEAN klfalse1 = vec_elt(testklfalse,0);
+  CCTK_BOOLEAN kltrue1  = vec_elt(testkltrue ,0);
+  VECBITTEST("klnot F", klnot(klfalse), kltrue1 );
+  VECBITTEST("klnot T", klnot(kltrue ), klfalse1);
+  VECBITTEST("kland FF", kland(klfalse,klfalse), klfalse1);
+  VECBITTEST("kland FT", kland(klfalse,kltrue ), klfalse1);
+  VECBITTEST("kland TF", kland(kltrue ,klfalse), klfalse1);
+  VECBITTEST("kland TT", kland(kltrue ,kltrue ), kltrue1 );
+  VECBITTEST("klor FF", klor(klfalse,klfalse), klfalse1);
+  VECBITTEST("klor FT", klor(klfalse,kltrue ), kltrue1 );
+  VECBITTEST("klor TF", klor(kltrue ,klfalse), kltrue1 );
+  VECBITTEST("klor TT", klor(kltrue ,kltrue ), kltrue1 );
+  VECBITTEST("klxor FF", klxor(klfalse,klfalse), klfalse1);
+  VECBITTEST("klxor FT", klxor(klfalse,kltrue ), kltrue1 );
+  VECBITTEST("klxor TF", klxor(kltrue ,klfalse), kltrue1 );
+  VECBITTEST("klxor TT", klxor(kltrue ,kltrue ), klfalse1);
+  VECTEST("kifthen F", kifthen(klfalse,av,bv), b[i]);
+  VECTEST("kifthen T", kifthen(kltrue ,av,bv), a[i]);
+  
+  VECBITTEST("kcmpeq", kcmpeq(av,bv), a[i]==b[i]?kltrue1:klfalse1);
+  VECBITTEST("kcmpne", kcmpne(av,bv), a[i]!=b[i]?kltrue1:klfalse1);
+  VECBITTEST("kcmpgt", kcmpgt(av,bv), a[i]> b[i]?kltrue1:klfalse1);
+  VECBITTEST("kcmpge", kcmpge(av,bv), a[i]>=b[i]?kltrue1:klfalse1);
+  VECBITTEST("kcmplt", kcmplt(av,bv), a[i]< b[i]?kltrue1:klfalse1);
+  VECBITTEST("kcmple", kcmple(av,bv), a[i]<=b[i]?kltrue1:klfalse1);
 
   if (passed != numtests) {
     CCTK_VWarn(CCTK_WARN_ALERT, __LINE__, __FILE__, CCTK_THORNSTRING,

@@ -19,6 +19,12 @@
 // Number of vector elements in a vector
 #define CCTK_REAL8_VEC_SIZE 1
 
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER8     CCTK_REAL8
+#define CCTK_BOOLEAN8     CCTK_REAL8
+#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+#define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
+
 
 
 // Create a vector replicating a scalar
@@ -112,4 +118,20 @@
 #  define k8signbit(x) (signbit(x))
 #endif
 
-#define k8ifthen(x,y,z) (k8signbit(x)?(y):(z))
+#define k8l2r(x_) ({ CCTK_INT8 x__=(x_); CCTK_INT8 x=x__; *(CCTK_REAL8*)&x; })
+#define k8r2l(x_) ({ CCTK_REAL8 x__=(x_); CCTK_REAL8 x=x__; *(CCTK_INT8*)&x; })
+#define k8lfalse k8l2r(0)
+#define k8ltrue  k8l2r(1)
+#define k8lnot(x)   k8l2r(!k8r2l(x))
+#define k8land(x,y) k8l2r(k8r2l(x) && k8r2l(y))
+#define k8lor(x,y)  k8l2r(k8r2l(x) || k8r2l(y))
+#define k8lxor(x,y) k8l2r(!k8r2l(x) != !k8r2l(y))
+
+#define k8ifthen(x,y,z) ((x)?(y):(z))
+
+#define k8cmpeq(x,y) k8l2r((x)==(y))
+#define k8cmpne(x,y) k8l2r((x)!=(y))
+#define k8cmpgt(x,y) k8l2r((x)>(y))
+#define k8cmpge(x,y) k8l2r((x)>=(y))
+#define k8cmplt(x,y) k8l2r((x)<(y))
+#define k8cmple(x,y) k8l2r((x)<=(y))

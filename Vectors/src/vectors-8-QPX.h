@@ -6,6 +6,8 @@
 // Note: bgxlC_r does not like const declarations, so we need to cast
 // them away and/or omit them everywhere
 
+// See <http://pic.dhe.ibm.com/infocenter/compbg/v121v141/index.jsp>
+
 
 
 #include <assert.h>
@@ -19,10 +21,17 @@
 #define vec8_architecture "QPX"
 
 // Vector type corresponding to CCTK_REAL
+// TODO: Use a typedef to avoid the "const" issue? Or use a struct?
 #define CCTK_REAL8_VEC vector4double
 
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL8_VEC_SIZE 4
+
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER8     CCTK_REAL8
+#define CCTK_BOOLEAN8     CCTK_REAL8
+#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+#define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
 
 
 
@@ -300,6 +309,8 @@ union k8const_t {
 #define k8tan(x)     K8REPL(tan,x)
 #define k8tanh(x)    K8REPL(tanh,x)
 
+// canonical true is +1.0, canonical false is -1.0
+// >=0 is true, -0 is true, nan is false
 #define k8lfalse                                                        \
   ({ CCTK_REAL8_VEC dummy; vec_logical(dummy,dummy,0x0); })
 #define k8ltrue                                                         \
@@ -309,3 +320,10 @@ union k8const_t {
 #define k8lor(x,y)      (vec_or(x,y))
 #define k8lxor(x,y)     (vec_xor(x,y))
 #define k8ifthen(x,y,z) (vec_sel(z,x,y))
+
+#define k8cmpeq(x,y) (vec_cmpeq(x,y))
+#define k8cmpne(x,y) (vec_not(vec_cmpeq(x,y)))
+#define k8cmpgt(x,y) (vec_cmpgt(x,y))
+#define k8cmpge(x,y) (vec_not(vec_cmplt(x,y)))
+#define k8cmplt(x,y) (vec_cmplt(x,y))
+#define k8cmple(x,y) (vec_not(vec_cmpgt(x,y)))

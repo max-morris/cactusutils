@@ -17,6 +17,12 @@
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL4_VEC_SIZE 4
 
+// Integer and boolean types corresponding to this real type
+#define CCTK_INTEGER4     CCTK_REAL4
+#define CCTK_BOOLEAN4     CCTK_REAL4
+#define CCTK_INTEGER4_VEC CCTK_REAL4_VEC
+#define CCTK_BOOLEAN4_VEC CCTK_REAL4_VEC
+
 
 
 // Create vectors, extract vector elements
