@@ -6,6 +6,7 @@
 
 use strict;
 use Cwd;
+use POSIX;
 #use Fcntl ':flock';
 use sigtrap qw(die normal-signals);
 
@@ -32,6 +33,7 @@ my $lockdir = "$git_dir/GITLOCK";
 my $waittime = 0.01;
 my $maxwaittime = 10;
 while (! (mkdir $lockdir)) {
+    die if $! != EEXIST;
     # Wait some time
     my $unit = $waittime==1 ? "second" : "seconds";
     print "Git repository is busy; waiting $waittime $unit...\n";
