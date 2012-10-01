@@ -884,7 +884,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
 
   /* get the pointer to the data (current time level) */
   data = CCTK_VarDataPtrI (info->GH, timelevel, vindex);
-  if (ignore_restricted_points)
+  if (ignore_restricted_points && gtype == CCTK_GF)
   {
     CarpetWeights = (CCTK_REAL *)(CCTK_VarDataPtr(info->GH, timelevel, restriction_mask));
     if (NULL == CarpetWeights)
