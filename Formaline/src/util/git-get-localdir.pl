@@ -22,31 +22,8 @@ $silent = $silent !~ /^no$/i;
 my $silencer = $silent ? '> /dev/null 2>&1' : '';
 
 
-# Abort gracefully if simfactory is not found
-if (not -x "${CCTK_HOME}/simfactory/bin/sim") {
-    warn "Could not find simfactory in '${CCTK_HOME}/simfactory/bin/sim'. Local git repository will not be used.";
-}
 
-# Obtain local machine name
-my $machine = `cd ${CCTK_HOME} && ${CCTK_HOME}/simfactory/bin/sim whoami`;
-chomp $machine;
-$machine =~ s{Current machine:\s*(.*)}{$1};
-exit 0 if $machine eq '';
-
-# Obtain sourcebasedir
-my @mdb=`cd ${CCTK_HOME} && ${CCTK_HOME}/simfactory/bin/sim print-mdb "${machine}"`;
-@mdb = grep m{^\s*sourcebasedir\s*=}, @mdb;
-exit 1 if @mdb != 1;
-my $sourcebasedir = $mdb[0];
-$sourcebasedir =~ s{^[^=]*=\s*(.*)}{$1};
-chomp $sourcebasedir;
-exit 0 if $sourcebasedir eq '';
-
-# Replace variables
-if ($ENV{'USER'}) {
-    my $USER = $ENV{'USER'};
-    $sourcebasedir =~ s{\@USER\@}{${USER}}g;
-}
+my $sourcebasedir = "${CCTK_HOME}/..";
 
 # Define local git repo name
 my $git_local_repo = "${sourcebasedir}/CactusSourceJar.git";
