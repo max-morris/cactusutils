@@ -698,7 +698,7 @@ CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights,
 #if defined(HAVE_ISNAN) && defined(HAVE_FINITE)
         ! finite ((double) _data[_i]) && (info->check_for == t_nanchecker_info::CHECK_FOR_BOTH ||
         ((isnan ((double) _data[_i]) & 1) ^ info->check_for))
-#elif defined(NAVE_ISNAN)
+#elif defined(HAVE_ISNAN)
         isnan ((double) _data[_i])
 #else
         0
