@@ -391,8 +391,8 @@ static const k4const_t k4one  = { f: { 1.0f, 1.0f, 1.0f, 1.0f, }};
 #define k4tan(x)     K4REPL(tanf,x)
 #define k4tanh(x)    K4REPL(tanhf,x)
 
-static const k4const_t k4lfalse_ = {{ +0U, +0U, +0U, +0U, }};
-static const k4const_t k4ltrue_  = {{ -1U, -1U, -1U, -1U, }};
+static const k4const_t k4lfalse_ = {{  0U,  0U,  0U,  0U, }};
+static const k4const_t k4ltrue_  = {{ ~0U, ~0U, ~0U, ~0U, }};
 #define k4lfalse (k4lfalse_.vf)
 #define k4ltrue  (k4ltrue_.vf)
 #define k4lnot(x)   (_mm_xor_ps(k4ltrue,x))

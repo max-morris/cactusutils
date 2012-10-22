@@ -1,4 +1,4 @@
-// Vectorise using Intel's or AMD's SSE2
+
 
 // Use the type __m128d directly, without introducing a wrapper class
 // Use macros instead of inline functions
