@@ -14,27 +14,9 @@ using namespace std;
 
 
 
-inline CCTK_REAL my_copysign (CCTK_REAL const x, CCTK_REAL const y)
-{
-  using namespace std;
-  return copysign(x, y);
-}
-
-inline int my_isnan (CCTK_REAL const x)
-{
-  using namespace std;
-  return isnan(x);
-}
-
-inline int my_signbit (CCTK_REAL const x)
-{
-  using namespace std;
-  return signbit(x);
-}
-
 inline CCTK_REAL my_sgn (CCTK_REAL const x)
 {
-  return x == (CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : my_copysign((CCTK_REAL)1.0, x);
+  return x == (CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : copysign((CCTK_REAL)1.0, x);
 }
 
 
@@ -49,7 +31,7 @@ inline CCTK_REAL my_sgn (CCTK_REAL const x)
     CCTK_REAL const eps = numeric_limits<CCTK_REAL>::epsilon();         \
     assert(abs((CCTK_REAL)0.1) > 0);                                    \
     if ((abs(vecres - res) <= 10*eps) or                                \
-        (my_isnan(vecres) and my_isnan(res)))                           \
+        (isnan(vecres) and isnan(res)))                                 \
     {                                                                   \
       passed++;                                                         \
     } else {                                                            \
@@ -72,7 +54,7 @@ inline CCTK_REAL my_sgn (CCTK_REAL const x)
       CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();             \
       assert(abs((CCTK_REAL)0.1) > 0);                                  \
       if ((abs(vecres - res) <= 10*eps) or                              \
-          (my_isnan(vecres) and my_isnan(res)))                         \
+          (isnan(vecres) and isnan(res)))                               \
       {                                                                 \
         passed++;                                                       \
       } else {                                                          \
@@ -100,7 +82,7 @@ inline CCTK_REAL my_sgn (CCTK_REAL const x)
         CCTK_VParamWarn(CCTK_THORNSTRING,                               \
                         "Failed test %s: "                              \
                         "for element %d, expected %lld, received %lld", \
-                        testname, i, (long long)res, (long long)vecres);      \
+                        testname, i, (long long)res, (long long)vecres); \
       }                                                                 \
       numtests++;                                                       \
     }                                                                   \
@@ -244,17 +226,17 @@ void Vectors_Test(CCTK_ARGUMENTS)
     }
   }
 
-  VECTEST("kneg",   kneg(av),           -a[i]               );
+  VECTEST("kneg",   kneg(av),           -a[i]                 );
 
-  VECTEST("kadd",   kadd(av, bv),       a[i] + b[i]         );
-  VECTEST("ksub",   ksub(av, bv),       a[i] - b[i]         );
-  VECTEST("kmul",   kmul(av, bv),       a[i] * b[i]         );
-  VECTEST("kdiv",   kdiv(av, bv),       a[i] / b[i]         );
+  VECTEST("kadd",   kadd(av, bv),       a[i] + b[i]           );
+  VECTEST("ksub",   ksub(av, bv),       a[i] - b[i]           );
+  VECTEST("kmul",   kmul(av, bv),       a[i] * b[i]           );
+  VECTEST("kdiv",   kdiv(av, bv),       a[i] / b[i]           );
 
-  VECTEST("kmadd",  kmadd(av, bv, cv),   a[i] * b[i] + c[i] );
-  VECTEST("kmsub",  kmsub(av, bv, cv),   a[i] * b[i] - c[i] );
-  VECTEST("knmadd", knmadd(av, bv, cv), -a[i] * b[i] - c[i] );
-  VECTEST("knmsub", knmsub(av, bv, cv), -a[i] * b[i] + c[i] );
+  VECTEST("kmadd",  kmadd(av, bv, cv),   a[i] * b[i] + c[i]   );
+  VECTEST("kmsub",  kmsub(av, bv, cv),   a[i] * b[i] - c[i]   );
+  VECTEST("knmadd", knmadd(av, bv, cv), -a[i] * b[i] - c[i]   );
+  VECTEST("knmsub", knmsub(av, bv, cv), -a[i] * b[i] + c[i]   );
 
   VECTEST("kacos",     kacos(xv),         acos(x[i])          );
   VECTEST("kacosh",    kacosh(zv),        acosh(z[i])         );
@@ -282,16 +264,16 @@ void Vectors_Test(CCTK_ARGUMENTS)
 
 #if 0
   VECTEST("kifpos positive",
-          kifpos(av, bv, cv), my_signbit(a[i]) ? c[i] : b[i]);
+          kifpos(av, bv, cv), CCTK_SIGNBIT(a[i]) ? c[i] : b[i]);
   VECTEST("kifpos negative",
-          kifpos(bv, bv, cv), my_signbit(b[i]) ? c[i] : b[i]);
+          kifpos(bv, bv, cv), CCTK_SIGNBIT(b[i]) ? c[i] : b[i]);
   VECTEST("kifpos 0",  kifpos(vec_set1(0.),bv,cv),  b[i]);
   VECTEST("kifpos -0", kifpos(vec_set1(-0.),bv,cv), c[i]);
 
   VECTEST("kifneg positive",
-          kifneg(av, bv, cv), my_signbit(a[i]) ? b[i] : c[i]);
+          kifneg(av, bv, cv), CCTK_SIGNBIT(a[i]) ? b[i] : c[i]);
   VECTEST("kifneg negative",
-          kifneg(bv, bv, cv), my_signbit(b[i]) ? b[i] : c[i]);
+          kifneg(bv, bv, cv), CCTK_SIGNBIT(b[i]) ? b[i] : c[i]);
   VECTEST("kifneg 0",  kifneg(vec_set1(0.),bv,cv),  c[i]);
   VECTEST("kifneg -0", kifneg(vec_set1(-0.),bv,cv), b[i]);
 #endif
