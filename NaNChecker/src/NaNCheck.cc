@@ -84,9 +84,8 @@ typedef struct
   CCTK_INT count;
   CCTK_INT *NaNmask;
   int bitmask;
-#ifdef HAVE_FINITE
-  enum {CHECK_FOR_NAN = 0, CHECK_FOR_INF = 1, CHECK_FOR_BOTH = 2} check_for;
-#endif
+  bool check_for_nan;
+  bool check_for_inf;
   int cctk_iteration;
   int ignore_restricted_points;
   const char *restriction_mask;
@@ -180,20 +179,21 @@ void NaNChecker_NaNCheck_Prepare (CCTK_ARGUMENTS)
     memset (info.NaNmask, 0, nelems * sizeof (CCTK_INT));
   }
 
-#ifdef HAVE_FINITE
   if (CCTK_Equals (check_for, "NaN"))
   {
-    info.check_for = t_nanchecker_info::CHECK_FOR_NAN;
+    info.check_for_nan = true;
+    info.check_for_inf = false;
   }
   else if (CCTK_Equals (check_for, "Inf"))
   {
-    info.check_for = t_nanchecker_info::CHECK_FOR_INF;
+    info.check_for_nan = false;
+    info.check_for_inf = true;
   }
   else
   {
-    info.check_for = t_nanchecker_info::CHECK_FOR_BOTH;
+    info.check_for_nan = true;
+    info.check_for_inf = true;
   }
-#endif
 }
 
 extern "C"
@@ -390,14 +390,15 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
   info.cctk_iteration = GH->cctk_iteration;
   info.ignore_restricted_points = *ignore_restricted_points;
 
-#ifdef HAVE_FINITE
   if (CCTK_Equals (check_for, "NaN"))
   {
-    info.check_for = t_nanchecker_info::CHECK_FOR_NAN;
+    info.check_for_nan = true;
+    info.check_for_inf = false;
   }
   else if (CCTK_Equals (check_for, "Inf"))
   {
-    info.check_for = t_nanchecker_info::CHECK_FOR_INF;
+    info.check_for_nan = false;
+    info.check_for_inf = true;
   }
   else
   {
@@ -407,9 +408,9 @@ int NaNChecker_CheckVarsForNaN (const cGH *GH,
                   "Invalid value '%s' passed for 'check_for' parameter. "
                   "Defaulting to 'both' instead.", check_for);
     }
-    info.check_for = t_nanchecker_info::CHECK_FOR_BOTH;
+    info.check_for_nan = true;
+    info.check_for_inf = true;
   }
-#endif
 
   if (CCTK_TraverseString (vars, CheckForNaN, &info, CCTK_GROUP_OR_VAR) < 0)
   {
@@ -694,31 +695,38 @@ CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights,
 #pragma omp parallel for schedule(dynamic)
   for (int _i = 0; _i < nelems; _i++)
   {
-    if ((!CarpetWeights || CarpetWeights[_i] > 0.0) && (
-#if defined(HAVE_ISNAN) && defined(HAVE_FINITE)
-        ! finite ((double) _data[_i]) && (info->check_for == t_nanchecker_info::CHECK_FOR_BOTH ||
-        ((isnan ((double) _data[_i]) & 1) ^ info->check_for))
-#elif defined(HAVE_ISNAN)
-        isnan ((double) _data[_i])
-#else
-        0
-#endif
-        ))
+    if (!CarpetWeights || CarpetWeights[_i] > 0.0)
     {
+      
+      /* We call the C wrapper functions instead of the autoconfigured
+         macros below, because some C++ compilers optimise away calls
+         to isnan depending on the optimisation level, while C
+         compilers do not appear to do this. */
+      bool found_inf = false, found_nan = false;
+#ifdef HAVE_ISFINITE
+      found_inf = ! CCTK_isfinite(_data[_i]);
+#endif
+#ifdef HAVE_ISNAN
+      found_nan = CCTK_isnan(_data[_i]);
+#endif
+      bool found_problem =
+        (info->check_for_nan && found_nan) ||
+        (info->check_for_inf && found_inf);
+      if (found_problem)
 #pragma omp critical
       {
-      nans_found++;
-      if (info->action_if_found &&
-          (info->report_max < 0 || nans_found <= info->report_max))
-      {
-        PrintWarning (isnan ((double) _data[_i]) ? "NaN" : "Inf",
-                      info->verbose, _i, reflevel, cctk_iteration, fp_type,
-                      coords, fullname, &gdata);
-      }
-      if (info->NaNmask && gtype == CCTK_GF)
-      {
-        info->NaNmask[_i] |= 1 << info->bitmask;
-      }
+        nans_found++;
+        if (info->action_if_found &&
+            (info->report_max < 0 || nans_found <= info->report_max))
+        {
+          PrintWarning (found_nan ? "NaN" : "Inf",
+                        info->verbose, _i, reflevel, cctk_iteration, fp_type,
+                        coords, fullname, &gdata);
+        }
+        if (info->NaNmask && gtype == CCTK_GF)
+        {
+          info->NaNmask[_i] |= 1 << info->bitmask;
+        }
       }
     }
   }
