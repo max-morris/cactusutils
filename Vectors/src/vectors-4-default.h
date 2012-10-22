@@ -111,14 +111,9 @@
   ({                                                                    \
     CCTK_REAL x__=(x_);                                                 \
     CCTK_REAL x=x__;                                                    \
-    x==(CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : copysign((CCTK_REAL)1.0, x);   \
+    x==(CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : std::copysign((CCTK_REAL)1.0, x); \
   })
-
-#ifdef __cplusplus
-#  define k4signbit(x) ({ using namespace std; signbit(x); })
-#else
-#  define k4signbit(x) (signbit(x))
-#endif
+#define k4signbit(x) (std::signbit(x))
 
 #define k4l2r(x_) ({ CCTK_INT4 x__=(x_); CCTK_INT4 x=x__; *(CCTK_REAL4*)&x; })
 #define k4r2l(x_) ({ CCTK_REAL4 x__=(x_); CCTK_REAL4 x=x__; *(CCTK_INT4*)&x; })
