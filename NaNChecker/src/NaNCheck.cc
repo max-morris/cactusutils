@@ -318,7 +318,7 @@ void NaNChecker_TakeAction (CCTK_ARGUMENTS)
    @endvar
    @var        check_for
    @vdesc      Whether to check for NaN's and/or infinite numbers
-               This is only evaluated if finite(3) is available.
+               This is only evaluated if isinf(3) is available.
    @vtype      const char *
    @vio        in
    @endvar
@@ -599,10 +599,7 @@ void PrintWarning (const char *error_type,
                    const char *fullname,
                    const cGroupDynamicData *gdata)
 {
-  int i;
-  char *index_string, *coord_string;
   const char *complex_part;
-  int amended_index;
 
 
   if (fp_type == 2)
@@ -623,47 +620,40 @@ void PrintWarning (const char *error_type,
   }
   else if (verbose)
   {
-    /* assume max. 10 characters per index number and 40 characters per
-       coordinate value (including separators) */
-    index_string = (char *)malloc (5 * 10 * gdata->dim);
-    coord_string = index_string + 10 * gdata->dim;
-
-    amended_index = linear_index;
-
-    sprintf (index_string, "%d",
-             (amended_index % gdata->lsh[0]) + gdata->lbnd[0] + 1);
-    if (coords)
+    ostringstream index_buf, coord_buf;
+    int amended_index = linear_index;
+    for (int i = 0; i < gdata->dim; i++)
     {
-      sprintf (coord_string, "%5.3e", (double) coords[0][linear_index]);
-    }
-    for (i = 1; i < gdata->dim; i++)
-    {
-      amended_index /= gdata->lsh[i - 1];
-      sprintf (index_string, "%s, %d", index_string,
-               (amended_index % gdata->lsh[i]) + gdata->lbnd[i] + 1);
+      if (i > 0)
+      {
+        index_buf << ", ";
+        if (coords)
+        {
+          coord_buf << ", ";
+        }
+      }
+      index_buf << /* "%d" */ (amended_index % gdata->lsh[i]) + gdata->lbnd[i] + 1;
       if (coords)
       {
-        sprintf (coord_string, "%s, %5.3e", coord_string,
-                 (double) coords[i][linear_index]);
+        coord_buf << /* "%5.3e" */ coords[i][linear_index];
       }
+      amended_index /= gdata->lsh[i - 1];
     }
 
     if (coords)
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "%s caught in %svariable '%s' at index (%s) level %d with coordinates "
-                  "(%s) in iteration %d", error_type, complex_part, fullname, index_string,
-                  reflevel, coord_string, cctk_iteration);
+                  "(%s) in iteration %d", error_type, complex_part, fullname, index_buf.str().c_str(),
+                  reflevel, coord_buf.str().c_str(), cctk_iteration);
     }
     else
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "%s caught in %svariable '%s' at (%s) level %d in iteration %d",
-                  error_type, complex_part, fullname, index_string,
+                  error_type, complex_part, fullname, index_buf.str().c_str(),
                   reflevel, cctk_iteration);
     }
-
-    free (index_string);
   }
 }
 
@@ -674,7 +664,7 @@ void PrintWarning (const char *error_type,
    @author     Thomas Radke
    @desc
                Macro to check a given typed array against NaN's.
-               If finite(3) is available on the system it will also check
+               If isinf(3) is available on the system it will also check
                for Inf values.
    @enddesc
    @calls      PrintWarning
@@ -703,8 +693,8 @@ CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights,
          to isnan depending on the optimisation level, while C
          compilers do not appear to do this. */
       bool found_inf = false, found_nan = false;
-#ifdef HAVE_ISFINITE
-      found_inf = ! CCTK_isfinite(_data[_i]);
+#ifdef HAVE_ISINF
+      found_inf = CCTK_isinf(_data[_i]);
 #endif
 #ifdef HAVE_ISNAN
       found_nan = CCTK_isnan(_data[_i]);
@@ -919,14 +909,14 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
   nans_found = 0;
   if (vtype == CCTK_VARIABLE_REAL || vtype == CCTK_VARIABLE_COMPLEX)
   {
-    CHECK_DATA((CCTK_REAL *)data, nelems, CarpetWeights, 
+    CHECK_DATA((const CCTK_REAL *)data, nelems, CarpetWeights, 
                info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
 #ifdef CCTK_REAL4
   else if (vtype == CCTK_VARIABLE_REAL4 || vtype == CCTK_VARIABLE_COMPLEX8)
   {
-    CHECK_DATA((CCTK_REAL4 *)data, nelems, CarpetWeights, 
+    CHECK_DATA((const CCTK_REAL4 *)data, nelems, CarpetWeights, 
                info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
@@ -934,7 +924,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
 #ifdef CCTK_REAL8
   else if (vtype == CCTK_VARIABLE_REAL8 || vtype == CCTK_VARIABLE_COMPLEX16)
   {
-    CHECK_DATA((CCTK_REAL8 *)data, nelems, CarpetWeights, 
+    CHECK_DATA((const CCTK_REAL8 *)data, nelems, CarpetWeights, 
                info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
@@ -942,7 +932,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
 #ifdef CCTK_REAL16
   else if (vtype == CCTK_VARIABLE_REAL16 || vtype == CCTK_VARIABLE_COMPLEX32)
   {
-    CHECK_DATA((CCTK_REAL16 *)data, nelems, CarpetWeights, 
+    CHECK_DATA((const CCTK_REAL16 *)data, nelems, CarpetWeights, 
                info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
@@ -957,7 +947,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
   /* Do more than just print a warning ? */
   if (nans_found > 0 && info->action_if_found && gdata.dim > 0)
   {
-    if (info->NaNmask && gtype == CCTK_GF && info->bitmask < 8*sizeof (CCTK_INT))
+    if (info->NaNmask && gtype == CCTK_GF && info->bitmask < int(8*sizeof (CCTK_INT)))
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "There were %d NaN/Inf value(s) found in variable '%s' "
@@ -972,7 +962,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
     }
   }
   /* check if the (global) bitmask needs to be incremented */
-  if (info->NaNmask && gtype == CCTK_GF && info->bitmask < 8*sizeof (CCTK_INT))
+  if (info->NaNmask && gtype == CCTK_GF && info->bitmask < int(8*sizeof (CCTK_INT)))
   {
     sum_handle = CCTK_ReductionHandle ("sum");
     CCTK_ReduceLocalScalar (info->GH, -1, sum_handle, &nans_found,
