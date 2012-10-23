@@ -101,12 +101,12 @@ reaches a certain threshold or enabling output within a certain time window.
  \item \textbf{Trigger\_Number} specifies the total number of triggers you want to specify.
  \item \textbf{Trigger\_Checked\_Variable[index]} holds the fully specified variable name that the trigger with that index should depend on. Leave it empty if it shouldn't.
  \item \textbf{Trigger\_Checked\_Parameter\_Thorn} and \textbf{Trigger\_Checked\_Parameter\_Name} hold the information about which parameter this trigger should depend on.
- \item \textbf{Trigger\_Relation} defines a mathematical relation between whatever is checked and a some value. An example would be ">".
+ \item \textbf{Trigger\_Relation} defines a mathematical relation between whatever is checked and a some value. An example would be "$>$".
  \item \textbf{Trigger\_Checked\_Value} specifies the actual value that is used for the comparison. This has to be a real number.
  \item \textbf{Trigger\_Reduction} specifies which reduction should be used in case you specified a grid function as variable to be checked.
  \item \textbf{Trigger\_Reaction} specifies what should happen in case the check above is true.
   \begin{itemize}
-   \item \textbf{"output"}: some output should be enabled
+   \item \textbf{"output"}: some output should be enabled. File names will be prefixed with "trigger\_".
     \begin{itemize}
      \item \textbf{Trigger\_Output\_Method} specifies which type of output should be enabled.
      \item \textbf{Trigger\_Output\_Variables} specifies a space-separated list of fully qualified variable names to be output.
@@ -125,7 +125,7 @@ reaches a certain threshold or enabling output within a certain time window.
      \item \textbf{Trigger\_Steered\_Scalar\_Value}: Value the scalar should be changed to - given as string
     \end{itemize}
   \end{itemize}
- \item \textbf{Trigger\_Debug}: Turn on Debug output (not generally recommended, but useful if something doesn't trigger as expected)
+ \item \textbf{Trigger\_Debug}: Turn on Debug output (not generally recommended, but useful if something doesn't trigger as expected). This is an integer, allowed is 0 or 1.
 \end{itemize}
 
 

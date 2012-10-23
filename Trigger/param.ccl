@@ -25,7 +25,7 @@ STRING Trigger_Checked_Parameter_Name[10] "parameter name to be checked for" STE
 
 STRING Trigger_Relation[10] "relation operator for checked variable" STEERABLE=ALWAYS
 {
-  ".+" :: "some relations"
+  "^<|>|==|!=$" :: "some relations"
 } ">"
 
 CCTK_REAL Trigger_Checked_Value[10] "triggered value for checked variable" STEERABLE=ALWAYS
