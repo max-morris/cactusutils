@@ -637,7 +637,7 @@ void PrintWarning (const char *error_type,
       {
         coord_buf << /* "%5.3e" */ coords[i][linear_index];
       }
-      amended_index /= gdata->lsh[i - 1];
+      amended_index /= gdata->lsh[i];
     }
 
     if (coords)
