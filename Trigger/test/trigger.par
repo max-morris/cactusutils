@@ -1,75 +1,116 @@
-!DESC "1+log sliced black hole, BSSN_MoL, Iterative CN"
+!DESC "TOV from TOVSolverC, ICN, Marquina, PPM, Polytrope"
 
-# Required thorns
+ActiveThorns = "time MoL pugh pughreduce pughslab coordbase symbase cartgrid3d ioutil ioascii iobasic boundary admbase staticconformal spacemask admcoupling coordgauge admmacros hydrobase grhydro grhydro_initdata tovsolver nanchecker eos_omni ML_BSSN ML_BSSN_Helper GenericFD TmunuBase NewRad admconstraints Constants localreduce InitBase LoopControl"
 
-ActiveThorns = "time MoL pugh pughreduce pughslab boundary cartgrid3d bssn_mol idanalyticbh ioascii ioutil iobasic localreduce admcoupling admbase admmacros coordgauge spacemask staticconformal nanchecker coordbase symbase trigger"
+TmunuBase::stress_energy_storage	=	yes
+TmunuBase::stress_energy_at_RHS		=	yes
+TmunuBase::timelevels			=	1
+TmunuBase::prolongation_type		=	none
 
-# Grid
+time::dtfac = 0.375
 
-driver::global_nx = 20
-driver::global_ny = 20
-driver::global_nz = 20
+hydrobase::timelevels			= 2
+hydrobase::evolution_method       = "GRHydro"
 
-grid::type   = "byspacing"
-grid::dxyz   = 0.2
-grid::domain = "octant"
+admbase::evolution_method        = "ML_BSSN"
+admbase::lapse_evolution_method  = "ML_BSSN"
+admbase::dtlapse_evolution_method  = "ML_BSSN"
+ADMBase::shift_evolution_method   = "ML_BSSN"
+ADMBase::dtshift_evolution_method = "ML_BSSN"
+ML_BSSN::ShiftGammaCoeff = 0
 
-cactus::cctk_initial_time = 0.0
-cactus::cctk_itlast       = 10
- 
-time::dtfac = 0.25
+ML_BSSN::my_initial_boundary_condition = "extrapolate-gammas"
+ML_BSSN::my_rhs_boundary_condition     = "NewRad"
+# These are necessary
+ML_BSSN::ML_log_confac_bound = "none"
+ML_BSSN::ML_metric_bound     = "none"
+ML_BSSN::ML_Gamma_bound      = "none"
+ML_BSSN::ML_trace_curv_bound = "none"
+ML_BSSN::ML_curv_bound       = "none"
+ML_BSSN::ML_lapse_bound      = "none"
+ML_BSSN::ML_dtlapse_bound    = "none"
+ML_BSSN::ML_shift_bound      = "none"
+ML_BSSN::ML_dtshift_bound    = "none"
 
-# Initial data 
+ML_BSSN::fdOrder             = 2
 
-admbase::metric_type = "static conformal"
-admbase::initial_data = "schwarzschild"
+ml_bssn::harmonicF      = 2.0
 
-# Evolution
+admconstraints::bound     = "static"
+ADMConstraints::constraints_persist	= yes
 
-admbase::evolution_method = "adm_bssn" 
+boundary::radpower        = 2
 
-methodoflines::ode_method = "icn"
+SpaceMask::use_mask	  = "yes"
 
-adm_bssn::bound  = "flat"
+grid::type            = "byrange"
+grid::domain          = "full"
+grid::xyzmin          = -15.0
+grid::xyzmax          =  15.001
+driver::ghost_size    =   3
+driver::global_nsize  =  33
 
-# Gauge
+CoordBase::boundary_size_x_lower = 2
+CoordBase::boundary_size_y_lower = 2
+CoordBase::boundary_size_z_lower = 2
+CoordBase::boundary_size_x_upper = 2
+CoordBase::boundary_size_y_upper = 2
+CoordBase::boundary_size_z_upper = 2
 
-admbase::lapse_evolution_method = "1+log"
+cactus::cctk_itlast   =       7
 
-# Output
+methodoflines::ode_method        = "icn"
+
+GRHydro::riemann_solver            = "Marquina"
+GRHydro::GRHydro_eos_type           = "Polytype"
+GRHydro::GRHydro_eos_table          = "2D_Polytrope"
+GRHydro::recon_method              = "ppm"
+GRHydro::GRHydro_stencil            = 3
+GRHydro::bound                     = "none"
+GRHydro::rho_abs_min               = 1.e-7
+GRHydro::initial_atmosphere_factor = 0.999
+
+GRHydro::ppm_detect = "no"
+GRHydro::ppm_epsilon = 0.0
+GRHydro::ppm_omega1 = 0.52
+GRHydro::ppm_omega2 = 0.0
+GRHydro::ppm_epsilon_shock = 0.1
+GRHydro::ppm_eta1 = 5.0
+GRHydro::ppm_k0 = 0.2
+
+ADMBase::initial_data  = "tov"
+ADMBase::initial_lapse = "tov"
+ADMBase::initial_shift = "tov"
+
+tovsolver::TOV_Rho_Central[0] = 1.28e-3
+tovsolver::TOV_Gamma[0]       = 2.0
+tovsolver::TOV_K[0]           = 100.0
+tovsolver::TOV_Combine_Method = "maximum"
+
+eos_omni::poly_gamma                    = 2.0
+eos_omni::poly_gamma_ini                = 2.0
+eos_omni::poly_k                        = 100.0
+
+IOBasic::outInfo_every 			= 	1
+IOBasic::outInfo_vars 			= 	"HydroBase::rho"
 
 IO::out_fileinfo="none"
-IO::out_dir = "trigger"
+IO::out_dir = $parfile
 
-IOBasic::outInfo_every = 1
-IOBasic::outInfo_vars  = "admbase::gxx"
+IOBasic::outScalar_every = 1
+IOBasic::outScalar_vars  = "hydrobase::rho"
 
-IOBasic::outScalar_every =  2      
-IOBasic::outScalar_vars  = "adm_bssn::adm_bs_gxx adm_bssn::adm_bs_Axx adm_bssn::adm_bs_phi adm_bssn::adm_bs_k adm_bssn::adm_bs_Gx admbase::gxx admbase::kxx admbase::alp"
+ActiveThorns = "Trigger"
 
-trigger::Trigger_Number              = 2
+Trigger::Trigger_Number              = 1
 
-trigger::Trigger_Checked_Variable[0] = "adm_bssn::adm_bs_Axx"
-trigger::Trigger_Relation[0]         = ">"
-trigger::Trigger_Checked_Value[0]    = 0.005
+trigger::Trigger_Checked_Variable[0] = "hydrobase::rho"
 trigger::Trigger_Reduction[0]        = "maximum"
-trigger::Trigger_Output_Method[0]    = "Scalar"
-trigger::Trigger_Output_Variables[0] = "adm_bssn::adm_bs_Axx adm_bssn::adm_bs_gyy"
+trigger::Trigger_Relation[0]         = "<"
+trigger::Trigger_Checked_Value[0]    = 0.001276
+trigger::Trigger_Reaction[0]         = "output"
+trigger::Trigger_Output_Method[0]    = "scalar"
+trigger::Trigger_Output_Variables[0] = "hydrobase::press"
 
-trigger::Trigger_Checked_Variable[1] = "adm_bssn::adm_bs_Axx"
-trigger::Trigger_Relation[1]         = ">"
-trigger::Trigger_Checked_Value[1]    = 0.005
-trigger::Trigger_Reduction[1]        = "maximum"
-trigger::Trigger_Reaction[1]         = "steerscalar"
-trigger::Trigger_Steered_Scalar[1]   = "admbase::gxx"
-trigger::Trigger_Steered_Scalar_Index[1]= 0
-trigger::Trigger_Steered_Scalar_Value[1]= "1.02"
+#trigger::Trigger_Debug               = 1
 
-
-trigger::Trigger_Debug               = 1
-
-##################################################################
-
-
-# do not use the new scheme for names of output files
-IO::new_filename_scheme = "no"
