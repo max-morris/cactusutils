@@ -122,7 +122,7 @@
 #define k8lor(x,y)  k8l2r(k8r2l(x) || k8r2l(y))
 #define k8lxor(x,y) k8l2r(!k8r2l(x) != !k8r2l(y))
 
-#define k8ifthen(x,y,z) ((x)?(y):(z))
+#define k8ifthen(x,y,z) (k8r2l(x)?(y):(z))
 
 #define k8cmpeq(x,y) k8l2r((x)==(y))
 #define k8cmpne(x,y) k8l2r((x)!=(y))

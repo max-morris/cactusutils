@@ -124,7 +124,7 @@
 #define k4lor(x,y)  k4l2r(k4r2l(x) || k4r2l(y))
 #define k4lxor(x,y) k4l2r(!k4r2l(x) != !k4r2l(y))
 
-#define k4ifthen(x,y,z) ((x)?(y):(z))
+#define k4ifthen(x,y,z) (k4r2l(x)?(y):(z))
 
 #define k4cmpeq(x,y) k4l2r((x)==(y))
 #define k4cmpne(x,y) k4l2r((x)!=(y))
