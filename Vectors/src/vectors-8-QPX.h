@@ -22,7 +22,14 @@
 
 // Vector type corresponding to CCTK_REAL
 // TODO: Use a typedef to avoid the "const" issue? Or use a struct?
-#define CCTK_REAL8_VEC vector4double
+// #define CCTK_REAL8_VEC vector4double
+struct CCTK_REAL8_VEC {
+  vector4double v;
+  CCTK_REAL8_VEC() {}
+  CCTK_REAL8_VEC(CCTK_REAL8_VEC const& x): v(x.v) {}
+  CCTK_REAL8_VEC(vector4double v_): v(v_) {}
+  operator vector4double() const { return v; }
+};
 
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL8_VEC_SIZE 4
@@ -32,13 +39,6 @@
 #define CCTK_BOOLEAN8     CCTK_REAL8
 #define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
 #define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
-
-
-
-union k8const_t {
-  CCTK_REAL8     f[CCTK_REAL8_VEC_SIZE];
-  CCTK_REAL8_VEC vf;
-};
 
 
 
@@ -64,7 +64,7 @@ union k8const_t {
   ({                                                                    \
     CCTK_REAL8 const& p__=(p_);                                         \
     CCTK_REAL8& p = *(CCTK_REAL8*)&p__;                                 \
-    CCTK_REAL8_VEC v1, v2, vp;                                          \
+    vector4double v1, v2, vp;                                           \
     v1 = vec_ld(0,&p);         /* load the left part of the vector */   \
     v2 = vec_ld(32,&p);        /* load the right part of the vector */  \
     vp = vec_lvsl(0,&p);       /* generate control value */             \
@@ -105,28 +105,28 @@ union k8const_t {
 // Store a vector to memory (aligned and non-temporal); this stores to
 // a reference to a scalar
 #define vec8_store(p,x)     (vec_sta(x,0,&(p)))
-#define vec8_storeu(p_,x_)                                      \
-  ({                                                            \
-    CCTK_REAL8          & p__=(p_);                             \
-    CCTK_REAL8_VEC const  x__=(x_);                             \
-    CCTK_REAL8          & p=p__;                                \
-    CCTK_REAL8_VEC const  x=x__;                                \
-    CCTK_REAL8_VEC v1, v2, v3, vp, m1, m2, m3;                  \
-    /* generate insert masks */                                 \
-    vp = vec_lvsr(0,&p);                                        \
-    m1 = k8lfalse;                                              \
-    m2 = k8ltrue;                                               \
-    m3 = vec_perm(m1,m2,vp);                                    \
-    /* get existing data */                                     \
-    v1 = vec_ld(0,&p);                                          \
-    v2 = vec_ld(32,&p);                                         \
-    /* permute and insert */                                    \
-    v3 = vec_perm(x,x,vp);                                      \
-    v1 = vec_sel(v1,v3,m3);                                     \
-    v2 = vec_sel(v3,v2,m3);                                     \
-    /* store data back */                                       \
-    vec_st(0,&p,v1);                                            \
-    vec_st(32,&p,v2);                                           \
+#define vec8_storeu(p_,x_)                      \
+  ({                                            \
+    CCTK_REAL8& p__=(p_);                       \
+    CCTK_REAL8_VEC x__=(x_);                    \
+    CCTK_REAL8& p=p__;                          \
+    CCTK_REAL8_VEC x=x__;                       \
+    CCTK_REAL8_VEC v1, v2, v3, vp, m1, m2, m3;  \
+    /* generate insert masks */                 \
+    vp = vec_lvsr(0,&p);                        \
+    m1 = k8lfalse;                              \
+    m2 = k8ltrue;                               \
+    m3 = vec_perm(m1,m2,vp);                    \
+    /* get existing data */                     \
+    v1 = vec_ld(0,&p);                          \
+    v2 = vec_ld(32,&p);                         \
+    /* permute and insert */                    \
+    v3 = vec_perm(x,x,vp);                      \
+    v1 = vec_sel(v1,v3,m3);                     \
+    v2 = vec_sel(v3,v2,m3);                     \
+    /* store data back */                       \
+    vec_st(0,&p,v1);                            \
+    vec_st(32,&p,v2);                           \
   })
 #define vec8_store_nta(p,x) (vec_sta(x,0,&(p))) // this doesn't avoid the cache
 
