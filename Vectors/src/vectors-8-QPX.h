@@ -21,7 +21,7 @@
 #define vec8_architecture "QPX"
 
 // Vector type corresponding to CCTK_REAL
-// TODO: Use a typedef to avoid the "const" issue? Or use a struct?
+// We use a struct to avoid the "const" issue
 // #define CCTK_REAL8_VEC vector4double
 struct CCTK_REAL8_VEC {
   vector4double v;
