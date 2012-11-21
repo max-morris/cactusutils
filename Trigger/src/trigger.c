@@ -57,12 +57,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
   int varindex, reduction_handle=0, errno, ret;
   const CCTK_REAL *tmp_value;
   CCTK_REAL value;
-  cGH *not_const_GH;
 
-  /* as long as GH in Reduce() is not const, we have to use a cast to
-   * prevent a warning while compiling */
-  not_const_GH=(cGH*) GH;
-  
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
   /* check if output was already done; this is important for triggered
    * variables since they are only allocated if triggered output is
@@ -93,7 +88,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
     if (my_GH->debug)
       CCTK_VInfo(CCTK_THORNSTRING,
                  "reducing %d %d\n", reduction_handle, varindex);
-    errno=CCTK_Reduce(not_const_GH, -1, reduction_handle, 1,
+    errno=CCTK_Reduce(GH, -1, reduction_handle, 1,
                       CCTK_VARIABLE_REAL, &value, 1, varindex);
     if (my_GH->debug)
       CCTK_VInfo(CCTK_THORNSTRING,
