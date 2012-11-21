@@ -84,6 +84,7 @@ void TerminationTrigger_CheckFile (CCTK_ARGUMENTS)
   
   FILE *file;
   int terminate;
+  int num_read;
   
   if (! termination_from_file)
   {
@@ -104,11 +105,10 @@ void TerminationTrigger_CheckFile (CCTK_ARGUMENTS)
   file = fopen (get_termination_file(), "r");
   
   if (file != NULL) {
-    terminate = 0;
-    fscanf (file, "%d", &terminate);
+    num_read = fscanf (file, "%d", &terminate);
     fclose (file);
     
-    if (terminate == 1) {
+    if (num_read == 1 && terminate == 1) {
       CCTK_INFO ("Found termination signal in termination file.  "
                  "Triggering termination...");
       
