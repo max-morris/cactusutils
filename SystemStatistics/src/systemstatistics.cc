@@ -75,7 +75,14 @@ static unsigned long int get_rss()
   // found and the function will return 0
   if (pf) 
   {
-    fscanf(pf, "%u %u %u %u %u %u", &size, &resident, &share, &text, &lib, &data);
+    if (fscanf(pf, "%u %u %u %u %u %u",
+               &size, &resident, &share, &text, &lib, &data) != 6)
+    {
+      CCTK_WARN(1, "Error while reading memory statistics; results will be invalid");
+      fclose(pf);
+      return 0;
+    }
+    
     fclose(pf);
   }
   return (unsigned long int ) resident * (unsigned long int) page_size;
@@ -120,9 +127,15 @@ static unsigned int get_majflt()
   // found and the function will return 0
   if (pf) 
   {
-    fscanf(pf, "%d %s %c %d %d %d %d %d %lu %lu %lu %lu", 
+    if (fscanf(pf, "%d %s %c %d %d %d %d %d %lu %lu %lu %lu", 
            &pid, exe, &state, &dummyi,  &dummyi, &dummyi, &dummyi, 
-           &dummyi, &dummyu, &dummyu, &dummyu, &majflt);
+               &dummyi, &dummyu, &dummyu, &dummyu, &majflt) != 12)
+    {
+      CCTK_WARN(1, "Error while reading memory statistics; results will be invalid");
+      fclose(pf);
+      return 0;
+    }
+
     fclose(pf);
   }
   return majflt * page_size;
@@ -141,7 +154,12 @@ long long int get_swap_kB()
 
   while(!feof(f))
   {
-    fgets(buffer, buf_len, f);
+    if (fgets(buffer, buf_len, f) == NULL)
+    {
+      CCTK_WARN(1, "Error while reading memory statistics; results will be invalid");
+      fclose(f);
+      return 0;
+    }
     if (!feof(f))
     {
       char key[100];
