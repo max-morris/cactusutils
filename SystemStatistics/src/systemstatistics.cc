@@ -65,7 +65,6 @@ static unsigned long int get_rss()
   unsigned int text=0;//       text (code)
   unsigned int lib=0;//        library
   unsigned int data=0;//       data/stack
-  unsigned int dt=0;//         dirty pages (unused in Linux 2.6)
 
   int page_size = sysconf(_SC_PAGESIZE);
 
@@ -92,7 +91,6 @@ static unsigned long int get_rss()
     struct task_basic_info t_info;
     mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
 
-    unsigned int rss, vs, psize;
     task_t task = MACH_PORT_NULL;
 
     if (task_for_pid(current_task(), getpid(), &task) != KERN_SUCCESS)
