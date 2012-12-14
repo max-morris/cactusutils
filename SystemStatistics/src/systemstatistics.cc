@@ -78,7 +78,7 @@ static unsigned long int get_rss()
     if (fscanf(pf, "%u %u %u %u %u %u",
                &size, &resident, &share, &text, &lib, &data) != 6)
     {
-      CCTK_WARN(1, "Error while reading memory statistics; results will be invalid");
+      CCTK_WARN(1, "Error while reading memory statistics (rss); results will be invalid");
       fclose(pf);
       return 0;
     }
@@ -131,7 +131,7 @@ static unsigned int get_majflt()
            &pid, exe, &state, &dummyi,  &dummyi, &dummyi, &dummyi, 
                &dummyi, &dummyu, &dummyu, &dummyu, &majflt) != 12)
     {
-      CCTK_WARN(1, "Error while reading memory statistics; results will be invalid");
+      CCTK_WARN(1, "Error while reading memory statistics (majflt); results will be invalid");
       fclose(pf);
       return 0;
     }
