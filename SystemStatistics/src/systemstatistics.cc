@@ -150,34 +150,35 @@ long long int get_swap_kB()
   char buffer[buf_len];
   long long int swap_total = 0;
   long long int swap_free = 0;
+  bool read_swap_total = false;
+  bool read_swap_free = false;
 
-
-  while(!feof(f))
+  while(!feof(f) && fgets(buffer, buf_len, f) != NULL)
   {
-    if (fgets(buffer, buf_len, f) == NULL)
+    char key[100];
+    char unit[100];
+    long long int val = -1;
+    sscanf(buffer, "%s %lld %s", key, &val, unit);
+    if (strcmp(key, "SwapTotal:") == 0)
     {
-      CCTK_WARN(1, "Error while reading memory statistics; results will be invalid");
-      fclose(f);
-      return 0;
-    }
-    if (!feof(f))
-    {
-      char key[100];
-      char unit[100];
-      long long int val = -1;
-      sscanf(buffer, "%s %lld %s", key, &val, unit);
-      if (strcmp(key, "SwapTotal:") == 0)
-      {
-        assert(strcmp(unit, "kB") == 0);
-        swap_total = val;
-      }
-      else if (strcmp(key, "SwapFree:") == 0)
-      {
       assert(strcmp(unit, "kB") == 0);
-        swap_free = val;
-      }
+      swap_total = val;
+      read_swap_total = true;
+    }
+    else if (strcmp(key, "SwapFree:") == 0)
+    {
+      assert(strcmp(unit, "kB") == 0);
+      swap_free = val;
+      read_swap_free = true;
     }
   }
+
+  if (!read_swap_total || !read_swap_free)
+  {
+    CCTK_WARN(1, "Unable to read swap usage from /proc/meminfo");
+    swap_total = 0; swap_free = 0;
+  }
+
   fclose(f);
   return swap_total - swap_free;
 }
