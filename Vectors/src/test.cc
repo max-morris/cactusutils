@@ -14,7 +14,7 @@ using namespace std;
 
 
 
-inline CCTK_REAL my_sgn (CCTK_REAL const x)
+inline CCTK_REAL my_sgn(CCTK_REAL const x)
 {
   return x == (CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : copysign((CCTK_REAL)1.0, x);
 }
@@ -24,7 +24,8 @@ inline CCTK_REAL my_sgn (CCTK_REAL const x)
 #define SCALARTEST(testname, vecexpr, scalarexpr)                       \
   do {                                                                  \
     if (verbose) {                                                      \
-      CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
+      CCTK_VInfo(CCTK_THORNSTRING, "Test %s...", testname);             \
+      fflush(stdout);                                                   \
     }                                                                   \
     CCTK_REAL const res = (scalarexpr);                                 \
     CCTK_REAL const vecres = (vecexpr);                                 \
@@ -45,7 +46,8 @@ inline CCTK_REAL my_sgn (CCTK_REAL const x)
 #define VECTEST(testname, vecexpr, scalarexpr)                          \
   do {                                                                  \
     if (verbose) {                                                      \
-      CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
+      CCTK_VInfo(CCTK_THORNSTRING, "Test %s...", testname);             \
+      fflush(stdout);                                                   \
     }                                                                   \
     CCTK_REAL_VEC rv = (vecexpr);                                       \
     for (int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                          \
@@ -70,7 +72,8 @@ inline CCTK_REAL my_sgn (CCTK_REAL const x)
 #define VECBITTEST(testname, vecexpr, scalarexpr)                       \
   do {                                                                  \
     if (verbose) {                                                      \
-      CCTK_VInfo (CCTK_THORNSTRING, "Test %s...", testname);            \
+      CCTK_VInfo(CCTK_THORNSTRING, "Test %s...", testname);             \
+      fflush(stdout);                                                   \
     }                                                                   \
     CCTK_BOOLEAN_VEC rv = (vecexpr);                                    \
     for (int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                          \
@@ -96,7 +99,7 @@ void Vectors_Test(CCTK_ARGUMENTS)
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  CCTK_INFO ("Testing vectorisation... [errors may result in segfaults]");
+  CCTK_INFO("Testing vectorisation... [errors may result in segfaults]");
   fflush(stdout);
 
   char testname[100];
@@ -147,6 +150,8 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("vec_set", vec_set(a[0],a[1]), a[i]);
 #elif CCTK_REAL_VEC_SIZE == 4
   VECTEST("vec_set", vec_set(a[0],a[1],a[2],a[3]), a[i]);
+#elif CCTK_REAL_VEC_SIZE == 8
+  VECTEST("vec_set", vec_set(a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7]), a[i]);
 #else
 #  error "Unsupported vector size"
 #endif
@@ -170,8 +175,8 @@ void Vectors_Test(CCTK_ARGUMENTS)
     for (int d2=0; d2<CCTK_REAL_VEC_SIZE; ++d2) {
       for (int d3=0; d3<CCTK_REAL_VEC_SIZE; ++d3) {
         if (not (VECTORISE and VECTORISE_ALIGNED_ARRAYS) or (d2==0 and d3==0)) {
-          snprintf (testname, sizeof testname,
-                    "vec_loadu_maybe3[%d,%d,%d]", d1,d2,d3);
+          snprintf(testname, sizeof testname,
+                   "vec_loadu_maybe3[%d,%d,%d]", d1,d2,d3);
           VECTEST(testname,
                   vec_loadu_maybe3(d1,d2,d3,l[d1+d2+d3]), l[i+d1+d2+d3]);
         }
@@ -199,7 +204,7 @@ void Vectors_Test(CCTK_ARGUMENTS)
       }
       for (int i=0; i<arenasize; ++i) {
         snprintf(testname, sizeof testname,
-                 "vec_store_nta_partial[%d,%d;%d]", ilo, ihi, i);
+                 "vec_store_nta_partial[%d..%d][%d]", ilo, ihi, i);
         SCALARTEST(testname, l[i],
                    (i>=ilo and i<ihi ? b : a)[i & (CCTK_REAL_VEC_SIZE-1)]);
       }
@@ -282,6 +287,8 @@ void Vectors_Test(CCTK_ARGUMENTS)
   CCTK_BOOLEAN_VEC testkltrue  = kltrue;
   CCTK_BOOLEAN klfalse1 = vec_elt(testklfalse,0);
   CCTK_BOOLEAN kltrue1  = vec_elt(testkltrue ,0);
+  VECBITTEST("constant F", klfalse, klfalse1);
+  VECBITTEST("constant T", kltrue , kltrue1 );
   VECBITTEST("klnot F", klnot(klfalse), kltrue1 );
   VECBITTEST("klnot T", klnot(kltrue ), klfalse1);
   VECBITTEST("kland FF", kland(klfalse,klfalse), klfalse1);
