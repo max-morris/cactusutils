@@ -174,7 +174,7 @@ void NaNChecker_NaNCheck_Prepare (CCTK_ARGUMENTS)
     /* zero out the NaN mask */
     for (i = 0, nelems = 1; i < cctk_dim; i++)
     {
-      nelems *= cctk_lsh[i];
+      nelems *= cctk_ash[i];
     }
     memset (info.NaNmask, 0, nelems * sizeof (CCTK_INT));
   }
@@ -632,12 +632,12 @@ void PrintWarning (const char *error_type,
           coord_buf << ", ";
         }
       }
-      index_buf << /* "%d" */ (amended_index % gdata->lsh[i]) + gdata->lbnd[i] + 1;
+      index_buf << (amended_index % gdata->ash[i]) + gdata->lbnd[i] + 1;
       if (coords)
       {
         coord_buf << /* "%5.3e" */ coords[i][linear_index];
       }
-      amended_index /= gdata->lsh[i];
+      amended_index /= gdata->ash[i];
     }
 
     if (coords)
@@ -685,7 +685,14 @@ CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights,
 #pragma omp parallel for schedule(dynamic)
   for (int _i = 0; _i < nelems; _i++)
   {
-    if (!CarpetWeights || CarpetWeights[_i] > 0.0)
+    bool is_inside = true;
+    int amended_index = _i;
+    for (int d=0; d<gdata.dim; ++d) {
+      int dir_index = amended_index % gdata.ash[d];
+      is_inside &= dir_index < gdata.lsh[d];
+      amended_index /= gdata.ash[d];
+    }
+    if (is_inside && (!CarpetWeights || CarpetWeights[_i] > 0.0))
     {
       
       /* We call the C wrapper functions instead of the autoconfigured
@@ -1088,7 +1095,7 @@ void SetToNaN (int vindex, const char *optstring, void *_info)
     CCTK_GroupDynamicData (info->GH, gindex, &gdata);
     for (i = 0; i < gdata.dim; i++)
     {
-      nelems *= gdata.lsh[i];
+      nelems *= gdata.ash[i];
     }
   }
 
