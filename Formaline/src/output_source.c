@@ -7,88 +7,99 @@
 #include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
+#ifdef HAVE_UNISTD_H
+#  include <unistd.h>
+#endif
+
+#ifdef CCTK_PTHREADS
+#  include <pthread.h>
+#endif
 
 
-struct datainfo
-{
-  unsigned char const * data;
+
+// Choose whether to output tarballs in the background
+
+// Don't use fork, MPI may not like it
+// #ifdef HAVE_UNISTD_H
+// #  define USE_FORK
+// #endif
+
+#ifdef CCTK_PTHREADS
+#  define USE_PTHREADS
+#endif
+
+
+
+struct datainfo {
+  unsigned char const *data;
   size_t length;
-  struct datainfo const * next;
+  struct datainfo const *next;
 };
 
-struct sourceinfo
-{
-  struct datainfo const * first;
-  char const * arrangement;
-  char const * thorn;
+struct sourceinfo {
+  struct datainfo const *first;
+  char const *arrangement;
+  char const *thorn;
 };
 
-extern struct sourceinfo const * const cactus_source [];
+extern struct sourceinfo const *const cactus_source[];
 extern size_t const cactus_source_length;
 
 
 
-void
-Formaline_OutputSource (CCTK_ARGUMENTS)
+static void do_output(cGH const *restrict const cctkGH)
 {
-  DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
-
-  size_t myproc, nprocs, nioprocs;
-  char filename [10000];
-  FILE * file;
-  size_t count;
-  struct datainfo const * datainfo;
-
-  myproc = CCTK_MyProc (cctkGH);
-  nprocs = CCTK_nProcs (cctkGH);
-  nioprocs = nprocs < 10 ? nprocs : 10;
-
+  
+  size_t myproc, nprocs;
+  myproc = CCTK_MyProc(cctkGH);
+  nprocs = CCTK_nProcs(cctkGH);
+  size_t const nioprocs = nprocs < 10 ? nprocs : 10;
+  
   { CCTK_PRINTSEPARATOR }
-  CCTK_VInfo (CCTK_THORNSTRING,
-              "Writing tarballs with the Cactus sources into the directory \"%s/%s\"",
-              out_dir, output_source_subdirectory);
-
-  snprintf (filename, sizeof filename,
-            "%s/%s", out_dir, output_source_subdirectory);
-  CCTK_CreateDirectory (0755, filename);
-
+  CCTK_VInfo(CCTK_THORNSTRING,
+             "Writing tarballs with the Cactus sources into the directory \"%s/%s\"",
+             out_dir, output_source_subdirectory);
+  
+  char dirname[10000];
+  snprintf(dirname, sizeof dirname,
+           "%s/%s", out_dir, output_source_subdirectory);
+  CCTK_CreateDirectory(0755, dirname);
+  
   /* Output all thorns' tarballs */
-  for (count = 0; cactus_source[count]; ++ count)
-  {
+  for (size_t count=0; cactus_source[count]; ++count) {
     if (count % nioprocs != myproc) continue;
-
-    snprintf (filename, sizeof filename,
-              "%s/%s/Cactus-source-%s.tar.gz",
-              out_dir, output_source_subdirectory,
-              cactus_source[count]->thorn);
-    file = fopen (filename, "w");
-    if (file == NULL)
-    {
-      CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "Failed to open source file \"%s\" for writing", filename);
+    
+    char filename[10000];
+    snprintf(filename, sizeof filename,
+             "%s/%s/Cactus-source-%s.tar.gz",
+             out_dir, output_source_subdirectory,
+             cactus_source[count]->thorn);
+    FILE *const file = fopen(filename, "w");
+    if (!file) {
+      CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                 "Failed to open source file \"%s\" for writing", filename);
     }
-    for (datainfo = cactus_source[count]->first;
+    for (struct datainfo const *datainfo = cactus_source[count]->first;
          datainfo;
          datainfo = datainfo->next)
     {
-      fwrite (datainfo->data, sizeof * datainfo->data, datainfo->length, file);
+      fwrite(datainfo->data, sizeof *datainfo->data, datainfo->length, file);
     }
-    fclose (file);
+    fclose(file);
   }
 
   /* Add a README */
-  if (myproc == nprocs - 1)
-  {
-    snprintf (filename, sizeof filename,
-              "%s/%s/README", out_dir, output_source_subdirectory);
-    file = fopen (filename, "w");
-    if (file == NULL)
-    {
-      CCTK_VWarn (0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "Failed to open README file \"%s\" for writing", filename);
+  if (myproc == nprocs-1) {
+    char readmename[10000];
+    snprintf(readmename, sizeof readmename,
+             "%s/%s/README", out_dir, output_source_subdirectory);
+    FILE *const readme = fopen(readmename, "w");
+    if (!readme) {
+      CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                 "Failed to open README file \"%s\" for writing", readmename);
     }
-    fprintf (file,
+    fprintf(readme,
 "README for the Cactus source tree\n"
 "\n"
 "This directory contains a complete Cactus source tree in several tarballs.\n"
@@ -107,6 +118,50 @@ Formaline_OutputSource (CCTK_ARGUMENTS)
 "The files \"config-info\" and \"ThornList\" that were used to build the\n"
 "executable can then be found in the \"configs\" subdirectory.\n"
              );
-    fclose (file);
+    fclose(readme);
   }
+}
+
+
+
+static void* start_routine(void *const arg)
+{
+  do_output(arg);
+  return NULL;
+}
+
+void Formaline_OutputSource(CCTK_ARGUMENTS)
+{
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+  
+#if defined(USE_FORK)
+  
+  pid_t const pid = fork();
+  /* Return the parent, continue the child. If there was an error, we
+     also continue. */
+  if (pid > 0) return;
+  
+  do_output(cctkGH);
+  
+  if (pid == 0) {
+    /* Exit the child. We exit secretly, so that the parent's files
+       and MPI communicators are not affected. */
+    _exit(0);
+  }
+  
+#elif defined(USE_PTHREADS)
+  
+  pthread_t thread;
+  int const ierr = pthread_create(&thread, NULL, start_routine, cctkGH);
+  if (ierr) {
+    /* There was an error; output the sources without using pthreads */
+    do_output(cctkGH);
+  }
+  
+#else
+  
+  do_output(cctkGH);
+  
+#endif
 }
