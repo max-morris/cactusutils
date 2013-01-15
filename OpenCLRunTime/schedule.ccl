@@ -10,7 +10,7 @@ SCHEDULE OpenCLRunTime_DeviceInfo AT wragh
   LANG: C
 } "Output OpenCL device information"
 
-SCHEDULE OpenCLRunTime_SetupDeviceGH AT basegrid AFTER SpatialCoordinates
+SCHEDULE OpenCLRunTime_SetupDeviceGH AT basegrid AFTER (SpatialSpacings TemporalSpacings) BEFORE SpatialCoordinates
 {
   LANG: C
 } "Set up device grid structure"
