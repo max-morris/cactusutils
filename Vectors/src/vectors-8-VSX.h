@@ -20,9 +20,9 @@
 #define CCTK_REAL8_VEC_SIZE 2
 
 // Integer and boolean types corresponding to this real type
-#define CCTK_INTEGER8     long long
+//#define CCTK_INTEGER8     long long
 #define CCTK_BOOLEAN8     long long
-#define CCTK_INTEGER8_VEC vector long long
+//#define CCTK_INTEGER8_VEC vector long long
 #define CCTK_BOOLEAN8_VEC vector bool long long
 
 

@@ -71,7 +71,7 @@ esac
 case $(echo "x$VECTORISE_STREAMING_STORES" | tr '[:upper:]' '[:lower:]') in
     (xyes) VECTORISE_STREAMING_STORES=1 ;;
     (xno)  VECTORISE_STREAMING_STORES=0 ;;
-    (x)    VECTORISE_STREAMING_STORES=1 ;; # default
+    (x)    VECTORISE_STREAMING_STORES=0 ;; # default
     (*)    echo "BEGIN ERROR"
            echo "Illegal value of option VECTORISE_STREAMING_STORES"
            echo "END ERROR"
@@ -84,16 +84,6 @@ case $(echo "x$VECTORISE_INLINE" | tr '[:upper:]' '[:lower:]') in
     (x)    VECTORISE_INLINE=0 ;; # default
     (*)    echo "BEGIN ERROR"
            echo "Illegal value of option VECTORISE_INLINE"
-           echo "END ERROR"
-           exit 1
-esac
-
-case $(echo "x$VECTORISE_EMULATE_AVX" | tr '[:upper:]' '[:lower:]') in
-    (xyes) VECTORISE_EMULATE_AVX=1 ;;
-    (xno)  VECTORISE_EMULATE_AVX=0 ;;
-    (x)    VECTORISE_EMULATE_AVX=0 ;; # default
-    (*)    echo "BEGIN ERROR"
-           echo "Illegal value of option VECTORISE_EMULATE_AVX"
            echo "END ERROR"
            exit 1
 esac
@@ -112,7 +102,6 @@ echo "VECTORISE_ALWAYS_USE_UNALIGNED_LOADS $VECTORISE_ALWAYS_USE_UNALIGNED_LOADS
 echo "VECTORISE_ALWAYS_USE_ALIGNED_LOADS   $VECTORISE_ALWAYS_USE_ALIGNED_LOADS"
 echo "VECTORISE_INLINE                     $VECTORISE_INLINE"
 echo "VECTORISE_STREAMING_STORES           $VECTORISE_STREAMING_STORES"
-echo "VECTORISE_EMULATE_AVX                $VECTORISE_EMULATE_AVX"
 echo "END DEFINE"
 
 echo "BEGIN MAKE_DEFINITION"
@@ -122,5 +111,4 @@ echo "VECTORISE_ALWAYS_USE_UNALIGNED_LOADS = $VECTORISE_ALWAYS_USE_UNALIGNED_LOA
 echo "VECTORISE_ALWAYS_USE_ALIGNED_LOADS   = $VECTORISE_ALWAYS_USE_ALIGNED_LOADS"
 echo "VECTORISE_INLINE                     = $VECTORISE_INLINE"
 echo "VECTORISE_STREAMING_STORES           = $VECTORISE_STREAMING_STORES"
-echo "VECTORISE_EMULATE_AVX                = $VECTORISE_EMULATE_AVX"
 echo "END MAKE_DEFINITION"

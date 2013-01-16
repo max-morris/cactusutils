@@ -45,11 +45,16 @@ struct CCTK_REAL8_VEC {
 // Create vectors, extract vector elements
 
 #define vec8_set1(a)      (vec_splats(a))
-#define vec8_set(a,b,c,d) ((vector4double){a,b,c,d})
+#define vec8_set(a,b,c,d)                               \
+  (vec_insert                                           \
+   (d,vec_insert                                        \
+    (c,vec_insert                                       \
+     (b,vec_insert                                      \
+      (a,CCTK_REAL8_VEC(),0),1),2),3))
 
 #define vec8_b2r(b) ((b)?+1.0:-1.0)
-#define vec8b_set(a,b,c,d)                                              \
-  ((vector4double){vec8_b2r(a),vec8_b2r(b),vec8_b2r(c),vec8_b2r(d)})
+#define vec8b_set(a,b,c,d)                                      \
+  (vec8_set(vec8_b2r(a),vec8_b2r(b),vec8_b2r(c),vec8_b2r(d)))
 
 #define vec8_elt0(x)  (vec_extract(x,0))
 #define vec8_elt1(x)  (vec_extract(x,1))
@@ -351,8 +356,8 @@ struct CCTK_REAL8_VEC {
 #define k8ifthen(x,y,z) (vec_sel(z,y,x))
 
 #define k8cmpeq(x,y) (vec_cmpeq(x,y))
-#define k8cmpne(x,y) (k8lnot(vec_cmpeq(x,y)))
+#define k8cmpne(x,y) (k8lnot(k8cmpeq(x,y)))
 #define k8cmpgt(x,y) (vec_cmpgt(x,y))
-#define k8cmpge(x,y) (k8lnot(vec_cmplt(x,y)))
+#define k8cmpge(x,y) (k8lnot(k8cmplt(x,y)))
 #define k8cmplt(x,y) (vec_cmplt(x,y))
-#define k8cmple(x,y) (vec_not(vec_cmpgt(x,y)))
+#define k8cmple(x,y) (k8lnot(k8cmpgt(x,y)))

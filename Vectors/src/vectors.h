@@ -1,3 +1,5 @@
+// -*-C++-*-
+
 #ifndef VECTORS_H
 #define VECTORS_H
 
@@ -5,23 +7,26 @@
 
 
 
+#define vec_static_assert(x) namespace { typedef int vsa[(x) ? 1 : -1]; }
+
+
+
 #if VECTORISE
 
-/* TODO: support AVX */
-#  if defined(__SSE__)          // Intel SSE
+#  if defined(__AVX__)          // Intel AVX
+#    include "vectors-4-AVX.h"
+#  elif defined(__SSE__)        // Intel SSE
 #    include "vectors-4-SSE.h"
 #  elif defined(__ALTIVEC__)    // Power Altivec
 #    include "vectors-4-Altivec.h"
 #  endif
 
-#  if defined(__AVX__)          // Intel AVX
+#  if defined(__MIC__)          // Intel MIC
+#    include "vectors-8-MIC.h"
+#  elif defined(__AVX__) && !defined(DISABLE_AVX) // Intel AVX
 #    include "vectors-8-AVX.h"
 #  elif defined(__SSE2__)       // Intel SSE2
-#    if VECTORISE_EMULATE_AVX
-#      include "vectors-8-AVX.h"
-#    else
-#      include "vectors-8-SSE2.h"
-#    endif
+#    include "vectors-8-SSE2.h"
 #  elif defined(__bgq__) && defined(__VECTOR4DOUBLE__) // Blue Gene/Q QPX
 #    include "vectors-8-QPX.h"
 #  elif defined(__ALTIVEC__) && defined(_ARCH_PWR7) // Power VSX
@@ -33,10 +38,10 @@
 #endif
 
 // Default implementation, do not vectorise
-#if ! defined(CCTK_REAL4_VEC_SIZE)
+#ifndef CCTK_REAL4_VEC_SIZE
 #  include "vectors-4-default.h"
 #endif
-#if ! defined(CCTK_REAL8_VEC_SIZE)
+#ifndef CCTK_REAL8_VEC_SIZE
 #  include "vectors-8-default.h"
 #endif
 
@@ -130,9 +135,9 @@
 
 #  define CCTK_REAL_VEC      CCTK_REAL8_VEC
 #  define CCTK_REAL_VEC_SIZE CCTK_REAL8_VEC_SIZE
-#  define CCTK_INTEGER       CCTK_INTEGER8
+//#  define CCTK_INTEGER       CCTK_INTEGER8
 #  define CCTK_BOOLEAN       CCTK_BOOLEAN8
-#  define CCTK_INTEGER_VEC   CCTK_INTEGER8_VEC
+//#  define CCTK_INTEGER_VEC   CCTK_INTEGER8_VEC
 #  define CCTK_BOOLEAN_VEC   CCTK_BOOLEAN8_VEC
 
 #  define vec_set1 vec8_set1
@@ -241,43 +246,54 @@
 
 #ifdef __cplusplus
 
+#include <cstdlib>
+
 template<typename T>
 struct vecprops {
   typedef T scalar_t;
   typedef T vector_t;
-  static inline int size()
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  std::size_t size()
   {
     return 1;
   }
-  static inline vector_t load (scalar_t const& a)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t load (scalar_t const& a)
   {
     return a;
   }
-  static inline vector_t loadu (scalar_t const& a)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t loadu (scalar_t const& a)
   {
     return a;
   }
-  static inline scalar_t elt (vector_t const& x, int const d)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  scalar_t elt (vector_t const& x, std::ptrdiff_t const d)
   {
     return x;
   }
-  static inline vector_t neg (vector_t const& x)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t neg (vector_t const& x)
   {
     return -x;
   }
-  static inline vector_t add (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t add (vector_t const& x, vector_t const& y)
   {
     return x+y;
   }
-  static inline vector_t sub (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t sub (vector_t const& x, vector_t const& y)
   {
     return x-y;
   }
-  static inline vector_t mul (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t mul (vector_t const& x, vector_t const& y)
   {
     return x*y;
   }
-  static inline vector_t div (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t div (vector_t const& x, vector_t const& y)
   {
     return x/y;
   }
@@ -287,39 +303,48 @@ template<>
 struct vecprops<CCTK_REAL4> {
   typedef CCTK_REAL4     scalar_t;
   typedef CCTK_REAL4_VEC vector_t;
-  static inline int size()
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  int size()
   {
     return CCTK_REAL4_VEC_SIZE;
   }
-  static inline vector_t load (scalar_t const& a)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t load (scalar_t const& a)
   {
     return vec4_load(a);
   }
-  static inline vector_t loadu (scalar_t const& a)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+   vector_t loadu (scalar_t const& a)
   {
     return vec4_loadu(a);
   }
-  static inline scalar_t elt (vector_t const& x, int const d)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  scalar_t elt (vector_t const& x, int const d)
   {
     return vec4_elt(x,d);
   }
-  static inline vector_t neg (vector_t const& x)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t neg (vector_t const& x)
   {
     return k4neg(x);
   }
-  static inline vector_t add (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t add (vector_t const& x, vector_t const& y)
   {
     return k4add(x,y);
   }
-  static inline vector_t sub (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t sub (vector_t const& x, vector_t const& y)
   {
     return k4sub(x,y);
   }
-  static inline vector_t mul (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t mul (vector_t const& x, vector_t const& y)
   {
     return k4mul(x,y);
   }
-  static inline vector_t div (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t div (vector_t const& x, vector_t const& y)
   {
     return k4div(x,y);
   }
@@ -329,41 +354,140 @@ template<>
 struct vecprops<CCTK_REAL8> {
   typedef CCTK_REAL8     scalar_t;
   typedef CCTK_REAL8_VEC vector_t;
-  static inline int size()
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  int size()
   {
     return CCTK_REAL8_VEC_SIZE;
   }
-  static inline vector_t load (scalar_t const& a)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t load (scalar_t const& a)
   {
     return vec8_load(a);
   }
-  static inline vector_t loadu (scalar_t const& a)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t loadu (scalar_t const& a)
   {
     return vec8_loadu(a);
   }
-  static inline scalar_t elt (vector_t const& x, int const d)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  scalar_t elt (vector_t const& x, int const d)
   {
     return vec8_elt(x,d);
   }
-  static inline vector_t neg (vector_t const& x)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t neg (vector_t const& x)
   {
     return k8neg(x);
   }
-  static inline vector_t add (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t add (vector_t const& x, vector_t const& y)
   {
     return k8add(x,y);
   }
-  static inline vector_t sub (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t sub (vector_t const& x, vector_t const& y)
   {
     return k8sub(x,y);
   }
-  static inline vector_t mul (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t mul (vector_t const& x, vector_t const& y)
   {
     return k8mul(x,y);
   }
-  static inline vector_t div (vector_t const& x, vector_t const& y)
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t div (vector_t const& x, vector_t const& y)
   {
     return k8div(x,y);
+  }
+};
+
+template<typename T>
+struct vectype {
+private:
+  typedef vecprops<T> props;
+public:
+  typedef typename props::vector_t vector_t;
+  typedef typename props::scalar_t scalar_t;
+  vector_t v;
+  vectype() { }
+  vectype(vectype const& x): v(x.v) { }
+  vectype(vector_t const& x): v(x) { }
+  operator vector_t() const { return v; }
+  vectype& operator=(vectype const& x) { v=x.v; return *this; }
+  
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  std::size_t size() const {
+    return props::size();
+  }
+  
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype load(scalar_t const& a)
+  {
+    return props::load(a);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype loadu(scalar_t const& a)
+  {
+    return props::loadu(a);
+  }
+  
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  scalar_t elt(std::ptrdiff_t const d) const
+  {
+    return props::elt(*this, d);
+  }
+  
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype operator+() const
+  {
+    return *this;
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype operator-() const
+  {
+    return props::neg(*this);
+  }
+  
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype operator+(vectype const& x) const
+  {
+    return props::add(*this, x);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype operator-(vectype const& x) const
+  {
+    return props::sub(*this, x);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype operator*(vectype const& x) const
+  {
+    return props::mul(*this, x);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype operator/(vectype const& x) const
+  {
+    return props::div(*this, x);
+  }
+  
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype& operator+=(vectype const& x)
+  {
+    return *this = *this+x;
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype& operator-=(vectype const& x)
+  {
+    return *this = *this-x;
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype& operator*=(vectype const& x)
+  {
+    return *this = *this*x;
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vectype& operator/=(vectype const& x)
+  {
+    return *this = *this/x;
   }
 };
 
@@ -382,6 +506,18 @@ struct vecprops<CCTK_REAL8> {
 
 #  undef ToReal
 #  define ToReal(x) (vec_set1(CCTK_REAL(x)))
+
+#  undef IfThen
+#  ifdef __PGI
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL_VEC vec_IfThen(CCTK_BOOLEAN x, CCTK_REAL_VEC y, CCTK_REAL_VEC z)
+{
+  if (x) return y; else return z;
+}
+#    define IfThen(x,y,z) vec_IfThen(x,y,z)
+#  else
+#    define IfThen(x,y,z) ((x) ? CCTK_REAL_VEC(y) : CCTK_REAL_VEC(z))
+#  endif
 
 #  undef KRANC_GFOFFSET3D
 #  define KRANC_GFOFFSET3D(var,i,j,k)                                   \

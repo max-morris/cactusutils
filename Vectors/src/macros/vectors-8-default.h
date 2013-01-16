@@ -1,9 +1,13 @@
 // Fallback vectorisation implementation: Do not vectorise
 
+// We use macros here, so that we are not surprised by compilers which
+// don't like to inline functions. This should also make debug builds
+// (which may not inline) more efficient.
 
 
-#include <cassert>
-#include <cmath>
+
+#include <assert.h>
+#include <math.h>
 
 
 
@@ -15,13 +19,10 @@
 // Number of vector elements in a vector
 #define CCTK_REAL8_VEC_SIZE 1
 
-vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
-                  sizeof(CCTK_REAL8) * CCTK_REAL8_VEC_SIZE);
-
 // Integer and boolean types corresponding to this real type
-//#define CCTK_INTEGER8     CCTK_REAL8
+#define CCTK_INTEGER8     CCTK_REAL8
 #define CCTK_BOOLEAN8     CCTK_REAL8
-//#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
 #define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
 
 
@@ -88,7 +89,7 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
 #define k8atan(x)       (atan(x))
 #define k8atan2(x,y)    (atan2(x,y))
 #define k8atanh(x)      (atanh(x))
-#define k8copysign(x,y) (std::copysign(x,y))
+#define k8copysign(x,y) (copysign(x,y))
 #define k8cos(x)        (cos(x))
 #define k8cosh(x)       (cosh(x))
 #define k8exp(x)        (exp(x))
@@ -103,16 +104,17 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
 #define k8sqrt(x)       (sqrt(x))
 #define k8tan(x)        (tan(x))
 #define k8tanh(x)       (tanh(x))
-#define k8signbit(x)    (std::signbit(x))
 
-static inline CCTK_REAL8_VEC k8l2r(CCTK_INT8 const x)
-{
-  return *(CCTK_REAL8 const*)&x;
-}
-static inline CCTK_INT8 k8r2l(CCTK_REAL8_VEC const x)
-{
-  return *(CCTK_INT8 const*)&x;
-}
+#define k8sgn(x_)                                                       \
+  ({                                                                    \
+    CCTK_REAL x__=(x_);                                                 \
+    CCTK_REAL x=x__;                                                    \
+    x==(CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : std::copysign((CCTK_REAL)1.0, x); \
+  })
+#define k8signbit(x) (std::signbit(x))
+
+#define k8l2r(x_) ({ CCTK_INT8 x__=(x_); CCTK_INT8 x=x__; *(CCTK_REAL8*)&x; })
+#define k8r2l(x_) ({ CCTK_REAL8 x__=(x_); CCTK_REAL8 x=x__; *(CCTK_INT8*)&x; })
 #define k8lfalse k8l2r(0)
 #define k8ltrue  k8l2r(1)
 #define k8lnot(x)   k8l2r(!k8r2l(x))
@@ -128,8 +130,3 @@ static inline CCTK_INT8 k8r2l(CCTK_REAL8_VEC const x)
 #define k8cmpge(x,y) k8l2r((x)>=(y))
 #define k8cmplt(x,y) k8l2r((x)<(y))
 #define k8cmple(x,y) k8l2r((x)<=(y))
-
-static inline CCTK_REAL8_VEC k8sgn(CCTK_REAL8_VEC const x)
-{
-  return x==(CCTK_REAL8)0.0 ? (CCTK_REAL8)0.0 : k8copysign((CCTK_REAL8)1.0, x);
-}

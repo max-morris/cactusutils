@@ -19,9 +19,6 @@
 // Number of vector elements in a vector
 #define CCTK_REAL4_VEC_SIZE 1
 
-vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
-                  sizeof(CCTK_REAL4) * CCTK_REAL4_VEC_SIZE);
-
 // Integer and boolean types corresponding to this real type
 #define CCTK_INTEGER4     CCTK_REAL4
 #define CCTK_BOOLEAN4     CCTK_REAL4

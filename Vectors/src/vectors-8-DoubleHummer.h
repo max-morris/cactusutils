@@ -24,9 +24,9 @@
 #define CCTK_REAL8_VEC_SIZE 2
 
 // Integer and boolean types corresponding to this real type
-#define CCTK_INTEGER8     CCTK_REAL8
+//#define CCTK_INTEGER8     CCTK_REAL8
 #define CCTK_BOOLEAN8     CCTK_REAL8
-#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+//#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
 #define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
 
 
