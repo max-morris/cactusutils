@@ -297,6 +297,11 @@ struct vecprops {
   {
     return x/y;
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t madd (vector_t const& x, vector_t const& y, vector_t const& z)
+  {
+    return x*y+z;
+  }
 };
 
 template<>
@@ -348,6 +353,11 @@ struct vecprops<CCTK_REAL4> {
   {
     return k4div(x,y);
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t madd (vector_t const& x, vector_t const& y, vector_t const& z)
+  {
+    return k4madd(x,y,z);
+  }
 };
 
 template<>
@@ -398,6 +408,11 @@ struct vecprops<CCTK_REAL8> {
   vector_t div (vector_t const& x, vector_t const& y)
   {
     return k8div(x,y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t madd (vector_t const& x, vector_t const& y, vector_t const& z)
+  {
+    return k8madd(x,y,z);
   }
 };
 
