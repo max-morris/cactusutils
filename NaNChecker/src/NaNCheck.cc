@@ -687,11 +687,13 @@ CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights,
   {
     bool is_inside = true;
     int amended_index = _i;
+    if (fp_type==2) amended_index /= 2;
     for (int d=0; d<gdata.dim; ++d) {
       int dir_index = amended_index % gdata.ash[d];
       is_inside &= dir_index < gdata.lsh[d];
       amended_index /= gdata.ash[d];
     }
+    assert(amended_index == 0);
     if (is_inside && (!CarpetWeights || CarpetWeights[_i] > 0.0))
     {
       
