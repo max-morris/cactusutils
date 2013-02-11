@@ -88,7 +88,6 @@ tovsolver::TOV_K[0]           = 100.0
 tovsolver::TOV_Combine_Method = "maximum"
 
 eos_omni::poly_gamma                    = 2.0
-eos_omni::poly_gamma_ini                = 2.0
 eos_omni::poly_k                        = 100.0
 
 IOBasic::outInfo_every 			= 	1
