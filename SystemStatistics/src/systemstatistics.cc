@@ -24,7 +24,7 @@
 #ifndef HAVE_MALLINFO
 
 // Provide a dummy mallinfo function if none is available
-struct mallinfo {
+struct mallinfo_t {
   int arena;
   int ordblks;
   int smblks;
@@ -37,9 +37,9 @@ struct mallinfo {
   int keepcost;
 };
 
-struct mallinfo mallinfo()
+struct mallinfo_t mallinfo()
 {
-  struct mallinfo m;
+  struct mallinfo_t m;
   m.arena = 0;
   m.ordblks = 0;
   m.smblks = 0;
