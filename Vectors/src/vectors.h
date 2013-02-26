@@ -13,25 +13,25 @@
 
 #if VECTORISE
 
-#  if defined(__AVX__)          // Intel AVX
+#  if defined __AVX__           // Intel AVX
 #    include "vectors-4-AVX.h"
-#  elif defined(__SSE__)        // Intel SSE
+#  elif defined __SSE__         // Intel SSE
 #    include "vectors-4-SSE.h"
-#  elif defined(__ALTIVEC__)    // Power Altivec
+#  elif defined __ALTIVEC__     // Power Altivec
 #    include "vectors-4-Altivec.h"
 #  endif
 
-#  if defined(__MIC__)          // Intel MIC
+#  if defined __MIC__           // Intel MIC
 #    include "vectors-8-MIC.h"
-#  elif defined(__AVX__) && !defined(DISABLE_AVX) // Intel AVX
+#  elif defined __AVX__  && !defined DISABLE_AVX  // Intel AVX
 #    include "vectors-8-AVX.h"
-#  elif defined(__SSE2__)       // Intel SSE2
+#  elif defined __SSE2__        // Intel SSE2
 #    include "vectors-8-SSE2.h"
-#  elif defined(__bgq__) && defined(__VECTOR4DOUBLE__) // Blue Gene/Q QPX
+#  elif defined __bgq__  && defined __VECTOR4DOUBLE__  // Blue Gene/Q QPX
 #    include "vectors-8-QPX.h"
-#  elif defined(__ALTIVEC__) && defined(_ARCH_PWR7) // Power VSX
+#  elif defined __ALTIVEC__  && defined _ARCH_PWR7  // Power VSX
 #    include "vectors-8-VSX.h"
-#  elif defined(_ARCH_450D)     // Blue Gene/P Double Hummer
+#  elif defined _ARCH_450D      // Blue Gene/P Double Hummer
 #    include "vectors-8-DoubleHummer.h"
 #  endif
 
@@ -49,7 +49,7 @@
 
 // Define macros for CCTK_REAL
 
-#if defined(CCTK_REAL_PRECISION_4)
+#if defined CCTK_REAL_PRECISION_4 
 
 #  define vec_architecture vec4_architecture
 
@@ -129,7 +129,7 @@
 #  define kcmplt k4cmplt
 #  define kcmple k4cmple
 
-#elif defined(CCTK_REAL_PRECISION_8)
+#elif defined CCTK_REAL_PRECISION_8 
 
 #  define vec_architecture vec8_architecture
 
@@ -523,7 +523,9 @@ public:
 #  define ToReal(x) (vec_set1(CCTK_REAL(x)))
 
 #  undef IfThen
-#  ifdef __PGI
+#  if (defined __PGI ||                                                 \
+       defined _ARCH_450D ||                                            \
+       (defined __ALTIVEC__ && defined _ARCH_PWR7))
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL_VEC vec_IfThen(CCTK_BOOLEAN x, CCTK_REAL_VEC y, CCTK_REAL_VEC z)
 {
