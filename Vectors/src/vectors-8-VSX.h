@@ -1,3 +1,4 @@
+// -*-C++-*-
 // Vectorise using IBM's Altivec VSX (Power)
 
 // Use the type vector double directly, without introducing a wrapper class
