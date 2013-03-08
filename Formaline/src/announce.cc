@@ -766,14 +766,14 @@ namespace Formaline
             keyrebuf << key << ".Re";
             string const keyrestr = keyrebuf.str();
             char const * const keyre = keyrestr.c_str();
-            stores.store (keyre, val.Re);
+            stores.store (keyre, CCTK_CmplxReal(val));
           }
           {
             ostringstream keyimbuf;
             keyimbuf << key << ".Im";
             string const keyimstr = keyimbuf.str();
             char const * const keyim = keyimstr.c_str();
-            stores.store (keyim, val.Im);
+            stores.store (keyim, CCTK_CmplxImag(val));
           }
         }
         break;
