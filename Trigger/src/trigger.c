@@ -100,13 +100,20 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
     // -1 indicates a parameter
     if (varindex>=0)
     {
-      CCTK_REAL *myVar = (CCTK_REAL *)CCTK_VarDataPtrI(GH , 0, varindex);
+      void *myVar = CCTK_VarDataPtrI(GH , 0, varindex);
       if (myVar == NULL)
       {
         CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
                   "Variable '%s' has no storage", CCTK_FullName(varindex));
       }
-      value=myVar[0];
+      if (CCTK_VARIABLE_REAL == CCTK_VarTypeI(varindex))
+        value=*(CCTK_REAL*)myVar;
+      else if (CCTK_VARIABLE_INT == CCTK_VarTypeI(varindex))
+        value=(CCTK_REAL) *(CCTK_INT*)myVar;
+      else
+        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "Variable '%s' isn't CCTK_REAL or CCTK_INT, I don't know what to do with that.",
+                   CCTK_FullName(varindex));
     }
     else
     {
