@@ -32,8 +32,9 @@ FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/Formaline/bin
 # and execute git commands) are installed when Formaline's thorn
 # library is built (see make.code.deps). To ensure that the utilities
 # are available, we thus add a dependency on the thorn library.
-install-Formaline-utils: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
-.PHONY: install-Formaline-utils
+#install-Formaline-utils: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
+#.PHONY: install-Formaline-utils
+FORMALINE-UTILS = $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX)
 
 
 
@@ -76,7 +77,7 @@ $(FRM-LIB): $(FRM-OBJS)
 # (generates also $(TOP)/CONFIG-ID)
 .PRECIOUS: $(TOP)/BUILD-ID
 .PHONY: $(TOP)/BUILD-ID
-$(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX) install-Formaline-utils
+$(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX) $(FORMALINE-UTILS)
 	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'` && \
 	hostname=`$(FORMALINE_BIN_DIR)/gethostname.pl` && \
 	user="$$USER" && \
@@ -110,7 +111,7 @@ $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID
 $(TARBALL_DIR)/cactus-meta.o: $(TARBALL_DIR)/cactus-meta.c
 	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c -o $@ $^
 
-$(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/flesh-Cactus.c $(patsubst %,$(TARBALL_DIR)/thorn-%.c,$(notdir $(THORNS))) install-Formaline-utils
+$(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/flesh-Cactus.c $(patsubst %,$(TARBALL_DIR)/thorn-%.c,$(notdir $(THORNS))) $(FORMALINE-UTILS)
 	$(FORMALINE_BIN_DIR)/makemetablob.pl Cactus $(notdir $(THORNS)) > $@
 
 .PRECIOUS: $(TARBALL_DIR)/cactus-meta.c $(TARBALL_DIR)/cactus-meta.o
@@ -134,7 +135,7 @@ $(TARBALL_DIR)/flesh-Cactus.o: $(TARBALL_DIR)/flesh-Cactus.c
 	$(CC) $(CFLAGS) -c $(^:%.c=%-????.c) && \
 	$(CC) $(CFLAGS) -c $^
 
-$(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION install-Formaline-utils
+$(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION $(FORMALINE-UTILS)
 	$(RM) -f $(@:%.c=%-????.c)
 	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' Cactus < $<
 
@@ -197,7 +198,7 @@ $(TARBALL_DIR)/thorn-%.o: $(TARBALL_DIR)/thorn-%.c
 	$(CC) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.c)) && \
 	$(CC) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^)
 
-$(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION install-Formaline-utils
+$(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION $(FORMALINE-UTILS)
 	cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c)
 	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/thorn-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/thorn-%.c=%) < $<
 
@@ -330,7 +331,7 @@ BUILD-ID-FILE   = $(TOP)/BUILD-ID
 CONFIG-ID-FILE  = $(TOP)/CONFIG-ID
 
 .PHONY: git-push-everything
-git-push-everything: git-commit-everything $(BUILD-ID-FILE) install-Formaline-utils
+git-push-everything: git-commit-everything $(BUILD-ID-FILE) $(FORMALINE-UTILS)
 	{ \
 	'$(GIT-BIN)/git-init-master-repo.pl' '$(GIT)' '$(GIT-MASTER-REPO)' && \
 	eval "$$('$(GIT-BIN)/git-get-localdir.pl' '$(GIT)')" && \
@@ -342,7 +343,7 @@ git-push-everything: git-commit-everything $(BUILD-ID-FILE) install-Formaline-ut
 	} || echo "Formaline: WARNING: Error while pushing to master repository"
 
 .PHONY: git-commit-everything
-git-commit-everything: $(GIT-TAG-DIR)/flesh-Cactus.git-tag $(GIT-THORNS:%=$(GIT-TAG-DIR)/thorn-%.git-tag) $(BUILD-ID-FILE) git-rm-unused-thorns install-Formaline-utils
+git-commit-everything: $(GIT-TAG-DIR)/flesh-Cactus.git-tag $(GIT-THORNS:%=$(GIT-TAG-DIR)/thorn-%.git-tag) $(BUILD-ID-FILE) git-rm-unused-thorns $(FORMALINE-UTILS)
 	{ \
 	'$(GIT-BIN)/git-commit-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' "$$(cat $(BUILD-ID-FILE))" "$$(cat $(CONFIG-ID-FILE))"; \
 	} || echo "Formaline: WARNING: Error while committing to repository"
@@ -350,13 +351,13 @@ git-commit-everything: $(GIT-TAG-DIR)/flesh-Cactus.git-tag $(GIT-THORNS:%=$(GIT-
 # Wait until after thorn Formaline has been built, so that its
 # utilities are available
 .PHONY: git-rm-unused-thorns
-git-rm-unused-thorns: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX) install-Formaline-utils
+git-rm-unused-thorns: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX) $(FORMALINE-UTILS)
 	{ \
 	'$(GIT-BIN)/git-rm-unused-thorns.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' $(THORNS); \
 	} || echo "Formaline: WARNING: Error while removing unused thorns"
 
 .PRECIOUS: $(GIT-TAG-DIR)/flesh-Cactus.git-tag
-$(GIT-TAG-DIR)/flesh-Cactus.git-tag: $(TARBALL_DIR)/flesh-Cactus.files install-Formaline-utils
+$(GIT-TAG-DIR)/flesh-Cactus.git-tag: $(TARBALL_DIR)/flesh-Cactus.files $(FORMALINE-UTILS)
 	mkdir -p $(GIT-TAG-DIR)
 	{ \
 	'$(GIT-BIN)/git-init-repo.pl' '$(GIT)' '$(GIT-REPO)' && \
@@ -367,7 +368,7 @@ $(GIT-TAG-DIR)/flesh-Cactus.git-tag: $(TARBALL_DIR)/flesh-Cactus.files install-F
 	} || echo "Formaline: WARNING: Error while adding flesh to git repository"
 
 .PRECIOUS: $(GIT-TAG-DIR)/thorn-%.git-tag
-$(GIT-TAG-DIR)/thorn-%.git-tag: $(TARBALL_DIR)/thorn-%.files install-Formaline-utils
+$(GIT-TAG-DIR)/thorn-%.git-tag: $(TARBALL_DIR)/thorn-%.files $(FORMALINE-UTILS)
 	mkdir -p $(GIT-TAG-DIR)
 	{ \
 	'$(GIT-BIN)/git-init-repo.pl' '$(GIT)' '$(GIT-REPO)' && \
