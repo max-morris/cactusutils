@@ -143,10 +143,10 @@ $(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
 	cd $(CCTK_HOME) && \
 	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
-# This dependency means that the tarball for a thorn is only updated
-# if the thorn is actually recompiled.  This does not catch changes to
+# This dependency means that the tarball for the flesh is only updated
+# if the flesh is actually recompiled.  This does not catch changes to
 # files that do not influence the executable.
-$(TARBALL_DIR)/flesh-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/flesh-Cactus.ccldeps
+$(TARBALL_DIR)/flesh-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/flesh-Cactus.ccldeps $(CONFIG)/make.thornlist
 	cd $(CCTK_HOME) && \
 	find CONTRIBUTORS COPYRIGHT Makefile lib/ src/ \
 		`ls configs/$(notdir $(TOP))/OptionList 2> /dev/null` \
