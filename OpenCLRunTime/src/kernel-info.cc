@@ -1,6 +1,9 @@
 #include "defs.hh"
 #include "kernel.hh"
 
+#include <cctk.h>
+#include <cctk_Parameters.h>
+
 #include <cstring>
 #include <fstream>
 #include <iomanip>
@@ -27,6 +30,8 @@ namespace OpenCLRunTime {
     // Only disassemble on the root process
     if (CCTK_MyProc(NULL) != 0) return;
     
+    // Don't use fork, MPI may not like it
+#if 0
     // Disassemble in a subprocess because it may be slow
     pid_t const cpid = fork();
     if (cpid > 0) {
@@ -43,6 +48,7 @@ namespace OpenCLRunTime {
       
       return;
     }
+#endif
     
     cl_platform_id platform_id;
     checkErr(clGetDeviceInfo(device->device_id, CL_DEVICE_PLATFORM,
@@ -53,7 +59,7 @@ namespace OpenCLRunTime {
     char platform_name[platform_name_size];
     checkErr(clGetPlatformInfo(platform_id, CL_PLATFORM_NAME,
                                platform_name_size, platform_name, NULL));
-    enum vendor_t { v_AMD, v_Apple, v_Intel, v_NVidia, v_pocl };
+    enum vendor_t { v_AMD, v_Apple, v_Intel, v_Nvidia, v_pocl };
     vendor_t vendor;
     if (strcasestr(platform_name, "AMD")) {
       vendor = v_AMD;
@@ -61,18 +67,19 @@ namespace OpenCLRunTime {
       vendor = v_Apple;
     } else if (strcasestr(platform_name, "Intel")) {
       vendor = v_Intel;
-    } else if (strcasestr(platform_name, "NVidia")) {
-      vendor = v_NVidia;
+    } else if (strcasestr(platform_name, "Nvidia")) {
+      vendor = v_Nvidia;
     } else if (strcasestr(platform_name, "pocl")) {
       vendor = v_pocl;
     } else {
       CCTK_WARN(CCTK_WARN_ALERT, "Unknown OpenCL architecture");
-      _exit(0);
+      // _exit(0);
+      return;
     }
     
     switch (vendor) {
       
-    case v_NVidia:
+    case v_Nvidia:
     case v_pocl: {
       // Don't do anything, because the "binary" is already an
       // assembler listing
@@ -104,22 +111,12 @@ namespace OpenCLRunTime {
       break;
     }
       
-    case v_AMD:
-    case v_Apple: {
+    case v_AMD: {
       // Call gdb to disassemble the memory content
       
       char *const cmdfilename = tempnam(NULL, NULL);
       ofstream cmds(cmdfilename);
-      switch (vendor) {
-      case v_AMD:
-        cmds << "disassemble __OpenCL_" << name << "_kernel\n";
-        break;
-      case v_Apple:
-        cmds << "disassemble " << name << "_wrapper\n";
-        break;
-      default:
-        assert(0);
-      }
+      cmds << "disassemble __OpenCL_" << name << "_kernel\n";
       cmds.close();
       
       char **argv;
@@ -138,14 +135,66 @@ namespace OpenCLRunTime {
       break;
     }
       
+    case v_Apple: {
+      // Post-process the object file, then call objdump
+      
+      // Read the file into memory
+      string contents;
+      {
+        stringstream buf;
+        buf << out_dir << "/" << name << ".0.o";
+        string const filename = buf.str();
+        ifstream file(filename.c_str(), ios::in | ios::binary);
+        assert(file);
+        file.seekg(0, ios::end);
+        contents.resize(file.tellg());
+        file.seekg(0, ios::beg);
+        file.read(&contents[0], contents.size());
+        file.close();
+      }
+      
+      // Skip the beginning of the object file until the byte sequence
+      // cf fa ed fe is encountered
+      {
+        string const magic = "\xcf\xfa\xed\xfe";
+        size_t const pos = contents.find(magic);
+        assert(pos != string::npos);
+        contents = contents.substr(pos);
+      }
+      
+      // Write the new contents
+      {
+        stringstream buf;
+        buf << out_dir << "/" << name << ".o";
+        string const filename = buf.str();
+        ofstream file(filename.c_str(), ios::out | ios::binary);
+        assert(file);
+        file << contents;
+        file.close();
+      }
+      
+      // Call objdump
+      {
+        stringstream cmd;
+        cmd << "gobjdump -d " << out_dir << "/" << name << ".o "
+            << ">" << out_dir << "/" << name << ".s 2>&1";
+        system(cmd.str().c_str());
+      }
+      
+      break;
+    }
+      
     default:
       CCTK_WARN(CCTK_WARN_ALERT, "Unknown OpenCL architecture");
-      _exit(0);
+      // _exit(0);
+      return;
     }
     
+#if 0
     // Exit the hard way, not via exit(), so that MPI etc. don't get
     // confused. Note that we don't need to clean up anything.
     _exit(0);
+#endif
   }
   
   
