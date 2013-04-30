@@ -322,7 +322,9 @@ namespace OpenCLRunTime {
                  NULL);
     }
     if (build_status == CL_BUILD_ERROR) {
-      CCTK_WARN(CCTK_WARN_ABORT, "Build error");
+      cout << build_log;
+      CCTK_VError(__LINE__, __FILE__, CCTK_THORNSTRING,
+                  "Build error; see %s/%s.log for details.", out_dir, name);
     }
     
     // Create kernel from the program
