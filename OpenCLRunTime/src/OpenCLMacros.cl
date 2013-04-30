@@ -1,8 +1,6 @@
 // -*-C-*-
 
 #pragma OPENCL EXTENSION cl_khr_fp64    : enable
-#pragma OPENCL EXTENSION cl_amd_printf  : enable
-#pragma OPENCL EXTENSION cl_intel_printf: enable
 
 
 
@@ -11,7 +9,10 @@
 
 
 #define CCTK_ATTRIBUTE_UNUSED    __attribute__((__unused__))
-#define CCTK_BUILTIN_EXPECT(a,b) __builtin_expect(a,b)
+// Use this define if you know __builtin_expect is supported. This
+// will be tested for in a future version of this thorn.
+// #define CCTK_BUILTIN_EXPECT(a,b) __builtin_expect(a,b)
+#define CCTK_BUILTIN_EXPECT(a,b) (a)
 #define CCTK_UNROLL              _Pragma("unroll")
 
 
