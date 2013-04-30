@@ -322,7 +322,17 @@ namespace OpenCLRunTime {
                  NULL);
     }
     if (build_status == CL_BUILD_ERROR) {
-      CCTK_WARN(CCTK_WARN_ABORT, "Build error");
+      size_t ret_val_size;
+      char *build_log;
+      checkErr(clGetProgramBuildInfo(program, device->device_id,
+                                     CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size));
+      build_log = new char[ret_val_size+1];
+      checkErr(clGetProgramBuildInfo(program, device->device_id,
+                                     CL_PROGRAM_BUILD_LOG, ret_val_size, build_log, NULL));
+      build_log[ret_val_size] = '\0';
+      CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                 "Build error: %s", build_log);
+      delete[] build_log;
     }
     
     // Create kernel from the program
