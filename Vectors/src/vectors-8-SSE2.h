@@ -185,7 +185,9 @@ CCTK_REAL8_VEC vec8_loadu_maybe3(std::ptrdiff_t const off1,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC vec8_loadu_maybe(std::ptrdiff_t const off, CCTK_REAL8 const& p)
 {
-  // The :? operator breaks with the Intel compiler
+  // Note: This function is mis-translated by some versions of the
+  // Intel compiler. The symptom is a segfault during the Vectors
+  // selftest in the vec_loadu_maybe test.
   // return off % CCTK_REAL8_VEC_SIZE == 0 ? vec8_load(p) : vec8_load_off1(p);
   if (off % CCTK_REAL8_VEC_SIZE == 0) return vec8_load(p);
   return vec8_load_off1(p);
