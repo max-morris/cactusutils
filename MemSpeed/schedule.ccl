@@ -1,0 +1,7 @@
+# Schedule definitions for thorn MemSpeed
+
+SCHEDULE MemSpeed_MeasureSpeed AT wragh
+{
+  LANG: C
+  OPTIONS: meta
+} "Measure CPU, memory, cache speeds"

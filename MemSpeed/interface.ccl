@@ -1,0 +1,18 @@
+# Interface definition for thorn MemSpeed
+
+IMPLEMENTS: MemSpeed
+
+USES INCLUDE HEADER: vectors.h
+
+
+
+# Obtain information about caches and memory sizes from thorn hwloc
+CCTK_INT FUNCTION GetCacheInfo1                            \
+    (CCTK_POINTER_TO_CONST ARRAY OUT names,                \
+     CCTK_INT              ARRAY OUT types,                \
+     CCTK_POINTER_TO_CONST ARRAY OUT sizes,                \
+     CCTK_INT              ARRAY OUT linesizes,            \
+     CCTK_INT              ARRAY OUT strides,              \
+     CCTK_INT              ARRAY OUT num_puss,             \
+     CCTK_INT                    IN  max_num_cache_levels)
+REQUIRES FUNCTION GetCacheInfo1

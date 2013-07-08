@@ -1,0 +1,11 @@
+Cactus Code Thorn MemSpeed
+Author(s)    : Erik Schnetter <eschnetter@perimeterinstitute.ca>
+Maintainer(s): Erik Schnetter <eschnetter@perimeterinstitute.ca>
+Licence      : LGPL
+--------------------------------------------------------------------------
+
+1. Purpose
+
+Determine the speed of the CPU, as well as latencies and bandwidths of
+caches and main memory. These provides ideal, but real-world values
+against which the performance of other routines can be compared.

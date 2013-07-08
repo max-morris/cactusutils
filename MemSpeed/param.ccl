@@ -1,0 +1,5 @@
+# Parameter definitions for thorn MemSpeed
+
+BOOLEAN verbose "Verbose output" STEERABLE=always
+{
+} "no"
