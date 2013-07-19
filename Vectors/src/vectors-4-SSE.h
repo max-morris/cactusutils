@@ -730,7 +730,7 @@ CCTK_REAL4_VEC k4ifthen(CCTK_BOOLEAN4_VEC const x,
   // This assumes that all logical operations always return either
   // lfalse or ltrue, and nothing "in between"
   // (z & ~mask) | (y & mask)   where imask = ~mask
-  return _mm_or_ps(_mm_and_ps(I2RI(x), y), _mm_andnot_ps(I2R(x), z));
+  return _mm_or_ps(_mm_and_ps(I2R(x), y), _mm_andnot_ps(I2R(x), z));
 #endif
 }
 
