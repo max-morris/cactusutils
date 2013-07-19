@@ -1,3 +1,4 @@
+// -*-C++-*-
 // Fallback vectorisation implementation: Do not vectorise
 
 
@@ -19,10 +20,10 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
                   sizeof(CCTK_REAL8) * CCTK_REAL8_VEC_SIZE);
 
 // Integer and boolean types corresponding to this real type
-//#define CCTK_INTEGER8     CCTK_REAL8
-#define CCTK_BOOLEAN8     CCTK_REAL8
-//#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
-#define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
+#define CCTK_INTEGER8     CCTK_INT8
+#define CCTK_BOOLEAN8     CCTK_INT8
+#define CCTK_INTEGER8_VEC CCTK_INT8
+#define CCTK_BOOLEAN8_VEC CCTK_INT8
 
 
 
@@ -34,6 +35,8 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
 // Access vectors elements
 #define vec8_elt0(x) (x)
 #define vec8_elt(x,d) (x)
+#define vec8_elti(x,d) (x)
+#define vec8_eltb(x,d) (x)
 
 
 
@@ -105,29 +108,21 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
 #define k8tanh(x)       (tanh(x))
 #define k8signbit(x)    (std::signbit(x))
 
-static inline CCTK_REAL8_VEC k8l2r(CCTK_INT8 const x)
-{
-  return *(CCTK_REAL8 const*)&x;
-}
-static inline CCTK_INT8 k8r2l(CCTK_REAL8_VEC const x)
-{
-  return *(CCTK_INT8 const*)&x;
-}
-#define k8lfalse k8l2r(0)
-#define k8ltrue  k8l2r(1)
-#define k8lnot(x)   k8l2r(!k8r2l(x))
-#define k8land(x,y) k8l2r(k8r2l(x) && k8r2l(y))
-#define k8lor(x,y)  k8l2r(k8r2l(x) || k8r2l(y))
-#define k8lxor(x,y) k8l2r(!k8r2l(x) != !k8r2l(y))
+#define k8lfalse 0
+#define k8ltrue  1
+#define k8lnot(x)   (!(x))
+#define k8land(x,y) ((x) && (y))
+#define k8lor(x,y)  ((x) || (y))
+#define k8lxor(x,y) (!(x) != !(y))
 
-#define k8ifthen(x,y,z) (k8r2l(x)?(y):(z))
+#define k8ifthen(x,y,z) ((x)?(y):(z))
 
-#define k8cmpeq(x,y) k8l2r((x)==(y))
-#define k8cmpne(x,y) k8l2r((x)!=(y))
-#define k8cmpgt(x,y) k8l2r((x)>(y))
-#define k8cmpge(x,y) k8l2r((x)>=(y))
-#define k8cmplt(x,y) k8l2r((x)<(y))
-#define k8cmple(x,y) k8l2r((x)<=(y))
+#define k8cmpeq(x,y) ((x)==(y))
+#define k8cmpne(x,y) ((x)!=(y))
+#define k8cmpgt(x,y) ((x)>(y))
+#define k8cmpge(x,y) ((x)>=(y))
+#define k8cmplt(x,y) ((x)<(y))
+#define k8cmple(x,y) ((x)<=(y))
 
 static inline CCTK_REAL8_VEC k8sgn(CCTK_REAL8_VEC const x)
 {

@@ -30,8 +30,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x)
     CCTK_REAL const res = (scalarexpr);                                 \
     CCTK_REAL const vecres = (vecexpr);                                 \
     CCTK_REAL const eps = numeric_limits<CCTK_REAL>::epsilon();         \
-    assert(abs((CCTK_REAL)0.1) > 0);                                    \
-    if ((abs(vecres - res) <= 10*eps) or                                \
+    if ((fabs(vecres - res) <= 10*eps) or                               \
         (isnan(vecres) and isnan(res)))                                 \
     {                                                                   \
       passed++;                                                         \
@@ -54,8 +53,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x)
       CCTK_REAL res = (scalarexpr);                                     \
       CCTK_REAL vecres = vec_elt(rv,i);                                 \
       CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();             \
-      assert(abs((CCTK_REAL)0.1) > 0);                                  \
-      if ((abs(vecres - res) <= 10*eps) or                              \
+      if ((fabs(vecres - res) <= 10*eps) or                             \
           (isnan(vecres) and isnan(res)))                               \
       {                                                                 \
         passed++;                                                       \
@@ -78,14 +76,17 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x)
     CCTK_BOOLEAN_VEC rv = (vecexpr);                                    \
     for (int i=0; i<CCTK_REAL_VEC_SIZE; i++) {                          \
       CCTK_BOOLEAN res = (scalarexpr);                                  \
-      CCTK_BOOLEAN vecres = vec_elt(rv,i);                              \
+      CCTK_BOOLEAN vecres = vec_eltb(rv, i);                            \
       if (memcmp(&vecres, &res, sizeof vecres) == 0) {                  \
         passed++;                                                       \
       } else {                                                          \
+        CCTK_INTEGER ires, ivecres;                                     \
+        memcpy(&ires, &res, sizeof ires);                               \
+        memcpy(&ivecres, &vecres, sizeof ivecres);                      \
         CCTK_VParamWarn(CCTK_THORNSTRING,                               \
                         "Failed test %s: "                              \
                         "for element %d, expected %lld, received %lld", \
-                        testname, i, (long long)res, (long long)vecres); \
+                        testname, i, (long long)ires, (long long)ivecres); \
       }                                                                 \
       numtests++;                                                       \
     }                                                                   \
@@ -155,7 +156,6 @@ void Vectors_Test(CCTK_ARGUMENTS)
 #else
 #  error "Unsupported vector size"
 #endif
-  SCALARTEST("vec_elt0", vec_elt0(av),    a[0]);
   for (int d=0; d<CCTK_REAL_VEC_SIZE; ++d) {
     snprintf(testname, sizeof testname, "vec_elt[%d]", d);
     SCALARTEST(testname, vec_elt(av,d), a[d]);
@@ -283,10 +283,8 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECTEST("kifneg -0", kifneg(vec_set1(-0.),bv,cv), b[i]);
 #endif
 
-  CCTK_BOOLEAN_VEC testklfalse = klfalse;
-  CCTK_BOOLEAN_VEC testkltrue  = kltrue;
-  CCTK_BOOLEAN klfalse1 = vec_elt(testklfalse,0);
-  CCTK_BOOLEAN kltrue1  = vec_elt(testkltrue ,0);
+  CCTK_BOOLEAN klfalse1 = vec_eltb(klfalse, 0);
+  CCTK_BOOLEAN kltrue1  = vec_eltb(kltrue , 0);
   VECBITTEST("constant F", klfalse, klfalse1);
   VECBITTEST("constant T", kltrue , kltrue1 );
   VECBITTEST("klnot F", klnot(klfalse), kltrue1 );
@@ -313,10 +311,9 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECBITTEST("kcmplt", kcmplt(av,bv), a[i]< b[i]?kltrue1:klfalse1);
   VECBITTEST("kcmple", kcmple(av,bv), a[i]<=b[i]?kltrue1:klfalse1);
 
+  CCTK_VInfo(CCTK_THORNSTRING, "%d/%d tests passed ", passed, numtests);
   if (passed != numtests) {
     CCTK_VWarn(CCTK_WARN_ALERT, __LINE__, __FILE__, CCTK_THORNSTRING,
-      "Failed %d correctness tests", numtests - passed);
-  } else {
-    CCTK_VInfo(CCTK_THORNSTRING, "%d/%d tests passed ", passed, numtests);
+               "Failed %d correctness tests", numtests - passed);
   }
 }

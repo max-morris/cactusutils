@@ -1,10 +1,17 @@
+// -*-C++-*-
 // Vectorise using Intel's MIC
 
 // Use the type __m512d directly, without introducing a wrapper class
 
+// See
+// <http://software.intel.com/sites/products/documentation/doclib/stdxe/2013/composerxe/compiler/cpp-lin/index.htm#GUID-B8DF6000-6872-47B4-AA64-D47A38AF21BD.htm>
+// and
+// <http://software.intel.com/sites/default/files/forum/278102/327364001en.pdf>.
+
 
 
 #include <cstdlib>
+#include <cstring>
 
 #include <immintrin.h>
 
@@ -30,13 +37,6 @@ typedef CCTK_INT8     CCTK_INTEGER8;
 typedef bool          CCTK_BOOLEAN8;
 
 
-
-union k8const_t {
-  CCTK_INTEGER8     i[CCTK_REAL8_VEC_SIZE];
-  CCTK_REAL8        f[CCTK_REAL8_VEC_SIZE];
-  CCTK_INTEGER8_VEC vi;
-  CCTK_REAL8_VEC    vf;
-};
 
 #define k8sign    (vec8i_set1i(  (CCTK_INTEGER8)(1ULL << 63ULL)))
 #define k8notsign (vec8i_set1i(~ (CCTK_INTEGER8)(1ULL << 63ULL)))
@@ -69,52 +69,14 @@ CCTK_REAL8_VEC vec8_set(CCTK_REAL8 const a0,
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL8 vec8_elt0(CCTK_REAL8_VEC const x)
-{
-  return ((CCTK_REAL8 const*)&x)[0];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL8 vec8_elt1(CCTK_REAL8_VEC const x)
-{
-  return ((CCTK_REAL8 const*)&x)[1];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL8 vec8_elt2(CCTK_REAL8_VEC const x)
-{
-  return ((CCTK_REAL8 const*)&x)[2];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL8 vec8_elt3(CCTK_REAL8_VEC const x)
-{
-  return ((CCTK_REAL8 const*)&x)[3];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL8 vec8_elt4(CCTK_REAL8_VEC const x)
-{
-  return ((CCTK_REAL8 const*)&x)[4];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL8 vec8_elt5(CCTK_REAL8_VEC const x)
-{
-  return ((CCTK_REAL8 const*)&x)[5];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL8 vec8_elt6(CCTK_REAL8_VEC const x)
-{
-  return ((CCTK_REAL8 const*)&x)[6];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL8 vec8_elt7(CCTK_REAL8_VEC const x)
-{
-  return ((CCTK_REAL8 const*)&x)[7];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8 vec8_elt(CCTK_REAL8_VEC const x, std::ptrdiff_t const d)
 {
-  return ((CCTK_REAL8 const*)&x)[d];
+  CCTK_REAL8 e;
+  std::memcpy(&e, &((char const*)&x)[d*sizeof e], sizeof e);
+  return e;
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_BOOLEAN8 vec8_elt(CCTK_BOOLEAN8_VEC const x, std::ptrdiff_t const d)
+CCTK_BOOLEAN8 vec8_eltb(CCTK_BOOLEAN8_VEC const x, std::ptrdiff_t const d)
 {
   return _mm512_mask2int(x) & (1 << d);
 }
@@ -201,14 +163,23 @@ void vec8_store(CCTK_REAL8& p, CCTK_REAL8_VEC const x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 void vec8_storeu(CCTK_REAL8& p, CCTK_REAL8_VEC const x)
 {
-  _mm512_packstorelo_pd(&p  , x);
+  // TODO: Intel erratum suggests that hi should come before lo
   _mm512_packstorehi_pd(&p+8, x);
+  _mm512_packstorelo_pd(&p  , x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 void vec8_store_nta(CCTK_REAL8& p, CCTK_REAL8_VEC const x)
 {
 #if VECTORISE_STREAMING_STORES
-  _mm512_extstore_pd(&p, x, _MM_DOWNCONV_PD_NONE, _MM_HINT_NT);
+  // non-temporal hint:
+  // _mm512_extstore_pd(&p, x, _MM_DOWNCONV_PD_NONE, _MM_HINT_NT);
+  // no-read hint:
+  _mm512_storenr_pd(&p, x);
+  _mm_clevict(&p, _MM_HINT_T1);
+  // no-read hint, not globally ordered (requires fence?):
+  // _mm512_storenrngo_pd(&p, x);
+  // _mm_clevict(&p, _MM_HINT_T1);
+
 #else
   _mm512_store_pd(&p, x);
 #endif
@@ -243,6 +214,7 @@ void vec8_store_nta_partial_(__mmask8 const mask,
                              CCTK_REAL8& p,
                              CCTK_REAL8_VEC const x)
 {
+  // TODO: use vec8_store_nta(p, x) if all=true?
   _mm512_mask_store_pd(&p, mask, x);
 }
 
@@ -376,9 +348,12 @@ CCTK_REAL8_VEC k8sqrt(CCTK_REAL8_VEC const x)
   return _mm512_sqrt_pd(x);
 }
 
-// Expensive functions
 
-#if 0
+
+// Expensive functions
+#if defined __ICC
+// The Intel compiler provides intrinsics for these
+
 // These implementations lead to an ICE with icpc 13.0.1
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8acos(CCTK_REAL8_VEC const x)
@@ -465,32 +440,32 @@ CCTK_REAL8_VEC k8tanh(CCTK_REAL8_VEC const x)
 
 // These implementations are very expensive
 #define K8REPL(f,x)                             \
-  vec8_set(f(vec8_elt0(x)),                     \
-           f(vec8_elt1(x)),                     \
-           f(vec8_elt2(x)),                     \
-           f(vec8_elt3(x)),                     \
-           f(vec8_elt4(x)),                     \
-           f(vec8_elt5(x)),                     \
-           f(vec8_elt6(x)),                     \
-           f(vec8_elt7(x)));
+  vec8_set(f(vec8_elt(x,0)),                    \
+           f(vec8_elt(x,1)),                    \
+           f(vec8_elt(x,2)),                    \
+           f(vec8_elt(x,3)),                    \
+           f(vec8_elt(x,4)),                    \
+           f(vec8_elt(x,5)),                    \
+           f(vec8_elt(x,6)),                    \
+           f(vec8_elt(x,7)));
 #define K8REPL2S(f,x,a)                         \
-  vec8_set(f(vec8_elt0(x),a),                   \
-           f(vec8_elt1(x),a),                   \
-           f(vec8_elt2(x),a),                   \
-           f(vec8_elt3(x),a),                   \
-           f(vec8_elt4(x),a),                   \
-           f(vec8_elt5(x),a),                   \
-           f(vec8_elt6(x),a),                   \
-           f(vec8_elt7(x),a));
+  vec8_set(f(vec8_elt(x,0),a),                  \
+           f(vec8_elt(x,1),a),                  \
+           f(vec8_elt(x,2),a),                  \
+           f(vec8_elt(x,3),a),                  \
+           f(vec8_elt(x,4),a),                  \
+           f(vec8_elt(x,5),a),                  \
+           f(vec8_elt(x,6),a),                  \
+           f(vec8_elt(x,7),a));
 #define K8REPL2(f,x,y)                          \
-  vec8_set(f(vec8_elt0(x),vec8_elt0(y)),        \
-           f(vec8_elt1(x),vec8_elt1(y)),        \
-           f(vec8_elt2(x),vec8_elt2(y)),        \
-           f(vec8_elt3(x),vec8_elt3(y)),        \
-           f(vec8_elt4(x),vec8_elt4(y)),        \
-           f(vec8_elt5(x),vec8_elt5(y)),        \
-           f(vec8_elt6(x),vec8_elt6(y)),        \
-           f(vec8_elt7(x),vec8_elt7(y)));
+  vec8_set(f(vec8_elt(x,0),vec8_elt(y,0)),      \
+           f(vec8_elt(x,1),vec8_elt(y,1)),      \
+           f(vec8_elt(x,2),vec8_elt(y,2)),      \
+           f(vec8_elt(x,3),vec8_elt(y,3)),      \
+           f(vec8_elt(x,4),vec8_elt(y,4)),      \
+           f(vec8_elt(x,5),vec8_elt(y,5)),      \
+           f(vec8_elt(x,6),vec8_elt(y,6)),      \
+           f(vec8_elt(x,7),vec8_elt(y,7)));
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8acos(CCTK_REAL8_VEC const x)
@@ -577,6 +552,7 @@ CCTK_REAL8_VEC k8tanh(CCTK_REAL8_VEC const x)
 
 
 
+// TODO: try k8lxor(x,x) and k8lxnor(x,x)
 #define k8lfalse (_mm512_int2mask( 0))
 #define k8ltrue  (_mm512_int2mask(~0))
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
@@ -606,7 +582,12 @@ CCTK_REAL8_VEC k8ifthen(CCTK_BOOLEAN8_VEC const x,
 {
   // This leads to an ICE
   // return _mm512_mask_blend_pd(x, z, y);
+#if 0
+  // This works:
   return _mm512_mask_mov_pd(z, x, y);
+#endif
+  // Intel suggests this:
+  return x==0 ? z : _mm512_mask_blend_pd(x, z, y);
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE

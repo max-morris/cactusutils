@@ -1,3 +1,4 @@
+// -*-C++-*-
 // Vectorise using IBM's Blue Gene/P Double Hummer (Power)
 
 // Use the type double _Complex directly, without introducing a wrapper class

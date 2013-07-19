@@ -13,7 +13,7 @@
 
 #if VECTORISE
 
-#  if defined __AVX__           // Intel AVX
+#  if defined __AVX__ && !defined DISABLE_AVX // Intel AVX
 #    include "vectors-4-AVX.h"
 #  elif defined __SSE__         // Intel SSE
 #    include "vectors-4-SSE.h"
@@ -23,13 +23,13 @@
 
 #  if defined __MIC__           // Intel MIC
 #    include "vectors-8-MIC.h"
-#  elif defined __AVX__  && !defined DISABLE_AVX  // Intel AVX
+#  elif defined __AVX__ && !defined DISABLE_AVX  // Intel AVX
 #    include "vectors-8-AVX.h"
 #  elif defined __SSE2__        // Intel SSE2
 #    include "vectors-8-SSE2.h"
-#  elif defined __bgq__  && defined __VECTOR4DOUBLE__  // Blue Gene/Q QPX
+#  elif defined __bgq__ && defined __VECTOR4DOUBLE__  // Blue Gene/Q QPX
 #    include "vectors-8-QPX.h"
-#  elif defined __ALTIVEC__  && defined _ARCH_PWR7  // Power VSX
+#  elif defined __ALTIVEC__ && defined _ARCH_PWR7  // Power VSX
 #    include "vectors-8-VSX.h"
 #  elif defined _ARCH_450D      // Blue Gene/P Double Hummer
 #    include "vectors-8-DoubleHummer.h"
@@ -63,8 +63,9 @@
 #  define vec_set1 vec4_set1
 #  define vec_set  vec4_set
 
-#  define vec_elt0 vec4_elt0
 #  define vec_elt  vec4_elt
+#  define vec_elti vec4_elti
+#  define vec_eltb vec4_eltb
 
 #  define vec_load                  vec4_load
 #  define vec_loadu                 vec4_loadu
@@ -135,16 +136,17 @@
 
 #  define CCTK_REAL_VEC      CCTK_REAL8_VEC
 #  define CCTK_REAL_VEC_SIZE CCTK_REAL8_VEC_SIZE
-//#  define CCTK_INTEGER       CCTK_INTEGER8
+#  define CCTK_INTEGER       CCTK_INTEGER8
 #  define CCTK_BOOLEAN       CCTK_BOOLEAN8
-//#  define CCTK_INTEGER_VEC   CCTK_INTEGER8_VEC
+#  define CCTK_INTEGER_VEC   CCTK_INTEGER8_VEC
 #  define CCTK_BOOLEAN_VEC   CCTK_BOOLEAN8_VEC
 
 #  define vec_set1 vec8_set1
 #  define vec_set  vec8_set
 
-#  define vec_elt0 vec8_elt0
 #  define vec_elt  vec8_elt
+#  define vec_elti vec8_elti
+#  define vec_eltb vec8_eltb
 
 #  define vec_load                  vec8_load
 #  define vec_loadu                 vec8_loadu

@@ -1,3 +1,4 @@
+// -*-C++-*-
 // Vectorise using Intel's or AMD's AVX
 
 // Use the type __m256 directly, without introducing a wrapper class
@@ -5,6 +6,7 @@
 
 
 #include <cstdlib>
+#include <cstring>
 
 
 
@@ -25,9 +27,13 @@
 
 
 // Vector type corresponding to CCTK_REAL
+// Note: some boolean masks (e.g. ~0) correspond to nan when
+// interpreted as floating point number. gcc 4.8 is clever enough to
+// optimize away such constants with fast-math. We therefore need to
+// handle this constant as integer number.
 typedef __m256  CCTK_REAL4_VEC;
 typedef __m256i CCTK_INTEGER4_VEC;
-typedef __m256  CCTK_BOOLEAN4_VEC;
+typedef __m256i CCTK_BOOLEAN4_VEC;
 
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL4_VEC_SIZE 8
@@ -36,16 +42,21 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
                   sizeof(CCTK_REAL4) * CCTK_REAL4_VEC_SIZE);
 
 // Integer and boolean types corresponding to this real type
-typedef CCTK_INT4  CCTK_INTEGER4;
-typedef CCTK_REAL4 CCTK_BOOLEAN4;
+typedef CCTK_INT4 CCTK_INTEGER4;
+typedef CCTK_INT4 CCTK_BOOLEAN4;
+
+
+
+// These macros are undefined at the end of this file -- use them only
+// within functions, not within macros that are exported
+#define I2R(x) _mm256_castsi256_ps(x)
+#define R2I(x) _mm256_castps_si256(x)
 
 
 
 union k4const_t {
   CCTK_INTEGER4     i[CCTK_REAL4_VEC_SIZE];
-  CCTK_REAL4        f[CCTK_REAL4_VEC_SIZE];
   CCTK_INTEGER4_VEC vi;
-  CCTK_REAL4_VEC    vf;
 };
 
 #define k4sign    (vec4_set1i(  (CCTK_INTEGER4)(1UL << 31UL)))
@@ -61,9 +72,9 @@ CCTK_REAL4_VEC vec4_set1(CCTK_REAL4 const a)
   return _mm256_set1_ps(a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4_VEC vec4_set1i(CCTK_INT4 const a)
+CCTK_INTEGER4_VEC vec4_set1i(CCTK_INT4 const a)
 {
-  return _mm256_castsi256_ps(_mm256_set1_epi32(a));
+  return _mm256_set1_epi32(a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC vec4_set(CCTK_REAL4 const a,
@@ -79,49 +90,27 @@ CCTK_REAL4_VEC vec4_set(CCTK_REAL4 const a,
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt0(CCTK_REAL4_VEC const x)
-{
-  return ((CCTK_REAL4 const*)&x)[0];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt1(CCTK_REAL4_VEC const x)
-{
-  return ((CCTK_REAL4 const*)&x)[1];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt2(CCTK_REAL4_VEC const x)
-{
-  return ((CCTK_REAL4 const*)&x)[2];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt3(CCTK_REAL4_VEC const x)
-{
-  return ((CCTK_REAL4 const*)&x)[3];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt4(CCTK_REAL4_VEC const x)
-{
-  return ((CCTK_REAL4 const*)&x)[4];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt5(CCTK_REAL4_VEC const x)
-{
-  return ((CCTK_REAL4 const*)&x)[5];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt6(CCTK_REAL4_VEC const x)
-{
-  return ((CCTK_REAL4 const*)&x)[6];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt7(CCTK_REAL4_VEC const x)
-{
-  return ((CCTK_REAL4 const*)&x)[7];
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4 vec4_elt(CCTK_REAL4_VEC const x, std::ptrdiff_t const d)
 {
-  return ((CCTK_REAL4 const*)&x)[d];
+  CCTK_REAL4 e;
+  std::memcpy(&e, &((char const*)&x)[d*sizeof e], sizeof e);
+  return e;
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_INTEGER4 vec4_elti(CCTK_INTEGER4_VEC const x, std::ptrdiff_t const d)
+{
+  CCTK_INTEGER4 e;
+  std::memcpy(&e, &((char const*)&x)[d*sizeof e], sizeof e);
+  return e;
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_BOOLEAN4 vec4_eltb(CCTK_BOOLEAN4_VEC const x, std::ptrdiff_t const d)
+{
+  CCTK_BOOLEAN4 e;
+  std::memcpy(&e, &((char const*)&x)[d*sizeof e], sizeof e);
+  return e;
 }
 
 
@@ -300,14 +289,14 @@ void vec4_store_nta_partial_lo(CCTK_REAL4& p,
                                CCTK_REAL4_VEC const x,
                                ptrdiff_t const n)
 {
-  _mm256_maskstore_ps(&p, _mm256_castsi256_ps(k4store_lo[n].vi), x);
+  _mm256_maskstore_ps(&p, I2R(k4store_lo[n].vi), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 void vec4_store_nta_partial_hi(CCTK_REAL4& p,
                                CCTK_REAL4_VEC const x,
                                ptrdiff_t const n)
 {
-  _mm256_maskstore_ps(&p, _mm256_castsi256_ps(k4store_hi[n].vi), x);
+  _mm256_maskstore_ps(&p, I2R(k4store_hi[n].vi), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 void vec4_store_nta_partial_mid(CCTK_REAL4& p,
@@ -315,10 +304,7 @@ void vec4_store_nta_partial_mid(CCTK_REAL4& p,
                                 ptrdiff_t const nlo,
                                 ptrdiff_t const nhi)
 {
-  _mm256_maskstore_ps
-    (&p,
-     _mm256_castsi256_ps(k4store_lo[nlo].vi & k4store_hi[nhi].vi),
-     x);
+  _mm256_maskstore_ps(&p, I2R(k4store_lo[nlo].vi & k4store_hi[nhi].vi), x);
 }
 #else
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
@@ -343,7 +329,7 @@ void vec4_store_nta_partial_mid(CCTK_REAL4& p,
 {
   _mm256_maskstore_ps
     (&p,
-     _mm256_castps_si256(_mm256_and_ps(k4store_lo[nlo].vf, k4store_hi[nhi].vf)),
+     R2I(_mm256_and_ps(I2R(k4store_lo[nlo].vi), I2R(k4store_hi[nhi].vi))),
      x);
 }
 #endif
@@ -356,7 +342,7 @@ void vec4_store_nta_partial_mid(CCTK_REAL4& p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4neg(CCTK_REAL4_VEC const x)
 {
-  return _mm256_xor_ps(x, k4sign);
+  return _mm256_xor_ps(x, I2R(k4sign));
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
@@ -445,13 +431,13 @@ CCTK_REAL4_VEC k4nmsub(CCTK_REAL4_VEC const x,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4copysign(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm256_or_ps(_mm256_and_ps(k4notsign, x),
-                      _mm256_and_ps(k4sign   , y));
+  return _mm256_or_ps(_mm256_and_ps(I2R(k4notsign), x),
+                      _mm256_and_ps(I2R(k4sign   ), y));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4fabs(CCTK_REAL4_VEC const x)
 {
-  return _mm256_and_ps(k4notsign, x);
+  return _mm256_and_ps(I2R(k4notsign), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4fmax(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
@@ -466,7 +452,7 @@ CCTK_REAL4_VEC k4fmin(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4fnabs(CCTK_REAL4_VEC const x)
 {
-  return _mm256_or_ps(x, k4sign);
+  return _mm256_or_ps(x, I2R(k4sign));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4sqrt(CCTK_REAL4_VEC const x)
@@ -474,34 +460,122 @@ CCTK_REAL4_VEC k4sqrt(CCTK_REAL4_VEC const x)
   return _mm256_sqrt_ps(x);
 }
 
+
+
 // Expensive functions
+#if defined __ICC
+// The Intel compiler provides intrinsics for these
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4acos(CCTK_REAL4_VEC const x)
+{
+  return _mm256_acos_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4acosh(CCTK_REAL4_VEC const x)
+{
+  return _mm256_acosh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4asin(CCTK_REAL4_VEC const x)
+{
+  return _mm256_asin_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4asinh(CCTK_REAL4_VEC const x)
+{
+  return _mm256_asinh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4atan(CCTK_REAL4_VEC const x)
+{
+  return _mm256_atan_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4atan2(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
+{
+  return _mm256_atan2_ps(x,y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4atanh(CCTK_REAL4_VEC const x)
+{
+  return _mm256_atanh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4cos(CCTK_REAL4_VEC const x)
+{
+  return _mm256_cos_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4cosh(CCTK_REAL4_VEC const x)
+{
+  return _mm256_cosh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4exp(CCTK_REAL4_VEC const x)
+{
+  return _mm256_exp_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4log(CCTK_REAL4_VEC const x)
+{
+  return _mm256_log_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4pow(CCTK_REAL4_VEC const x, CCTK_REAL4 const a)
+{
+  return _mm256_pow_ps(x, _mm256_set1_ps(a));
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4sin(CCTK_REAL4_VEC const x)
+{
+  return _mm256_sin_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4sinh(CCTK_REAL4_VEC const x)
+{
+  return _mm256_sinh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4tan(CCTK_REAL4_VEC const x)
+{
+  return _mm256_tan_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
+{
+  return _mm256_tanh_ps(x);
+}
+
+#else
+
 #define K4REPL(f,x)                             \
-  vec4_set(f(vec4_elt0(x)),                     \
-           f(vec4_elt1(x)),                     \
-           f(vec4_elt2(x)),                     \
-           f(vec4_elt3(x)),                     \
-           f(vec4_elt4(x)),                     \
-           f(vec4_elt5(x)),                     \
-           f(vec4_elt6(x)),                     \
-           f(vec4_elt7(x)));
+  vec4_set(f(vec4_elt(x,0)),                    \
+           f(vec4_elt(x,1)),                    \
+           f(vec4_elt(x,2)),                    \
+           f(vec4_elt(x,3)),                    \
+           f(vec4_elt(x,4)),                    \
+           f(vec4_elt(x,5)),                    \
+           f(vec4_elt(x,6)),                    \
+           f(vec4_elt(x,7)));
 #define K4REPL2S(f,x,a)                         \
-  vec4_set(f(vec4_elt0(x),a),                   \
-           f(vec4_elt1(x),a),                   \
-           f(vec4_elt2(x),a),                   \
-           f(vec4_elt3(x),a),                   \
-           f(vec4_elt4(x),a),                   \
-           f(vec4_elt5(x),a),                   \
-           f(vec4_elt6(x),a),                   \
-           f(vec4_elt7(x),a));
+  vec4_set(f(vec4_elt(x,0),a),                  \
+           f(vec4_elt(x,1),a),                  \
+           f(vec4_elt(x,2),a),                  \
+           f(vec4_elt(x,3),a),                  \
+           f(vec4_elt(x,4),a),                  \
+           f(vec4_elt(x,5),a),                  \
+           f(vec4_elt(x,6),a),                  \
+           f(vec4_elt(x,7),a));
 #define K4REPL2(f,x,y)                          \
-  vec4_set(f(vec4_elt0(x),vec4_elt0(y)),        \
-           f(vec4_elt1(x),vec4_elt1(y)),        \
-           f(vec4_elt2(x),vec4_elt2(y)),        \
-           f(vec4_elt3(x),vec4_elt3(y)),        \
-           f(vec4_elt4(x),vec4_elt4(y)),        \
-           f(vec4_elt5(x),vec4_elt5(y)),        \
-           f(vec4_elt6(x),vec4_elt6(y)),        \
-           f(vec4_elt7(x),vec4_elt7(y)));
+  vec4_set(f(vec4_elt(x,0),vec4_elt(y,0)),      \
+           f(vec4_elt(x,1),vec4_elt(y,1)),      \
+           f(vec4_elt(x,2),vec4_elt(y,2)),      \
+           f(vec4_elt(x,3),vec4_elt(y,3)),      \
+           f(vec4_elt(x,4),vec4_elt(y,4)),      \
+           f(vec4_elt(x,5),vec4_elt(y,5)),      \
+           f(vec4_elt(x,6),vec4_elt(y,6)),      \
+           f(vec4_elt(x,7),vec4_elt(y,7)));
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4acos(CCTK_REAL4_VEC const x)
@@ -584,6 +658,8 @@ CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
   return K4REPL(tanh,x);
 }
 
+#endif
+
 
 
 #define k4lfalse (vec4_set1i( 0))
@@ -591,60 +667,60 @@ CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4lnot(CCTK_BOOLEAN4_VEC const x)
 {
-  return _mm256_xor_ps(k4ltrue, x);
+  return R2I(_mm256_xor_ps(I2R(k4ltrue), I2R(x)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4land(CCTK_BOOLEAN4_VEC const x, CCTK_BOOLEAN4_VEC const y)
 {
-  return _mm256_and_ps(x, y);
+  return R2I(_mm256_and_ps(I2R(x), I2R(y)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4lor(CCTK_BOOLEAN4_VEC const x, CCTK_BOOLEAN4_VEC const y)
 {
-  return _mm256_or_ps(x, y);
+  return R2I(_mm256_or_ps(I2R(x), I2R(y)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4lxor(CCTK_BOOLEAN4_VEC const x, CCTK_BOOLEAN4_VEC const y)
 {
-  return _mm256_xor_ps(x, y);
+  return R2I(_mm256_xor_ps(I2R(x), I2R(y)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4ifthen(CCTK_BOOLEAN4_VEC const x,
                         CCTK_REAL4_VEC const y,
                         CCTK_REAL4_VEC const z)
 {
-  return _mm256_blendv_ps(z, y, x);
+  return _mm256_blendv_ps(z, y, I2R(x));
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmpeq(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm256_cmp_ps(x, y, _CMP_EQ_OQ);
+  return R2I(_mm256_cmp_ps(x, y, _CMP_EQ_OQ));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmpne(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm256_cmp_ps(x, y, _CMP_NEQ_OQ);
+  return R2I(_mm256_cmp_ps(x, y, _CMP_NEQ_UQ));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmpgt(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm256_cmp_ps(x, y, _CMP_GT_OQ);
+  return R2I(_mm256_cmp_ps(x, y, _CMP_GT_OQ));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmpge(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm256_cmp_ps(x, y, _CMP_GE_OQ);
+  return R2I(_mm256_cmp_ps(x, y, _CMP_GE_OQ));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmplt(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm256_cmp_ps(x, y, _CMP_LT_OQ);
+  return R2I(_mm256_cmp_ps(x, y, _CMP_LT_OQ));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmple(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm256_cmp_ps(x, y, _CMP_LE_OQ);
+  return R2I(_mm256_cmp_ps(x, y, _CMP_LE_OQ));
 }
 
 
@@ -653,7 +729,12 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4sgn(CCTK_REAL4_VEC const x)
 {
   CCTK_BOOLEAN4_VEC const iszero    = k4cmpeq(x, vec4_set1(0.0));
-  CCTK_REAL4_VEC    const sign      = _mm256_and_ps(k4sign, x);
+  CCTK_REAL4_VEC    const sign      = _mm256_and_ps(I2R(k4sign), x);
   CCTK_REAL4_VEC    const signedone = _mm256_or_ps(sign, vec4_set1(1.0));
   return k4ifthen(iszero, vec4_set1(0.0), signedone);
 }
+
+
+
+#undef I2R
+#undef R2I

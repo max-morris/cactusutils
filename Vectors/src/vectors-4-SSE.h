@@ -1,3 +1,4 @@
+// -*-C++-*-
 // Vectorise using Intel's or AMD's SSE
 
 // Use the type __m128 directly, without introducing a wrapper class
@@ -12,6 +13,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstring>
 
 
 
@@ -50,9 +52,13 @@
 
 
 // Vector type corresponding to CCTK_REAL
+// Note: some boolean masks (e.g. ~0) correspond to nan when
+// interpreted as floating point number. gcc 4.8 is clever enough to
+// optimize away such constants with fast-math. We therefore need to
+// handle this constant as integer number.
 typedef __m128  CCTK_REAL4_VEC;
 typedef __m128i CCTK_INTEGER4_VEC;
-typedef __m128  CCTK_BOOLEAN4_VEC;
+typedef __m128i CCTK_BOOLEAN4_VEC;
 
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL4_VEC_SIZE 4
@@ -66,12 +72,12 @@ typedef CCTK_REAL4 CCTK_BOOLEAN4;
 
 
 
-union k4const_t {
-  CCTK_INTEGER4     i[CCTK_REAL4_VEC_SIZE];
-  CCTK_REAL4        f[CCTK_REAL4_VEC_SIZE];
-  CCTK_INTEGER4_VEC vi;
-  CCTK_REAL4_VEC    vf;
-};
+// These macros are undefined at the end of this file -- use them only
+// within functions, not within macros that are exported
+#define I2R(x) _mm_castsi128_ps(x)
+#define R2I(x) _mm_castps_si128(x)
+
+
 
 #define k4sign    (vec4_set1i(  (CCTK_INTEGER4)(1UL << 31UL)))
 #define k4notsign (vec4_set1i(~ (CCTK_INTEGER4)(1UL << 31UL)))
@@ -86,9 +92,9 @@ CCTK_REAL4_VEC vec4_set1(CCTK_REAL4 const a)
   return _mm_set1_ps(a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4_VEC vec4_set1i(CCTK_INT4 const a)
+CCTK_INTEGER4_VEC vec4_set1i(CCTK_INT4 const a)
 {
-  return _mm_castsi128_ps(_mm_set1_epi32(a));
+  return _mm_set1_epi32(a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC vec4_set(CCTK_REAL4 const a,
@@ -116,54 +122,26 @@ CCTK_REAL4_VEC vec4_swap3210(CCTK_REAL4_VEC const x)
   return _mm_shuffle_ps(x, x, _MM_SHUFFLE(0,1,2,3));
 }
 
-#if defined __PGI
-// _mm_cvtss_f32 does not exist on PGI compilers
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 _mm_cvtss_f32(CCTK_REAL4_VEC const x)
-{
-  CCTK_REAL4 a;
-  asm ("" : "=x" (a) : "0" (x));
-  return a;
-}
-#endif
-
-// TODO: Why not ((CCTK_REAL4 const*)&x)[d] ?
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt0(CCTK_REAL4_VEC const x)
-{
-  return _mm_cvtss_f32(x);      // this is a no-op
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt1(CCTK_REAL4_VEC const x)
-{
-  return vec4_elt0(vec4_swap1032(x));
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt2(CCTK_REAL4_VEC const x)
-{
-  return vec4_elt0(vec4_swap2301(x));
-}
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
-CCTK_REAL4 vec4_elt3(CCTK_REAL4_VEC const x)
-{
-  return vec4_elt0(vec4_swap3210(x));
-}
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4 vec4_elt(CCTK_REAL4_VEC const x, std::ptrdiff_t const d)
 {
-#if defined __PGI
-  if (d==0) return vec4_elt0(x);
-  if (d==1) return vec4_elt1(x);
-  if (d==2) return vec4_elt2(x);
-  return vec4_elt3(x);
-#else
-  switch (d) {
-  case 0: return vec4_elt0(x);
-  case 1: return vec4_elt1(x);
-  case 2: return vec4_elt2(x);
-  }
-  return vec4_elt3(x);
-#endif
+  CCTK_REAL4 e;
+  std::memcpy(&e, &((char const*)&x)[d*sizeof e], sizeof e);
+  return e;
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_INTEGER4 vec4_elti(CCTK_INTEGER4_VEC const x, std::ptrdiff_t const d)
+{
+  CCTK_INTEGER4 e;
+  std::memcpy(&e, &((char const*)&x)[d*sizeof e], sizeof e);
+  return e;
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_BOOLEAN4 vec4_eltb(CCTK_BOOLEAN4_VEC const x, std::ptrdiff_t const d)
+{
+  CCTK_BOOLEAN4 e;
+  std::memcpy(&e, &((char const*)&x)[d*sizeof e], sizeof e);
+  return e;
 }
 
 
@@ -331,16 +309,16 @@ void vec4_store_nta_partial_(std::ptrdiff_t const lo_skip,
     // these cases fall through
     switch (lo_skip) {
     case 0:
-      (&p)[0] = vec4_elt0(x);
+      (&p)[0] = vec4_elt(x, 0);
     case 1:
       if (hi_skip>=3) break;
-      (&p)[1] = vec4_elt1(x);
+      (&p)[1] = vec4_elt(x, 1);
     case 2:
       if (hi_skip>=2) break;
-      (&p)[2] = vec4_elt2(x);
+      (&p)[2] = vec4_elt(x, 2);
     case 3:
       if (hi_skip>=1) break;
-      (&p)[3] = vec4_elt3(x);
+      (&p)[3] = vec4_elt(x, 3);
     }
   }
 }
@@ -352,9 +330,9 @@ void vec4_store_nta_partial_lo(CCTK_REAL4& p,
 {
   // these cases fall through
   switch (n) {
-  case 3: (&p)[2] = vec4_elt2(x);
-  case 2: (&p)[1] = vec4_elt1(x);
-  case 1: (&p)[0] = vec4_elt0(x);
+  case 3: (&p)[2] = vec4_elt(x, 2);
+  case 2: (&p)[1] = vec4_elt(x, 1);
+  case 1: (&p)[0] = vec4_elt(x, 0);
   }
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
@@ -364,9 +342,9 @@ void vec4_store_nta_partial_hi(CCTK_REAL4& p,
 {
   // these cases fall through
   switch (n) {
-  case 3: (&p)[1]=vec4_elt1(x);
-  case 2: (&p)[2]=vec4_elt2(x);
-  case 1: (&p)[3]=vec4_elt3(x);
+  case 3: (&p)[1]=vec4_elt(x, 1);
+  case 2: (&p)[2]=vec4_elt(x, 2);
+  case 1: (&p)[3]=vec4_elt(x, 3);
   }
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
@@ -379,10 +357,10 @@ void vec4_store_nta_partial_hi(CCTK_REAL4& p,
   switch (nhi) {
   case 3:
     if (nlo<2) break;
-    (&p)[1] = vec4_elt1(x);
+    (&p)[1] = vec4_elt(x, 1);
   case 2:
     if (nlo<3) break;
-    (&p)[2] = vec4_elt2(x);
+    (&p)[2] = vec4_elt(x, 2);
   }
 }
 
@@ -394,7 +372,7 @@ void vec4_store_nta_partial_hi(CCTK_REAL4& p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4neg(CCTK_REAL4_VEC const x)
 {
-  return _mm_xor_ps(k4sign, x);
+  return _mm_xor_ps(I2R(k4sign), x);
 }
 // #define k4inv(x)
 // TODO: provide k4inv via rcp and Newton-Raphson
@@ -488,13 +466,13 @@ CCTK_REAL4_VEC k4nmsub(CCTK_REAL4_VEC const x,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4copysign(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm_or_ps(_mm_and_ps(k4notsign, x),
-                   _mm_and_ps(k4sign   , y));
+  return _mm_or_ps(_mm_and_ps(I2R(k4notsign), x),
+                   _mm_and_ps(I2R(k4sign   ), y));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4fabs(CCTK_REAL4_VEC const x)
 {
-  return _mm_and_ps(k4notsign, x);
+  return _mm_and_ps(I2R(k4notsign), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4fmax(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
@@ -509,7 +487,7 @@ CCTK_REAL4_VEC k4fmin(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4fnabs(CCTK_REAL4_VEC const x)
 {
-  return _mm_or_ps(k4sign, x);
+  return _mm_or_ps(I2R(k4sign), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4sqrt(CCTK_REAL4_VEC const x)
@@ -518,22 +496,110 @@ CCTK_REAL4_VEC k4sqrt(CCTK_REAL4_VEC const x)
   return _mm_sqrt_ps(x);
 }
 
+
+
 // Expensive functions
+#if defined __ICC
+// The Intel compiler provides intrinsics for these
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4acos(CCTK_REAL4_VEC const x)
+{
+  return _mm_acos_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4acosh(CCTK_REAL4_VEC const x)
+{
+  return _mm_acosh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4asin(CCTK_REAL4_VEC const x)
+{
+  return _mm_asin_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4asinh(CCTK_REAL4_VEC const x)
+{
+  return _mm_asinh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4atan(CCTK_REAL4_VEC const x)
+{
+  return _mm_atan_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4atan2(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
+{
+  return _mm_atan2_ps(x,y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4atanh(CCTK_REAL4_VEC const x)
+{
+  return _mm_atanh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4cos(CCTK_REAL4_VEC const x)
+{
+  return _mm_cos_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4cosh(CCTK_REAL4_VEC const x)
+{
+  return _mm_cosh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4exp(CCTK_REAL4_VEC const x)
+{
+  return _mm_exp_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4log(CCTK_REAL4_VEC const x)
+{
+  return _mm_log_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4pow(CCTK_REAL4_VEC const x, CCTK_REAL4 const a)
+{
+  return _mm_pow_ps(x, _mm_set1_ps(a));
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4sin(CCTK_REAL4_VEC const x)
+{
+  return _mm_sin_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4sinh(CCTK_REAL4_VEC const x)
+{
+  return _mm_sinh_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4tan(CCTK_REAL4_VEC const x)
+{
+  return _mm_tan_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
+{
+  return _mm_tanh_ps(x);
+}
+
+#else
+
 #define K4REPL(f,x)                             \
-  vec4_set(f(vec4_elt0(x)),                     \
-           f(vec4_elt1(x)),                     \
-           f(vec4_elt2(x)),                     \
-           f(vec4_elt3(x)));
+  vec4_set(f(vec4_elt(x,0)),                    \
+           f(vec4_elt(x,1)),                    \
+           f(vec4_elt(x,2)),                    \
+           f(vec4_elt(x,3)));
 #define K4REPL2S(f,x,a)                         \
-  vec4_set(f(vec4_elt0(x),a),                   \
-           f(vec4_elt1(x),a),                   \
-           f(vec4_elt2(x),a),                   \
-           f(vec4_elt3(x),a));
+  vec4_set(f(vec4_elt(x,0),a),                  \
+           f(vec4_elt(x,1),a),                  \
+           f(vec4_elt(x,2),a),                  \
+           f(vec4_elt(x,3),a));
 #define K4REPL2(f,x,y)                          \
-  vec4_set(f(vec4_elt0(x),vec4_elt0(y)),        \
-           f(vec4_elt1(x),vec4_elt1(y)),        \
-           f(vec4_elt2(x),vec4_elt2(y)),        \
-           f(vec4_elt3(x),vec4_elt3(y)));
+  vec4_set(f(vec4_elt(x,0),vec4_elt(y,0)),      \
+           f(vec4_elt(x,1),vec4_elt(y,1)),      \
+           f(vec4_elt(x,2),vec4_elt(y,2)),      \
+           f(vec4_elt(x,3),vec4_elt(y,3)));
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4acos(CCTK_REAL4_VEC const x)
@@ -616,6 +682,8 @@ CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
   return K4REPL(tanh,x);
 }
 
+#endif
+
 
 
 #define k4lfalse (vec4_set1i( 0))
@@ -623,22 +691,22 @@ CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4lnot(CCTK_BOOLEAN4_VEC const x)
 {
-  return _mm_xor_ps(k4ltrue, x);
+  return R2I(_mm_xor_ps(I2R(k4ltrue), I2R(x)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4land(CCTK_BOOLEAN4_VEC const x, CCTK_BOOLEAN4_VEC const y)
 {
-  return _mm_and_ps(x, y);
+  return R2I(_mm_and_ps(I2R(x), I2R(y)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4lor(CCTK_BOOLEAN4_VEC const x, CCTK_BOOLEAN4_VEC const y)
 {
-  return _mm_or_ps(x, y);
+  return R2I(_mm_or_ps(I2R(x), I2R(y)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4lxor(CCTK_BOOLEAN4_VEC const x, CCTK_BOOLEAN4_VEC const y)
 {
-  return _mm_xor_ps(x, y);
+  return R2I(_mm_xor_ps(I2R(x), I2R(y)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4ifthen(CCTK_BOOLEAN4_VEC const x,
@@ -646,12 +714,12 @@ CCTK_REAL4_VEC k4ifthen(CCTK_BOOLEAN4_VEC const x,
                         CCTK_REAL4_VEC const z)
 {
 #ifdef __SSE4_1__
-  return _mm_blendv_ps(z,y,x);
+  return _mm_blendv_ps(z,y,I2R(x));
 #elif 0
-  return vec4_set(std::signbit(vec4_elt0(x)) ? vec4_elt0(y) : vec4_elt0(z),
-                  std::signbit(vec4_elt1(x)) ? vec4_elt1(y) : vec4_elt1(z),
-                  std::signbit(vec4_elt2(x)) ? vec4_elt2(y) : vec4_elt2(z),
-                  std::signbit(vec4_elt3(x)) ? vec4_elt3(y) : vec4_elt3(z));
+  return vec4_set(std::signbit(vec4_elt(x,0)) ? vec4_elt(y,0) : vec4_elt(z,0),
+                  std::signbit(vec4_elt(x,1)) ? vec4_elt(y,1) : vec4_elt(z,1),
+                  std::signbit(vec4_elt(x,2)) ? vec4_elt(y,2) : vec4_elt(z,2),
+                  std::signbit(vec4_elt(x,3)) ? vec4_elt(y,3) : vec4_elt(z,3));
 #elif 0
   // We don't need to shift -- the condition (mask) will be either all
   // zeros or all ones
@@ -662,39 +730,39 @@ CCTK_REAL4_VEC k4ifthen(CCTK_BOOLEAN4_VEC const x,
   // This assumes that all logical operations always return either
   // lfalse or ltrue, and nothing "in between"
   // (z & ~mask) | (y & mask)   where imask = ~mask
-  return _mm_or_ps(_mm_and_ps(x, y), _mm_andnot_ps(x, z));
+  return _mm_or_ps(_mm_and_ps(I2RI(x), y), _mm_andnot_ps(I2R(x), z));
 #endif
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmpeq(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm_cmpeq_ps(x, y);
+  return R2I(_mm_cmpeq_ps(x, y));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmpne(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm_cmpneq_ps(x, y);
+  return R2I(_mm_cmpneq_ps(x, y));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmpgt(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm_cmpgt_ps(x, y);
+  return R2I(_mm_cmpgt_ps(x, y));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmpge(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm_cmpge_ps(x, y);
+  return R2I(_mm_cmpge_ps(x, y));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmplt(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm_cmplt_ps(x, y);
+  return R2I(_mm_cmplt_ps(x, y));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_BOOLEAN4_VEC k4cmple(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return _mm_cmple_ps(x, y);
+  return R2I(_mm_cmple_ps(x, y));
 }
 
 
@@ -703,9 +771,14 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4sgn(CCTK_REAL4_VEC const x)
 {
   CCTK_BOOLEAN4_VEC const iszero    = k4cmpeq(x, vec4_set1(0.0));
-  CCTK_REAL4_VEC    const sign      = _mm_and_ps(k4sign, x);
+  CCTK_REAL4_VEC    const sign      = _mm_and_ps(I2R(k4sign), x);
   CCTK_REAL4_VEC    const signedone = _mm_or_ps(sign, vec4_set1(1.0));
   return k4ifthen(iszero, vec4_set1(0.0), signedone);
 }
 
 #endif
+
+
+
+#undef I2R
+#undef R2I

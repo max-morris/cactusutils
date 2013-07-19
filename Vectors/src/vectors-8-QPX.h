@@ -1,3 +1,4 @@
+// -*-C++-*-
 // Vectorise using IBM's Blue Gene/Q QPX (Power)
 
 // Use the type vector4double directly, without introducing a wrapper class
@@ -12,9 +13,13 @@
 
 #include <assert.h>
 
+// #define vec8_assert(x) ((void)0)
+#define vec8_assert(x) assert(x)
+
 #ifdef __cplusplus
 #  include <builtins.h>
 #endif
+#include <mass_simd.h>
 
 
 
@@ -35,9 +40,9 @@ struct CCTK_REAL8_VEC {
 #define CCTK_REAL8_VEC_SIZE 4
 
 // Integer and boolean types corresponding to this real type
-//#define CCTK_INTEGER8     CCTK_REAL8
+#define CCTK_INTEGER8     CCTK_INT8
 #define CCTK_BOOLEAN8     CCTK_REAL8
-//#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
 #define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
 
 
@@ -45,22 +50,53 @@ struct CCTK_REAL8_VEC {
 // Create vectors, extract vector elements
 
 #define vec8_set1(a)      (vec_splats(a))
+#if 0
 #define vec8_set(a,b,c,d)                               \
   (vec_insert                                           \
    (d,vec_insert                                        \
     (c,vec_insert                                       \
      (b,vec_insert                                      \
       (a,CCTK_REAL8_VEC(),0),1),2),3))
+#endif
+#define vec8_set(a_,b_,c_,d_)                   \
+  ({                                            \
+    CCTK_REAL8 const a__ = (a_);                \
+    CCTK_REAL8 const b__ = (b_);                \
+    CCTK_REAL8 const c__ = (c_);                \
+    CCTK_REAL8 const d__ = (d_);                \
+    CCTK_REAL8 const a = a__;                   \
+    CCTK_REAL8 const b = b__;                   \
+    CCTK_REAL8 const c = c__;                   \
+    CCTK_REAL8 const d = d__;                   \
+    CCTK_REAL8_VEC x;                           \
+    ((CCTK_REAL*)&x)[0] = a;                    \
+    ((CCTK_REAL*)&x)[1] = b;                    \
+    ((CCTK_REAL*)&x)[2] = c;                    \
+    ((CCTK_REAL*)&x)[3] = d;                    \
+    x;                                          \
+  })
 
 #define vec8_b2r(b) ((b)?+1.0:-1.0)
-#define vec8b_set(a,b,c,d)                                      \
-  (vec8_set(vec8_b2r(a),vec8_b2r(b),vec8_b2r(c),vec8_b2r(d)))
+#define vec8b_set(a,b,c,d)                                              \
+  (vec8_set(vec8_b2r(a), vec8_b2r(b), vec8_b2r(c), vec8_b2r(d)))
 
 #define vec8_elt0(x)  (vec_extract(x,0))
 #define vec8_elt1(x)  (vec_extract(x,1))
 #define vec8_elt2(x)  (vec_extract(x,2))
 #define vec8_elt3(x)  (vec_extract(x,3))
 #define vec8_elt(x,d) (vec_extract(x,d))
+#define vec8_elts(x,a,b,c,d)                    \
+  ({                                            \
+    CCTK_REAL8_VEC x__ = (x_);                  \
+    CCTK_REAL8_VEC x = x__;                     \
+    a = ((CCTK_REAL*)&x)[0];                    \
+    b = ((CCTK_REAL*)&x)[1];                    \
+    c = ((CCTK_REAL*)&x)[2];                    \
+    d = ((CCTK_REAL*)&x)[3];                    \
+  })
+
+#define vec8_r2b(x) ((x)>=0.0)
+#define vec8b_elt(x,d) (vec8_r2b(vec8_elt(x,d)))
 
 
 
@@ -76,9 +112,24 @@ struct CCTK_REAL8_VEC {
     vector4double v1, v2, vp;                                           \
     /* code taken from IBM's compiler documentation */                  \
     v1 = vec_ld(0,&p);         /* load the left part of the vector */   \
-    v2 = vec_ld(32,&p);        /* load the right part of the vector */  \
+    v2 = vec_ld(31,&p);        /* load the right part of the vector */  \
     vp = vec_lvsl(0,&p);       /* generate control value */             \
     vec_perm(v1,v2,vp);        /* generate the aligned vector */        \
+  })
+#define vec8_loadu_off(off_,p_)                 \
+  ({                                            \
+    int const       off__ = (off_);             \
+    CCTK_REAL8 const& p__ = (p_);               \
+    int off               = off__;              \
+    CCTK_REAL8& p         = *(CCTK_REAL8*)&p__; \
+    vector4double v1, v2;                       \
+    off &= CCTK_REAL8_VEC_SIZE-1;               \
+    v1 = vec_lda(0,&p-off);                     \
+    v2 = vec_lda(0,&p-off+CCTK_REAL8_VEC_SIZE); \
+    off==1 ? vec_sldw(v1,v2,1) :                \
+      off==2 ? vec_sldw(v1,v2,2) :              \
+      off==3 ? vec_sldw(v1,v2,3) :              \
+      (vec8_assert(0), v1);                     \
   })
 
 // Load a vector from memory that may or may not be aligned, as
@@ -88,13 +139,15 @@ struct CCTK_REAL8_VEC {
 #  define vec8_loadu_maybe(off,p)             vec8_loadu(p)
 #  define vec8_loadu_maybe3(off1,off2,off3,p) vec8_loadu(p)
 #else
-#  define vec8_loadu_maybe(off,p_)              \
+#  define vec8_loadu_maybe(off_,p_)             \
   ({                                            \
     CCTK_REAL8 const& p__=(p_);                 \
+    int const         off__=(off_);             \
     CCTK_REAL8 const& p=p__;                    \
-    (off) % CCTK_REAL8_VEC_SIZE == 0 ?          \
+    int const off=off__;                        \
+    off % CCTK_REAL8_VEC_SIZE == 0 ?            \
       vec8_load(p) :                            \
-      vec8_loadu(p);                            \
+      vec8_loadu_off(off,p);                    \
   })
 #  if VECTORISE_ALIGNED_ARRAYS
 // Assume all array x sizes are multiples of the vector size
@@ -128,23 +181,35 @@ struct CCTK_REAL8_VEC {
     m1 = k8lfalse;                                      \
     m2 = k8ltrue;                                       \
     m3 = vec_perm(m1,m2,vp);                            \
-    /* get existing data */                             \
-    v1 = vec_ld(0,&p);                                  \
-    v2 = vec_ld(32,&p);                                 \
-    /* permute and insert */                            \
     v3 = vec_perm(x,x,vp);                              \
-    v1 = vec_sel(v1,v3,m3);                             \
-    v2 = vec_sel(v3,v2,m3);                             \
-    /* store data back */                               \
-    vec_st(0,&p,v1);                                    \
-    vec_st(32,&p,v2);                                   \
+    _Pragma("tm_atomic") {                              \
+      /* get existing data */                           \
+      v1 = vec_ld(0,&p);                                \
+      v2 = vec_ld(31,&p);                               \
+      /* permute and insert */                          \
+      v1 = vec_sel(v1,v3,m3);                           \
+      v2 = vec_sel(v3,v2,m3);                           \
+      /* store data back */                             \
+      vec_st(0,&p,v1);                                  \
+      vec_st(31,&p,v2);                                 \
+      }                                                 \
   })
 #define vec8_store_nta(p,x) (vec_sta(x,0,&(p))) // this doesn't avoid the cache
+
+#if VECTORISE_ALIGNED_ARRAYS
+// Arrays are aligned; wrap-around is not an issue
+#  define vec8_store_omp
+#else
+// Need to protect partial stores, as they may wrap around to the
+// beginning of the next line in the array
+#  define vec8_store_omp _Pragma("tm_atomic")
+#endif
 
 // Store a partial vector (aligned and non-temporal)
 #define vec8_store_partial_prepare(i,imin_,imax_)                       \
   bool v8stp_all;                                                       \
-  CCTK_REAL8_VEC v8stp_mask;                                            \
+  CCTK_BOOLEAN8_VEC v8stp_mask;                                         \
+  bool v8stp_mask0, v8stp_mask1, v8stp_mask2, v8stp_mask3;              \
   ({                                                                    \
     ptrdiff_t const imin__=(imin_);                                     \
     ptrdiff_t const imax__=(imax_);                                     \
@@ -154,7 +219,8 @@ struct CCTK_REAL8_VEC {
     v8stp_all = i>=imin and i+CCTK_REAL8_VEC_SIZE-1<imax;		\
                                                                         \
     if (not CCTK_BUILTIN_EXPECT(v8stp_all, true)) {                     \
-      CCTK_REAL8_VEC vp_lo, vp_hi, mask_lo, mask_hi;			\
+      CCTK_INTEGER8_VEC vp_lo, vp_hi;                                   \
+      CCTK_BOOLEAN8_VEC mask_lo, mask_hi;                               \
       /* this is correct but slow */                                    \
       /*                                                                \
       mask_lo = vec8b_set(i+0>=imin, i+1>=imin, i+2>=imin, i+3>=imin);  \
@@ -167,18 +233,22 @@ struct CCTK_REAL8_VEC {
       */                                                                \
       /* We assume p[i] is aligned */                                   \
       /* Ensure at least one vector element is inside the active region */ \
-      assert(i-imin>=-(CCTK_REAL8_VEC_SIZE-1));                         \
+      vec8_assert(i-imin>=-(CCTK_REAL8_VEC_SIZE-1));                    \
       vp_lo = vec_lvsl(8 * (i-imin), (CCTK_REAL*)0);                    \
       mask_lo = (i-imin >= 0 ?						\
 		 k8ltrue :						\
 		 vec_perm(k8lfalse, k8ltrue, vp_lo));			\
       /* Ensure at least one vector element is inside the active region */ \
-      assert(i<imax);                                                   \
+      vec8_assert(i<imax);                                              \
       vp_hi = vec_lvsl(8 * (i-imax), (CCTK_REAL*)0);                    \
       mask_hi =	(i-imax < -(CCTK_REAL8_VEC_SIZE-1) ?                    \
 		 k8ltrue :						\
 		 vec_perm(k8ltrue, k8lfalse, vp_hi));			\
       v8stp_mask = k8land(mask_lo, mask_hi);                            \
+      v8stp_mask0 = vec8b_elt(v8stp_mask, 0);                           \
+      v8stp_mask1 = vec8b_elt(v8stp_mask, 1);                           \
+      v8stp_mask2 = vec8b_elt(v8stp_mask, 2);                           \
+      v8stp_mask3 = vec8b_elt(v8stp_mask, 3);                           \
     }									\
   })
 #define vec8_store_nta_partial(p_,x_)                           \
@@ -190,7 +260,18 @@ struct CCTK_REAL8_VEC {
     if (CCTK_BUILTIN_EXPECT(v8stp_all, true)) {                 \
       vec8_store(p, x);                                         \
     } else {                                                    \
-      vec8_store(p, k8ifthen(v8stp_mask, x, vec8_load(p)));     \
+      /*                                                        \
+      vec8_store_omp                                            \
+        vec8_store(p, k8ifthen(v8stp_mask, x, vec8_load(p)));   \
+      */                                                        \
+      if (VECTORISE_ALIGNED_ARRAYS) {                           \
+        vec8_store(p, k8ifthen(v8stp_mask, x, vec8_load(p)));   \
+      } else {                                                  \
+        if (v8stp_mask0) (&p)[0] = vec8_elt0(x);                \
+        if (v8stp_mask1) (&p)[1] = vec8_elt1(x);                \
+        if (v8stp_mask2) (&p)[2] = vec8_elt2(x);                \
+        if (v8stp_mask3) (&p)[3] = vec8_elt3(x);                \
+      }                                                         \
     }                                                           \
   })
 
@@ -204,10 +285,11 @@ struct CCTK_REAL8_VEC {
     CCTK_REAL8_VEC x=x__;                                               \
     CCTK_REAL8_VEC vp, mask;                                            \
     /* Ensure at least one and but all vector elements are active */    \
-    assert(n>0 and n<CCTK_REAL8_VEC_SIZE-1);                            \
+    vec8_assert(n>0 and n<CCTK_REAL8_VEC_SIZE-1);                       \
     vp = vec_lvsl(-8 * n, (CCTK_REAL*)0);                               \
     mask = vec_perm(k8ltrue, k8lfalse, vp);                             \
-    vec8_store(p, k8ifthen(mask, x, vec8_load(p)));                     \
+    vec8_store_omp                                                      \
+      vec8_store(p, k8ifthen(mask, x, vec8_load(p)));                   \
   })
 #define vec8_store_nta_partial_hi(p_,x_,n)                              \
   ({                                                                    \
@@ -217,10 +299,11 @@ struct CCTK_REAL8_VEC {
     CCTK_REAL8_VEC x=x__;                                               \
     CCTK_REAL8_VEC vp, mask;                                            \
     /* Ensure at least one but not all vector elements are active */    \
-    assert(n>0 and n<CCTK_REAL8_VEC_SIZE-1);                            \
+    vec8_assert(n>0 and n<CCTK_REAL8_VEC_SIZE-1);                       \
     vp = vec_lvsl(8 * n, (CCTK_REAL*)0);                                \
     mask = vec_perm(k8lfalse, k8ltrue, vp);                             \
-    vec8_store(p, k8ifthen(mask, x, vec8_load(p)));                     \
+    vec8_store_omp                                                      \
+      vec8_store(p, k8ifthen(mask, x, vec8_load(p)));                   \
   })
 #define vec8_store_nta_partial_mid(p_,x_,nlo,nhi)                       \
   ({                                                                    \
@@ -230,17 +313,18 @@ struct CCTK_REAL8_VEC {
     CCTK_REAL8_VEC x=x__;                                               \
     CCTK_REAL8_VEC vp_lo, mask_lo;                                      \
     /* Ensure at least one but not all vector elements are active */    \
-    assert(nlo>0 and nlo<CCTK_REAL8_VEC_SIZE-1);                        \
+    vec8_assert(nlo>0 and nlo<CCTK_REAL8_VEC_SIZE-1);                   \
     vp_lo = vec_lvsl(-8 * nlo, (CCTK_REAL*)0);                          \
     mask_lo = vec_perm(k8lfalse, k8ltrue, vp_lo);                       \
     CCTK_REAL8_VEC vp_hi, mask_hi;                                      \
     /* Ensure at least one but not all vector elements are active */    \
-    assert(nhi>0 and nhi<CCTK_REAL8_VEC_SIZE-1);                        \
+    vec8_assert(nhi>0 and nhi<CCTK_REAL8_VEC_SIZE-1);                   \
     vp_hi = vec_lvsl(8 * nhi, (CCTK_REAL*)0);                           \
     mask_hi = vec_perm(k8lfalse, k8ltrue, vp_hi);                       \
     CCTK_REAL8_VEC mask;                                                \
     mask = vec_and(mask_lo, mask_hi);                                   \
-    vec8_store(p, k8ifthen(mask, x, vec8_load(p)));                     \
+    vec8_store_omp                                                      \
+      vec8_store(p, k8ifthen(mask, x, vec8_load(p)));                   \
   })
 
 
@@ -294,54 +378,22 @@ struct CCTK_REAL8_VEC {
 #define k8sqrt(x) (vec_swsqrt_nochk(x))
 
 // Expensive functions
-#define K8REPL(f,x_)                            \
-  ({                                            \
-    CCTK_REAL8_VEC x__=(x_);                    \
-    CCTK_REAL8_VEC x=x__;                       \
-    vec8_set(f(vec8_elt0(x)),                   \
-             f(vec8_elt1(x)),                   \
-             f(vec8_elt2(x)),                   \
-             f(vec8_elt3(x)));                  \
-  })
-#define K8REPL2S(f,x_,a_)                       \
-  ({                                            \
-    CCTK_REAL8_VEC x__=(x_);                    \
-    CCTK_REAL8     a__=(a_);                    \
-    CCTK_REAL8_VEC x=x__;                       \
-    CCTK_REAL8     a=a__;                       \
-    vec8_set(f(vec8_elt0(x),a),                 \
-             f(vec8_elt1(x),a),                 \
-             f(vec8_elt2(x),a),                 \
-             f(vec8_elt3(x),a));                \
-  })
-#define K8REPL2(f,x_,y_)                        \
-  ({                                            \
-    CCTK_REAL8_VEC x__=(x_);                    \
-    CCTK_REAL8_VEC y__=(y_);                    \
-    CCTK_REAL8_VEC x=x__;                       \
-    CCTK_REAL8_VEC y=y__;                       \
-    vec8_set(f(vec8_elt0(x),vec8_elt0(y)),      \
-             f(vec8_elt1(x),vec8_elt1(y)),      \
-             f(vec8_elt2(x),vec8_elt2(y)),      \
-             f(vec8_elt3(x),vec8_elt3(y)));     \
-  })
-
-#define k8acos(x)    K8REPL(acos,x)
-#define k8acosh(x)   K8REPL(acosh,x)
-#define k8asin(x)    K8REPL(asin,x)
-#define k8asinh(x)   K8REPL(asinh,x)
-#define k8atan(x)    K8REPL(atan,x)
-#define k8atan2(x,y) K8REPL2(atan2,x,y)
-#define k8atanh(x)   K8REPL(atanh,x)
-#define k8cos(x)     K8REPL(cos,x)
-#define k8cosh(x)    K8REPL(cosh,x)
-#define k8exp(x)     K8REPL(exp,x)
-#define k8log(x)     K8REPL(log,x)
-#define k8pow(x,a)   K8REPL2S(pow,x,a)
-#define k8sin(x)     K8REPL(sin,x)
-#define k8sinh(x)    K8REPL(sinh,x)
-#define k8tan(x)     K8REPL(tan,x)
-#define k8tanh(x)    K8REPL(tanh,x)
+#define k8acos(x)    acosd4(x)
+#define k8acosh(x)   acoshd4(x)
+#define k8asin(x)    asind4(x)
+#define k8asinh(x)   asinhd4(x)
+#define k8atan(x)    atand4(x)
+#define k8atan2(x,y) atan2d4(x,y)
+#define k8atanh(x)   atanhd4(x)
+#define k8cos(x)     cosd4(x)
+#define k8cosh(x)    coshd4(x)
+#define k8exp(x)     expd4(x)
+#define k8log(x)     logd4(x)
+#define k8pow(x,a)   powd4(x,vec_set1(a))
+#define k8sin(x)     sind4(x)
+#define k8sinh(x)    sinhd4(x)
+#define k8tan(x)     tand4(x)
+#define k8tanh(x)    tanhd4(x)
 
 // canonical true is +1.0, canonical false is -1.0
 // >=0 is true, -0 is true, nan is false
