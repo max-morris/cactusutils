@@ -23,13 +23,13 @@
 
 #  if defined __MIC__           // Intel MIC
 #    include "vectors-8-MIC.h"
-#  elif defined __AVX__ && !defined DISABLE_AVX  // Intel AVX
+#  elif defined __AVX__ && !defined DISABLE_AVX // Intel AVX
 #    include "vectors-8-AVX.h"
 #  elif defined __SSE2__        // Intel SSE2
 #    include "vectors-8-SSE2.h"
-#  elif defined __bgq__ && defined __VECTOR4DOUBLE__  // Blue Gene/Q QPX
+#  elif defined __bgq__ && defined __VECTOR4DOUBLE__ // Blue Gene/Q QPX
 #    include "vectors-8-QPX.h"
-#  elif defined __ALTIVEC__ && defined _ARCH_PWR7  // Power VSX
+#  elif defined __ALTIVEC__ && defined _ARCH_PWR7 // Power VSX
 #    include "vectors-8-VSX.h"
 #  elif defined _ARCH_450D      // Blue Gene/P Double Hummer
 #    include "vectors-8-DoubleHummer.h"
@@ -44,6 +44,17 @@
 #ifndef CCTK_REAL8_VEC_SIZE
 #  include "vectors-8-default.h"
 #endif
+
+
+
+// Operation counters
+#ifndef VEC_COUNT
+#  define VEC_COUNT(x)
+#endif
+// This expects variables declared as
+//    ptrdiff_t vec_op_counter, vec_mem_counter;
+#define vec_op_inc  ((void)(VEC_COUNT(vec_op_counter+=CCTK_REAL_VEC_SIZE)+0))
+#define vec_mem_inc ((void)(VEC_COUNT(vec_mem_counter+=CCTK_REAL_VEC_SIZE)+0))
 
 
 
@@ -67,29 +78,30 @@
 #  define vec_elti vec4_elti
 #  define vec_eltb vec4_eltb
 
-#  define vec_load                  vec4_load
-#  define vec_loadu                 vec4_loadu
-#  define vec_loadu_maybe           vec4_loadu_maybe
-#  define vec_loadu_maybe3          vec4_loadu_maybe3
-#  define vec_store                 vec4_store
-#  define vec_store_nta             vec4_store_nta
-#  define vec_store_partial_prepare vec4_store_partial_prepare
-#  define vec_store_nta_partial     vec4_store_nta_partial
-#  define vec_store_nta_partial_lo  vec4_store_nta_partial_lo
-#  define vec_store_nta_partial_hi  vec4_store_nta_partial_hi
-#  define vec_store_nta_partial_mid vec4_store_nta_partial_mid
+#  define vec_load(p)            (vec_mem_inc, vec4_load(p))
+#  define vec_loadu(p)           (vec_mem_inc, vec4_loadu(p))
+#  define vec_loadu_maybe(off,p) (vec_mem_inc, vec4_loadu_maybe(off,p))
+#  define vec_loadu_maybe3(off1,off2,off3,p)            \
+  (vec_mem_inc, vec4_loadu_maybe3(off1,off2,off3,p))
+#  define vec_store(p,x)             (vec_mem_inc, vec4_store(p,x))
+#  define vec_store_nta(p,x)         (vec_mem_inc, vec4_store_nta(p,x))
+#  define vec_store_partial_prepare  vec4_store_partial_prepare
+#  define vec_store_nta_partial(p,x) (vec_mem_inc, vec4_store_nta_partial(p,x))
+#  define vec_store_nta_partial_lo   vec4_store_nta_partial_lo
+#  define vec_store_nta_partial_hi   vec4_store_nta_partial_hi
+#  define vec_store_nta_partial_mid  vec4_store_nta_partial_mid
 
-#  define kneg k4neg
+#  define kneg(x) (vec_op_inc, k4neg(x))
 
-#  define kadd k4add
-#  define ksub k4sub
-#  define kmul k4mul
-#  define kdiv k4div
+#  define kadd(x,y) (vec_op_inc, k4add(x,y))
+#  define ksub(x,y) (vec_op_inc, k4sub(x,y))
+#  define kmul(x,y) (vec_op_inc, k4mul(x,y))
+#  define kdiv(x,y) (vec_op_inc, k4div(x,y))
 
-#  define kmadd  k4madd
-#  define kmsub  k4msub
-#  define knmadd k4nmadd
-#  define knmsub k4nmsub
+#  define kmadd(x,y,z)  (vec_op_inc, vec_op_inc, k4madd(x,y,z))
+#  define kmsub(x,y,z)  (vec_op_inc, vec_op_inc, k4msub(x,y,z))
+#  define knmadd(x,y,z) (vec_op_inc, vec_op_inc, k4nmadd(x,y,z))
+#  define knmsub(x,y,z) (vec_op_inc, vec_op_inc, k4nmsub(x,y,z))
 
 #  define kacos     k4acos
 #  define kacosh    k4acosh
@@ -98,14 +110,14 @@
 #  define katan     k4atan
 #  define katan2    k4atan2
 #  define katanh    k4atanh
-#  define kcopysign k4copysign
+#  define kcopysign(x,y) (vec_op_inc, k4copysign(x,y))
 #  define kcos      k4cos
 #  define kcosh     k4cosh
 #  define kexp      k4exp
-#  define kfabs     k4fabs
-#  define kfmax     k4fmax
-#  define kfmin     k4fmin
-#  define kfnabs    k4fnabs
+#  define kfabs(x)   (vec_op_inc, k4fabs(x))
+#  define kfmax(x,y) (vec_op_inc, k4fmax(x,y))
+#  define kfmin(x,y) (vec_op_inc, k4fmin(x,y))
+#  define kfnabs(x)  (vec_op_inc, k4fnabs(x))
 #  define klog      k4log
 #  define kpow      k4pow
 #  define ksin      k4sin
@@ -116,11 +128,11 @@
 #  define ktanh     k4tanh
 
 #  define klfalse k4lfalse
-#  define kltrue  k4ltrue 
-#  define klnot   k4lnot  
-#  define kland   k4land  
-#  define klor    k4lor   
-#  define klxor   k4lxor  
+#  define kltrue  k4ltrue
+#  define klnot   k4lnot
+#  define kland   k4land
+#  define klor    k4lor
+#  define klxor   k4lxor
 #  define kifthen k4ifthen
 
 #  define kcmpeq k4cmpeq
@@ -148,29 +160,30 @@
 #  define vec_elti vec8_elti
 #  define vec_eltb vec8_eltb
 
-#  define vec_load                  vec8_load
-#  define vec_loadu                 vec8_loadu
-#  define vec_loadu_maybe           vec8_loadu_maybe
-#  define vec_loadu_maybe3          vec8_loadu_maybe3
-#  define vec_store                 vec8_store
-#  define vec_store_partial_prepare vec8_store_partial_prepare
-#  define vec_store_nta             vec8_store_nta
-#  define vec_store_nta_partial     vec8_store_nta_partial
-#  define vec_store_nta_partial_lo  vec8_store_nta_partial_lo
-#  define vec_store_nta_partial_hi  vec8_store_nta_partial_hi
-#  define vec_store_nta_partial_mid vec8_store_nta_partial_mid
+#  define vec_load(p)                (vec_mem_inc, vec8_load(p))
+#  define vec_loadu(p)               (vec_mem_inc, vec8_loadu(p))
+#  define vec_loadu_maybe(off,p)     (vec_mem_inc, vec8_loadu_maybe(off,p))
+#  define vec_loadu_maybe3(off1,off2,off3,p)            \
+  (vec_mem_inc, vec8_loadu_maybe3(off1,off2,off3,p))
+#  define vec_store(p,x)             (vec_mem_inc, vec8_store(p,x))
+#  define vec_store_nta(p,x)         (vec_mem_inc, vec8_store_nta(p,x))
+#  define vec_store_partial_prepare  vec8_store_partial_prepare
+#  define vec_store_nta_partial(p,x) (vec_mem_inc, vec8_store_nta_partial(p,x))
+#  define vec_store_nta_partial_lo   vec8_store_nta_partial_lo
+#  define vec_store_nta_partial_hi   vec8_store_nta_partial_hi
+#  define vec_store_nta_partial_mid  vec8_store_nta_partial_mid
 
-#  define kneg k8neg
+#  define kneg(x) (vec_op_inc, k8neg(x))
 
-#  define kadd k8add
-#  define ksub k8sub
-#  define kmul k8mul
-#  define kdiv k8div
+#  define kadd(x,y) (vec_op_inc, k8add(x,y))
+#  define ksub(x,y) (vec_op_inc, k8sub(x,y))
+#  define kmul(x,y) (vec_op_inc, k8mul(x,y))
+#  define kdiv(x,y) (vec_op_inc, k8div(x,y))
 
-#  define kmadd  k8madd
-#  define kmsub  k8msub
-#  define knmadd k8nmadd
-#  define knmsub k8nmsub
+#  define kmadd(x,y,z)  (vec_op_inc, vec_op_inc, k8madd(x,y,z))
+#  define kmsub(x,y,z)  (vec_op_inc, vec_op_inc, k8msub(x,y,z))
+#  define knmadd(x,y,z) (vec_op_inc, vec_op_inc, k8nmadd(x,y,z))
+#  define knmsub(x,y,z) (vec_op_inc, vec_op_inc, k8nmsub(x,y,z))
 
 #  define kacos     k8acos
 #  define kacosh    k8acosh
@@ -179,14 +192,14 @@
 #  define katan     k8atan
 #  define katan2    k8atan2
 #  define katanh    k8atanh
-#  define kcopysign k8copysign
+#  define kcopysign(x,y) (vec_op_inc, k8copysign(x,y))
 #  define kcos      k8cos
 #  define kcosh     k8cosh
 #  define kexp      k8exp
-#  define kfabs     k8fabs
-#  define kfmax     k8fmax
-#  define kfmin     k8fmin
-#  define kfnabs    k8fnabs
+#  define kfabs(x)   (vec_op_inc, k8fabs(x))
+#  define kfmax(x,y) (vec_op_inc, k8fmax(x,y))
+#  define kfmin(x,y) (vec_op_inc, k8fmin(x,y))
+#  define kfnabs(x)  (vec_op_inc, k8fnabs(x))
 #  define klog      k8log
 #  define kpow      k8pow
 #  define ksin      k8sin
@@ -197,11 +210,11 @@
 #  define ktanh     k8tanh
 
 #  define klfalse k8lfalse
-#  define kltrue  k8ltrue 
-#  define klnot   k8lnot  
-#  define kland   k8land  
-#  define klor    k8lor   
-#  define klxor   k8lxor  
+#  define kltrue  k8ltrue
+#  define klnot   k8lnot
+#  define kland   k8land
+#  define klor    k8lor
+#  define klxor   k8lxor
 #  define kifthen k8ifthen
 
 #  define kcmpeq k8cmpeq
