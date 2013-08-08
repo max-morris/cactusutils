@@ -77,7 +77,7 @@ struct CCTK_REAL8_VEC {
   })
 
 #define vec8_b2r(b) ((b)?+1.0:-1.0)
-#define vec8b_set(a,b,c,d)                                              \
+#define vec8_setb(a,b,c,d)                                              \
   (vec8_set(vec8_b2r(a), vec8_b2r(b), vec8_b2r(c), vec8_b2r(d)))
 
 #define vec8_elt0(x)  (vec_extract(x,0))
@@ -96,7 +96,7 @@ struct CCTK_REAL8_VEC {
   })
 
 #define vec8_r2b(x) ((x)>=0.0)
-#define vec8b_elt(x,d) (vec8_r2b(vec8_elt(x,d)))
+#define vec8_eltb(x,d) (vec8_r2b(vec8_elt(x,d)))
 
 
 
@@ -223,8 +223,8 @@ struct CCTK_REAL8_VEC {
       CCTK_BOOLEAN8_VEC mask_lo, mask_hi;                               \
       /* this is correct but slow */                                    \
       /*                                                                \
-      mask_lo = vec8b_set(i+0>=imin, i+1>=imin, i+2>=imin, i+3>=imin);  \
-      mask_hi = vec8b_set(i+0<imax, i+1<imax, i+2<imax, i+3<imax);      \
+      mask_lo = vec8_setb(i+0>=imin, i+1>=imin, i+2>=imin, i+3>=imin);  \
+      mask_hi = vec8_setb(i+0<imax, i+1<imax, i+2<imax, i+3<imax);      \
       */                                                                \
       /* Note: vec_lvsl(i,p) =  &p[i] / 8 % 4                           \
          Note: vec_lvsr(i,p) = -&p[i] / 8 % 4                           \
@@ -245,10 +245,10 @@ struct CCTK_REAL8_VEC {
 		 k8ltrue :						\
 		 vec_perm(k8ltrue, k8lfalse, vp_hi));			\
       v8stp_mask = k8land(mask_lo, mask_hi);                            \
-      v8stp_mask0 = vec8b_elt(v8stp_mask, 0);                           \
-      v8stp_mask1 = vec8b_elt(v8stp_mask, 1);                           \
-      v8stp_mask2 = vec8b_elt(v8stp_mask, 2);                           \
-      v8stp_mask3 = vec8b_elt(v8stp_mask, 3);                           \
+      v8stp_mask0 = vec8_eltb(v8stp_mask, 0);                           \
+      v8stp_mask1 = vec8_eltb(v8stp_mask, 1);                           \
+      v8stp_mask2 = vec8_eltb(v8stp_mask, 2);                           \
+      v8stp_mask3 = vec8_eltb(v8stp_mask, 3);                           \
     }									\
   })
 #define vec8_store_nta_partial(p_,x_)                           \
