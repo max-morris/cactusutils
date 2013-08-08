@@ -15,22 +15,26 @@
 #define vec8_architecture "VSX"
 
 // Vector type corresponding to CCTK_REAL
-#define CCTK_REAL8_VEC vector double
+typedef vector double           CCTK_REAL8_VEC;
+typedef vector signed long long CCTK_INTEGER8_VEC;
+typedef vector bool long long   CCTK_BOOLEAN8_VEC;
 
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL8_VEC_SIZE 2
 
+vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
+                  sizeof(CCTK_REAL8) * CCTK_REAL8_VEC_SIZE);
+
 // Integer and boolean types corresponding to this real type
-//#define CCTK_INTEGER8     long long
-#define CCTK_BOOLEAN8     long long
-//#define CCTK_INTEGER8_VEC vector long long
-#define CCTK_BOOLEAN8_VEC vector bool long long
+typedef long long          CCTK_INTEGER8;
+typedef unsigned long long CCTK_BOOLEAN8;
 
 
 
 // Create vectors, extract vector elements
 
 #define vec8_set1(a)  (vec_splats(a))
+#define vec8_set1i(a) (vec_splats(a))
 #define vec8_set(a,b)                           \
   ({                                            \
     CCTK_REAL8_VEC x;                           \
@@ -39,9 +43,14 @@
     x;                                          \
   })
 
-#define vec8_elt0(x) ((x)[0])
-#define vec8_elt1(x) ((x)[1])
-#define vec8_elt(x,d) ((x)[d])
+#define vec8_elt0(x)   ((x)[0])
+#define vec8_elt1(x)   ((x)[1])
+// #define vec8_elt(x,d)  ((x)[d])
+// #define vec8_elti(x,d) ((x)[d])
+// #define vec8_eltb(x,d) ((x)[d])
+static inline CCTK_REAL8 vec8_elt(CCTK_REAL8_VEC x, int d) { return x[d]; }
+static inline CCTK_INTEGER8 vec8_elti(CCTK_INTEGER8_VEC x, int d) { return x[d]; }
+static inline CCTK_BOOLEAN8 vec8_eltb(CCTK_BOOLEAN8_VEC x,int d) { return x[d]; }
 
 
 
@@ -169,14 +178,27 @@
 
 // canonical true is -1LL, canonical false is 0LL
 // truth values are interpreted bit-wise
-#define k8lfalse        ({ CCTK_BOOLEAN8_VEC dummy; vec_xor(dummy,dummy); })
-#define k8ltrue         (k8lnot(k8lfalse))
-#define k8lnot(x_)                              \
-  ({                                            \
-    CCTK_BOOLEAN8_VEC x__=(x_);                 \
-    CCTK_BOOLEAN8_VEC x=x__;                    \
-    vec_nor(x,x);                               \
-  })
+// #define k8lfalse        ({ CCTK_BOOLEAN8_VEC dummy; vec_xor(dummy,dummy); })
+// #define k8ltrue         (k8lnot(k8lfalse))
+static inline CCTK_BOOLEAN8_VEC k8lfalse1()
+{
+  CCTK_BOOLEAN8_VEC dummy;
+  return vec_xor(dummy,dummy);
+}
+#define k8lfalse (k8lfalse1())
+#define k8ltrue  (k8lnot(k8lfalse))
+
+// #define k8lnot(x_)                              \
+//   ({                                            \
+//     CCTK_BOOLEAN8_VEC x__=(x_);                 \
+//     CCTK_BOOLEAN8_VEC x=x__;                    \
+//     vec_nor(x,x);                               \
+//   })
+static inline CCTK_BOOLEAN8_VEC k8lnot(CCTK_BOOLEAN8_VEC x)
+{
+  return vec_nor(x,x);
+}
+
 #define k8land(x,y)     (vec_and(x,y))
 #define k8lor(x,y)      (vec_or(x,y))
 #define k8lxor(x,y)     (vec_xor(x,y))
