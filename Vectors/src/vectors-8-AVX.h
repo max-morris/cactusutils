@@ -168,8 +168,7 @@ CCTK_REAL8_VEC vec8_loadu_maybe3(std::ptrdiff_t const off1,
                                  CCTK_REAL8 const& p)
 {
   return
-    off2 % CCTK_REAL8_VEC_SIZE != 0 or
-    off3 % CCTK_REAL8_VEC_SIZE != 0 ?
+    off2 % CCTK_REAL8_VEC_SIZE != 0 or off3 % CCTK_REAL8_VEC_SIZE != 0 ?
     vec8_loadu(p) :
     vec8_loadu_maybe(off1, p);
 }
