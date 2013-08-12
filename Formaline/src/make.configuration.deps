@@ -27,6 +27,7 @@ TR_C = $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C
 
 TARBALL_DIR = $(SCRATCH_BUILD)/Formaline
 FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/Formaline/bin
+CACTUS_CONFIG_DIR ?= $(CCTK_HOME)/configs
 
 # The Formaline utilities (the perl scripts needed to create tarballs
 # and execute git commands) are installed when Formaline's thorn
@@ -45,8 +46,8 @@ FRM-LIB = $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline-cactus
 
 $(EXEDIR)$(DIRSEP)$(EXE): $(FRM-LIB)
 
-FRM-OBJS = $(TARBALL_DIR)/cactus-meta.o $(TARBALL_DIR)/build-id.o $(TARBALL_DIR)/flesh-Cactus.o $(patsubst %,$(TARBALL_DIR)/thorn-%.o,$(notdir $(THORNS)))
-FRM-OBJS-other = $(TARBALL_DIR)/flesh-Cactus-????.o $(patsubst %,$(TARBALL_DIR)/thorn-%-????.o,$(notdir $(THORNS)))
+FRM-OBJS = $(TARBALL_DIR)/cactus-meta.o $(TARBALL_DIR)/build-id.o $(TARBALL_DIR)/config-Cactus.o $(TARBALL_DIR)/flesh-Cactus.o $(patsubst %,$(TARBALL_DIR)/thorn-%.o,$(notdir $(THORNS)))
+FRM-OBJS-other = $(TARBALL_DIR)/config-Cactus-????.o $(TARBALL_DIR)/flesh-Cactus-????.o $(patsubst %,$(TARBALL_DIR)/thorn-%-????.o,$(notdir $(THORNS)))
 
 $(FRM-LIB): $(FRM-OBJS)
 #	$(AR) $(ARFLAGS) $@ $^
@@ -58,14 +59,6 @@ $(FRM-LIB): $(FRM-OBJS)
 	@echo $(DIVIDER)
 
 .PRECIOUS: $(FRM-LIB)
-
-
-
-## Cache optimisation:
-## Build the thorns' tarballs already while the thorns are compiled
-## (does not work)
-#
-#$(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)%$(LIBNAME_SUFFIX): $(TARBALL_DIR)/thorn-%.o
 
 
 
@@ -111,15 +104,72 @@ $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID
 $(TARBALL_DIR)/cactus-meta.o: $(TARBALL_DIR)/cactus-meta.c
 	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c -o $@ $^
 
-$(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/flesh-Cactus.c $(patsubst %,$(TARBALL_DIR)/thorn-%.c,$(notdir $(THORNS))) $(FORMALINE-UTILS)
-	$(FORMALINE_BIN_DIR)/makemetablob.pl Cactus $(notdir $(THORNS)) > $@
+$(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/flesh-Cactus.c $(patsubst %,$(TARBALL_DIR)/thorn-%.c,$(notdir $(THORNS))) $(FORMALINE-UTILS)
+	$(FORMALINE_BIN_DIR)/makemetablob.pl CactusConfig Cactus $(notdir $(THORNS)) > $@
 
 .PRECIOUS: $(TARBALL_DIR)/cactus-meta.c $(TARBALL_DIR)/cactus-meta.o
 
 
 
-#cleandeps:
-#	rm -rf $(TOP)/scratch/flesh-Cactus.files $(TOP)/scratch/flesh-Cactus.ccldeps $(TOP)/scratch/thorn-*.files $(TOP)/scratch/thorn-*.ccldeps
+###############################################################################
+# Configuration files
+###############################################################################
+
+# Note: Build first the source files %-????.c, then the source file
+# $^, so that interruptions or build errors lead to a re-build
+$(TARBALL_DIR)/config-Cactus.o: $(TARBALL_DIR)/config-Cactus.c
+	@echo "Creating Formaline tarball for the configuration options"
+	cd $(TARBALL_DIR) && \
+	$(CC) $(CFLAGS) -c $(^:%.c=%-????.c) && \
+	$(CC) $(CFLAGS) -c $^
+
+$(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION $(FORMALINE-UTILS)
+	$(RM) -f $(@:%.c=%-????.c)
+	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' CactusConfig < $<
+
+$(TARBALL_DIR)/config-Cactus.tar.gz: $(TARBALL_DIR)/config-Cactus.files
+	cd $(CCTK_HOME) && \
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
+
+# This dependency means that the tarball for the configuration options
+# is only updated if the flesh is actually recompiled. This does not
+# catch changes to files that do not influence the executable.
+$(TARBALL_DIR)/config-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/config-Cactus.ccldeps $(CONFIG)/make.thornlist
+	mkdir -p $(TARBALL_DIR)/configs/$(notdir $(TOP))
+	{ \
+		cd $(CACTUS_CONFIG_DIR)/$(notdir $(TOP)) && \
+		cp -r OptionList properties.ini RunScript ScriptFile SubmitScript Thornlist config-data config-info $(TARBALL_DIR)/configs/$(notdir $(TOP)); \
+	} || true
+	cd $(TARBALL_DIR) && \
+	find configs/$(notdir $(TOP))/ \
+		-name 'CVS' -prune -o \
+		-name '_darcs' -prune -o \
+		-name '.git' -prune -o \
+		-name '.hg' -prune -o \
+		-name '.svn' -prune -o \
+		-name '*.log' -prune -o \
+		-name '*.log.gz' -prune -o \
+		-name '.?*' -prune -o \
+		-name '*~' -prune -o \
+		! -type d \
+		-print > $@.tmp
+	mv $@.tmp $@
+	$(RM) -rf $(TARBALL_DIR)/configs
+
+-include $(TARBALL_DIR)/config-Cactus.ccldeps
+# Make aborts if these dependencies vanish.  Therefore mention only files
+# here that cannot go away.
+$(TARBALL_DIR)/config-Cactus.ccldeps:
+	mkdir -p $(TARBALL_DIR)
+	{ \
+	        echo "$(@:%.ccldeps=%.files) \\"; \
+	        echo "$@: \\"; \
+	        echo " $(CCTK_HOME)/src/interface.ccl \\"; \
+	        echo " $(CCTK_HOME)/src/param.ccl \\"; \
+	        echo " $(CCTK_HOME)/src/schedule.ccl"; \
+	} > $@
+
+.PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files $(TARBALL_DIR)/config-Cactus.tar.gz $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/config-Cactus.o
 
 
 
@@ -149,14 +199,6 @@ $(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
 $(TARBALL_DIR)/flesh-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/flesh-Cactus.ccldeps $(CONFIG)/make.thornlist
 	cd $(CCTK_HOME) && \
 	find CONTRIBUTORS COPYRIGHT Makefile lib/ src/ \
-		`ls configs/$(notdir $(TOP))/OptionList 2> /dev/null` \
-		`ls configs/$(notdir $(TOP))/properties.ini 2> /dev/null` \
-		`ls configs/$(notdir $(TOP))/RunScript 2> /dev/null` \
-		`ls configs/$(notdir $(TOP))/ScriptFile 2> /dev/null` \
-		`ls configs/$(notdir $(TOP))/SubmitScript 2> /dev/null` \
-		configs/$(notdir $(TOP))/ThornList \
-		configs/$(notdir $(TOP))/config-data \
-		configs/$(notdir $(TOP))/config-info \
 		-name 'CVS' -prune -o \
 		-name '_darcs' -prune -o \
 		-name '.git' -prune -o \
@@ -167,7 +209,8 @@ $(TARBALL_DIR)/flesh-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAM
 		-name '.?*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
-		-print > $@
+		-print > $@.tmp
+	mv $@.tmp $@
 
 -include $(TARBALL_DIR)/flesh-Cactus.ccldeps
 # Make aborts if these dependencies vanish.  Therefore mention only files
@@ -222,7 +265,8 @@ $(TARBALL_DIR)/thorn-%.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PRE
 		-name '.?*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
-		-print | sed -e 's+/[.]/+/+g' > $@
+		-print | sed -e 's+/[.]/+/+g' > $@.tmp
+	mv $@.tmp $@
 
 -include $(patsubst %,$(TARBALL_DIR)/thorn-%.ccldeps,$(notdir $(THORNS)))
 # Make aborts if these dependencies vanish.  Therefore mention only files
