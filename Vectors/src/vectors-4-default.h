@@ -32,9 +32,9 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
 
 
 // Create a vector replicating a scalar
-#define vec4_set1(a) (a)
+#define vec4_set1(a) ((CCTK_REAL4)(a))
 // Create a vector from N scalars
-#define vec4_set(a) (a)
+#define vec4_set(a) ((CCTK_REAL4)(a))
 
 // Access vectors elements
 #define vec4_elt0(x) (x)
@@ -63,15 +63,15 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
 // Unaligned store
 #define vec4_store_nta(p,x) ((p)=(x))
 
-#define vec4_store_partial_prepare(i,imin,imax) (0)
+#define vec4_store_partial_prepare(i,imin,imax) ((void)0)
 #define vec4_store_nta_partial(p,x) (vec4_store_nta(p,x))
 // Store the n lower elements of a vector to memory
-#define vec4_store_nta_partial_lo(p,x,n) (assert(0))
+#define vec4_store_nta_partial_lo(p,x,n) (CCTK_BUILTIN_UNREACHABLE())
 // Store the n higher elements of a vector into memory. This stores
 // the vector elements into memory locations as if element 0 were
 // stored at p.
-#define vec4_store_nta_partial_hi(p,x,n) (assert(0))
-#define vec4_store_nta_partial_mid(p,x,nlo,nhi) (assert(0))
+#define vec4_store_nta_partial_hi(p,x,n) (CCTK_BUILTIN_UNREACHABLE())
+#define vec4_store_nta_partial_mid(p,x,nlo,nhi) (CCTK_BUILTIN_UNREACHABLE())
 
 
 
@@ -115,9 +115,9 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
 
 #define k4sgn(x_)                                                       \
   ({                                                                    \
-    CCTK_REAL x__=(x_);                                                 \
-    CCTK_REAL x=x__;                                                    \
-    x==(CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : std::copysign((CCTK_REAL)1.0, x); \
+    CCTK_REAL4 x__=(x_);                                                \
+    CCTK_REAL4 x=x__;                                                   \
+    x==(CCTK_REAL4)0.0 ? (CCTK_REAL4)0.0 : std::copysign((CCTK_REAL4)1.0, x); \
   })
 #define k4signbit(x) (std::signbit(x))
 

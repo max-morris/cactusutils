@@ -28,9 +28,9 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
 
 
 // Create a vector replicating a scalar
-#define vec8_set1(a) (a)
+#define vec8_set1(a) ((CCTK_REAL8)(a))
 // Create a vector from N scalars
-#define vec8_set(a) (a)
+#define vec8_set(a) ((CCTK_REAL8)(a))
 
 // Access vectors elements
 #define vec8_elt0(x) (x)
@@ -60,12 +60,12 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
 #define vec8_store_partial_prepare(i,imin,imax) ((void)0)
 #define vec8_store_nta_partial(p,x) (vec8_store_nta(p,x))
 // Store the n lower elements of a vector to memory
-#define vec8_store_nta_partial_lo(p,x,n) (assert(0))
+#define vec8_store_nta_partial_lo(p,x,n) (CCTK_BUILTIN_UNREACHABLE())
 // Store the n higher elements of a vector into memory. This stores
 // the vector elements into memory locations as if element 0 were
 // stored at p.
-#define vec8_store_nta_partial_hi(p,x,n) (assert(0))
-#define vec8_store_nta_partial_mid(p,x,nlo,nhi) (assert(0))
+#define vec8_store_nta_partial_hi(p,x,n) (CCTK_BUILTIN_UNREACHABLE())
+#define vec8_store_nta_partial_mid(p,x,nlo,nhi) (CCTK_BUILTIN_UNREACHABLE())
 
 
 
