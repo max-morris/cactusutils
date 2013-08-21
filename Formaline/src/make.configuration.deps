@@ -182,6 +182,7 @@ $(TARBALL_DIR)/config-Cactus.ccldeps:
 $(TARBALL_DIR)/flesh-Cactus.o: $(TARBALL_DIR)/flesh-Cactus.c
 	@echo "Creating Formaline tarball for the flesh"
 	cd $(TARBALL_DIR) && \
+	$(RM) -f $(^:%.c=%-????.o) && \
 	$(CC) $(CFLAGS) -c $(^:%.c=%-????.c) && \
 	$(CC) $(CFLAGS) -c $^
 
@@ -238,6 +239,7 @@ $(TARBALL_DIR)/flesh-Cactus.ccldeps:
 $(TARBALL_DIR)/thorn-%.o: $(TARBALL_DIR)/thorn-%.c
 	@echo "Creating Formaline tarball for thorn $*"
 	cd $(TARBALL_DIR) && \
+	$(RM) -f $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.o)) && \
 	$(CC) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.c)) && \
 	$(CC) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^)
 
