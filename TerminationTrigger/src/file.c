@@ -72,6 +72,13 @@ void TerminationTrigger_CreateFile (CCTK_ARGUMENTS)
   }
   
   file = fopen (get_termination_file(), "w");
+  if (!file)
+  {
+    CCTK_VWarn (CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                "Could not create termination file \'%s\'",
+                get_termination_file());
+  }
+
   fclose (file);
 }
 
