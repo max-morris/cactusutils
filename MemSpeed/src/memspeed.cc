@@ -208,21 +208,27 @@ namespace {
       }
       // Start timing
       const double t0 = omp_get_wtime();
-      CCTK_REAL_VEC s0, s1, s2, s3, s4, s5, s6, s7;
-      s0 = s1 = s2 = s3 = s4 = s5 = s6 = s7 = vec_set1(1.0);
+      CCTK_REAL_VEC s0 = vec_set1(1.00000);
+      CCTK_REAL_VEC s1 = vec_set1(1.00001);
+      CCTK_REAL_VEC s2 = vec_set1(1.00002);
+      CCTK_REAL_VEC s3 = vec_set1(1.00003);
+      CCTK_REAL_VEC s4 = vec_set1(1.00004);
+      CCTK_REAL_VEC s5 = vec_set1(1.00005);
+      CCTK_REAL_VEC s6 = vec_set1(1.00006);
+      CCTK_REAL_VEC s7 = vec_set1(1.00007);
       // Explicitly unrolled loop, performing multiply-add operations.
       // See latex file for a more detailed description. Note: The
       // constants have been chosen so that the results don't over- or
       // underflow
       for (ptrdiff_t count=0; count<max_count; ++count) {
-        s0 = kmadd(vec_set1(1.1), s0, vec_set1(-0.1));
-        s1 = kmadd(vec_set1(1.1), s1, vec_set1(-0.1));
-        s2 = kmadd(vec_set1(1.1), s2, vec_set1(-0.1));
-        s3 = kmadd(vec_set1(1.1), s3, vec_set1(-0.1));
-        s4 = kmadd(vec_set1(1.1), s4, vec_set1(-0.1));
-        s5 = kmadd(vec_set1(1.1), s5, vec_set1(-0.1));
-        s6 = kmadd(vec_set1(1.1), s6, vec_set1(-0.1));
-        s7 = kmadd(vec_set1(1.1), s7, vec_set1(-0.1));
+        s0 = kmadd(vec_set1(1.1), s0, vec_set1(-0.100001));
+        s1 = kmadd(vec_set1(1.1), s1, vec_set1(-0.100001));
+        s2 = kmadd(vec_set1(1.1), s2, vec_set1(-0.100001));
+        s3 = kmadd(vec_set1(1.1), s3, vec_set1(-0.100001));
+        s4 = kmadd(vec_set1(1.1), s4, vec_set1(-0.100001));
+        s5 = kmadd(vec_set1(1.1), s5, vec_set1(-0.100001));
+        s6 = kmadd(vec_set1(1.1), s6, vec_set1(-0.100001));
+        s7 = kmadd(vec_set1(1.1), s7, vec_set1(-0.100001));
       }
       // Store sum of results into a volatile variable, so that the
       // compiler does not optimize away the calculation
