@@ -141,7 +141,7 @@ static unsigned int get_majflt()
   return majflt * page_size;
 }
 
-long long int get_swap_kB()
+static long long int get_swap_kB()
 {
   FILE *f = fopen("/proc/meminfo", "r");
   if (f == 0)
@@ -200,6 +200,7 @@ extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
   *uordblks = mallinfo().uordblks;
   *fordblks = mallinfo().fordblks;
   *keepcost = mallinfo().keepcost;
+  *swap_used = get_swap_kB() / 1024.0;
 
   *maxrss_mb = get_rss() / mb;
   *majflt_mb = *majflt / mb;
@@ -210,8 +211,7 @@ extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
   *uordblks_mb = *uordblks / mb;
   *fordblks_mb = *fordblks / mb;
   *keepcost_mb = *keepcost / mb;
-
-  *swap_used_mb = get_swap_kB() / 1024;
+  *swap_used_mb = *swap_used / mb;
 
   *maxrss_kb = get_rss() / kb;
   *majflt_kb = *majflt / kb;
@@ -222,4 +222,6 @@ extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
   *uordblks_kb = *uordblks / kb;
   *fordblks_kb = *fordblks / kb;
   *keepcost_kb = *keepcost / kb;
+  *swap_used_kb = *swap_used / kb;
+
 }
