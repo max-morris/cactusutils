@@ -1,4 +1,8 @@
 # Configuration definitions for thorn MemSpeed
 
+OPTIONAL MPI
+{
+}
+
 # Floating point benchmarks use explicit vectorization
 REQUIRES Vectors
