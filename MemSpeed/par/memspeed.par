@@ -1,1 +1,2 @@
 ActiveThorns = "hwloc MemSpeed"
+MemSpeed::verbose = yes

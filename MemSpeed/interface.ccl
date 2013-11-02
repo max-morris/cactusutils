@@ -6,6 +6,11 @@ USES INCLUDE HEADER: vectors.h
 
 
 
+CCTK_INT FUNCTION GetNumSMTThreads()
+REQUIRES FUNCTION GetNumSMTThreads
+CCTK_INT FUNCTION GetMaxSMTThreads()
+REQUIRES FUNCTION GetMaxSMTThreads
+
 # Obtain information about caches and memory sizes from thorn hwloc
 CCTK_INT FUNCTION GetCacheInfo1                            \
     (CCTK_POINTER_TO_CONST ARRAY OUT names,                \

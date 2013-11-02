@@ -84,10 +84,28 @@ namespace {
 
 
 
+static inline int divexact(int x, int y)
+{
+  assert(x>=0 && y>0);
+  assert(x % y == 0);
+  return x / y;
+}
+static inline int divdown(int x, int y)
+{
+  assert(x>=0 && y>0);
+  return x / y;
+}
+static inline int divup(int x, int y)
+{
+  assert(x>=0 && y>0);
+  return (x+y-1) / y;
+}
+
+
+
 namespace {
   
   // Information about MPI and processes, as obtained from hwloc
-  
   struct mpi_info_t {
     int mpi_num_procs, mpi_proc_num;
     int mpi_num_hosts, mpi_host_num;
@@ -131,10 +149,11 @@ namespace {
   
   // Information about each cache level and the memory, as obtained
   // from hwloc and determined by this routine
+  enum memory_t { mem_cache=0, mem_local=1, mem_global=2 };
   struct cache_info_t {
     // Information obtained from hwloc
     string    name;
-    int       type;
+    memory_t  type;
     ptrdiff_t size;
     int       linesize;
     int       stride;
@@ -167,7 +186,7 @@ namespace {
     cache_info.resize(num_cache_levels);
     for (int n=0; n<num_cache_levels; ++n) {
       cache_info[n].name     = (const char*)(names_[n]);
-      cache_info[n].type     = types_[n];
+      cache_info[n].type     = memory_t(types_[n]);
       cache_info[n].size     = ptrdiff_t(sizes_[n]);
       cache_info[n].linesize = linesizes_[n];
       cache_info[n].stride   = strides_[n];
@@ -451,153 +470,228 @@ namespace {
   // then to not use, so that e.g. the node-local memory can be
   // skipped. size returns the number of bytes to use for the
   // benchmark.
-  void calc_sizes(int cache, ptrdiff_t& skipsize, ptrdiff_t& size)
+  void calc_memsizes(int cache, ptrdiff_t& skip_memsize, ptrdiff_t& memsize)
   {
-    if (cache_info[cache].type==1) {
-      // Memory
-      if (cache>0 && cache_info[cache-1].type==1) {
-        // Global memory, and there is also local memory
-        skipsize = cache_info[cache-1].size;
-        size = (cache_info[cache].size - skipsize) / 4;
-        assert(size >= skipsize/4);
-      } else {
-        // Local memory or only memory
-        skipsize = 0;
-        size = cache_info[cache].size / 2;
-      }
-    } else {
-      // Cache
-      skipsize = 0;
-      size = cache_info[cache].size * 3 / 4;
+    assert(cache>=0 && cache<int(cache_info.size()));
+    switch (cache_info[cache].type) {
+    default: assert(0); CCTK_BUILTIN_UNREACHABLE();
+    case mem_cache:
+      skip_memsize = 0;
+      memsize = cache_info[cache].size * 3 / 4;
+      break;
+    case mem_local:
+      skip_memsize = 0;
+      memsize = cache_info[cache].size / 4;
+      break;
+    case mem_global:
+      assert(cache>0);
+      assert(cache_info[cache-1].type == mem_local);
+      skip_memsize = cache_info[cache-1].size;
+      memsize = skip_memsize / 4;
+      assert(skip_memsize + memsize <= cache_info[cache].size * 3 / 4);
+      break;
     }
+    assert(skip_memsize>=0);
+    assert(memsize>0);
   }
   
   
   
-  void measure_allocation_speed(const MPI_Comm comm, const int num_threads)
+  void measure_allocation_speed(const MPI_Comm comm, const int proc_num_threads)
   {
     DECLARE_CCTK_PARAMETERS;
     
     cpu_info.allocation_speed = -1.0;
     for (int cache=0; cache<int(cache_info.size()); ++cache) {
-      if (cache_info[cache].type==1) { // only if memory
-        ptrdiff_t skipsize, size;
-        calc_sizes(cache, skipsize, size);
-        assert(size>0);
-        int comm_size;
-        MPI_Comm_size(comm, &comm_size);
-        if (verbose) {
-          printf("    Memory allocation performance for %s (using %td bytes):\n",
-                 cache_info[cache].name.c_str(), size);
-          fflush(stdout);
-        } else {
-          printf("    Memory allocation performance for %s (for %d PUs):",
-                 cache_info[cache].name.c_str(), cache_info[cache].num_pus);
-        }
-        const ptrdiff_t node_memory = cache_info[cache_info.size()-1].size;
-        if ((skipsize + size) * comm_size > node_memory * 3 / 4) {
-          printf(" [skipped -- too many MPI processes]\n");
-          continue;
-        }
-        vector<char> skiparray(skipsize, 1);
-        double min_elapsed = 1.0;
-        ptrdiff_t max_count = 1;
-        double elapsed;
-        for (;;) {
-          if (verbose) {
-            printf("      iterations=%td...", max_count);
-            fflush(stdout);
-          }
-          elapsed = 0.0;
-          for (int count=0; count<max_count; ++count) {
-            const double t0 = omp_get_wtime();
-            // Allocate array, set all elements to 1
-            vector<char> raw_array(size, 1);
-            const double t1 = omp_get_wtime();
-            elapsed += t1 - t0;
-            volatile char use_array CCTK_ATTRIBUTE_UNUSED = raw_array[size-1];
-          }
-          if (verbose) {
-            printf(" time=%g sec\n", elapsed);
-          }
-          int done = elapsed >= min_elapsed;
-          if (done) break;
-          max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
-        }
-        cpu_info.allocation_speed = max_count * size / elapsed;
-        if (verbose) {
-          printf("      result:");
-        }
-        printf(" %g GByte/sec\n",
-               cpu_info.allocation_speed / 1.0e+9);
+      if (cache_info[cache].type == mem_cache) continue;
+      
+      // Determine memory size
+      ptrdiff_t skip_memsize, cache_memsize;
+      calc_memsizes(cache, skip_memsize, cache_memsize);
+      
+      // Determine thread numbers
+      const int node_num_pus = cache_info[cache_info.size()-1].num_pus;
+      const int cache_num_pus = cache_info[cache].num_pus;
+      assert(node_num_pus % cache_num_pus == 0);
+      const int num_smt_threads = GetNumSMTThreads();
+      const int max_smt_threads = GetMaxSMTThreads();
+      
+      const bool is_multi_proc_cache =
+        cache_num_pus * max_smt_threads >
+        node_num_pus * num_smt_threads * proc_num_threads;
+      const int node_procs = mpi_info.mpi_num_procs_on_host;
+      int comm_size;
+      MPI_Comm_size(comm, &comm_size);
+      assert(comm_size <= node_procs);
+      const int node_procs_active = is_multi_proc_cache ? 1 : comm_size;
+      
+      const int proc_num_pus =
+        divup(proc_num_threads * max_smt_threads, num_smt_threads);
+      const int thread_alloc_every =
+        divup(proc_num_threads * cache_num_pus, proc_num_pus);
+      const int proc_num_allocs =
+        divup(proc_num_threads, thread_alloc_every);
+      const int node_num_allocs = proc_num_allocs * node_procs_active;
+      
+      const ptrdiff_t node_memsize = cache_info[cache_info.size()-1].size;
+      const ptrdiff_t node_memsize_used =
+        (skip_memsize + proc_num_allocs * cache_memsize) * node_procs_active;
+      
+      if (verbose) {
+        printf("    Memory allocation performance for %s (for %d PUs) (using %d*%td bytes):\n",
+               cache_info[cache].name.c_str(), cache_info[cache].num_pus,
+               node_num_allocs, cache_memsize);
+        fflush(stdout);
+      } else {
+        printf("    Memory allocation performance for %s (for %d PUs):",
+               cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      
+      if (comm_size > node_procs_active) {
+        printf(" [skipped -- too many MPI processes]\n");
+        continue;
+      }
+      if (node_memsize_used > node_memsize * 3 / 4) {
+        printf(" [skipped -- too much memory requested]\n");
+        continue;
+      }
+      if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
+        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        continue;
+      }
+      
+      // Allocate skipped memory, filling it with 1 so that it is
+      // actually allocated by the operating system
+      vector<char> skiparray(skip_memsize, 1);
+      
+      // The basic benchmark harness is the same as above, no comments
+      // here
+      double min_elapsed = 1.0;
+      ptrdiff_t max_count = 1;
+      double elapsed;
+      for (;;) {
+        if (verbose) {
+          printf("      iterations=%td...", max_count);
+          fflush(stdout);
+        }
+        MPI_Barrier(comm);
+        elapsed = 0.0;
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
+        for (int count=0; count<max_count; ++count) {
+#pragma omp barrier
+          const double t0 = omp_get_wtime();
+          if (omp_get_thread_num() % thread_alloc_every == 0) {
+            // Allocate array, set all elements to 1
+            vector<char> raw_array(cache_memsize, 1);
+            volatile char use_array CCTK_ATTRIBUTE_UNUSED =
+              raw_array[cache_memsize-1];
+          }
+          const double t1 = omp_get_wtime();
+          elapsed += t1 - t0;
+        }
+        elapsed = mpi_average(comm, elapsed / proc_num_threads);
+        if (verbose) {
+          printf(" time=%g sec\n", elapsed);
+        }
+        int done = elapsed >= min_elapsed;
+        MPI_Bcast(&done, 1, MPI_INT, 0, comm);
+        if (done) break;
+        max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
+      }
+      cpu_info.allocation_speed = max_count * cache_memsize / elapsed;
+      if (verbose) {
+        printf("      result:");
+      }
+      printf(" %g GByte/sec\n",
+             cpu_info.allocation_speed / 1.0e+9);
+      // Measure allocation speed only once
+      break;
     }
   }
 
 
 
-  void measure_read_latency(const MPI_Comm comm, const int num_threads)
+  void measure_read_latency(const MPI_Comm comm, const int proc_num_threads)
   {
     DECLARE_CCTK_PARAMETERS;
     
-    // Loop over all cache levels and memory types
+    // The basic benchmark harness is the same as above, no comments
+    // here
     for (int cache=0; cache<int(cache_info.size()); ++cache) {
-      // Determine size
-      ptrdiff_t skipsize, size;
-      calc_sizes(cache, skipsize, size);
-      assert(size>0);
-      const ptrdiff_t step = cache_info[cache].linesize;
-      assert(step>0);
+      
+      // Determine memory size
+      ptrdiff_t skip_memsize, cache_memsize;
+      calc_memsizes(cache, skip_memsize, cache_memsize);
+      
+      // Determine thread numbers
+      const int node_num_pus = cache_info[cache_info.size()-1].num_pus;
+      const int cache_num_pus = cache_info[cache].num_pus;
+      assert(node_num_pus % cache_num_pus == 0);
+      const int num_smt_threads = GetNumSMTThreads();
+      const int max_smt_threads = GetMaxSMTThreads();
+      
+      const bool is_multi_proc_cache =
+        cache_num_pus * max_smt_threads >
+        node_num_pus * num_smt_threads * proc_num_threads;
+      const int node_procs = mpi_info.mpi_num_procs_on_host;
       int comm_size;
       MPI_Comm_size(comm, &comm_size);
-      const int total_pus = comm_size * num_threads;
-      const int mem_pus = cache_info[cache].num_pus;
-      // const bool small_cache = num_threads % mem_pus == 0;
-      // const bool large_cache = mem_pus % num_threads == 0;
-      const bool small_cache = num_threads >= mem_pus;
-      const bool large_cache = mem_pus >= num_threads;
-      assert(small_cache || large_cache);
-      const int num_active_procs = small_cache ? comm_size : 1;
-      // assert(mem_pus % num_active_procs == 0);
-      // number of local arrays
-      // assert(total_pus % mem_pus == 0);
-      const int num_allocs = (total_pus + mem_pus - 1) / mem_pus;
-      assert(num_allocs % num_active_procs == 0);
-      const int num_local_allocs = num_allocs / num_active_procs;
+      assert(comm_size <= node_procs);
+      const int node_procs_active = is_multi_proc_cache ? 1 : comm_size;
+      
+      const int proc_num_pus =
+        divup(proc_num_threads * max_smt_threads, num_smt_threads);
+      const int thread_alloc_every =
+        divup(proc_num_threads * cache_num_pus, proc_num_pus);
+      const int proc_num_allocs =
+        divup(proc_num_threads, thread_alloc_every);
+      const int node_num_allocs = proc_num_allocs * node_procs_active;
+      
+      const ptrdiff_t node_memsize = cache_info[cache_info.size()-1].size;
+      const ptrdiff_t node_memsize_used =
+        (skip_memsize + proc_num_allocs * cache_memsize) * node_procs_active;
+        
       if (verbose) {
         printf("    Read latency of %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
-               num_allocs, size);
+               node_num_allocs, cache_memsize);
         fflush(stdout);
       } else {
         printf("    Read latency of %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
-      const ptrdiff_t node_memory = cache_info[cache_info.size()-1].size;
-      if (comm_size > num_active_procs ||
-          (skipsize + size) * comm_size > node_memory * 3 / 4)
-      {
+      
+      if (comm_size > node_procs_active) {
         printf(" [skipped -- too many MPI processes]\n");
         continue;
       }
+      if (node_memsize_used > node_memsize * 3 / 4) {
+        printf(" [skipped -- too much memory requested]\n");
+        continue;
+      }
+      if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
+        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        continue;
+      }
+      
       // Allocate skipped memory, filling it with 1 so that it is
       // actually allocated by the operating system
-      vector<char> skiparray(skipsize, 1);
+      vector<char> skiparray(skip_memsize, 1);
+      
+      // Allocate benchmark data structures
       const ptrdiff_t offset = 0xa1d2d5ff; // a random number
-      const ptrdiff_t nmax = size / sizeof(void*);
+      const ptrdiff_t nmax = cache_memsize / sizeof(void*);
       // Linked list (see latex)
-      vector<vector<void*> > arrays(num_local_allocs);
-      for (int alloc=0; alloc<num_local_allocs; ++alloc) {
+      vector<vector<void*> > arrays(proc_num_allocs);
+#pragma omp parallel num_threads(proc_num_threads)
+      if (omp_get_thread_num() % thread_alloc_every == 0) {
+        const int alloc = omp_get_thread_num() / thread_alloc_every;
+        assert(alloc < proc_num_allocs);
         arrays[alloc].resize(nmax);
-        arrays[alloc][0] = NULL;
-      }
-#pragma omp parallel num_threads(num_threads)
-      if (omp_get_thread_num() % mem_pus == 0) {
-        const int alloc = omp_get_thread_num() / mem_pus;
-        assert(alloc < num_local_allocs);
         void** const array = &arrays[alloc][0];
         ptrdiff_t i = 0;
         for (ptrdiff_t n=0; n<nmax; ++n) {
+          if (n>0) assert(i!=0);
           ptrdiff_t next_i = (i+offset) % nmax;
           if (array[i] && n != nmax-1) ++next_i;
           assert(!array[i]);
@@ -606,9 +700,10 @@ namespace {
         }
         assert(i == 0);
       }
-      for (int alloc=0; alloc<num_local_allocs; ++alloc) {
-        assert(arrays[alloc][0] != NULL);
+      for (int alloc=0; alloc<proc_num_allocs; ++alloc) {
+        assert(!arrays[alloc].empty());
       }
+      
       // The basic benchmark harness is the same as above, no comments
       // here
       double min_elapsed = 1.0;
@@ -621,11 +716,10 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-        volatile ptrdiff_t use_ptr CCTK_ATTRIBUTE_UNUSED = 0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use_ptr)
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
         {
-          const int alloc = omp_get_thread_num() / mem_pus;
-          assert(alloc < num_local_allocs);
+          const int alloc = omp_get_thread_num() / thread_alloc_every;
+          assert(alloc < proc_num_allocs);
           void** const array = &arrays[alloc][0];
 #pragma omp barrier
           const double t0 = omp_get_wtime();
@@ -638,9 +732,9 @@ namespace {
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
-          use_ptr += ptrdiff_t(ptr);
+          volatile ptrdiff_t use_ptr CCTK_ATTRIBUTE_UNUSED = ptrdiff_t(ptr);
         }
-        elapsed = mpi_average(comm, elapsed / num_threads);
+        elapsed = mpi_average(comm, elapsed / proc_num_threads);
         if (verbose) {
           printf(" time=%g sec\n", elapsed);
         }
@@ -659,72 +753,97 @@ namespace {
   
   
   
-  void measure_read_bandwidth(const MPI_Comm comm, const int num_threads)
+  void measure_read_bandwidth(const MPI_Comm comm, const int proc_num_threads)
   {
     DECLARE_CCTK_PARAMETERS;
     
     // The basic benchmark harness is the same as above, no comments
     // here
     for (int cache=0; cache<int(cache_info.size()); ++cache) {
-      ptrdiff_t skipsize, size;
-      calc_sizes(cache, skipsize, size);
-      assert(size>0);
+      
+      // Determine memory size
+      ptrdiff_t skip_memsize, cache_memsize;
+      calc_memsizes(cache, skip_memsize, cache_memsize);
+      
+      // Determine thread numbers
+      const int node_num_pus = cache_info[cache_info.size()-1].num_pus;
+      const int cache_num_pus = cache_info[cache].num_pus;
+      assert(node_num_pus % cache_num_pus == 0);
+      const int num_smt_threads = GetNumSMTThreads();
+      const int max_smt_threads = GetMaxSMTThreads();
+      
+      const bool is_multi_proc_cache =
+        cache_num_pus * max_smt_threads >
+        node_num_pus * num_smt_threads * proc_num_threads;
+      const int node_procs = mpi_info.mpi_num_procs_on_host;
       int comm_size;
       MPI_Comm_size(comm, &comm_size);
-      const int total_pus = comm_size * num_threads;
-      const int mem_pus = cache_info[cache].num_pus;
-      // const bool small_cache = num_threads % mem_pus == 0;
-      // const bool large_cache = mem_pus % num_threads == 0;
-      const bool small_cache = num_threads >= mem_pus;
-      const bool large_cache = mem_pus >= num_threads;
-      assert(small_cache || large_cache);
-      const int num_active_procs = small_cache ? comm_size : 1;
-      // assert(mem_pus % num_active_procs == 0);
-      // number of local arrays
-      // assert(total_pus % mem_pus == 0);
-      const int num_allocs = (total_pus + mem_pus - 1) / mem_pus;
-      assert(num_allocs % num_active_procs == 0);
-      const int num_local_allocs = num_allocs / num_active_procs;
+      assert(comm_size <= node_procs);
+      const int node_procs_active = is_multi_proc_cache ? 1 : comm_size;
+      
+      const int proc_num_pus =
+        divup(proc_num_threads * max_smt_threads, num_smt_threads);
+      const int thread_alloc_every =
+        divup(proc_num_threads * cache_num_pus, proc_num_pus);
+      const int proc_num_allocs =
+        divup(proc_num_threads, thread_alloc_every);
+      const int node_num_allocs = proc_num_allocs * node_procs_active;
+      
+      const ptrdiff_t node_memsize = cache_info[cache_info.size()-1].size;
+      const ptrdiff_t node_memsize_used =
+        (skip_memsize + proc_num_allocs * cache_memsize) * node_procs_active;
+        
       if (verbose) {
         printf("    Read bandwidth of %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
-               num_allocs, size);
+               node_num_allocs, cache_memsize);
         fflush(stdout);
       } else {
-        printf("    Read bandwidth %s (for %d PUs):",
+        printf("    Read bandwidth of %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
-      const ptrdiff_t node_memory = cache_info[cache_info.size()-1].size;
-      if (comm_size > num_active_procs ||
-          (skipsize + size) * comm_size > node_memory * 3 / 4)
-      {
+      
+      if (comm_size > node_procs_active) {
         printf(" [skipped -- too many MPI processes]\n");
         continue;
       }
-      vector<char> skiparray(skipsize, 1);
-      const ptrdiff_t nmax = size / sizeof(CCTK_REAL);
+      if (node_memsize_used > node_memsize * 3 / 4) {
+        printf(" [skipped -- too much memory requested]\n");
+        continue;
+      }
+      if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
+        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        continue;
+      }
+      
+      // Allocate skipped memory, filling it with 1 so that it is
+      // actually allocated by the operating system
+      vector<char> skiparray(skip_memsize, 1);
+      
+      // Allocate benchmark data structures
+      const ptrdiff_t nmax = cache_memsize / sizeof(CCTK_REAL);
       // Allocate array, set all elements to 1.0
-      vector<vector<CCTK_REAL> > raw_arrays(num_local_allocs);
-      vector<CCTK_REAL*> arrays(num_local_allocs);
-      for (int alloc=0; alloc<num_local_allocs; ++alloc) {
+      vector<vector<CCTK_REAL> > raw_arrays(proc_num_allocs);
+      vector<CCTK_REAL*> arrays(proc_num_allocs);
+#pragma omp parallel num_threads(proc_num_threads)
+      if (omp_get_thread_num() % thread_alloc_every == 0) {
+        const int alloc = omp_get_thread_num() / thread_alloc_every;
+        assert(alloc < proc_num_allocs);
         raw_arrays[alloc].resize(nmax + CCTK_REAL_VEC_SIZE-1);
         arrays[alloc] =
           (CCTK_REAL*)(ptrdiff_t(&raw_arrays[alloc][CCTK_REAL_VEC_SIZE-1]) &
                        -sizeof(CCTK_REAL_VEC));
-        arrays[alloc][0] = 0.0;
-      }
-#pragma omp parallel num_threads(num_threads)
-      if (omp_get_thread_num() % mem_pus == 0) {
-        const int alloc = omp_get_thread_num() / mem_pus;
-        assert(alloc < num_local_allocs);
         CCTK_REAL* restrict const array = &arrays[alloc][0];
         for (ptrdiff_t n=0; n<nmax; ++n) {
           array[n] = 1.0;
         }
       }
-      for (int alloc=0; alloc<num_local_allocs; ++alloc) {
-        assert(arrays[alloc][0] == 1.0);
+      for (int alloc=0; alloc<proc_num_allocs; ++alloc) {
+        assert(!raw_arrays[alloc].empty());
       }
+      
+      // The basic benchmark harness is the same as above, no comments
+      // here
       double min_elapsed = 1.0;
       ptrdiff_t max_count = 1;
       double elapsed;
@@ -735,11 +854,10 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-        volatile CCTK_REAL use_s CCTK_ATTRIBUTE_UNUSED = 0.0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use_s)
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
         {
-          const int alloc = omp_get_thread_num() / mem_pus;
-          assert(alloc < num_local_allocs);
+          const int alloc = omp_get_thread_num() / thread_alloc_every;
+          assert(alloc < proc_num_allocs);
           CCTK_REAL* restrict const array = &arrays[alloc][0];
 #pragma omp barrier
           const double t0 = omp_get_wtime();
@@ -767,13 +885,14 @@ namespace {
               s7 = kmadd(vec_load(array[n]), s7, vec_load(array[n+dn]));
               n += 2*dn;
             }
-            use_s += vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
-                                  kadd(kadd(s4, s5), kadd(s6, s7))), 0);
+            volatile CCTK_REAL use_s CCTK_ATTRIBUTE_UNUSED =
+              vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
+                           kadd(kadd(s4, s5), kadd(s6, s7))), 0);
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
         }
-        elapsed = mpi_average(comm, elapsed / num_threads);
+        elapsed = mpi_average(comm, elapsed / proc_num_threads);
         if (verbose) {
           printf(" time=%g sec\n", elapsed);
         }
@@ -782,7 +901,7 @@ namespace {
         if (done) break;
         max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
       }
-      cache_info[cache].read_bandwidth = max_count * size / elapsed;
+      cache_info[cache].read_bandwidth = max_count * cache_memsize / elapsed;
       if (verbose) {
         printf("      result:");
       }
@@ -793,70 +912,92 @@ namespace {
   
   
   
-  void measure_write_latency(const MPI_Comm comm, const int num_threads)
+  void measure_write_latency(const MPI_Comm comm, const int proc_num_threads)
   {
     DECLARE_CCTK_PARAMETERS;
     
     // The basic benchmark harness is the same as above, no comments
     // here
     for (int cache=0; cache<int(cache_info.size()); ++cache) {
-      ptrdiff_t skipsize, size;
-      calc_sizes(cache, skipsize, size);
-      assert(size>0);
-      // Round down size to next power of two
-      size = ptrdiff_t(1) << ilogb(double(size));
-      // Define a mask for efficient modulo operations
-      const ptrdiff_t size_mask = size - 1;
-      const ptrdiff_t offset = 0xa1d2d5ff; // a random number
-      assert(size>0);
+      
+      // Determine memory size
+      ptrdiff_t skip_memsize, cache_memsize;
+      calc_memsizes(cache, skip_memsize, cache_memsize);
+      
+      // Determine thread numbers
+      const int node_num_pus = cache_info[cache_info.size()-1].num_pus;
+      const int cache_num_pus = cache_info[cache].num_pus;
+      assert(node_num_pus % cache_num_pus == 0);
+      const int num_smt_threads = GetNumSMTThreads();
+      const int max_smt_threads = GetMaxSMTThreads();
+      
+      const bool is_multi_proc_cache =
+        cache_num_pus * max_smt_threads >
+        node_num_pus * num_smt_threads * proc_num_threads;
+      const int node_procs = mpi_info.mpi_num_procs_on_host;
       int comm_size;
       MPI_Comm_size(comm, &comm_size);
-      const int total_pus = comm_size * num_threads;
-      const int mem_pus = cache_info[cache].num_pus;
-      // const bool small_cache = num_threads % mem_pus == 0;
-      // const bool large_cache = mem_pus % num_threads == 0;
-      const bool small_cache = num_threads >= mem_pus;
-      const bool large_cache = mem_pus >= num_threads;
-      assert(small_cache || large_cache);
-      const int num_active_procs = small_cache ? comm_size : 1;
-      // assert(mem_pus % num_active_procs == 0);
-      // number of local arrays
-      // assert(total_pus % mem_pus == 0);
-      const int num_allocs = (total_pus + mem_pus - 1) / mem_pus;
-      assert(num_allocs % num_active_procs == 0);
-      const int num_local_allocs = num_allocs / num_active_procs;
+      assert(comm_size <= node_procs);
+      const int node_procs_active = is_multi_proc_cache ? 1 : comm_size;
+      
+      const int proc_num_pus =
+        divup(proc_num_threads * max_smt_threads, num_smt_threads);
+      const int thread_alloc_every =
+        divup(proc_num_threads * cache_num_pus, proc_num_pus);
+      const int proc_num_allocs =
+        divup(proc_num_threads, thread_alloc_every);
+      const int node_num_allocs = proc_num_allocs * node_procs_active;
+      
+      const ptrdiff_t node_memsize = cache_info[cache_info.size()-1].size;
+      const ptrdiff_t node_memsize_used =
+        (skip_memsize + proc_num_allocs * cache_memsize) * node_procs_active;
+        
       if (verbose) {
         printf("    Write latency of %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
-               num_allocs, size);
+               node_num_allocs, cache_memsize);
         fflush(stdout);
       } else {
         printf("    Write latency of %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
-      const ptrdiff_t node_memory = cache_info[cache_info.size()-1].size;
-      if (comm_size > num_active_procs ||
-          (skipsize + size) * comm_size > node_memory * 3 / 4)
-      {
+      
+      if (comm_size > node_procs_active) {
         printf(" [skipped -- too many MPI processes]\n");
         continue;
       }
-      vector<char> skiparray(skipsize, 1);
-      vector<vector<char> > arrays(num_local_allocs);
-      for (int alloc=0; alloc<num_local_allocs; ++alloc) {
-        arrays[alloc].resize(size);
-        arrays[alloc][0] = 0;
+      if (node_memsize_used > node_memsize * 3 / 4) {
+        printf(" [skipped -- too much memory requested]\n");
+        continue;
       }
-#pragma omp parallel num_threads(num_threads)
-      if (omp_get_thread_num() % mem_pus == 0) {
-        const int alloc = omp_get_thread_num() / mem_pus;
-        assert(alloc < num_local_allocs);
-        char* const array = &arrays[alloc][0];
-        memset(array, 1, size);
+      if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
+        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        continue;
       }
-      for (int alloc=0; alloc<num_local_allocs; ++alloc) {
-        assert(arrays[alloc][0] == 1);
+      
+      // Allocate skipped memory, filling it with 1 so that it is
+      // actually allocated by the operating system
+      vector<char> skiparray(skip_memsize, 1);
+      
+      // Allocate benchmark data structures
+      
+      // Round down size to next power of two
+      const ptrdiff_t nmax = ptrdiff_t(1) << ilogb(double(cache_memsize));
+      // Define a mask for efficient modulo operations
+      const ptrdiff_t size_mask = nmax - 1;
+      const ptrdiff_t offset = 0xa1d2d5ff; // a random number
+      vector<vector<char> > arrays(proc_num_allocs);
+#pragma omp parallel num_threads(proc_num_threads)
+      if (omp_get_thread_num() % thread_alloc_every == 0) {
+        const int alloc = omp_get_thread_num() / thread_alloc_every;
+        arrays[alloc].resize(nmax, 1);
       }
+      for (int alloc=0; alloc<proc_num_allocs; ++alloc) {
+        assert(!arrays[alloc].empty());
+      }
+      
+      // The basic benchmark harness is the same as above, no comments
+      // here
       double min_elapsed = 1.0;
       ptrdiff_t max_count = 1000;
       double elapsed;
@@ -867,11 +1008,10 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-        volatile char use_array CCTK_ATTRIBUTE_UNUSED = 0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use_array)
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
         {
-          const int alloc = omp_get_thread_num() / mem_pus;
-          assert(alloc < num_local_allocs);
+          const int alloc = omp_get_thread_num() / thread_alloc_every;
+          assert(alloc < proc_num_allocs);
           char* const array = &arrays[alloc][0];
 #pragma omp barrier
           const double t0 = omp_get_wtime();
@@ -898,9 +1038,9 @@ namespace {
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
-          use_array += array[0];
+          volatile char use_array CCTK_ATTRIBUTE_UNUSED = array[0];
         }
-        elapsed = mpi_average(comm, elapsed / num_threads);
+        elapsed = mpi_average(comm, elapsed / proc_num_threads);
         if (verbose) {
           printf(" time=%g sec\n", elapsed);
         }
@@ -919,64 +1059,87 @@ namespace {
   
   
   
-  void measure_write_bandwidth(const MPI_Comm comm, const int num_threads)
+  void measure_write_bandwidth(const MPI_Comm comm, const int proc_num_threads)
   {
     DECLARE_CCTK_PARAMETERS;
     
     // The basic benchmark harness is the same as above, no comments
     // here
     for (int cache=0; cache<int(cache_info.size()); ++cache) {
-      ptrdiff_t skipsize, size;
-      calc_sizes(cache, skipsize, size);
-      assert(size>0);
+      
+      // Determine memory size
+      ptrdiff_t skip_memsize, cache_memsize;
+      calc_memsizes(cache, skip_memsize, cache_memsize);
+      
+      // Determine thread numbers
+      const int node_num_pus = cache_info[cache_info.size()-1].num_pus;
+      const int cache_num_pus = cache_info[cache].num_pus;
+      assert(node_num_pus % cache_num_pus == 0);
+      const int num_smt_threads = GetNumSMTThreads();
+      const int max_smt_threads = GetMaxSMTThreads();
+      
+      const bool is_multi_proc_cache =
+        cache_num_pus * max_smt_threads >
+        node_num_pus * num_smt_threads * proc_num_threads;
+      const int node_procs = mpi_info.mpi_num_procs_on_host;
       int comm_size;
       MPI_Comm_size(comm, &comm_size);
-      const int total_pus = comm_size * num_threads;
-      const int mem_pus = cache_info[cache].num_pus;
-      // const bool small_cache = num_threads % mem_pus == 0;
-      // const bool large_cache = mem_pus % num_threads == 0;
-      const bool small_cache = num_threads >= mem_pus;
-      const bool large_cache = mem_pus >= num_threads;
-      assert(small_cache || large_cache);
-      const int num_active_procs = small_cache ? comm_size : 1;
-      // assert(mem_pus % num_active_procs == 0);
-      // number of local arrays
-      // assert(total_pus % mem_pus == 0);
-      const int num_allocs = (total_pus + mem_pus - 1) / mem_pus;
-      assert(num_allocs % num_active_procs == 0);
-      const int num_local_allocs = num_allocs / num_active_procs;
+      assert(comm_size <= node_procs);
+      const int node_procs_active = is_multi_proc_cache ? 1 : comm_size;
+      
+      const int proc_num_pus =
+        divup(proc_num_threads * max_smt_threads, num_smt_threads);
+      const int thread_alloc_every =
+        divup(proc_num_threads * cache_num_pus, proc_num_pus);
+      const int proc_num_allocs =
+        divup(proc_num_threads, thread_alloc_every);
+      const int node_num_allocs = proc_num_allocs * node_procs_active;
+      
+      const ptrdiff_t node_memsize = cache_info[cache_info.size()-1].size;
+      const ptrdiff_t node_memsize_used =
+        (skip_memsize + proc_num_allocs * cache_memsize) * node_procs_active;
+        
       if (verbose) {
-        printf("    Write bandwidth via memset for %s (for %d PUs) (using %d*%td bytes):\n",
+        printf("    Write bandwidth of %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
-               num_allocs, size);
+               node_num_allocs, cache_memsize);
         fflush(stdout);
       } else {
-        printf("    Write bandwidth via memset for %s (for %d PUs):",
+        printf("    Write bandwidth of %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
-      const ptrdiff_t node_memory = cache_info[cache_info.size()-1].size;
-      if (comm_size > num_active_procs ||
-          (skipsize + size) * comm_size > node_memory * 3 / 4)
-      {
+      
+      if (comm_size > node_procs_active) {
         printf(" [skipped -- too many MPI processes]\n");
         continue;
       }
-      vector<char> skiparray(skipsize, 1);
-      vector<vector<char> > arrays(num_local_allocs);
-      for (int alloc=0; alloc<num_local_allocs; ++alloc) {
-        arrays[alloc].resize(size);
-        arrays[alloc][0] = 0;
+      if (node_memsize_used > node_memsize * 3 / 4) {
+        printf(" [skipped -- too much memory requested]\n");
+        continue;
       }
-#pragma omp parallel num_threads(num_threads)
-      if (omp_get_thread_num() % mem_pus == 0) {
-        const int alloc = omp_get_thread_num() / mem_pus;
-        assert(alloc < num_local_allocs);
-        char* restrict const array = &arrays[alloc][0];
-        memset(array, 1, size);
+      if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
+        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        continue;
       }
-      for (int alloc=0; alloc<num_local_allocs; ++alloc) {
-        assert(arrays[alloc][0] == 1);
+      
+      // Allocate skipped memory, filling it with 1 so that it is
+      // actually allocated by the operating system
+      vector<char> skiparray(skip_memsize, 1);
+      
+      // Allocate benchmark data structures
+      vector<vector<char> > arrays(proc_num_allocs);
+#pragma omp parallel num_threads(proc_num_threads)
+      if (omp_get_thread_num() % thread_alloc_every == 0) {
+        const int alloc = omp_get_thread_num() / thread_alloc_every;
+        assert(alloc < proc_num_allocs);
+        arrays[alloc].resize(cache_memsize, 1);
       }
+      for (int alloc=0; alloc<proc_num_allocs; ++alloc) {
+        assert(!arrays[alloc].empty());
+      }
+      
+      // The basic benchmark harness is the same as above, no comments
+      // here
       double min_elapsed = 1.0;
       ptrdiff_t max_count = 1;
       double elapsed;
@@ -987,23 +1150,23 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-        volatile char use_array CCTK_ATTRIBUTE_UNUSED = 0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use_array)
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
         {
-          const int alloc = omp_get_thread_num() / mem_pus;
-          assert(alloc < num_local_allocs);
+          const int alloc = omp_get_thread_num() / thread_alloc_every;
+          assert(alloc < proc_num_allocs);
           char* restrict const array = &arrays[alloc][0];
 #pragma omp barrier
           const double t0 = omp_get_wtime();
           // Use memset for writing (see latex)
           for (ptrdiff_t count=0; count<max_count; ++count) {
-            memset(&array[0], count % 256, size);
-            use_array += array[count % size];
+            memset(&array[0], count % 256, cache_memsize);
+            volatile char use_array CCTK_ATTRIBUTE_UNUSED =
+              array[count % cache_memsize];
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
         }
-        elapsed = mpi_average(comm, elapsed / num_threads);
+        elapsed = mpi_average(comm, elapsed / proc_num_threads);
         if (verbose) {
           printf(" time=%g sec\n", elapsed);
         }
@@ -1012,7 +1175,7 @@ namespace {
         if (done) break;
         max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
       }
-      cache_info[cache].write_bandwidth = max_count * size / elapsed;
+      cache_info[cache].write_bandwidth = max_count * cache_memsize / elapsed;
       if (verbose) {
         printf("      result:");
       }
@@ -1023,125 +1186,148 @@ namespace {
   
   
   
-  void measure_write_bandwidth2(const MPI_Comm comm, const int num_threads)
+  void measure_write_bandwidth2(const MPI_Comm comm, const int proc_num_threads)
   {
     DECLARE_CCTK_PARAMETERS;
     
     // The basic benchmark harness is the same as above, no comments
     // here
     for (int cache=0; cache<int(cache_info.size()); ++cache) {
-      if (cache_info[cache].type==1) { // only if memory
-        ptrdiff_t skipsize, size;
-        calc_sizes(cache, skipsize, size);
-        assert(size>0);
-        int comm_size;
-        MPI_Comm_size(comm, &comm_size);
-        const int total_pus = comm_size * num_threads;
-        const int mem_pus = cache_info[cache].num_pus;
-        // const bool small_cache = num_threads % mem_pus == 0;
-        // const bool large_cache = mem_pus % num_threads == 0;
-        const bool small_cache = num_threads >= mem_pus;
-        const bool large_cache = mem_pus >= num_threads;
-        assert(small_cache || large_cache);
-        const int num_active_procs = small_cache ? comm_size : 1;
-        // assert(mem_pus % num_active_procs == 0);
-        // number of local arrays
-        // assert(total_pus % mem_pus == 0);
-        const int num_allocs = (total_pus + mem_pus - 1) / mem_pus;
-        assert(num_allocs % num_active_procs == 0);
-        const int num_local_allocs = num_allocs / num_active_procs;
-        if (verbose) {
-          printf("    Write bandwidth via cache-bypassing stores for %s (for %d PUs) (using %d*%td bytes):\n",
-                 cache_info[cache].name.c_str(), cache_info[cache].num_pus,
-                 num_allocs, size);
-          fflush(stdout);
-        } else {
-          printf("    Write bandwidth via cache-bypassing stores for %s (for %d PUs):",
-                 cache_info[cache].name.c_str(), cache_info[cache].num_pus);
-        }
-        const ptrdiff_t node_memory = cache_info[cache_info.size()-1].size;
-        if (comm_size > num_active_procs ||
-            (skipsize + size) * comm_size > node_memory * 3 / 4)
-        {
-          printf(" [skipped -- too many MPI processes]\n");
-          continue;
-        }
-        vector<char> skiparray(skipsize, 1);
-        const ptrdiff_t nmax = size / sizeof(CCTK_REAL);
-        // Allocate array, set all elements to 1.0
-        vector<vector<CCTK_REAL> > raw_arrays(num_local_allocs);
-        vector<CCTK_REAL*> arrays(num_local_allocs);
-        for (int alloc=0; alloc<num_local_allocs; ++alloc) {
-          raw_arrays[alloc].resize(nmax + CCTK_REAL_VEC_SIZE-1);
-          arrays[alloc] =
-            (CCTK_REAL*)(ptrdiff_t(&raw_arrays[alloc][CCTK_REAL_VEC_SIZE-1]) &
-                         -sizeof(CCTK_REAL_VEC));
-          arrays[alloc][0] = 0.0;
-        }
-#pragma omp parallel num_threads(num_threads)
-        if (omp_get_thread_num() % mem_pus == 0) {
-          const int alloc = omp_get_thread_num() / mem_pus;
-          assert(alloc < num_local_allocs);
-          CCTK_REAL* restrict const array = &arrays[alloc][0];
-          for (ptrdiff_t n=0; n<nmax; ++n) {
-            array[n] = 1.0;
-          }
-        }
-        for (int alloc=0; alloc<num_local_allocs; ++alloc) {
-          assert(arrays[alloc][0] == 1.0);
-        }
-        double min_elapsed = 1.0;
-        ptrdiff_t max_count = 1;
-        double elapsed;
-        for (;;) {
-          if (verbose) {
-            printf("      iterations=%td...", max_count);
-            fflush(stdout);
-          }
-          MPI_Barrier(comm);
-          elapsed = 0.0;
-          volatile CCTK_REAL use_array CCTK_ATTRIBUTE_UNUSED = 0.0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use_array)
-          {
-            const int alloc = omp_get_thread_num() / mem_pus;
-            assert(alloc < num_local_allocs);
-            CCTK_REAL* restrict const array = &arrays[alloc][0];
-#pragma omp barrier
-            const double t0 = omp_get_wtime();
-            // Use cache-bypassing stores
-            for (ptrdiff_t count=0; count<max_count; ++count) {
-              CCTK_REAL_VEC s = vec_set1(CCTK_REAL(count));
-              for (ptrdiff_t n=0; n<nmax;) {
-                vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
-                vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
-                vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
-                vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
-                vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
-                vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
-                vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
-                vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
-              }
-              use_array += array[0];
-            }
-            const double t1 = omp_get_wtime();
-            elapsed += t1 - t0;
-          }
-          elapsed = mpi_average(comm, elapsed / num_threads);
-          if (verbose) {
-            printf(" time=%g sec\n", elapsed);
-          }
-          int done = elapsed >= min_elapsed;
-          MPI_Bcast(&done, 1, MPI_INT, 0, comm);
-          if (done) break;
-          max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
-        }
-        cache_info[cache].write_bandwidth = max_count * size / elapsed;
-        if (verbose) {
-          printf("      result:");
-        }
-        printf(" %g GByte/sec\n",
-               cache_info[cache].write_bandwidth / 1.0e+9);
+      if (cache_info[cache].type == mem_cache) continue;
+      
+      // Determine memory size
+      ptrdiff_t skip_memsize, cache_memsize;
+      calc_memsizes(cache, skip_memsize, cache_memsize);
+      
+      // Determine thread numbers
+      const int node_num_pus = cache_info[cache_info.size()-1].num_pus;
+      const int cache_num_pus = cache_info[cache].num_pus;
+      assert(node_num_pus % cache_num_pus == 0);
+      const int num_smt_threads = GetNumSMTThreads();
+      const int max_smt_threads = GetMaxSMTThreads();
+      
+      const bool is_multi_proc_cache =
+        cache_num_pus * max_smt_threads >
+        node_num_pus * num_smt_threads * proc_num_threads;
+      const int node_procs = mpi_info.mpi_num_procs_on_host;
+      int comm_size;
+      MPI_Comm_size(comm, &comm_size);
+      assert(comm_size <= node_procs);
+      const int node_procs_active = is_multi_proc_cache ? 1 : comm_size;
+      
+      const int proc_num_pus =
+        divup(proc_num_threads * max_smt_threads, num_smt_threads);
+      const int thread_alloc_every =
+        divup(proc_num_threads * cache_num_pus, proc_num_pus);
+      const int proc_num_allocs =
+        divup(proc_num_threads, thread_alloc_every);
+      const int node_num_allocs = proc_num_allocs * node_procs_active;
+      
+      const ptrdiff_t node_memsize = cache_info[cache_info.size()-1].size;
+      const ptrdiff_t node_memsize_used =
+        (skip_memsize + proc_num_allocs * cache_memsize) * node_procs_active;
+        
+      if (verbose) {
+        printf("    Write bandwidth via cache-bypassing stores for %s (for %d PUs) (using %d*%td bytes):\n",
+               cache_info[cache].name.c_str(), cache_info[cache].num_pus,
+               node_num_allocs, cache_memsize);
+        fflush(stdout);
+      } else {
+        printf("    Write bandwidth via cache-bypassing stores for %s (for %d PUs):",
+               cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      
+      if (comm_size > node_procs_active) {
+        printf(" [skipped -- too many MPI processes]\n");
+        continue;
+      }
+      if (node_memsize_used > node_memsize * 3 / 4) {
+        printf(" [skipped -- too much memory requested]\n");
+        continue;
+      }
+      if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
+        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        continue;
+      }
+      
+      // Allocate skipped memory, filling it with 1 so that it is
+      // actually allocated by the operating system
+      vector<char> skiparray(skip_memsize, 1);
+      
+      // Allocate benchmark data structures
+      const ptrdiff_t nmax = cache_memsize / sizeof(CCTK_REAL);
+      // Allocate array, set all elements to 1.0
+      vector<vector<CCTK_REAL> > raw_arrays(proc_num_allocs);
+      vector<CCTK_REAL*> arrays(proc_num_allocs);
+#pragma omp parallel num_threads(proc_num_threads)
+      if (omp_get_thread_num() % thread_alloc_every == 0) {
+        const int alloc = omp_get_thread_num() / thread_alloc_every;
+        assert(alloc < proc_num_allocs);
+        raw_arrays[alloc].resize(nmax + CCTK_REAL_VEC_SIZE-1);
+        arrays[alloc] =
+          (CCTK_REAL*)(ptrdiff_t(&raw_arrays[alloc][CCTK_REAL_VEC_SIZE-1]) &
+                       -sizeof(CCTK_REAL_VEC));
+        CCTK_REAL* restrict const array = &arrays[alloc][0];
+        for (ptrdiff_t n=0; n<nmax; ++n) {
+          array[n] = 1.0;
+        }
+      }
+      for (int alloc=0; alloc<proc_num_allocs; ++alloc) {
+        assert(!raw_arrays[alloc].empty());
+      }
+      
+      // The basic benchmark harness is the same as above, no comments
+      // here
+      double min_elapsed = 1.0;
+      ptrdiff_t max_count = 1;
+      double elapsed;
+      for (;;) {
+        if (verbose) {
+          printf("      iterations=%td...", max_count);
+          fflush(stdout);
+        }
+        MPI_Barrier(comm);
+        elapsed = 0.0;
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
+        {
+          const int alloc = omp_get_thread_num() / thread_alloc_every;
+          assert(alloc < proc_num_allocs);
+          CCTK_REAL* restrict const array = &arrays[alloc][0];
+#pragma omp barrier
+          const double t0 = omp_get_wtime();
+          // Use cache-bypassing stores
+          for (ptrdiff_t count=0; count<max_count; ++count) {
+            CCTK_REAL_VEC s = vec_set1(CCTK_REAL(count));
+            for (ptrdiff_t n=0; n<nmax;) {
+              vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
+              vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
+              vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
+              vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
+              vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
+              vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
+              vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
+              vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
+            }
+            volatile CCTK_REAL use_array CCTK_ATTRIBUTE_UNUSED = array[0];
+          }
+          const double t1 = omp_get_wtime();
+          elapsed += t1 - t0;
+        }
+        elapsed = mpi_average(comm, elapsed / proc_num_threads);
+        if (verbose) {
+          printf(" time=%g sec\n", elapsed);
+        }
+        int done = elapsed >= min_elapsed;
+        MPI_Bcast(&done, 1, MPI_INT, 0, comm);
+        if (done) break;
+        max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
+      }
+      cache_info[cache].write_bandwidth = max_count * cache_memsize / elapsed;
+      if (verbose) {
+        printf("      result:");
+      }
+      printf(" %g GByte/sec\n",
+             cache_info[cache].write_bandwidth / 1.0e+9);
     }
   }
   
@@ -1154,9 +1340,10 @@ namespace {
     // The basic benchmark harness is the same as above, no comments
     // here
     for (int cache=0; cache<int(cache_info.size()); ++cache) {
-      ptrdiff_t skipsize, size;
-      calc_sizes(cache, skipsize, size);
-      assert(size>0);
+      ptrdiff_t skip_memsize, memsize;
+      calc_memsizes(cache, skip_memsize, memsize);
+      assert(memsize>0);
+      if (skip_largemem_benchmarks && skip_memsize>0) continue;
       int comm_size;
       MPI_Comm_size(comm, &comm_size);
       const int total_pus = comm_size * num_threads;
@@ -1172,10 +1359,12 @@ namespace {
       // assert(total_pus % mem_pus == 0);
       const int num_allocs = (total_pus + mem_pus - 1) / mem_pus;
       assert(num_allocs % num_active_procs == 0);
-      const ptrdiff_t np = llrint(pow(0.5 * size / sizeof(CCTK_REAL), 1.0/3.0));
+      const ptrdiff_t np =
+        llrint(pow(memsize / (2.0 * sizeof(CCTK_REAL) * num_allocs), 1.0/3.0));
       if (verbose) {
-        printf("    Stencil code performance of %s (for %d PUs) (using %td grid points):\n",
-               cache_info[cache].name.c_str(), cache_info[cache].num_pus, np);
+        printf("    Stencil code performance of %s (for %d PUs) (using %d*%td^3 grid points, %d*%td bytes):\n",
+               cache_info[cache].name.c_str(), cache_info[cache].num_pus,
+               num_allocs, np, num_allocs, 2 * sizeof(CCTK_REAL) * np*np*np);
         fflush(stdout);
       } else {
         printf("    Stencil code performance %s (for %d PUs):",
@@ -1183,12 +1372,12 @@ namespace {
       }
       const ptrdiff_t node_memory = cache_info[cache_info.size()-1].size;
       if (comm_size > num_active_procs ||
-          (skipsize + size) * comm_size > node_memory * 3 / 4)
+          (skip_memsize + memsize) * comm_size > node_memory * 3 / 4)
       {
         printf(" [skipped -- too many MPI processes]\n");
         continue;
       }
-      vector<char> skiparray(skipsize, 1);
+      vector<char> skiparray(skip_memsize, 1);
       // Allocate array
       const ptrdiff_t npa =
         (np + CCTK_REAL_VEC_SIZE - 1) / CCTK_REAL_VEC_SIZE * CCTK_REAL_VEC_SIZE;
@@ -1298,7 +1487,7 @@ namespace {
     int rank;
     MPI_Comm_rank(comm, &rank);
     double elapsed;
-    const size_t nmax = 10000000;     // 10 MByte
+    const size_t nmax = 10*1000*1000; // 10 MByte
     if (rank == 0) {
       vector<char> array1(nmax, 1);
       vector<char> array2(nmax, 2);
@@ -1343,7 +1532,7 @@ void MemSpeed_MeasureSpeed(CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS;
   
-  CCTK_INFO("Measuring CPU, cache, and memory speeds:");
+  CCTK_INFO("Measuring CPU, cache, memory, and communication speeds:");
   
   load_mpi_info();
   load_cache_info();
@@ -1393,6 +1582,7 @@ void MemSpeed_MeasureSpeed(CCTK_ARGUMENTS)
       measure_cpu_cycle_speed(singlenode, omp_get_max_threads());
       measure_cpu_flop_speed(singlenode, omp_get_max_threads());
       measure_cpu_iop_speed(singlenode, omp_get_max_threads());
+      measure_allocation_speed(singlenode, omp_get_max_threads());
       measure_read_latency(singlenode, omp_get_max_threads());
       measure_read_bandwidth(singlenode, omp_get_max_threads());
       measure_write_latency(singlenode, omp_get_max_threads());

@@ -1,6 +1,9 @@
 # Activate thorn MeMSpeed to run it
 ActiveThorns = "hwloc MemSpeed"
 
+MemSpeed::verbose                  = yes
+MemSpeed::skip_largemem_benchmarks = yes
+
 # Activate some other thorns to generate one (meaningless) output file
 ActiveThorns = "CartGrid3D CoordBase IOASCII IOUtil PUGH PUGHSlab"
 

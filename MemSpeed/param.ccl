@@ -3,3 +3,7 @@
 BOOLEAN verbose "Verbose output" STEERABLE=always
 {
 } "no"
+
+BOOLEAN skip_largemem_benchmarks "Skip benchmarks that require much memory" STEERABLE=always
+{
+} "no"
