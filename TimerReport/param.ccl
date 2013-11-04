@@ -3,15 +3,17 @@
 
 private:
 
+# These parameters control output frequency based on iteration. Output still
+# happens before the run terminates and, if enabled, before checkpoints.
 INT out_every "How often to output timer report to screen" STEERABLE=ALWAYS
 {
-  0   :: "Never (default)"
+  0   :: "No periodic output (default)"
   1:* :: "Every so many iterations"
 } 0
 
 INT out_at "Output timer information at a given iteration" STEERABLE=ALWAYS
 {
-  -1   :: "Never (default)"
+  -1   :: "Do not output at specific iteration (default)"
   0:*  :: "At this iteration"
 } -1
 
