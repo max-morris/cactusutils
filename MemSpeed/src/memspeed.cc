@@ -219,8 +219,8 @@ namespace {
       }
       MPI_Barrier(comm);
       elapsed = 0.0;
-      volatile CCTK_REAL use_s CCTK_ATTRIBUTE_UNUSED = 0.0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use_s)
+      volatile CCTK_REAL use CCTK_ATTRIBUTE_UNUSED = 0.0;
+#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use)
       {
 #pragma omp barrier
         // Start timing
@@ -248,8 +248,8 @@ namespace {
         elapsed += t1 - t0;
         // Store sum of results into a volatile variable, so that the
         // compiler does not optimize away the calculation
-        use_s += vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
-                              kadd(kadd(s4, s5), kadd(s6, s7))), 0);
+        use += vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
+                            kadd(kadd(s4, s5), kadd(s6, s7))), 0);
       }
       elapsed = mpi_average(comm, elapsed / num_threads);
       if (verbose) {
@@ -273,8 +273,8 @@ namespace {
       }
       MPI_Barrier(comm);
       elapsed2 = 0.0;
-      volatile CCTK_REAL use_s CCTK_ATTRIBUTE_UNUSED = 0.0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed2, use_s)
+      volatile CCTK_REAL use CCTK_ATTRIBUTE_UNUSED = 0.0;
+#pragma omp parallel num_threads(num_threads) reduction(+: elapsed2, use)
       {
 #pragma omp barrier
         // Start timing
@@ -298,8 +298,8 @@ namespace {
         elapsed2 += t1 - t0;
         // Store sum of results into a volatile variable, so that the
         // compiler does not optimize away the calculation
-        use_s += vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
-                              kadd(s4, s5)), 0);
+        use += vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
+                            kadd(s4, s5)), 0);
       }
       elapsed2 = mpi_average(comm, elapsed2 / num_threads);
       if (verbose) {
@@ -338,8 +338,8 @@ namespace {
       }
       MPI_Barrier(comm);
       elapsed = 0.0;
-      volatile CCTK_REAL use_s CCTK_ATTRIBUTE_UNUSED = 0.0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use_s)
+      volatile CCTK_REAL use CCTK_ATTRIBUTE_UNUSED = 0.0;
+#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use)
       {
 #pragma omp barrier
         // Start timing
@@ -371,8 +371,8 @@ namespace {
         elapsed += t1 - t0;
         // Store sum of results into a volatile variable, so that the
         // compiler does not optimize away the calculation
-        use_s += vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
-                              kadd(kadd(s4, s5), kadd(s6, s7))), 0);
+        use += vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
+                            kadd(kadd(s4, s5), kadd(s6, s7))), 0);
       }
       elapsed = mpi_average(comm, elapsed / num_threads);
       if (verbose) {
@@ -419,8 +419,8 @@ namespace {
       }
       MPI_Barrier(comm);
       elapsed = 0.0;
-      volatile ptrdiff_t use_s CCTK_ATTRIBUTE_UNUSED = 0;
-#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use_s)
+      volatile ptrdiff_t use CCTK_ATTRIBUTE_UNUSED = 0;
+#pragma omp parallel num_threads(num_threads) reduction(+: elapsed, use)
       {
 #pragma omp barrier
         const double t0 = omp_get_wtime();
@@ -444,7 +444,7 @@ namespace {
         elapsed += t1 - t0;
         // Store sum of results into a volatile variable, so that the
         // compiler does not optimize away the calculation
-        use_s += s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7;
+        use += s0 + s1 + s2 + s3 + s4 + s5 + s6 + s7;
       }
       elapsed = mpi_average(comm, elapsed / num_threads);
       if (verbose) {
@@ -576,15 +576,15 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
+        volatile char use CCTK_ATTRIBUTE_UNUSED = 0;
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed, use)
         for (int count=0; count<max_count; ++count) {
 #pragma omp barrier
           const double t0 = omp_get_wtime();
           if (omp_get_thread_num() % thread_alloc_every == 0) {
             // Allocate array, set all elements to 1
             vector<char> raw_array(cache_memsize, 1);
-            volatile char use_array CCTK_ATTRIBUTE_UNUSED =
-              raw_array[cache_memsize-1];
+            use += raw_array[cache_memsize-1];
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
@@ -716,7 +716,8 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
+        volatile ptrdiff_t use CCTK_ATTRIBUTE_UNUSED = 0;
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed, use)
         {
           const int alloc = omp_get_thread_num() / thread_alloc_every;
           assert(alloc < proc_num_allocs);
@@ -732,7 +733,7 @@ namespace {
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
-          volatile ptrdiff_t use_ptr CCTK_ATTRIBUTE_UNUSED = ptrdiff_t(ptr);
+          use += ptrdiff_t(ptr);
         }
         elapsed = mpi_average(comm, elapsed / proc_num_threads);
         if (verbose) {
@@ -854,7 +855,8 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
+        volatile CCTK_REAL use CCTK_ATTRIBUTE_UNUSED = 0;
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed, use)
         {
           const int alloc = omp_get_thread_num() / thread_alloc_every;
           assert(alloc < proc_num_allocs);
@@ -885,9 +887,8 @@ namespace {
               s7 = kmadd(vec_load(array[n]), s7, vec_load(array[n+dn]));
               n += 2*dn;
             }
-            volatile CCTK_REAL use_s CCTK_ATTRIBUTE_UNUSED =
-              vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
-                           kadd(kadd(s4, s5), kadd(s6, s7))), 0);
+            use += vec_elt(kadd(kadd(kadd(s0, s1), kadd(s2, s3)),
+                                kadd(kadd(s4, s5), kadd(s6, s7))), 0);
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
@@ -1008,7 +1009,8 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
+        volatile char use CCTK_ATTRIBUTE_UNUSED = 0;
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed, use)
         {
           const int alloc = omp_get_thread_num() / thread_alloc_every;
           assert(alloc < proc_num_allocs);
@@ -1038,7 +1040,7 @@ namespace {
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
-          volatile char use_array CCTK_ATTRIBUTE_UNUSED = array[0];
+          use += array[0];
         }
         elapsed = mpi_average(comm, elapsed / proc_num_threads);
         if (verbose) {
@@ -1150,7 +1152,8 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
+        volatile char use CCTK_ATTRIBUTE_UNUSED = 0;
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed, use)
         {
           const int alloc = omp_get_thread_num() / thread_alloc_every;
           assert(alloc < proc_num_allocs);
@@ -1160,8 +1163,7 @@ namespace {
           // Use memset for writing (see latex)
           for (ptrdiff_t count=0; count<max_count; ++count) {
             memset(&array[0], count % 256, cache_memsize);
-            volatile char use_array CCTK_ATTRIBUTE_UNUSED =
-              array[count % cache_memsize];
+            use += array[count % cache_memsize];
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
@@ -1288,7 +1290,8 @@ namespace {
         }
         MPI_Barrier(comm);
         elapsed = 0.0;
-#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed)
+        volatile CCTK_REAL use CCTK_ATTRIBUTE_UNUSED = 0;
+#pragma omp parallel num_threads(proc_num_threads) reduction(+: elapsed, use)
         {
           const int alloc = omp_get_thread_num() / thread_alloc_every;
           assert(alloc < proc_num_allocs);
@@ -1308,7 +1311,7 @@ namespace {
               vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
               vec_store_nta(array[n], s); n += CCTK_REAL_VEC_SIZE;
             }
-            volatile CCTK_REAL use_array CCTK_ATTRIBUTE_UNUSED = array[0];
+            use += array[0];
           }
           const double t1 = omp_get_wtime();
           elapsed += t1 - t0;
