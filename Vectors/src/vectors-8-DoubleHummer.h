@@ -19,16 +19,16 @@
 #define vec8_architecture "Double Hummer"
 
 // Vector type corresponding to CCTK_REAL
-#define CCTK_REAL8_VEC double _Complex
+#define CCTK_REAL8_VEC    double _Complex
+#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
+#define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
 
 // Number of vector elements in a CCTK_REAL_VEC
 #define CCTK_REAL8_VEC_SIZE 2
 
 // Integer and boolean types corresponding to this real type
-//#define CCTK_INTEGER8     CCTK_REAL8
+#define CCTK_INTEGER8     CCTK_REAL8
 #define CCTK_BOOLEAN8     CCTK_REAL8
-//#define CCTK_INTEGER8_VEC CCTK_REAL8_VEC
-#define CCTK_BOOLEAN8_VEC CCTK_REAL8_VEC
 
 
 
@@ -58,6 +58,8 @@ union k8const_t {
     }                                           \
     a;                                          \
   })
+#define vec8_elti(x,d) vec8_elt(x,d)
+#define vec8_eltb(x,d) vec8_elt(x,d)
 
 
 
