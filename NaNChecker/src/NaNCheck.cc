@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <sstream>
 
 #include "cctk.h"
 #include "cctk_WarnLevel.h"
@@ -922,7 +923,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
                info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
-#ifdef CCTK_REAL4
+#ifdef HAVE_CCTK_REAL4
   else if (vtype == CCTK_VARIABLE_REAL4 || vtype == CCTK_VARIABLE_COMPLEX8)
   {
     CHECK_DATA((const CCTK_REAL4 *)data, nelems, CarpetWeights, 
@@ -930,7 +931,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
                fullname, gdata, gtype);
   }
 #endif
-#ifdef CCTK_REAL8
+#ifdef HAVE_CCTK_REAL8
   else if (vtype == CCTK_VARIABLE_REAL8 || vtype == CCTK_VARIABLE_COMPLEX16)
   {
     CHECK_DATA((const CCTK_REAL8 *)data, nelems, CarpetWeights, 
@@ -938,7 +939,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
                fullname, gdata, gtype);
   }
 #endif
-#ifdef CCTK_REAL16
+#ifdef HAVE_CCTK_REAL16
   else if (vtype == CCTK_VARIABLE_REAL16 || vtype == CCTK_VARIABLE_COMPLEX32)
   {
     CHECK_DATA((const CCTK_REAL16 *)data, nelems, CarpetWeights, 
