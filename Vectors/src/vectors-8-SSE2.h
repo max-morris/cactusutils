@@ -761,7 +761,7 @@ CCTK_REAL8_VEC k8ifthen(CCTK_BOOLEAN8_VEC const x,
 #elif 0
   // We don't need to shift -- the condition (mask) will be either all
   // zeros or all ones
-  k8const_t const k8ione  = { i: { 1, 1, }};
+  k8const_t const k8ione  = { .i= { 1, 1, }};
   // there is no _mm_srai_epi64(x, 63); we therefore calculate srli(x)-1
   __m128i const x_int = *(__m128i const*)&x;
   __m128i const imask_int = _mm_sub_epi64(_mm_srli_epi64(x_int, 63), k8ione.vi);

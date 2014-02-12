@@ -253,19 +253,19 @@ void vec8_store_nta_partial_(bool const all, __m256i const mask,
 // Masks indicating which vector element should be stored:
 /*static*/ k8const_t const k8store_lo[5] =
   {
-    { i: {  0,  0,  0,  0, }},
-    { i: { ~0,  0,  0,  0, }},
-    { i: { ~0, ~0,  0,  0, }},
-    { i: { ~0, ~0, ~0,  0, }},
-    { i: { ~0, ~0, ~0, ~0, }},
+    { .i= {  0,  0,  0,  0, }},
+    { .i= { ~0,  0,  0,  0, }},
+    { .i= { ~0, ~0,  0,  0, }},
+    { .i= { ~0, ~0, ~0,  0, }},
+    { .i= { ~0, ~0, ~0, ~0, }},
   };
 /*static*/ k8const_t const k8store_hi[5] =
   {
-    { i: {  0,  0,  0,  0, }},
-    { i: {  0,  0,  0, ~0, }},
-    { i: {  0,  0, ~0, ~0, }},
-    { i: {  0, ~0, ~0, ~0, }},
-    { i: { ~0, ~0, ~0, ~0, }},
+    { .i= {  0,  0,  0,  0, }},
+    { .i= {  0,  0,  0, ~0, }},
+    { .i= {  0,  0, ~0, ~0, }},
+    { .i= {  0, ~0, ~0, ~0, }},
+    { .i= { ~0, ~0, ~0, ~0, }},
   };
 #if !defined(__INTEL_COMPILER) && defined(__GNUC__) && __GNUC__==4 && __GNUC_MINOR__<=4
 // gcc 4.4 uses a wrong prototype for _mm256_maskstore_pd
