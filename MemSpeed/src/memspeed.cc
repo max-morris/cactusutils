@@ -58,6 +58,7 @@ namespace {
 #else
 #  include <sys/time.h>
 namespace {
+  int omp_get_thread_num() { return 0; }
   int omp_get_max_threads() { return 1; }
   // Fall back to gettimeofday if OpenMP is not available
   double omp_get_wtime()
@@ -424,7 +425,8 @@ namespace {
       {
 #pragma omp barrier
         const double t0 = omp_get_wtime();
-        vector<CCTK_REAL> base(1000);
+        vector<CCTK_REAL> basev(1000);
+        CCTK_REAL* restrict const base = &basev[0];
         size_t s0, s1, s2, s3, s4, s5, s6, s7;
         s0 = s1 = s2 = s3 = s4 = s5 = s6 = s7 = 0; 
         // Explicitly unrolled loop, performing integer multiply and
@@ -1014,7 +1016,7 @@ namespace {
         {
           const int alloc = omp_get_thread_num() / thread_alloc_every;
           assert(alloc < proc_num_allocs);
-          char* const array = &arrays[alloc][0];
+          char* restrict const array = &arrays[alloc][0];
 #pragma omp barrier
           const double t0 = omp_get_wtime();
           ptrdiff_t n = 0;
@@ -1384,7 +1386,9 @@ namespace {
       // Allocate array
       const ptrdiff_t npa =
         (np + CCTK_REAL_VEC_SIZE - 1) / CCTK_REAL_VEC_SIZE * CCTK_REAL_VEC_SIZE;
-      vector<CCTK_REAL> src(npa*np*np), dst(npa*np*np);
+      vector<CCTK_REAL> srcv(npa*np*np), dstv(npa*np*np);
+      CCTK_REAL* restrict src = &srcv[0];
+      CCTK_REAL* restrict dst = &dstv[0];
       const ptrdiff_t di = 1;
       const ptrdiff_t dj = di * npa;
       const ptrdiff_t dk = dj * np;
