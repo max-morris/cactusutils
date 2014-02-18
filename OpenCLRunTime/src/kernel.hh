@@ -40,7 +40,9 @@ namespace OpenCLRunTime {
     
     grid_t grid;
     cl_mem mem_grid;
+#if 0
     cl_mem mem_params;
+#endif
     
     OpenCLKernel(cGH const *const cctkGH,
                  char const *const thorn,
@@ -51,6 +53,13 @@ namespace OpenCLRunTime {
                  int const timelevels[],
                  char const *const aliases[],
                  int const nvars);
+    
+    void setup_args(cGH const *const cctkGH,
+                    char const *const groups[],
+                    int const varindices[],
+                    int const timelevels[],
+                    char const *const aliases[],
+                    int const nvars);
     
     void call(cGH const *const cctkGH,
               int const imin[],

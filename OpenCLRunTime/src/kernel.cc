@@ -40,6 +40,11 @@ namespace OpenCLRunTime {
     assert(name_);
     assert(sources);
     
+    if (not CCTK_IsThornActive(CCTK_THORNSTRING)) {
+      CCTK_WARN(CCTK_WARN_ABORT,
+                "Error: Thorn " CCTK_THORNSTRING " has been called without being activated");
+    }
+    
     assert(device);
     assert(device->have_grid());
     
@@ -47,85 +52,7 @@ namespace OpenCLRunTime {
     
     kernels.push_back(this);
     
-    /*** Determine arguments for calling the kernel ***************************/
-    
-    if (nvars == -1) {
-      // Determine arguments by group name
-      
-      assert(groups);
-      assert(not varindices);
-      assert(not timelevels);
-      assert(not aliases);
-      
-      for (int group=0; groups[group]; ++group) {
-        int const gi = CCTK_GroupIndex(groups[group]);
-        assert(gi>=0);
-        int const nv = CCTK_NumVarsInGroupI(gi);
-        assert(nv>=0);
-        if (nv > 0) {
-          int const v0 = CCTK_FirstVarIndexI(gi);
-          assert(v0>=0);
-          int const num_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
-          assert(num_tl >= 0);
-          for (int vi=v0; vi<v0+nv; ++vi) {
-            string alias(CCTK_VarName(vi));
-            for (int tl=0; tl<num_tl; ++tl) {
-              OpenCLKernel::arg_t const arg = {vi, tl, alias};
-              args.push_back(arg);
-              alias += "_p";
-            }
-          }
-        }
-      }
-      
-    } else {
-      // Arguments are given explicitly
-      
-      assert(nvars >= 0);
-      assert(not groups);
-      assert(varindices);
-      assert(timelevels);
-      assert(aliases);
-      
-      for (int var=0; var<nvars; ++var) {
-        int const vi = varindices[var];
-        assert(vi>=0 and vi<CCTK_NumVars());
-        int const tl = timelevels[var];
-        assert(tl>=0);
-        OpenCLKernel::arg_t const arg = {vi, tl, aliases[var]};
-        args.push_back(arg);
-      }
-      
-    }
-    
-    for (vector<OpenCLKernel::arg_t>::const_iterator
-           argi = args.begin(), arge = args.end(); argi != arge; ++argi)
-    {
-      int const vi = argi->vi;
-      int const tl = argi->tl;
-      int const gi = CCTK_GroupIndexFromVarI(vi);
-      if (CCTK_GroupTypeI(gi) != CCTK_GF) {
-        char *const group_name = CCTK_GroupName(gi);
-        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
-                   "OpenCL kernel %s uses the grid variable group %s, which is not a grid function",
-                   name, group_name);
-        free(group_name);
-      }
-      if (CCTK_VarTypeI(vi) != CCTK_VARIABLE_REAL) {
-        char *const group_name = CCTK_GroupName(gi);
-        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
-                   "OpenCL kernel %s uses the grid variable group %s, which is not of variable type CCTK_REAL",
-                   name, group_name);
-        free(group_name);
-      }
-      if (tl >= CCTK_ActiveTimeLevelsGI(cctkGH, gi)) {
-        char *const group_name = CCTK_GroupName(gi);
-        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
-                   "OpenCL kernel %s uses timelevel %d of the grid variable group %s, which does not exist",
-                   name, tl, group_name);
-        free(group_name);
-      }
-    }
+    setup_args(cctkGH, groups, varindices, timelevels, aliases, nvars);
     
     /*** Determine parameters for calling the kernel **************************/
     
@@ -241,32 +168,39 @@ namespace OpenCLRunTime {
         << OpenCL_source_OpenCLRunTime_OpenCLMacros
         << "\n"
         << "// Cactus parameters:\n"
+#if 0
         << paramdecls.str()
+#endif
         << paramdefs.str()
         << "\n"
         << "// Kranc's FD operators:\n"
         << sources[0]
         << "\n"
         << "// Kernel Function:\n"
-        << "kernel\n"
+        << "__kernel\n"
         << "__attribute__((vec_type_hint(CCTK_REAL_VEC)))\n"
         << ("__attribute__((reqd_work_group_size"
             "(GROUP_SIZE_I, GROUP_SIZE_J, GROUP_SIZE_K)))\n")
         << "void " << name << "\n"
-        << " (cGH constant *restrict const cctkGH,\n"
-        << "   cctk_parameters_t constant *restrict const cctk_parameters";
+        << " (cGH __constant *restrict const cctkGH";
+#if 0
+        << " (cGH __constant *restrict const cctkGH,\n";
+        << "   cctk_parameters_t __constant *restrict const cctk_parameters";
+#endif
     // Cactus grid functions
+    // TODO: declare read-only grid functions as const
     for (int arg=0; arg<int(args.size()); ++arg) {
       buf << ",\n"
-          << "   CCTK_REAL global *restrict const " << args[arg].alias;
+          << "   CCTK_REAL __global *restrict const " << args[arg].alias;
     }
     buf << ")\n"
         << "{\n"
         << "  DECLARE_CCTK_ARGUMENTS;\n"
         << "  DECLARE_CCTK_PARAMETERS;\n"
         << "\n"
-        << "  // The Kernel:\n"
-        << sources[1]           // Kranc generated kernel code
+        << "// BEGIN USER-DEFINED KERNEL\n"
+        << sources[1]           // user's kernel code
+        << "// END USER-DEFINED KERNEL\n"
         << "}\n";
     string const sbuf = buf.str();
     
@@ -362,14 +296,16 @@ namespace OpenCLRunTime {
     // Output disassembled listing
     disassemble();
     
-    /*** Assign buffers to all variables used by this kernel ******************/
+    /*** Create buffer for cGH structure for this kernel **********************/
     
+    // TODO: Use the same cGH structure for all kernels
     checkErr((mem_grid =
               clCreateBuffer(device->context,
                              CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,
                              sizeof grid, &grid, &errcode),
               errcode));
     
+#if 0
     /*** Set up parameters for calling the kernel *****************************/
     
     checkErr((mem_params =
@@ -378,18 +314,139 @@ namespace OpenCLRunTime {
                              paramvalues.size(), &paramvalues.front(),
                              &errcode),
               errcode));
+#endif
+  }
+  
+  
+    
+  /*** Determine arguments for calling the kernel *****************************/
+  
+  void OpenCLKernel::setup_args(cGH const *const cctkGH,
+                                char const *const groups[],
+                                int const varindices[],
+                                int const timelevels[],
+                                char const *const aliases[],
+                                int const nvars)
+  {
+    args.clear();
+    
+    if (nvars == -1) {
+      // Determine arguments by group name
+      
+      assert(groups);
+      assert(not varindices);
+      assert(not timelevels);
+      assert(not aliases);
+      
+      for (int group=0; groups[group]; ++group) {
+        int const gi = CCTK_GroupIndex(groups[group]);
+        assert(gi>=0);
+        int const nv = CCTK_NumVarsInGroupI(gi);
+        assert(nv>=0);
+        if (nv > 0) {
+          int const v0 = CCTK_FirstVarIndexI(gi);
+          assert(v0>=0);
+          int const num_tl = CCTK_ActiveTimeLevelsGI(cctkGH, gi);
+          assert(num_tl >= 0);
+          for (int vi=v0; vi<v0+nv; ++vi) {
+            string alias(CCTK_VarName(vi));
+            for (int tl=0; tl<num_tl; ++tl) {
+              OpenCLKernel::arg_t const arg = {vi, tl, alias};
+              args.push_back(arg);
+              alias += "_p";
+            }
+          }
+        }
+      }
+      
+    } else {
+      // Arguments are given explicitly
+      
+      assert(nvars >= 0);
+      assert(not groups);
+      assert(varindices);
+      assert(timelevels);
+      assert(aliases);
+      
+      args.reserve(nvars);
+      for (int var=0; var<nvars; ++var) {
+        int const vi = varindices[var];
+        assert(vi>=0 and vi<CCTK_NumVars());
+        int const tl = timelevels[var];
+        assert(tl>=0);
+        OpenCLKernel::arg_t const arg = {vi, tl, aliases[var]};
+        args.push_back(arg);
+      }
+      assert(int(args.size()) == nvars);
+      
+    }
+    
+    for (vector<OpenCLKernel::arg_t>::const_iterator
+           argi = args.begin(), arge = args.end(); argi != arge; ++argi)
+    {
+      int const vi = argi->vi;
+      int const tl = argi->tl;
+      int const gi = CCTK_GroupIndexFromVarI(vi);
+      if (CCTK_GroupTypeI(gi) != CCTK_GF) {
+        char *const group_name = CCTK_GroupName(gi);
+        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "OpenCL kernel %s uses the grid variable group %s, which is not a grid function",
+                   name, group_name);
+        free(group_name);
+      }
+      if (CCTK_VarTypeI(vi) != CCTK_VARIABLE_REAL) {
+        char *const group_name = CCTK_GroupName(gi);
+        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "OpenCL kernel %s uses the grid variable group %s, which is not of variable type CCTK_REAL",
+                   name, group_name);
+        free(group_name);
+      }
+      if (tl >= CCTK_ActiveTimeLevelsGI(cctkGH, gi)) {
+        char *const group_name = CCTK_GroupName(gi);
+        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "OpenCL kernel %s uses timelevel %d of the grid variable group %s, which does not exist",
+                   name, tl, group_name);
+        free(group_name);
+      }
+    }
+  }
+  
+
+
+  void OpenCLKernel::call(cGH const *const cctkGH,
+                          int const imin[],
+                          int const imax[])
+  {
+    DECLARE_CCTK_PARAMETERS;
+    
+    assert(device);
+    assert(device->have_grid());
+    
+    // Set up grid description
+    grid = device->grid;
     
     /*** Set up arguments for calling the kernel ******************************/
     
-    checkErr(clSetKernelArg(kernel, 0,
+    size_t arg_count = 0;
+    
+    checkErr(clSetKernelArg(kernel, arg_count++,
                             sizeof mem_grid, &mem_grid));
     
-    checkErr(clSetKernelArg(kernel, 1,
+#if 0
+    checkErr(clSetKernelArg(kernel, arg_count++,
                             sizeof mem_params, &mem_params));
+#endif
     
-    for (int arg=0; arg<int(args.size()); ++arg) {
+    for (size_t arg=0; arg<args.size(); ++arg) {
       int const vi = args[arg].vi;
       int const tl = args[arg].tl;
+      if (tl >= int(device->mems.at(vi).size())) {
+        char *const fullname = CCTK_FullName(vi);
+        CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                   "Variable %s/%d does not exist on the device",
+                   fullname, tl);
+        free(fullname);
+      }
       
       cl_mem const *memptr;
       // We don't know which arguments are read and which are written,
@@ -432,23 +489,12 @@ namespace OpenCLRunTime {
         memptr = &device->mems.at(vi).at(0).mem;
       }
       
-      checkErr(clSetKernelArg(kernel, arg+2, sizeof *memptr, memptr));
+      checkErr(clSetKernelArg(kernel, arg_count++, sizeof *memptr, memptr));
     }
-  }
-  
-  
-  
-  void OpenCLKernel::call(cGH const *const cctkGH,
-                          int const imin[],
-                          int const imax[])
-  {
-    DECLARE_CCTK_PARAMETERS;
     
-    assert(device);
-    assert(device->have_grid());
+    assert(arg_count == args.size() + 1);
     
-    // Set up grid description
-    grid = device->grid;
+    /*** Prepare cGH structure ************************************************/
     
     for (int d=0; d<dim; ++d) {
       grid.imin[d] = imin[d];
@@ -471,6 +517,7 @@ namespace OpenCLRunTime {
                  (int)imax[2]);
     }
     
+#if 0
     for (int d=0; d<dim; ++d) {
       // alignment of lower bound
       int const align_lo = device->vector_size[d];
@@ -478,7 +525,7 @@ namespace OpenCLRunTime {
       int const align_sz = device->vector_size[d] * device->unroll_size[d];
       grid.lmin[d] = grid.imin[d] / align_lo * align_lo;
       grid.lmax[d] =
-        grid.lmin[d] + divup(grid.imax[d] - grid.lmin[d], align_sz) * align_sz;
+        grid.lmin[d] + round_up(grid.imax[d] - grid.lmin[d], align_sz);
     }
     for (int d=0; d<dim; ++d) {
       assert(grid.lmin[d] >= 0);
@@ -489,6 +536,7 @@ namespace OpenCLRunTime {
       assert((grid.lmax[d] - grid.lmin[d]) %
              (device->vector_size[d] * device->unroll_size[d]) == 0);
     }
+#endif
     
     grid.time       = cctkGH->cctk_time;
     grid.delta_time = cctkGH->cctk_delta_time;
@@ -528,10 +576,13 @@ namespace OpenCLRunTime {
     
     size_t global_work_size[dim];
     for (int d=0; d<dim; ++d) {
+      int const lmin =
+        round_down(grid.imin[d],
+                   device->vector_size[d] * device->unroll_size[d]);
       global_work_size[d] =
-        divup(grid.lmax[d] - grid.lmin[d],
-              device->vector_size[d] * device->unroll_size[d] *
-              device->group_size[d] * device->tile_size[d]) *
+        div_up(grid.imax[d] - lmin,
+               device->vector_size[d] * device->unroll_size[d] *
+               device->group_size[d] * device->tile_size[d]) *
         local_work_size[d];
     }
     if (veryverbose) {
@@ -541,12 +592,6 @@ namespace OpenCLRunTime {
                  (int)global_work_size[1],
                  (int)global_work_size[2]);
     }
-    
-    // stringstream num_threads_buf;
-    // num_threads_buf
-    //   << local_work_size[0] * local_work_size[1] * local_work_size[2];
-    // string const num_threads = num_threads_buf.str();
-    // setenv("POCL_MAX_PTHREAD_COUNT", num_threads.c_str(), 1);
     
     // Finish the queue before starting the timer
 #if 1
@@ -638,14 +683,15 @@ namespace OpenCLRunTime {
       *pkernel = new OpenCLKernel(cctkGH, thorn, name, sources,
                                   groups,
                                   varindices, timelevels, aliases, nvars);
+    } else {
+      (*pkernel)->setup_args
+        (cctkGH, groups, varindices, timelevels, aliases, nvars);
     }
-    OpenCLKernel *restrict const kernel = *pkernel;
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "Enqueuing OpenCL kernel %s", name);
     }
-    
-    kernel->call(cctkGH, imin, imax);
+    (*pkernel)->call(cctkGH, imin, imax);
   }
   
   

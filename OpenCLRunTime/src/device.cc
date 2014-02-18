@@ -1,5 +1,6 @@
 #include "device.hh"
 
+#include <cassert>
 #include <vectors.h>
 
 #include <cctk_Arguments.h>
@@ -73,6 +74,14 @@ namespace OpenCLRunTime {
 #ifdef CL_INVALID_PROPERTY
     case CL_INVALID_PROPERTY                         : return "CL_INVALID_PROPERTY";
 #endif
+#ifdef CL_PLATFORM_NOT_FOUND_KHR
+    case CL_PLATFORM_NOT_FOUND_KHR                   : return "CL_PLATFORM_NOT_FOUND_KHR";
+#endif
+#ifdef CL_DEVICE_PARTITION_FAILED_EXT
+    case CL_DEVICE_PARTITION_FAILED_EXT              : return "CL_DEVICE_PARTITION_FAILED_EXT";
+    case CL_INVALID_PARTITION_COUNT_EXT              : return "CL_INVALID_PARTITION_COUNT_EXT";
+    case CL_INVALID_PARTITION_NAME_EXT               : return "CL_INVALID_PARTITION_NAME_EXT";
+#endif
     }
     return "unknown error";
   }
@@ -110,7 +119,7 @@ namespace OpenCLRunTime {
     
     cl_int errcode;
     
-    /*** Choose a platform and a context (basically a device)******************/
+    /*** Choose a platform and a context (basically a device) *****************/
     
     cl_uint num_platforms;
     checkErr(clGetPlatformIDs(0, NULL, &num_platforms));
@@ -325,7 +334,7 @@ namespace OpenCLRunTime {
       grid.lbnd[d] = cctkGH->cctk_lbnd[d];
       grid.lsh[d] = cctkGH->cctk_lsh[d];
       int const granularity = vector_size[d];
-      int const good_ash = divup(cctk_ash[d], granularity) * granularity;
+      int const good_ash = round_up(cctk_ash[d], granularity);
       grid.ash[d] = memory_aligned ? good_ash : cctk_ash[d];
       same_padding &= grid.ash[d] == cctk_ash[d];
       assert(grid.gsh[d] >= 0);
@@ -351,7 +360,7 @@ namespace OpenCLRunTime {
                (int)grid.lbnd[1],
                (int)grid.lbnd[2]);
     CCTK_VInfo(CCTK_THORNSTRING,
-               "lsh: %4d %4d %4d",
+               "lsh:  %4d %4d %4d",
                (int)grid.lsh[0],
                (int)grid.lsh[1],
                (int)grid.lsh[2]);

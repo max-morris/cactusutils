@@ -1,6 +1,6 @@
 // -*-C-*-
 
-#pragma OPENCL EXTENSION cl_khr_fp64    : enable
+#pragma OPENCL EXTENSION cl_khr_fp64: enable
 
 
 
@@ -8,12 +8,23 @@
 
 
 
-#define CCTK_ATTRIBUTE_UNUSED    __attribute__((__unused__))
-// Use this define if you know __builtin_expect is supported. This
-// will be tested for in a future version of this thorn.
-// #define CCTK_BUILTIN_EXPECT(a,b) __builtin_expect(a,b)
-#define CCTK_BUILTIN_EXPECT(a,b) (a)
-#define CCTK_UNROLL              _Pragma("unroll")
+#ifdef HAVE_ATTRIBUTE_UNUSED
+#  define CCTK_ATTRIBUTE_UNUSED  __attribute__((__unused__))
+#else
+#  define CCTK_ATTRIBUTE_UNUSED
+#endif
+
+#ifdef HAVE_BUILTIN_EXPECT
+#  define CCTK_BUILTIN_EXPECT(a,b) __builtin_expect(a,b)
+#else
+#  define CCTK_BUILTIN_EXPECT(a,b) (a)
+#endif
+
+#ifdef HAVE_PRAGMA_UNROLL
+#  define CCTK_UNROLL _Pragma("unroll")
+#else
+#  define CCTK_UNROLL
+#endif
 
 
 
@@ -64,7 +75,7 @@
 #endif
 
 #if VECTOR_SIZE_J!=1 || VECTOR_SIZE_K!=1
-#  error
+#  error "Non-trivial vector sizes in the j and k directions are not yet supported"
 #endif
 
 
@@ -93,7 +104,7 @@
 // VECTORISE_ALIGNED_ARRAYS assumes that all grid points [0,j,k] are
 // aligned, and arrays are padded as necessary
 
-#define vec_loada(p) (* (CCTK_REAL_VEC const global *) & (p))
+#define vec_loada(p) (* (CCTK_REAL_VEC const __global *) & (p))
 #define vec_loadu(p) vloadV(0, & (p))
 
 #if VECTORISE_ALIGNED_ARRAYS
@@ -105,7 +116,7 @@
 #  define vec_loadu_maybe3(off1,off2,off3, p) vec_loadu(p)
 #endif
 
-#define vec_storea(p, x) (* (CCTK_REAL_VEC global *) & (p) = (x))
+#define vec_storea(p, x) (* (CCTK_REAL_VEC __global *) & (p) = (x))
 #define vec_storeu(p, x) vstoreV(x, 0, & (p))
 
 #if VECTORISE_ALIGNED_ARRAYS
@@ -178,96 +189,37 @@
 #define knmadd(x,y,z) (-mad(x,y,z))
 #define knmsub(x,y,z) (-mad(x,y,-(z)))
 
-#define kfabs(x)   fabs(x)
-#define kfmax(x,y) fmax(x,y)
-#define kfmin(x,y) fmin(x,y)
-#define kfnabs(x)  (-fabs(x))
-#define ksqrt(x)   sqrt(x)
+#define kcopysign(x,y) copysign(x,y)
+#define kfabs(x)       fabs(x)
+#define kfmax(x,y)     fmax(x,y)
+#define kfmin(x,y)     fmin(x,y)
+#define kfnabs(x)      (-fabs(x))
+#define ksqrt(x)       sqrt(x)
 
-#define kcos(x)   cos(x)
-#define kexp(x)   exp(x)
-#define klog(x)   log(x)
-#define kpow(x,a) pow(x,a)
-#define ksin(x)   sin(x)
-#define ktan(x)   tan(x)
+#define kacos(x)    acos(x)
+#define kacosh(x)   acosh(x)
+#define kasin(x)    asin(x)
+#define kasinh(x)   asinh(x)
+#define katan(x)    atan(x)
+#define katan2(x,y) atan2(x,y)
+#define katanh(x)   atanh(x)
+#define kcos(x)     cos(x)
+#define kcosh(x)    cosh(x)
+#define kexp(x)     exp(x)
+#define klog(x)     log(x)
+#define kpow(x,a)   pow(x,(CCTK_REAL)(a))
+#define ksin(x)     sin(x)
+#define ksinh(x)    sinh(x)
+#define ktan(x)     tan(x)
+#define ktanh(x)    tanh(x)
 
 // Choice   [sign(x)>0 ? y : z]
-#define kifpos(x,y,z) select(y,z,x)
-#define kifneg(x,y,z) select(z,y,x)
+// #define kifpos(x,y,z) select(y,z,x)
+// #define kifneg(x,y,z) select(z,y,x)
 
-
-
-#if 0 && defined(__APPLE__)
-
-// Apple's pow implementation is much better than their pown
-#  undef pown
-#  define pown pow
-
-inline CCTK_REAL myfabs(CCTK_REAL x);
-inline CCTK_REAL myfabs(CCTK_REAL x)
-{
-  return x>=0 ? x : -x;
-}
-
-inline CCTK_REAL mycos1(CCTK_REAL x);
-inline CCTK_REAL mycos1(CCTK_REAL x)
-{
-  // 0<=x<=pi/2
-  CCTK_REAL const c1 = +1.0;
-  CCTK_REAL const c2 = -1.0/2.0;
-  CCTK_REAL const c3 = +1.0/24.0;
-  CCTK_REAL const c4 = -1.0/720.0;
-  CCTK_REAL const c5 = +1.0/40320.0;
-  CCTK_REAL const c6 = -1.0/3628800.0;
-  CCTK_REAL const c7 = +1.0/479001600.0;
-  CCTK_REAL const c8 = -1.0/87178291200.0;
-  CCTK_REAL const x2 = pown(x,2);
-  return (c1 + x2 *
-          (c2 + x2 *
-           (c3 + x2 *
-            (c4 + x2 *
-             (c5 + x2 *
-              (c6 + x2 *
-               (c7 + x2 * c8)))))));
-}
-
-inline CCTK_REAL mycos(CCTK_REAL x);
-inline CCTK_REAL mycos(CCTK_REAL x)
-{
-  x = myfabs(x);
-  x = fmod(x,2*M_PI);
-  if (x>M_PI) x=M_PI-x;
-  bool const isneg = x>M_PI/2;
-  if (isneg) x=M_PI/2-x;
-  CCTK_REAL y = mycos1(x);
-  if (isneg) y=-y;
-  return y;
-}
-
-#  undef cos
-#  define cos mycos
-
-
-
-#  undef kcos
-// Apple's OpenCL compiler segfaults when calling cos on a vector, so
-// we serialise this operation explicitly
-inline CCTK_REAL_VEC kcos(CCTK_REAL_VEC const x);
-#  if CCTK_REAL_VEC_SIZE==1
-inline CCTK_REAL_VEC kcos(CCTK_REAL_VEC const x)
-{
-  return cos(x);
-}
-#  elif CCTK_REAL_VEC_SIZE==2
-inline CCTK_REAL_VEC kcos(CCTK_REAL_VEC const x)
-{
-  return (CCTK_REAL_VEC)(cos(x.s0), cos(x.s1));
-}
-#  else
-#    error
-#  endif
-
-#endif
+// Choice   [x ? y : z]
+#define kifthen(x,y,z)                                                  \
+  select((CCTK_REAL_VEC)(z), (CCTK_REAL_VEC)(y), (CCTK_LONG_VEC)(x))
 
 
 
@@ -292,11 +244,19 @@ typedef struct {
   int cctk_lsh[dim];
   int cctk_ash[dim];
   // Loop settings:
-  int lmin[dim];                 // loop region
-  int lmax[dim];
   int imin[dim];                 // active region
   int imax[dim];
+#if 0
+  int lmin[dim];                 // loop region
+  int lmax[dim];
+#endif
 } cGH;
+
+ptrdiff_t round_down(ptrdiff_t const a, ptrdiff_t const b);
+ptrdiff_t round_down(ptrdiff_t const a, ptrdiff_t const b)
+{
+  return a / b * b;
+}
 
 
 
@@ -313,9 +273,9 @@ typedef struct {
     {cctkGH->imax[0], cctkGH->imax[1], cctkGH->imax[2]};                \
   CCTK_REAL const cctk_time = cctkGH->cctk_time;                        \
   CCTK_REAL const cctk_delta_time = cctkGH->cctk_delta_time;            \
-  CCTK_REAL constant const *restrict const cctk_origin_space =          \
+  CCTK_REAL __constant const *restrict const cctk_origin_space =        \
     cctkGH->cctk_origin_space;                                          \
-  CCTK_REAL constant const *restrict const cctk_delta_space =           \
+  CCTK_REAL __constant const *restrict const cctk_delta_space =         \
     cctkGH->cctk_delta_space;                                           \
   bool const stress_energy_state1 = 0;
 
@@ -334,36 +294,64 @@ typedef struct {
 #define IfThen(c,x,y) ((c)?(x):(y))
 #define ToReal(x)     ((CCTK_REAL_VEC)(CCTK_REAL)(x))
 
+CCTK_REAL ScalarINV(CCTK_REAL const x);
+CCTK_REAL ScalarINV(CCTK_REAL const x)
+{
+  return ((CCTK_REAL)1.0)/x;
+}
+CCTK_REAL ScalarSQR(CCTK_REAL const x);
+CCTK_REAL ScalarSQR(CCTK_REAL const x)
+{
+  return x*x;
+}
+CCTK_REAL_VEC INV(CCTK_REAL_VEC const x);
 CCTK_REAL_VEC INV(CCTK_REAL_VEC const x)
 {
-  return ToReal(1)/x;
+  return ToReal(1.0)/x;
 }
-CCTK_REAL_VEC Sign(CCTK_REAL_VEC const x)
-{
-  return x==ToReal(0) ? ToReal(0) : copysign(ToReal(1), x);
-}
-// CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x)
+// CCTK_REAL_VEC Sign(CCTK_REAL_VEC const x);
+// CCTK_REAL_VEC Sign(CCTK_REAL_VEC const x)
 // {
-//   return pown(x,2);
+//   return x==ToReal(0) ? ToReal(0) : copysign(ToReal(1), x);
 // }
+CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x);
 CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x)
 {
   return x*x;
 }
+CCTK_REAL_VEC ksgn(CCTK_REAL_VEC x);
+CCTK_REAL_VEC ksgn(CCTK_REAL_VEC x)
+{
+  return kifthen(x==ToReal(0.0), ToReal(0.0), kcopysign(ToReal(1.0), x));
+}
+#if 0
+CCTK_LONG_VEC kisgn(CCTK_REAL_VEC x);
+CCTK_LONG_VEC kisgn(CCTK_REAL_VEC x)
+{
+  return select(select((CCTK_LONG_VEC)+1,
+                       (CCTK_LONG_VEC)-1, (CCTK_LONG_VEC)(x<ToReal(0.0))),
+                (CCTK_LONG_VEC)0, (CCTK_LONG_VEC)(x==ToReal(0.0)));
+}
+#else
+// Kranc uses a scalar variable to hold the return value of kisgn;
+// therefore we just provide a dummy implementation, assuming it is
+// unused
+#  define kisgn(x) 0
+#endif
 
 #define KRANC_GFOFFSET3D(u,i,j,k)                       \
   vec_loadu_maybe3(i,j,k,(u)[di*(i)+dj*(j)+dk*(k)])
 
-#define eTtt ((CCTK_REAL global const *)0)
-#define eTtx ((CCTK_REAL global const *)0)
-#define eTty ((CCTK_REAL global const *)0)
-#define eTtz ((CCTK_REAL global const *)0)
-#define eTxx ((CCTK_REAL global const *)0)
-#define eTxy ((CCTK_REAL global const *)0)
-#define eTxz ((CCTK_REAL global const *)0)
-#define eTyy ((CCTK_REAL global const *)0)
-#define eTyz ((CCTK_REAL global const *)0)
-#define eTzz ((CCTK_REAL global const *)0)
+#define eTtt ((CCTK_REAL __global const *)0)
+#define eTtx ((CCTK_REAL __global const *)0)
+#define eTty ((CCTK_REAL __global const *)0)
+#define eTtz ((CCTK_REAL __global const *)0)
+#define eTxx ((CCTK_REAL __global const *)0)
+#define eTxy ((CCTK_REAL __global const *)0)
+#define eTxz ((CCTK_REAL __global const *)0)
+#define eTyy ((CCTK_REAL __global const *)0)
+#define eTyz ((CCTK_REAL __global const *)0)
+#define eTzz ((CCTK_REAL __global const *)0)
 #define jacobian_derivative_group ""
 #define jacobian_group            ""
 #define jacobian_identity_map     0
@@ -379,6 +367,31 @@ CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x)
 ////////////////////////////////////////////////////////////////////////////////
 
 
+
+// Prevent compiler crashes when get_local_id() is not working
+size_t my_get_local_id(uint dir)
+{
+  switch (dir) {
+  case 0:
+#if GROUP_SIZE_I==1
+    return 0;
+#else
+    return get_local_id(0);
+#endif
+  case 1:
+#if GROUP_SIZE_J==1
+    return 0;
+#else
+    return get_local_id(1);
+#endif
+  case 2:
+#if GROUP_SIZE_K==1
+    return 0;
+#else
+    return get_local_id(2);
+#endif
+  }
+}
 
 #define LC_SET_GROUP_VARS(D)                                            \
   ptrdiff_t const ind##D CCTK_ATTRIBUTE_UNUSED =                        \
@@ -434,13 +447,15 @@ CCTK_REAL_VEC SQR(CCTK_REAL_VEC const x)
     ptrdiff_t const lc_Imax = (imax);                                   \
     ptrdiff_t const lc_Jmax = (jmax);                                   \
     ptrdiff_t const lc_Kmax = (kmax);                                   \
-    ptrdiff_t const lc_offI = cctkGH->lmin[0]; /* offset */             \
-    ptrdiff_t const lc_offJ = cctkGH->lmin[1];                          \
-    ptrdiff_t const lc_offK = cctkGH->lmin[2];                          \
-    /*TODO because group size is 1*/                                    \
-    ptrdiff_t const lc_grpI = 0 /*TODO get_local_id(0)*/; /* index in group */ \
-    ptrdiff_t const lc_grpJ = 0 /*TODO get_local_id(1)*/;               \
-    ptrdiff_t const lc_grpK = 0 /*TODO get_local_id(2)*/;               \
+    ptrdiff_t const lc_offI =                                           \
+      round_down(lc_Imin, VECTOR_SIZE_I * UNROLL_SIZE_I); /* offset */  \
+    ptrdiff_t const lc_offJ =                                           \
+      round_down(lc_Jmin, VECTOR_SIZE_J * UNROLL_SIZE_J);               \
+    ptrdiff_t const lc_offK =                                           \
+      round_down(lc_Kmin, VECTOR_SIZE_K * UNROLL_SIZE_K);               \
+    ptrdiff_t const lc_grpI = my_get_local_id(0); /* index in group */  \
+    ptrdiff_t const lc_grpJ = my_get_local_id(1);                       \
+    ptrdiff_t const lc_grpK = my_get_local_id(2);                       \
     ptrdiff_t const lc_grdI = get_group_id(0); /* index in grid */      \
     ptrdiff_t const lc_grdJ = get_group_id(1);                          \
     ptrdiff_t const lc_grdK = get_group_id(2);                          \

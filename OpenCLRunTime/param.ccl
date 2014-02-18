@@ -37,7 +37,7 @@ BOOLEAN disassemble_in_background "Disassemble in the background (using fork)" S
 STRING opencl_options "OpenCL compiler options" STEERABLE=always
 {
   "" :: ""
-} "-cl-mad-enable -cl-strict-aliasing -cl-fast-relaxed-math"
+} "-cl-strict-aliasing -cl-mad-enable -cl-no-signed-zeros -cl-fast-relaxed-math"
 
 KEYWORD opencl_device_type "Device type" STEERABLE=always
 {

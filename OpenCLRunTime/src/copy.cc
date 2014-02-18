@@ -119,7 +119,8 @@ namespace OpenCLRunTime {
                           CCTK_INT const tls[],
                           CCTK_INT const nvars)
   {
-    cGH const *restrict const cctkGH = static_cast<cGH const*>(cctkGH_);
+    cGH const *restrict const cctkGH CCTK_ATTRIBUTE_UNUSED =
+      static_cast<cGH const*>(cctkGH_);
     DECLARE_CCTK_PARAMETERS;
     
     if (veryverbose) {
@@ -175,7 +176,8 @@ namespace OpenCLRunTime {
                              CCTK_INT const tls[],
                              CCTK_INT const nvars)
   {
-    cGH const *restrict const cctkGH = static_cast<cGH const*>(cctkGH_);
+    cGH const *restrict const cctkGH CCTK_ATTRIBUTE_UNUSED =
+      static_cast<cGH const*>(cctkGH_);
     DECLARE_CCTK_PARAMETERS;
     
     if (veryverbose) {

@@ -10,6 +10,11 @@ SCHEDULE OpenCLRunTime_DeviceInfo AT wragh
   LANG: C
 } "Output OpenCL device information"
 
+SCHEDULE OpenCLRunTime_Autoconf AT wragh AFTER OpenCLRunTime_DeviceInfo
+{
+  LANG: C
+} "Determine whether certain features are supported"
+
 SCHEDULE OpenCLRunTime_SetupDeviceGH AT basegrid AFTER (SpatialSpacings TemporalSpacings) BEFORE SpatialCoordinates
 {
   LANG: C

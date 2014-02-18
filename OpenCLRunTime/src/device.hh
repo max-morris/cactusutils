@@ -42,10 +42,24 @@ namespace OpenCLRunTime {
   
   
   
-  // Divide while rounding up
-  inline size_t divup(size_t const a, size_t const b)
+  // Divide with rounding
+  inline size_t div_down(size_t const a, size_t const b)
+  {
+    return a / b;
+  }
+  inline size_t div_up(size_t const a, size_t const b)
   {
     return (a+b-1)/b;
+  }
+  
+  // Round
+  inline size_t round_down(size_t const a, size_t const b)
+  {
+    return div_down(a, b) * b;
+  }
+  inline size_t round_up(size_t const a, size_t const b)
+  {
+    return div_up(a, b) * b;
   }
   
   
@@ -67,11 +81,13 @@ namespace OpenCLRunTime {
     int lbnd[dim];
     int lsh[dim];
     int ash[dim];
-    // Loop settings:
-    int lmin[dim];              // loop region
-    int lmax[dim];
+    // Loop settings (these may change for every kernel invocation):
     int imin[dim];              // active region
     int imax[dim];
+#if 0
+    int lmin[dim];              // loop region
+    int lmax[dim];
+#endif
   };
   
   
@@ -97,6 +113,8 @@ namespace OpenCLRunTime {
     cl_context context;
     cl_device_id device_id;
     cl_command_queue queue;
+    
+    string autoconf_options;
     
     memory_model_t mem_model;
     bool memory_aligned;        // device memory is aligned

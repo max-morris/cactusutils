@@ -1,7 +1,20 @@
 # Main make.code.defn file for thorn OpenCLRunTime
 
 # Source files in this directory
-SRCS = copy.cc device.cc device-info.cc kernel.cc kernel-info.cc OpenCLMacros.cl
+SRCS = 						\
+        autoconf.cc				\
+        copy.cc					\
+        device.cc				\
+        device-info.cc				\
+        kernel.cc				\
+        kernel-info.cc				\
+        lincomb.cc				\
+        OpenCLMacros.cl				\
+        test_attribute_opencl_unroll_hint.cl	\
+        test_attribute_unused.cl		\
+        test_builtin_expect.cl			\
+        test_opencl.cl				\
+        test_pragma_unroll.cl
 
 # Subdirectories containing source files
 SUBDIRS =
