@@ -25,6 +25,10 @@ STRING copy_back_vars "Which variables to copy back" STEERABLE=always
   .* :: "list of group or variable names; empty to copy nothing, 'all' to copy all variables"
 } "all"
 
+BOOLEAN copy_back_all_written_variables_in_analysis "Copy all variables that are written to in analysis back to the host" STEERABLE=always
+{
+} "yes"
+
 RESTRICTED:
 
 # TODO: Instead of using parameters, extend the syntax of schedule

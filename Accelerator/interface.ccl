@@ -6,6 +6,24 @@ USES INCLUDE HEADER: carpet.hh
 
 
 
+# Adaptive mesh refinement and multi-block
+
+CCTK_INT FUNCTION GetRefinementLevel            \
+  (CCTK_POINTER_TO_CONST IN cctkGH)
+USES FUNCTION GetRefinementLevel
+CCTK_INT FUNCTION GetRefinementLevels           \
+  (CCTK_POINTER_TO_CONST IN cctkGH)
+USES FUNCTION GetRefinementLevels
+CCTK_INT FUNCTION GetLocalComponents            \
+  (CCTK_POINTER_TO_CONST IN cctkGH)
+USES FUNCTION GetLocalComponents
+
+CCTK_INT FUNCTION MultiPatch_GetSystemSpecification \
+  (CCTK_INT OUT maps)
+USES FUNCTION MultiPatch_GetSystemSpecification
+
+
+
 # Functions for hooks provided by Carpet and MoL
 
 CCTK_INT FUNCTION Accelerator_Cycle             \
@@ -55,6 +73,7 @@ PROVIDES FUNCTION Accelerator_PostCallFunction  \
 CCTK_INT FUNCTION Accelerator_NotifyDataModified        \
   (CCTK_POINTER_TO_CONST IN cctkGH,                     \
    CCTK_INT ARRAY        IN variables,                  \
+   CCTK_INT ARRAY        IN rls,                        \
    CCTK_INT ARRAY        IN tls,                        \
    CCTK_INT              IN nvariables,                 \
    CCTK_INT              IN on_device)
@@ -65,6 +84,7 @@ PROVIDES FUNCTION Accelerator_NotifyDataModified        \
 CCTK_INT FUNCTION Accelerator_RequireInvalidData        \
   (CCTK_POINTER_TO_CONST IN cctkGH,                     \
    CCTK_INT ARRAY        IN variables,                  \
+   CCTK_INT ARRAY        IN rls,                        \
    CCTK_INT ARRAY        IN tls,                        \
    CCTK_INT              IN nvariables,                 \
    CCTK_INT              IN on_device)
@@ -75,6 +95,7 @@ PROVIDES FUNCTION Accelerator_RequireInvalidData        \
 CCTK_INT FUNCTION Accelerator_RequireValidData  \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY        IN variables,          \
+   CCTK_INT ARRAY        IN rls,                \
    CCTK_INT ARRAY        IN tls,                \
    CCTK_INT              IN nvariables,         \
    CCTK_INT              IN on_device)
@@ -86,12 +107,18 @@ PROVIDES FUNCTION Accelerator_RequireValidData  \
 
 # Low-level driver functions, to be implemented by CUDA/OpenCL drivers
 
+# 
+CCTK_INT FUNCTION Device_GetDevice              \
+  (CCTK_POINTER_TO_CONST IN cctkGH)
+USES FUNCTION Device_GetDevice
+
 # Create (i.e. begin to track) a set of variables/timelevels
 # (This routine will be called exactly once before a variable/timelevel
 #  combination is mentioned to the device.)
 CCTK_INT FUNCTION Device_CreateVariables        \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN rls,                       \
    CCTK_INT ARRAY IN tls,                       \
    CCTK_INT IN nvars)
 REQUIRES FUNCTION Device_CreateVariables
@@ -101,6 +128,7 @@ REQUIRES FUNCTION Device_CreateVariables
 CCTK_INT FUNCTION Device_CopyCycle              \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN rls,                       \
    CCTK_INT ARRAY IN tls,                       \
    CCTK_INT IN nvars)
 REQUIRES FUNCTION Device_CopyCycle
@@ -110,6 +138,7 @@ REQUIRES FUNCTION Device_CopyCycle
 CCTK_INT FUNCTION Device_CopyFromPast           \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN rls,                       \
    CCTK_INT ARRAY IN tls,                       \
    CCTK_INT IN nvars)
 REQUIRES FUNCTION Device_CopyFromPast
@@ -120,6 +149,7 @@ REQUIRES FUNCTION Device_CopyFromPast
 CCTK_INT FUNCTION Device_CopyToDevice           \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN rls,                       \
    CCTK_INT ARRAY IN tls,                       \
    CCTK_INT IN nvars,                           \
    CCTK_INT OUT moved)
@@ -131,6 +161,7 @@ REQUIRES FUNCTION Device_CopyToDevice
 CCTK_INT FUNCTION Device_CopyToHost             \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN rls,                       \
    CCTK_INT ARRAY IN tls,                       \
    CCTK_INT IN nvars,                           \
    CCTK_INT OUT moved)
@@ -143,6 +174,7 @@ REQUIRES FUNCTION Device_CopyToHost
 CCTK_INT FUNCTION Device_CopyPreSync            \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN rls,                       \
    CCTK_INT ARRAY IN tls,                       \
    CCTK_INT IN nvars)
 REQUIRES FUNCTION Device_CopyPreSync
@@ -152,6 +184,7 @@ REQUIRES FUNCTION Device_CopyPreSync
 CCTK_INT FUNCTION Device_CopyPostSync           \
   (CCTK_POINTER_TO_CONST IN cctkGH,             \
    CCTK_INT ARRAY IN vars,                      \
+   CCTK_INT ARRAY IN rls,                       \
    CCTK_INT ARRAY IN tls,                       \
    CCTK_INT IN nvars)
 REQUIRES FUNCTION Device_CopyPostSync
