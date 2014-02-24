@@ -3,13 +3,6 @@
 
 // Use the type __m128 directly, without introducing a wrapper class
 
-#ifdef __PGI
-// PGI doesn't want to inline functions
-#  include "macros/vectors-4-SSE.h"
-#else
-
-
-
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -775,8 +768,6 @@ CCTK_REAL4_VEC k4sgn(CCTK_REAL4_VEC const x)
   CCTK_REAL4_VEC    const signedone = _mm_or_ps(sign, vec4_set1(1.0));
   return k4ifthen(iszero, vec4_set1(0.0), signedone);
 }
-
-#endif
 
 
 

@@ -3,13 +3,6 @@
 
 // Use the type __m128d directly, without introducing a wrapper class
 
-#ifdef __PGI
-// PGI doesn't want to inline functions
-#  include "macros/vectors-8-SSE2.h"
-#else
-
-
-
 #include <cassert>
 #include <cmath>
 
@@ -822,5 +815,3 @@ CCTK_REAL8_VEC k8sgn(CCTK_REAL8_VEC const x)
 
 #undef I2R
 #undef R2I
-
-#endif
