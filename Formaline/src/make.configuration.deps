@@ -27,7 +27,7 @@ TR_C = $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C
 
 TARBALL_DIR = $(SCRATCH_BUILD)/Formaline
 FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/Formaline/bin
-CACTUS_CONFIG_DIR ?= $(CCTK_HOME)/configs
+CACTUS_CONFIGS_DIR ?= $(CCTK_HOME)/configs
 
 # The Formaline utilities (the perl scripts needed to create tarballs
 # and execute git commands) are installed when Formaline's thorn
@@ -137,8 +137,8 @@ $(TARBALL_DIR)/config-Cactus.tar.gz: $(TARBALL_DIR)/config-Cactus.files
 $(TARBALL_DIR)/config-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/config-Cactus.ccldeps $(CONFIG)/make.thornlist
 	mkdir -p $(TARBALL_DIR)/configs/$(notdir $(TOP))
 	{ \
-		cd $(CACTUS_CONFIG_DIR)/$(notdir $(TOP)) && \
-		cp -r OptionList properties.ini RunScript ScriptFile SubmitScript Thornlist config-data config-info $(TARBALL_DIR)/configs/$(notdir $(TOP)); \
+		cd $(CACTUS_CONFIGS_DIR)/$(notdir $(TOP)) && \
+		cp -r OptionList properties.ini RunScript ScriptFile SubmitScript ThornList config-data config-info $(TARBALL_DIR)/configs/$(notdir $(TOP)); \
 	} || true
 	cd $(TARBALL_DIR) && \
 	find configs/$(notdir $(TOP))/ \
