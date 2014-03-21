@@ -703,12 +703,8 @@ CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights,
          to isnan depending on the optimisation level, while C
          compilers do not appear to do this. */
       bool found_inf = false, found_nan = false;
-#ifdef HAVE_ISINF
       found_inf = CCTK_isinf(_data[_i]);
-#endif
-#ifdef HAVE_ISNAN
       found_nan = CCTK_isnan(_data[_i]);
-#endif
       bool found_problem =
         (info->check_for_nan && found_nan) ||
         (info->check_for_inf && found_inf);
