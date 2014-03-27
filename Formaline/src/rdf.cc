@@ -121,24 +121,24 @@ namespace Formaline
     const string bbhID(clean(static_cast<const char *> (UniqueSimulationID(0))));
     const string runID(clean(static_cast<const char *> (UniqueRunID(0))));
 
-    msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\"" << endl
-           << "\tcctk:simulationID=\""  << jobID      << "\"" << endl
-           << "\tcctk:host=\""          << host       << "\"" << endl
-           << "\tcctk:user=\""          << user       << "\"" << endl
-           << "\tcctk:executable=\""    << executable << "\"" << endl
-           << "\tcctk:version=\""       << version    << "\"" << endl
-           << "\tcctk:title=\""         << title      << "\"" << endl
-           << "\tcctk:configID=\""      << configID   << "\"" << endl
-           << "\tcctk:buildID=\""       << buildID    << "\"" << endl
-           << "\tcctk:bbhID=\""         << bbhID      << "\"" << endl
-           << "\tcctk:runID=\""         << runID      << "\"" << endl;
+    msgbuf << "<cctk:Simulation rdf:about=\"#" << jobID << "\"\n"
+           << "\tcctk:simulationID=\""  << jobID      << "\"\n"
+           << "\tcctk:host=\""          << host       << "\"\n"
+           << "\tcctk:user=\""          << user       << "\"\n"
+           << "\tcctk:executable=\""    << executable << "\"\n"
+           << "\tcctk:version=\""       << version    << "\"\n"
+           << "\tcctk:title=\""         << title      << "\"\n"
+           << "\tcctk:configID=\""      << configID   << "\"\n"
+           << "\tcctk:buildID=\""       << buildID    << "\"\n"
+           << "\tcctk:bbhID=\""         << bbhID      << "\"\n"
+           << "\tcctk:runID=\""         << runID      << "\"\n";
     const char* const pbsJobID = getenv ("PBS_JOBID");
     if (pbsJobID) {
-      msgbuf << "\tcctk:pbsJobID=\"" << clean (pbsJobID) << "\"" << endl;
+      msgbuf << "\tcctk:pbsJobID=\"" << clean (pbsJobID) << "\"\n";
     }
     const char* const pbsJobname = getenv ("PBS_JOBNAME");
     if (pbsJobname) {
-      msgbuf << "\tcctk:pbsJobname=\"" << clean (pbsJobname) << "\"" << endl;
+      msgbuf << "\tcctk:pbsJobname=\"" << clean (pbsJobname) << "\"\n";
     }
 #if 0
     const char* pbsHost = getenv ("PBS_O_HOST");
@@ -160,45 +160,45 @@ namespace Formaline
       } else if (strcmp(pbsHost, "damiana.damiana.admin") == 0) {
         pbsHost = "damiana.aei.mpg.de";
       }
-      msgbuf << "\tcctk:pbsHost=\"" << clean (pbsHost) << "\"" << endl;
+      msgbuf << "\tcctk:pbsHost=\"" << clean (pbsHost) << "\"\n";
     }
 #endif
-    msgbuf << "\tcctk:cwd=\"" << cwd         << "\">" << endl
+    msgbuf << "\tcctk:cwd=\"" << cwd         << "\">\n"
            << "\t<cctk:nProcs rdf:datatype=\"&xsd;integer\">"
-           << nprocs << "</cctk:nProcs>" << endl
+           << nprocs << "</cctk:nProcs>\n"
            << "\t<cctk:compiledAt rdf:datatype=\"&xsd;dateTime\">"
-           << compiled_at << "</cctk:compiledAt>" << endl
+           << compiled_at << "</cctk:compiledAt>\n"
            << "\t<cctk:startedAt rdf:datatype=\"&xsd;dateTime\">"
-           << started_at << "</cctk:startedAt>" << endl
+           << started_at << "</cctk:startedAt>\n"
            << "\t<cctk:lastUpdated rdf:datatype=\"&xsd;dateTime\">"
-           << started_at << "</cctk:lastUpdated>" << endl;
+           << started_at << "</cctk:lastUpdated>\n";
 
     //
     // metadata as references to other nodes
     //
-    msgbuf << "\t<cctk:thornList rdf:resource=\"#ThornList\"/>" << endl
-           << "\t<cctk:parameterFile rdf:resource=\"#ParameterFile\"/>" << endl
-           << "</cctk:Simulation>" << endl << endl;
+    msgbuf << "\t<cctk:thornList rdf:resource=\"#ThornList\"/>\n"
+           << "\t<cctk:parameterFile rdf:resource=\"#ParameterFile\"/>\n"
+           << "</cctk:Simulation>\n\n";
 
 #ifdef ALSO_STORE_THORNLIST_AND_PARAMETERS
     // store thorn list
-    msgbuf << "<cctk:ThornList rdf:about=\"#ThornList\">" << endl;
+    msgbuf << "<cctk:ThornList rdf:about=\"#ThornList\">\n";
     const int numthorns = CCTK_NumCompiledThorns ();
     for (int thorn = 0; thorn < numthorns; ++ thorn) {
       const char* const thornname = CCTK_CompiledThorn (thorn);
 
       msgbuf << "\t<cctk:thorn rdf:resource=\"#Thorns/"
-             << thornname << "\"/>" << endl;
+             << thornname << "\"/>\n";
     }
-    msgbuf << "</cctk:ThornList>" << endl << endl;
+    msgbuf << "</cctk:ThornList>\n\n";
 #endif
 
     // store parameter file name and contents
     char parfilebuf[512] = "";
     CCTK_ParameterFilename (sizeof (parfilebuf), parfilebuf);
     const string parfile = clean (parfilebuf);
-    msgbuf << "<cctk:ParameterFile rdf:about=\"#ParameterFile\"" << endl
-           << "\tcctk:name=\"" << parfile     << "\">" << endl
+    msgbuf << "<cctk:ParameterFile rdf:about=\"#ParameterFile\"\n"
+           << "\tcctk:name=\"" << parfile     << "\">\n"
            << "\t<rdf:value>";
     ifstream file (parfile.c_str());
     char c;
@@ -207,20 +207,20 @@ namespace Formaline
     file.close();
     msgbuf << clean (filebuf.str());
     filebuf.clear();
-    msgbuf << "</rdf:value>" << endl
-           << "</cctk:ParameterFile>" << endl << endl;
+    msgbuf << "</rdf:value>\n"
+           << "</cctk:ParameterFile>\n\n";
 
 #ifdef ALSO_STORE_THORNLIST_AND_PARAMETERS
     // store all parameters which have been set in the parfile
     msgbuf
-<< "<!-- ============================================================ -->" << endl
-<< "<!-- thorn graphs with their parameters                           -->" << endl
-<< "<!-- ============================================================ -->" << endl;
+<< "<!-- ============================================================ -->\n"
+<< "<!-- thorn graphs with their parameters                           -->\n"
+<< "<!-- ============================================================ -->\n";
     ostringstream parambuf;
     parambuf
-<< "<!-- ============================================================ -->" << endl
-<< "<!-- list of parameters and their values                          -->" << endl
-<< "<!-- ============================================================ -->" << endl;
+<< "<!-- ============================================================ -->\n"
+<< "<!-- list of parameters and their values                          -->\n"
+<< "<!-- ============================================================ -->\n";
 
     const bool list_all_parameters = CCTK_Equals (out_save_parameters, "all");
 
@@ -228,13 +228,13 @@ namespace Formaline
       const char* const thornname = CCTK_CompiledThorn (thorn);
 
       msgbuf << "<cctk:Thorn rdf:about=\"#Thorns/"
-             << thornname << "\"" << endl;
-      msgbuf << "\tcctk:name=\"" << thornname << "\">" << endl;
+             << thornname << "\"\n";
+      msgbuf << "\tcctk:name=\"" << thornname << "\">\n";
 
       // skip parameters that belong to inactive thorns
       const bool is_active = CCTK_IsThornActive (thornname);
       msgbuf << "\t<cctk:active rdf:datatype=\"&xsd;boolean\">"
-             << (is_active ? "true" : "false") << "</cctk:active>" << endl;
+             << (is_active ? "true" : "false") << "</cctk:active>\n";
 
       // loop over all parameters of this thorn (if it is active)
       if (is_active) {
@@ -251,7 +251,7 @@ namespace Formaline
           // brackets in array parameter names have to be escaped
           msgbuf << "\t<cctk:parameter rdf:resource=\"#Parameters/"
                  << pdata->thorn << "/" << cleanURI (pdata->name) << "\"/>"
-                 << endl;
+                 << "\n";
 
           // get its value
           const void* const pvalue
@@ -316,11 +316,11 @@ namespace Formaline
             // brackets in array parameter names have to be escaped
             parambuf << "<cctk:" << paramtype << " rdf:about=\"#Parameters/"
                      << pdata->thorn << "/" << cleanURI (pdata->name) << "\""
-                     << endl
-                     << "\tcctk:name=\"" << fullname <<"\">" << endl
+                     << "\n"
+                     << "\tcctk:name=\"" << fullname <<"\">\n"
                      << "\t<cctk:value rdf:datatype=\"&xsd;" << paramdatatype
-                     << "\">" << paramvaluebuf.str() << "</cctk:value>" << endl
-                     << "</cctk:" << paramtype << ">" << endl;
+                     << "\">" << paramvaluebuf.str() << "</cctk:value>\n"
+                     << "</cctk:" << paramtype << ">\n";
           } // if (pdata->n_set or list_all_parameters)
 
           free (fullname);
@@ -328,11 +328,11 @@ namespace Formaline
         } // loop over all parameters of this thorn
       } // if (is_active)
 
-      msgbuf << "</cctk:Thorn>" << endl;
+      msgbuf << "</cctk:Thorn>\n";
 
     } // loop over all thorns
 
-    msgbuf << endl << parambuf.str();
+    msgbuf << "\n" << parambuf.str();
 #endif
   }
 
@@ -459,9 +459,9 @@ namespace Formaline
 
     if (parent)
     {
-      parent->msgbuf << "<cctk:" << groupname << ">" << endl
+      parent->msgbuf << "<cctk:" << groupname << ">\n"
                      << msgbuf.str()
-                     << "</cctk:" << groupname << ">" << endl;
+                     << "</cctk:" << groupname << ">\n";
       return;
     }
 
@@ -563,22 +563,22 @@ namespace Formaline
     for (list<string>::const_iterator lsi = keys.begin();
          lsi != keys.end(); ++ lsi)
     {
-      msgbuf << indent_string << "<form:" << * lsi << ">" << endl;
+      msgbuf << indent_string << "<form:" << * lsi << ">\n";
       indent_string.append (NUM_INDENT_SPACES, ' ');
     }
 
     msgbuf << indent_string
            << "<form:" << node << " rdf:datatype=\"&xsd;boolean\">"
            << clean (valuebuf.str())
-           << "</form:" << node << ">" << endl;
+           << "</form:" << node << ">\n";
 
     for (list<string>::const_reverse_iterator lsi = keys.rbegin();
          lsi != keys.rend(); ++ lsi)
     {
       indent_string.erase(0, NUM_INDENT_SPACES);
-      msgbuf << indent_string << "</form:" << * lsi << ">" << endl;
+      msgbuf << indent_string << "</form:" << * lsi << ">\n";
     }
-    msgbuf << endl;
+    msgbuf << "\n";
 #endif
   }
 
@@ -600,22 +600,22 @@ namespace Formaline
     for (list<string>::const_iterator lsi = keys.begin();
          lsi != keys.end(); ++ lsi)
     {
-      msgbuf << indent_string << "<form:" << * lsi << ">" << endl;
+      msgbuf << indent_string << "<form:" << * lsi << ">\n";
       indent_string.append (NUM_INDENT_SPACES, ' ');
     }
 
     msgbuf << indent_string
            << "<form:" << node << " rdf:datatype=\"&xsd;integer\">"
            << clean (valuebuf.str())
-           << "</form:" << node << ">" << endl;
+           << "</form:" << node << ">\n";
 
     for (list<string>::const_reverse_iterator lsi = keys.rbegin();
          lsi != keys.rend(); ++ lsi)
     {
       indent_string.erase(0, NUM_INDENT_SPACES);
-      msgbuf << indent_string << "</form:" << * lsi << ">" << endl;
+      msgbuf << indent_string << "</form:" << * lsi << ">\n";
     }
-    msgbuf << endl;
+    msgbuf << "\n";
 #endif
   }
 
@@ -638,22 +638,22 @@ namespace Formaline
     for (list<string>::const_iterator lsi = keys.begin();
          lsi != keys.end(); ++ lsi)
     {
-      msgbuf << indent_string << "<form:" << * lsi << ">" << endl;
+      msgbuf << indent_string << "<form:" << * lsi << ">\n";
       indent_string.append (NUM_INDENT_SPACES, ' ');
     }
 
     msgbuf << indent_string
            << "<form:" << node << " rdf:datatype=\"&xsd;double\">"
            << clean (valuebuf.str())
-           << "</form:" << node << ">" << endl;
+           << "</form:" << node << ">\n";
 
     for (list<string>::const_reverse_iterator lsi = keys.rbegin();
          lsi != keys.rend(); ++ lsi)
     {
       indent_string.erase(0, NUM_INDENT_SPACES);
-      msgbuf << indent_string << "</form:" << * lsi << ">" << endl;
+      msgbuf << indent_string << "</form:" << * lsi << ">\n";
     }
-    msgbuf << endl;
+    msgbuf << "\n";
 #endif
   }
 
@@ -678,7 +678,7 @@ namespace Formaline
     for (list<string>::const_iterator lsi = keys.begin();
          lsi != keys.end(); ++ lsi)
     {
-      msgbuf << indent_string << "<form:" << * lsi << ">" << endl;
+      msgbuf << indent_string << "<form:" << * lsi << ">\n";
       indent_string.append (NUM_INDENT_SPACES, ' ');
     }
 
@@ -686,15 +686,15 @@ namespace Formaline
            // FIXME: is <string> the default datatype for RDF objects ??
            << "<form:" << node << ">" // " rdf:datatype=\"&xsd;string\">"
            << clean (valuebuf.str())
-           << "</form:" << node << ">" << endl;
+           << "</form:" << node << ">\n";
 
     for (list<string>::const_reverse_iterator lsi = keys.rbegin();
          lsi != keys.rend(); ++ lsi)
     {
       indent_string.erase(0, NUM_INDENT_SPACES);
-      msgbuf << indent_string << "</form:" << * lsi << ">" << endl;
+      msgbuf << indent_string << "</form:" << * lsi << ">\n";
     }
-    msgbuf << endl;
+    msgbuf << "\n";
 #endif
   }
 

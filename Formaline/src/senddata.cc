@@ -74,18 +74,18 @@ namespace Formaline
     // Create a script that sends the data
     ostringstream scriptbuf;
     scriptbuf
-<< "#! /usr/bin/perl -w" << endl
-<< "" << endl
-<< "use strict;" << endl
-<< "use Socket;" << endl
-<< "use POSIX;" << endl
-<< "" << endl
-<< "my $verbose = " << verbose << ";" << endl
-<< "my $input = '" << datafilename << "';" << endl
-<< "my $host = '" << hostname << "';" << endl
-<< "my $port = " << port << ";" << endl
-<< "" << endl
-<< "# Set a timeout for the entire interaction with this server" << endl
+<< "#! /usr/bin/perl -w\n"
+<< "\n"
+<< "use strict;\n"
+<< "use Socket;\n"
+<< "use POSIX;\n"
+<< "\n"
+<< "my $verbose = " << verbose << ";\n"
+<< "my $input = '" << datafilename << "';\n"
+<< "my $host = '" << hostname << "';\n"
+<< "my $port = " << port << ";\n"
+<< "\n"
+<< "# Set a timeout for the entire interaction with this server\n"
 //
 // Use POSIX::sigaction to bypass the Perl interpreter's signal
 // handling which uses deferred signals, effectively ignoring
@@ -97,34 +97,34 @@ namespace Formaline
 // The difference is that the POSIX function does not clean up, but
 // that should be fine.
 //
-<< "POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { POSIX::_exit 1; }))" << endl
-<< "    or die \"Error setting SIGALRM handler: $!\";" << endl
-<< "alarm " << timeout << ";" << endl
-<< "" << endl
-<< "if ($verbose) { print STDERR \"Getting IP address\\n\"; }" << endl
-<< "my $iaddr = inet_aton ($host);" << endl
-<< "$iaddr or die \"Couldn't get IP address for '$host'\";" << endl
-<< "if ($verbose) { print STDERR \"Creating sockaddr_in\\n\"; }" << endl
-<< "my $sin = sockaddr_in ($port, $iaddr);" << endl
-<< "if ($verbose) { print STDERR \"Opening socket\\n\"; }" << endl
-<< "socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
-<< "defined $SH or die \"Couldn't open TCP socket\";" << endl
-<< "" << endl
-<< "# Connect and send off the data" << endl
-<< "if ($verbose) { print STDERR \"Connecting\\n\"; }" << endl
-<< "connect ($SH, $sin) or die \"Couldn't connect to '$host:$port'\";" << endl
-<< "" << endl
-<< "if ($verbose) { print STDERR \"Opening local data file\\n\"; }" << endl
-<< "open (my $FH, \"< $input\");" << endl
-<< "if ($verbose) { print STDERR \"Sending data\\n\"; }" << endl
-<< "send ($SH, $_, 0) while (<$FH>);" << endl
-<< "if ($verbose) { print STDERR \"Closing local data file\\n\"; }" << endl
-<< "close $FH;" << endl
-<< "if ($verbose) { print STDERR \"Receiving acknowledgement\\n\"; }" << endl
-<< "recv ($SH, $_, 1, 0);" << endl
-<< "if ($verbose) { print STDERR \"Shutting down connection\\n\"; }" << endl
-<< "close $SH;" << endl
-<< "if ($verbose) { print STDERR \"Done.\\n\"; }" << endl;
+<< "POSIX::sigaction (SIGALRM, POSIX::SigAction->new (sub { POSIX::_exit 1; }))\n"
+<< "    or die \"Error setting SIGALRM handler: $!\";\n"
+<< "alarm " << timeout << ";\n"
+<< "\n"
+<< "if ($verbose) { print STDERR \"Getting IP address\\n\"; }\n"
+<< "my $iaddr = inet_aton ($host);\n"
+<< "$iaddr or die \"Couldn't get IP address for '$host'\";\n"
+<< "if ($verbose) { print STDERR \"Creating sockaddr_in\\n\"; }\n"
+<< "my $sin = sockaddr_in ($port, $iaddr);\n"
+<< "if ($verbose) { print STDERR \"Opening socket\\n\"; }\n"
+<< "socket (my $SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));\n"
+<< "defined $SH or die \"Couldn't open TCP socket\";\n"
+<< "\n"
+<< "# Connect and send off the data\n"
+<< "if ($verbose) { print STDERR \"Connecting\\n\"; }\n"
+<< "connect ($SH, $sin) or die \"Couldn't connect to '$host:$port'\";\n"
+<< "\n"
+<< "if ($verbose) { print STDERR \"Opening local data file\\n\"; }\n"
+<< "open (my $FH, \"< $input\");\n"
+<< "if ($verbose) { print STDERR \"Sending data\\n\"; }\n"
+<< "send ($SH, $_, 0) while (<$FH>);\n"
+<< "if ($verbose) { print STDERR \"Closing local data file\\n\"; }\n"
+<< "close $FH;\n"
+<< "if ($verbose) { print STDERR \"Receiving acknowledgement\\n\"; }\n"
+<< "recv ($SH, $_, 1, 0);\n"
+<< "if ($verbose) { print STDERR \"Shutting down connection\\n\"; }\n"
+<< "close $SH;\n"
+<< "if ($verbose) { print STDERR \"Done.\\n\"; }\n";
     string const scriptstr = scriptbuf.str();
     
     // Write the script to a file

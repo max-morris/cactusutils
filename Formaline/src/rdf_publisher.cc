@@ -16,8 +16,6 @@
 #include "rdf.hh"
 
 
-using std::endl;
-
 namespace Formaline
 {
 

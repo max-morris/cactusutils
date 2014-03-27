@@ -80,7 +80,7 @@ namespace Formaline
     valuebuf << (value ? "yes" : "no");
     
     ostringstream buf;
-    buf << clean (keybuf.str()) << "=" << clean (valuebuf.str()) << endl;
+    buf << clean (keybuf.str()) << "=" << clean (valuebuf.str()) << "\n";
     
     write (buf.str());
   }
@@ -99,7 +99,7 @@ namespace Formaline
     valuebuf << value;
     
     ostringstream buf;
-    buf << clean (keybuf.str()) << "=" << clean (valuebuf.str()) << endl;
+    buf << clean (keybuf.str()) << "=" << clean (valuebuf.str()) << "\n";
     
     write (buf.str());
   }
@@ -120,7 +120,7 @@ namespace Formaline
     valuebuf << setprecision(prec) << value;
     
     ostringstream buf;
-    buf << clean (keybuf.str()) << "=" << clean (valuebuf.str()) << endl;
+    buf << clean (keybuf.str()) << "=" << clean (valuebuf.str()) << "\n";
     
     write (buf.str());
   }
@@ -140,7 +140,7 @@ namespace Formaline
     
     ostringstream buf;
     buf << clean (keybuf.str()) << "="
-        << "\"" << clean (valuebuf.str()) << "\"" << endl;
+        << "\"" << clean (valuebuf.str()) << "\"\n";
     
     write (buf.str());
   }

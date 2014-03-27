@@ -108,7 +108,7 @@ namespace Formaline
         string const filenamestring = filenamebuf.str();
         ofstream fil;
         fil.open (filenamestring.c_str(), ios::trunc);
-        fil << get_config_id (cctkGH) << endl;
+        fil << get_config_id (cctkGH) << "\n";
         fil.close ();
       }
       {
@@ -117,7 +117,7 @@ namespace Formaline
         string const filenamestring = filenamebuf.str();
         ofstream fil;
         fil.open (filenamestring.c_str(), ios::trunc);
-        fil << get_build_id (cctkGH) << endl;
+        fil << get_build_id (cctkGH) << "\n";
         fil.close ();
       }
       {
@@ -126,7 +126,7 @@ namespace Formaline
         string const filenamestring = filenamebuf.str();
         ofstream fil;
         fil.open (filenamestring.c_str(), ios::trunc);
-        fil << get_simulation_id (cctkGH) << endl;
+        fil << get_simulation_id (cctkGH) << "\n";
         fil.close ();
       }
       {
@@ -135,7 +135,7 @@ namespace Formaline
         string const filenamestring = filenamebuf.str();
         ofstream fil;
         fil.open (filenamestring.c_str(), ios::trunc);
-        fil << get_run_id (cctkGH) << endl;
+        fil << get_run_id (cctkGH) << "\n";
         fil.close ();
       }
     }

@@ -116,12 +116,12 @@ namespace Formaline
     // Write the script
     ostringstream scriptbuf;
     scriptbuf
-<< "#! /usr/bin/perl -w" << endl
-<< endl
-<< "use strict;" << endl
-<< "use Socket;" << endl
-<< endl
-<< "my $input = '" << datafilename << "';" << endl
+<< "#! /usr/bin/perl -w\n"
+<< "\n"
+<< "use strict;\n"
+<< "use Socket;\n"
+<< "\n"
+<< "my $input = '" << datafilename << "';\n"
 << "my @hostlist = (";
 
     // NUM_PORTAL_ENTRIES must match the size of the
@@ -132,50 +132,50 @@ namespace Formaline
     // add all array parameters which have been set
     for (int i = 0; i < NUM_PORTAL_ENTRIES; i++) {
       if (*portal_hostname[i]) {
-        if (i) scriptbuf << "," << endl << "                ";
+        if (i) scriptbuf << ",\n" << "                ";
         scriptbuf << "'" << portal_hostname[i] << ":" << portal_port[i] << "'";
       }
     }
     scriptbuf
-<< ");" << endl
-<< endl
-<< "foreach my $entry (@hostlist) {" << endl
-<< "  next if ($entry !~ /^(.+):(\\d+)$/);" << endl
-<< endl
-<< "  my $host = $1;" << endl
-<< "  my $port = $2;" << endl
-<< endl
-<< "  my $SH;" << endl
-<< endl
-<< "  # try to use IO::Socket::INET if the module exists;" << endl
-<< "  # it accepts a timeout for its internal connect call" << endl
-<< "  eval 'use IO::Socket::INET;" << endl
-<< endl
-<< "        $SH = IO::Socket::INET->new (PeerAddr => $host," << endl
-<< "                                     PeerPort => $port," << endl
-<< "                                     Proto    => \\'tcp\\'," << endl
-<< "                                     Type     => SOCK_STREAM," << endl
-<< "                                     Timeout  => 0.2);';" << endl
-<< "  # if that failed, fall back to making the standard socket/connect calls" << endl
-<< "  # (with their built-in fixed timeout)" << endl
-<< "  if ($@) {" << endl
-<< "    my $iaddr = inet_aton ($host);" << endl
-<< "    next if (not $iaddr);" << endl
-<< "" << endl
-<< "    socket ($SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));" << endl
-<< "    my $sin = sockaddr_in ($port, $iaddr);" << endl
-<< "    connect ($SH, $sin) || next;" << endl
-<< "  }" << endl
-<< endl
-<< "  # send off the data" << endl
-<< "  if (defined $SH) {" << endl
-<< "    open (my $FH, '<' . $input);" << endl
-<< "    print $SH $_ while (<$FH>);" << endl
-<< "    close $FH;" << endl
-<< "    close $SH;" << endl
-<< "  }" << endl
-<< "}" << endl
-<< endl;
+<< ");\n"
+<< "\n"
+<< "foreach my $entry (@hostlist) {\n"
+<< "  next if ($entry !~ /^(.+):(\\d+)$/);\n"
+<< "\n"
+<< "  my $host = $1;\n"
+<< "  my $port = $2;\n"
+<< "\n"
+<< "  my $SH;\n"
+<< "\n"
+<< "  # try to use IO::Socket::INET if the module exists;\n"
+<< "  # it accepts a timeout for its internal connect call\n"
+<< "  eval 'use IO::Socket::INET;\n"
+<< "\n"
+<< "        $SH = IO::Socket::INET->new (PeerAddr => $host,\n"
+<< "                                     PeerPort => $port,\n"
+<< "                                     Proto    => \\'tcp\\',\n"
+<< "                                     Type     => SOCK_STREAM,\n"
+<< "                                     Timeout  => 0.2);';\n"
+<< "  # if that failed, fall back to making the standard socket/connect calls\n"
+<< "  # (with their built-in fixed timeout)\n"
+<< "  if ($@) {\n"
+<< "    my $iaddr = inet_aton ($host);\n"
+<< "    next if (not $iaddr);\n"
+<< "\n"
+<< "    socket ($SH, PF_INET, SOCK_STREAM, getprotobyname ('tcp'));\n"
+<< "    my $sin = sockaddr_in ($port, $iaddr);\n"
+<< "    connect ($SH, $sin) || next;\n"
+<< "  }\n"
+<< "\n"
+<< "  # send off the data\n"
+<< "  if (defined $SH) {\n"
+<< "    open (my $FH, '<' . $input);\n"
+<< "    print $SH $_ while (<$FH>);\n"
+<< "    close $FH;\n"
+<< "    close $SH;\n"
+<< "  }\n"
+<< "}\n"
+<< "\n";
     string const scriptstr = scriptbuf.str();
     
     ostringstream scriptfilenamebuf;
