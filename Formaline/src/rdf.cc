@@ -103,8 +103,8 @@ namespace Formaline
     const string user = clean (getenv ("USER"));
 #endif
     char** argv;
-    CCTK_CommandLine (&argv);
-    const string executable = clean (argv[0]);
+    const int argc = CCTK_CommandLine (&argv);
+    const string executable = clean (argc >= 1 ? argv[0] : "");
     const string version = clean (CCTK_FullVersion ());
     const string compiled_at (clean (CCTK_CompileDateTime ()));
     char* rundatebuf = Util_CurrentDateTime ();

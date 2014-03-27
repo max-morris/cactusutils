@@ -290,9 +290,7 @@ namespace Formaline
 
       {
         char ** argv;
-        int argc;
-        CCTK_CommandLine (& argv);
-        for (argc = 0; argv [argc]; ++ argc);
+        int const argc = CCTK_CommandLine (& argv);
         stores.store ("executable", argc == 0 ? "" : argv[0]);
       }
 
@@ -435,12 +433,9 @@ namespace Formaline
   
       {
         char ** argv;
-        int argc;
-        int n;
-        CCTK_CommandLine (& argv);
-        for (argc = 0; argv [argc]; ++ argc);
+        int const argc = CCTK_CommandLine (& argv);
         stores.store ("argc", argc);
-        for (n = 0; n < argc; ++ n)
+        for (int n = 0; n < argc; ++ n)
         {
           char buffer [1000];
           snprintf (buffer, sizeof buffer, "argv[%d]", n);

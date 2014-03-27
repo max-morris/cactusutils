@@ -98,7 +98,8 @@ $(TARBALL_DIR)/build-id.c: $(TOP)/BUILD-ID
 	echo 'char const * const build_id = "'$$build_id'";' && \
 	config_id="$$(cat $(TOP)/CONFIG-ID || echo 'NO-CONFIG-ID')" && \
 	echo 'char const * const config_id = "'$$config_id'";'; \
-	} > $@
+	} > $@.tmp
+	mv $@.tmp $@
 
 
 
@@ -107,7 +108,8 @@ $(TARBALL_DIR)/cactus-meta.o: $(TARBALL_DIR)/cactus-meta.c
 	cd $(TARBALL_DIR) && $(CC) $(CFLAGS) -c -o $@ $^
 
 $(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/flesh-Cactus.c $(patsubst %,$(TARBALL_DIR)/thorn-%.c,$(notdir $(THORNS))) | $(FORMALINE-UTILS)
-	$(FORMALINE_BIN_DIR)/makemetablob.pl CactusConfig Cactus $(notdir $(THORNS)) > $@
+	$(FORMALINE_BIN_DIR)/makemetablob.pl CactusConfig Cactus $(notdir $(THORNS)) > $@.tmp
+	mv $@.tmp $@
 
 .PRECIOUS: $(TARBALL_DIR)/cactus-meta.c $(TARBALL_DIR)/cactus-meta.o
 
@@ -140,7 +142,7 @@ $(TARBALL_DIR)/config-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNA
 	mkdir -p $(TARBALL_DIR)/configs/$(notdir $(TOP))
 	{ \
 		cd $(CACTUS_CONFIGS_DIR)/$(notdir $(TOP)) && \
-		cp -r OptionList properties.ini RunScript ScriptFile SubmitScript ThornList config-data config-info $(TARBALL_DIR)/configs/$(notdir $(TOP)); \
+		cp -r OptionList properties.ini RunScript ScriptFile SubmitScript ThornList config-data config-info $(TARBALL_DIR)/configs/$(notdir $(TOP)) 2>/dev/null; \
 	} || true
 	cd $(TARBALL_DIR) && \
 	find configs/$(notdir $(TOP))/ \
@@ -169,7 +171,8 @@ $(TARBALL_DIR)/config-Cactus.ccldeps:
 	        echo " $(CCTK_HOME)/src/interface.ccl \\"; \
 	        echo " $(CCTK_HOME)/src/param.ccl \\"; \
 	        echo " $(CCTK_HOME)/src/schedule.ccl"; \
-	} > $@
+	} > $@.tmp
+	mv $@.tmp $@
 
 .PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files $(TARBALL_DIR)/config-Cactus.tar.gz $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/config-Cactus.o
 
@@ -226,7 +229,8 @@ $(TARBALL_DIR)/flesh-Cactus.ccldeps:
 	        echo " $(CCTK_HOME)/src/interface.ccl \\"; \
 	        echo " $(CCTK_HOME)/src/param.ccl \\"; \
 	        echo " $(CCTK_HOME)/src/schedule.ccl"; \
-	} > $@
+	} > $@.tmp
+	mv $@.tmp $@
 
 .PRECIOUS: $(TARBALL_DIR)/flesh-Cactus.ccldeps $(TARBALL_DIR)/flesh-Cactus.files $(TARBALL_DIR)/flesh-Cactus.tar.gz $(TARBALL_DIR)/flesh-Cactus.c $(TARBALL_DIR)/flesh-Cactus.o
 
@@ -283,7 +287,8 @@ $(TARBALL_DIR)/thorn-%.ccldeps:
 	        echo " $(CCTK_HOME)/arrangements/$(filter %/$*,$(THORNS))/interface.ccl \\"; \
 	        echo " $(CCTK_HOME)/arrangements/$(filter %/$*,$(THORNS))/param.ccl \\"; \
 	        echo " $(CCTK_HOME)/arrangements/$(filter %/$*,$(THORNS))/schedule.ccl"; \
-	} > $@
+	} > $@.tmp
+	mv $@.tmp $@
 
 .PRECIOUS: $(TARBALL_DIR)/thorn-%.ccldeps $(TARBALL_DIR)/thorn-%.files $(TARBALL_DIR)/thorn-%.tar.gz $(TARBALL_DIR)/thorn-%.c $(TARBALL_DIR)/thorn-%.o
 
