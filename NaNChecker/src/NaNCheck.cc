@@ -67,6 +67,7 @@ void PrintWarning (const char *error_type,
                    int verbose,
                    int linear_index,
                    int reflevel,
+                   int map,
                    int cctk_iteration,
                    int fp_type,
                    const CCTK_REAL *const coords[],
@@ -564,6 +565,11 @@ void CCTK_FCALL CCTK_FNAME (NaNChecker_SetVarsToNaN)
    @vtype      int
    @vio        in
    @endvar
+   @var        map
+   @vdesc      current map (0 for unipatch)
+   @vtype      int
+   @vio        in
+   @endvar
    @var        cctk_iteration
    @vdesc      current iteration
    @vtype      int
@@ -594,6 +600,7 @@ void PrintWarning (const char *error_type,
                    int verbose,
                    int linear_index,
                    int reflevel,
+                   int map,
                    int cctk_iteration,
                    int fp_type,
                    const CCTK_REAL *const coords[],
@@ -644,16 +651,16 @@ void PrintWarning (const char *error_type,
     if (coords)
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "%s caught in %svariable '%s' at index (%s) level %d with coordinates "
+                  "%s caught in %svariable '%s' at index (%s) level %d map %d with coordinates "
                   "(%s) in iteration %d", error_type, complex_part, fullname, index_buf.str().c_str(),
-                  reflevel, coord_buf.str().c_str(), cctk_iteration);
+                  reflevel, map, coord_buf.str().c_str(), cctk_iteration);
     }
     else
     {
       CCTK_VWarn (1, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "%s caught in %svariable '%s' at (%s) level %d in iteration %d",
+                  "%s caught in %svariable '%s' at (%s) level %d map %d in iteration %d",
                   error_type, complex_part, fullname, index_buf.str().c_str(),
-                  reflevel, cctk_iteration);
+                  reflevel, map, cctk_iteration);
     }
   }
 }
@@ -679,7 +686,7 @@ void PrintWarning (const char *error_type,
 template<class cctk_type> void
 CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights, 
     const t_nanchecker_info *info, CCTK_INT &nans_found, 
-    int reflevel, CCTK_INT cctk_iteration, int fp_type, const CCTK_REAL * const *coords, 
+    int reflevel, int map, CCTK_INT cctk_iteration, int fp_type, const CCTK_REAL * const *coords, 
     const char *fullname, const cGroupDynamicData &gdata, CCTK_INT gtype)
 {
   /* now loop over all elements and check against NaN's */
@@ -716,7 +723,7 @@ CHECK_DATA(const cctk_type *_data, int nelems, const CCTK_REAL *CarpetWeights,
             (info->report_max < 0 || nans_found <= info->report_max))
         {
           PrintWarning (found_nan ? "NaN" : "Inf",
-                        info->verbose, _i, reflevel, cctk_iteration, fp_type,
+                        info->verbose, _i, reflevel, map, cctk_iteration, fp_type,
                         coords, fullname, &gdata);
         }
         if (info->NaNmask && gtype == CCTK_GF)
@@ -774,7 +781,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
   cGroupDynamicData gdata;
   const void *data;
   CCTK_REAL *CarpetWeights;
-  int reflevel;
+  int reflevel, map;
   int cctk_iteration, ignore_restricted_points;
   const char *restriction_mask;
 
@@ -793,6 +800,14 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
   else
   {
     reflevel = 0;
+  }
+  if(CCTK_IsFunctionAliased("GetMap"))
+  {
+    map = GetMap(info->GH);
+  }
+  else
+  {
+    map = 0;
   }
 
   /* check if the variable type is some floating point */
@@ -916,14 +931,14 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
   if (vtype == CCTK_VARIABLE_REAL || vtype == CCTK_VARIABLE_COMPLEX)
   {
     CHECK_DATA((const CCTK_REAL *)data, nelems, CarpetWeights, 
-               info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
+               info, nans_found, reflevel, map, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
 #ifdef HAVE_CCTK_REAL4
   else if (vtype == CCTK_VARIABLE_REAL4 || vtype == CCTK_VARIABLE_COMPLEX8)
   {
     CHECK_DATA((const CCTK_REAL4 *)data, nelems, CarpetWeights, 
-               info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
+               info, nans_found, reflevel, map, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
 #endif
@@ -931,7 +946,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
   else if (vtype == CCTK_VARIABLE_REAL8 || vtype == CCTK_VARIABLE_COMPLEX16)
   {
     CHECK_DATA((const CCTK_REAL8 *)data, nelems, CarpetWeights, 
-               info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
+               info, nans_found, reflevel, map, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
 #endif
@@ -939,7 +954,7 @@ void CheckForNaN (int vindex, const char *optstring, void *_info)
   else if (vtype == CCTK_VARIABLE_REAL16 || vtype == CCTK_VARIABLE_COMPLEX32)
   {
     CHECK_DATA((const CCTK_REAL16 *)data, nelems, CarpetWeights, 
-               info, nans_found, reflevel, cctk_iteration, fp_type, coords, 
+               info, nans_found, reflevel, map, cctk_iteration, fp_type, coords, 
                fullname, gdata, gtype);
   }
 #endif

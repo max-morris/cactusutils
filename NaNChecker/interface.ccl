@@ -29,6 +29,11 @@ PROVIDES FUNCTION SetVarsToNaN           \
     LANGUAGE C
 
 CCTK_INT FUNCTION                         \
+    GetMap                                \
+        (CCTK_POINTER_TO_CONST IN cctkGH)
+USES FUNCTION GetMap
+
+CCTK_INT FUNCTION                         \
     GetRefinementLevel                    \
         (CCTK_POINTER_TO_CONST IN cctkGH)
 USES FUNCTION GetRefinementLevel
