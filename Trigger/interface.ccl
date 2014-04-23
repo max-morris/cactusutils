@@ -3,7 +3,7 @@
 inherits: IO
 implements: trigger
 
-CCTK_REAL Trigger_Vars DISTRIB=CONSTANT
+CCTK_REAL Trigger_Vars DISTRIB=CONSTANT tags='checkpoint="no"'
 {
   trigger_cctk_iteration
   trigger_cctk_time

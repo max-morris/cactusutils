@@ -15,7 +15,7 @@ schedule Trigger_Check at ANALYSIS before AHFinderDirect_setupupdate
     # schedule global-early so that eg. output frequency parameters are taken
     # into account for all grid functions
     OPTIONS: global-early
+    # only used for reductions in this routine, not checkpointed
+    STORAGE: Trigger_Vars
 }   "test"
-
-STORAGE: Trigger_Vars
 
