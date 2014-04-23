@@ -10,6 +10,7 @@
 typedef struct
 {
   int number;
+  int *active;
   int *checked_variable;
   int *output_variables;
   int *output_variables_number;
@@ -419,18 +420,20 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
   my_GH = (TriggerGH*) malloc(sizeof(TriggerGH));
   info = (transverse_info*) malloc(sizeof(transverse_info));
 
-  my_GH->last_checked     = (CCTK_INT*)   
-                           calloc(Trigger_Number,sizeof(CCTK_INT));
-  my_GH->checked_variable= (CCTK_INT*)   
-                           calloc(Trigger_Number,sizeof(CCTK_INT));
-  my_GH->steered_scalar  = (CCTK_INT*)   
-                           calloc(Trigger_Number,sizeof(CCTK_INT));
-  my_GH->output_variables= (CCTK_INT*)
+  my_GH->last_checked     = (int*)   
+                           calloc(Trigger_Number,sizeof(int));
+  my_GH->checked_variable= (int*)   
+                           calloc(Trigger_Number,sizeof(int));
+  my_GH->active          = (int*)   
+                           calloc(Trigger_Number,sizeof(int));
+  my_GH->steered_scalar  = (int*)   
+                           calloc(Trigger_Number,sizeof(int));
+  my_GH->output_variables= (int*)
                            calloc(Trigger_Number*CCTK_NumVars(),
-                                  sizeof(CCTK_INT));
+                                  sizeof(int));
   my_GH->output_variables_number
-                         = (CCTK_INT*)   
-                           calloc(Trigger_Number,sizeof(CCTK_INT));
+                         = (int*)   
+                           calloc(Trigger_Number,sizeof(int));
   my_GH->relation        = (const char**)
                            calloc(Trigger_Number,sizeof(const char *));
   my_GH->reduction       = (const char**)
@@ -464,21 +467,38 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
     /* Are we looking for a variable or a parameter? */
     if (CCTK_EQUALS(Trigger_Checked_Variable[i],"param"))
     {
-        if (!CCTK_ParameterGet(Trigger_Checked_Parameter_Name[i],
-                               Trigger_Checked_Parameter_Thorn[i],NULL))
-            CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                      "No parameter with the name '%s' found",
-                      Trigger_Checked_Parameter_Name[i]);
-        my_GH->checked_variable[i]=-1;
-        my_GH->checked_parameter_name[i] =Trigger_Checked_Parameter_Name[i];
-        my_GH->checked_parameter_thorn[i]=Trigger_Checked_Parameter_Thorn[i];
+        if (!CCTK_Equals(Trigger_Checked_Parameter_Name[i], "") ||
+            !CCTK_Equals(Trigger_Checked_Parameter_Thorn[i], ""))
+        {
+          if (!CCTK_ParameterGet(Trigger_Checked_Parameter_Name[i],
+                                 Trigger_Checked_Parameter_Thorn[i],NULL))
+              CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                        "No parameter with the name '%s' found",
+                        Trigger_Checked_Parameter_Name[i]);
+          my_GH->checked_variable[i]=-1;
+          // TODO: this assumes that parameters strings do not go away
+          my_GH->checked_parameter_name[i] =Trigger_Checked_Parameter_Name[i];
+          my_GH->checked_parameter_thorn[i]=Trigger_Checked_Parameter_Thorn[i];
+          my_GH->active[i]=1;
+        }
     }
     else
-        if (!CCTK_TraverseString(Trigger_Checked_Variable[i],
-                                 Trigger_Transverse_Callback, info, CCTK_VAR))
-            CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                       "No variable with the name '%s' found",
-                       Trigger_Checked_Variable[i]);
+    {
+        if (CCTK_EQUALS(Trigger_Checked_Variable[i],""))
+        {
+          my_GH->checked_variable[i]=-1;
+        }
+        else
+        {
+          if (!CCTK_TraverseString(Trigger_Checked_Variable[i],
+                                   Trigger_Transverse_Callback, info, CCTK_VAR))
+              CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
+                         "No variable with the name '%s' found",
+                         Trigger_Checked_Variable[i]);
+          my_GH->active[i]=1;
+        }
+    }
+
     /* What should be done when the trigger is positive? */
     if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
     {
@@ -533,7 +553,14 @@ int Trigger_Startup()
 void Trigger_ParamCheck(CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_PARAMETERS
+  TriggerGH *my_GH;
+  my_GH = (TriggerGH*)CCTK_GHExtension(cctkGH, "Trigger");
+
   for (int i=Trigger_Number-1; i>=0; i--)
+  {
+    if (!my_GH->active[i])
+      continue;
+
     if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
     {
       const cParamData *paramdata = CCTK_ParameterData(
@@ -550,6 +577,8 @@ void Trigger_ParamCheck(CCTK_ARGUMENTS)
                    Trigger_Steered_Parameter_Thorn[i],
                    Trigger_Steered_Parameter_Name[i]);
     }
+  }
+
   return;
 }
 
