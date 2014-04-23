@@ -103,7 +103,7 @@ reaches a certain threshold or enabling output within a certain time window.
  \item \textbf{Trigger\_Checked\_Parameter\_Thorn} and \textbf{Trigger\_Checked\_Parameter\_Name} hold the information about which parameter this trigger should depend on.
  \item \textbf{Trigger\_Relation} defines a mathematical relation between whatever is checked and a some value. Allowed values are $<$, $>$, $==$ and $!=$.
  \item \textbf{Trigger\_Checked\_Value} specifies the actual value that is used for the comparison. This has to be a real number.
- \item \textbf{Trigger\_Reduction} specifies which reduction should be used in case you specified a grid function as variable to be checked.
+ \item \textbf{Trigger\_Reduction} specifies which reduction should be used in case you specified a grid function as variable to be checked. Leave empty for grid scalars and parameters.
  \item \textbf{Trigger\_Reaction} specifies what should happen in case the check above is true.
   \begin{itemize}
    \item \textbf{"output"}: some output should be enabled. File names will be prefixed with "trigger\_".
