@@ -140,10 +140,25 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
     }
     else
     {
-      tmp_value=((const CCTK_REAL *)CCTK_ParameterGet(
-                               my_GH->checked_parameter_name[trigger],
-                               my_GH->checked_parameter_thorn[trigger],NULL));
-      value=tmp_value[0];
+      int type;
+      const void *tmp_value;
+      tmp_value=CCTK_ParameterGet(my_GH->checked_parameter_name[trigger],
+                                  my_GH->checked_parameter_thorn[trigger],&type);
+      switch (type) {
+        case PARAMETER_REAL:
+          value=*(const CCTK_REAL*)tmp_value;
+          break;
+        case PARAMETER_INT:
+          value=(CCTK_REAL) *(const CCTK_INT*)tmp_value;
+          break;
+        case PARAMETER_BOOLEAN:
+          value=(CCTK_REAL) *(const int*)tmp_value;
+          break;
+        default:
+          CCTK_VError(__LINE__, __FILE__, CCTK_THORNSTRING,
+                      "Cannot handle parameter type %d",type);
+          break;
+      }
     }
   /* check condition of this trigger */
   ret=0;
