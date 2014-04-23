@@ -85,16 +85,39 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
   /* Do reduce */
   if (reduction_handle)
   {
+    union anytypevalue_u {
+      CCTK_REAL realval;
+      CCTK_INT intval;
+      CCTK_COMPLEX complexval;
+    } anytypevalue;
+    const int vartype=CCTK_VarTypeI(varindex);
+
     if (my_GH->debug)
       CCTK_VInfo(CCTK_THORNSTRING,
                  "reducing %d %d\n", reduction_handle, varindex);
     errno=CCTK_Reduce(GH, -1, reduction_handle, 1,
-                      CCTK_VARIABLE_REAL, &value, 1, varindex);
+                      vartype, &anytypevalue, 1, varindex);
     if (my_GH->debug)
       CCTK_VInfo(CCTK_THORNSTRING,
                  "reducing was ok\n");
     if (errno)
       CCTK_WARN(0, "Reduce returned an error.");
+
+    switch (vartype) {
+      case CCTK_VARIABLE_REAL:
+        value=anytypevalue.realval;
+        break;
+      case CCTK_VARIABLE_INT:
+        value=(CCTK_REAL)anytypevalue.intval;
+        break;
+      case CCTK_VARIABLE_COMPLEX:
+        CCTK_ERROR("Cannot handle CCTK_COMPLEX variables");
+        break;
+      default:
+        CCTK_VError(__LINE__, __FILE__, CCTK_THORNSTRING,
+                    "Do not know how to handle variable type %d", vartype);
+        break;
+    }
   }
   else
     // -1 indicates a parameter
