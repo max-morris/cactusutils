@@ -684,9 +684,9 @@ static int CollectTimerInfo(cGH const *restrict const cctkGH,
   }
   
   /* Determine local timer names and their values */
-  timername_t *my_timernames = 
-    malloc(my_ntimers * sizeof(*my_timernames)); /* these arrays can be too large for the stack */
-  assert(my_timernames);
+  /* (these arrays can be too large for the stack_ */
+  timername_t *my_timernames = malloc(my_ntimers * sizeof *my_timernames);
+  assert(my_ntimers==0 || my_timernames);
   for (int n=0; n<my_ntimers; ++n) {
     const char *name = CCTK_TimerName(n);
     
@@ -720,9 +720,9 @@ static int CollectTimerInfo(cGH const *restrict const cctkGH,
   }
   
   /* Gather timer names and values from each process */
-  timername_t *all_timernames = 
-    malloc(total_ntimers * sizeof(*all_timernames)); /* these arrays can likely be too large for the stack */
-  assert(all_timernames);
+  /* (these arrays can likely be too large for the stack) */
+  timername_t *all_timernames = malloc(total_ntimers * sizeof *all_timernames);
+  assert(total_ntimers==0 || all_timernames);
   double all_timervalues[total_ntimers];
   int name_displacements[nprocs], value_displacements[nprocs];
   int name_counts[nprocs];
@@ -837,7 +837,7 @@ static int CollectTimerInfo(cGH const *restrict const cctkGH,
       timers->secs_max[n] = maxval;
     }
   }
-
+  
   free(all_timernames);
   free(my_timernames);
   
