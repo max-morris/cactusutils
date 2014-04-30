@@ -9,6 +9,7 @@
 
 
 #include <altivec.h>
+#include <math.h>
 
 
 
