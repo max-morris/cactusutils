@@ -32,7 +32,7 @@ STRING Trigger_Relation[10] "relation operator for checked variable" STEERABLE=R
 
 CCTK_REAL Trigger_Checked_Value[10] "triggered value for checked variable" STEERABLE=RECOVER
 {
-  :: "value to be triggered for"
+  *:* :: "value to be triggered for"
 } 1.0
 
 STRING Trigger_Reduction[10] "valid reduction method" STEERABLE=RECOVER
