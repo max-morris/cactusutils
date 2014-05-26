@@ -77,6 +77,7 @@ namespace OpenCLRunTime {
     double time;
     double delta_time;
     // Grid structure properties:
+    int iteration;
     int gsh[dim];
     int lbnd[dim];
     int lsh[dim];

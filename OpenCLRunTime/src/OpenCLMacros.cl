@@ -239,6 +239,7 @@ typedef struct {
   double cctk_time;
   double cctk_delta_time;
   // Grid structure properties:
+  int cctk_iteration;
   int cctk_gsh[dim];
   int cctk_lbnd[dim];
   int cctk_lsh[dim];
@@ -263,24 +264,29 @@ ptrdiff_t round_down(ptrdiff_t const a, ptrdiff_t const b)
 // Cactus compatibility definitions
 
 #define DECLARE_CCTK_ARGUMENTS                                          \
-  ptrdiff_t const cctk_lbnd[] =                                         \
-    {cctkGH->cctk_lbnd[0], cctkGH->cctk_lbnd[1], cctkGH->cctk_lbnd[2]}; \
-  ptrdiff_t const cctk_lsh[] =                                          \
-    {cctkGH->cctk_lsh[0], cctkGH->cctk_lsh[1], cctkGH->cctk_lsh[2]};    \
-  ptrdiff_t const imin[] =                                              \
-    {cctkGH->imin[0], cctkGH->imin[1], cctkGH->imin[2]};                \
-  ptrdiff_t const imax[] =                                              \
-    {cctkGH->imax[0], cctkGH->imax[1], cctkGH->imax[2]};                \
-  CCTK_REAL const cctk_time = cctkGH->cctk_time;                        \
-  CCTK_REAL const cctk_delta_time = cctkGH->cctk_delta_time;            \
   CCTK_REAL __constant const *restrict const cctk_origin_space =        \
     cctkGH->cctk_origin_space;                                          \
   CCTK_REAL __constant const *restrict const cctk_delta_space =         \
     cctkGH->cctk_delta_space;                                           \
+  CCTK_REAL const cctk_time = cctkGH->cctk_time;                        \
+  CCTK_REAL const cctk_delta_time = cctkGH->cctk_delta_time;            \
+  ptrdiff_t const cctk_iteration = cctkGH->cctk_iteration;              \
+  ptrdiff_t const cctk_gsh[] =                                          \
+    {cctkGH->cctk_gsh[0], cctkGH->cctk_gsh[1], cctkGH->cctk_gsh[2]};    \
+  ptrdiff_t const cctk_lbnd[] =                                         \
+    {cctkGH->cctk_lbnd[0], cctkGH->cctk_lbnd[1], cctkGH->cctk_lbnd[2]}; \
+  ptrdiff_t const cctk_lsh[] =                                          \
+    {cctkGH->cctk_lsh[0], cctkGH->cctk_lsh[1], cctkGH->cctk_lsh[2]};    \
+  ptrdiff_t const cctk_ash[] =                                          \
+    {cctkGH->cctk_ash[0], cctkGH->cctk_ash[1], cctkGH->cctk_ash[2]};    \
+  ptrdiff_t const imin[] =                                              \
+    {cctkGH->imin[0], cctkGH->imin[1], cctkGH->imin[2]};                \
+  ptrdiff_t const imax[] =                                              \
+    {cctkGH->imax[0], cctkGH->imax[1], cctkGH->imax[2]};                \
   bool const stress_energy_state1 = 0;
 
 #define CCTK_GFINDEX3D(cctkGH,i,j,k)                    \
-  ((i) + cctk_lsh[0] * ((j) + cctk_lsh[1] * (k)))
+  ((i) + cctk_ash[0] * ((j) + cctk_ash[1] * (k)))
  
 #define CCTK_ORIGIN_SPACE(d) (cctkGH->cctk_origin_space[d])
 #define CCTK_DELTA_SPACE(d)  (cctkGH->cctk_delta_space[d])
@@ -369,6 +375,7 @@ CCTK_LONG_VEC kisgn(CCTK_REAL_VEC x)
 
 
 // Prevent compiler crashes when get_local_id() is not working
+size_t my_get_local_id(uint dir);
 size_t my_get_local_id(uint dir)
 {
   switch (dir) {
@@ -391,6 +398,7 @@ size_t my_get_local_id(uint dir)
     return get_local_id(2);
 #endif
   }
+  return 0;
 }
 
 #define LC_SET_GROUP_VARS(D)                                            \

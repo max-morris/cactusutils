@@ -329,7 +329,12 @@ namespace OpenCLRunTime {
        vector_size[2] == 1);
     
     same_padding = true;
+    grid.time = cctkGH->cctk_time;
+    grid.delta_time = cctkGH->cctk_delta_time;
+    grid.iteration = cctkGH->cctk_iteration;
     for (int d=0; d<dim; ++d) {
+      grid.origin_space[d] = cctkGH->cctk_origin_space[d];
+      grid.delta_space[d] = cctkGH->cctk_delta_space[d];
       grid.gsh[d] = cctkGH->cctk_gsh[d];
       grid.lbnd[d] = cctkGH->cctk_lbnd[d];
       grid.lsh[d] = cctkGH->cctk_lsh[d];
@@ -344,11 +349,7 @@ namespace OpenCLRunTime {
       assert(grid.lbnd[d] + grid.lsh[d] <= grid.gsh[d]);
       assert(grid.ash[d] >= 0);
       assert(grid.lsh[d] <= grid.ash[d]);
-      grid.origin_space[d] = cctkGH->cctk_origin_space[d];
-      grid.delta_space[d] = cctkGH->cctk_delta_space[d];
     }
-    grid.time = cctkGH->cctk_time;
-    grid.delta_time = cctkGH->cctk_delta_time;
     CCTK_VInfo(CCTK_THORNSTRING,
                "gsh:  %4d %4d %4d",
                (int)grid.gsh[0],

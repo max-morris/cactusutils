@@ -540,6 +540,7 @@ namespace OpenCLRunTime {
     
     grid.time       = cctkGH->cctk_time;
     grid.delta_time = cctkGH->cctk_delta_time;
+    grid.iteration  = cctkGH->cctk_iteration;
     
     static int timer_grid_copy = -1;
     if (veryverbose) {
