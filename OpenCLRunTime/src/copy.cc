@@ -23,16 +23,19 @@ namespace OpenCLRunTime {
   
   
   static
-  string vars_to_string(CCTK_INT const vis[], CCTK_INT const tls[],
+  string vars_to_string(CCTK_INT const vis[],
+                        CCTK_INT const rls[],
+                        CCTK_INT const tls[],
                         CCTK_INT const nvars)
   {
     stringstream buf;
     for (int var=0; var<nvars; ++var) {
       int const vi = vis[var];
+      int const rl = rls[var];
       int const tl = tls[var];
       char *const fullname = CCTK_FullName(vi);
       if (var>0) buf << " ";
-      buf << fullname << "/" << tl;
+      buf << fullname << ",rl=" << rl << ",tl=" << tl;
       free(fullname);
     }
     return buf.str();
@@ -44,6 +47,7 @@ namespace OpenCLRunTime {
   CCTK_INT
   OpenCLRunTime_CreateVariables(CCTK_POINTER_TO_CONST const cctkGH_,
                                 CCTK_INT const vis[],
+                                CCTK_INT const rls[],
                                 CCTK_INT const tls[],
                                 CCTK_INT const nvars)
   {
@@ -52,7 +56,7 @@ namespace OpenCLRunTime {
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "CreateVariables: %s",
-                 vars_to_string(vis, tls, nvars).c_str());
+                 vars_to_string(vis, rls, tls, nvars).c_str());
     }
     
     if (nvars==0) return 0;
@@ -86,6 +90,7 @@ namespace OpenCLRunTime {
     
     for (int var=0; var<nvars; ++var) {
       int const vi = vis[var];
+      int const rl = rls[var]; assert(rl == 0); // TODO
       int const tl = tls[var];
       
       // Ensure that this variable does not yet exist
@@ -116,6 +121,7 @@ namespace OpenCLRunTime {
   CCTK_INT
   OpenCLRunTime_CopyCycle(CCTK_POINTER_TO_CONST const cctkGH_,
                           CCTK_INT const vis[],
+                          CCTK_INT const rls[],
                           CCTK_INT const tls[],
                           CCTK_INT const nvars)
   {
@@ -125,7 +131,7 @@ namespace OpenCLRunTime {
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "CopyCycle: %s",
-                 vars_to_string(vis, tls, nvars).c_str());
+                 vars_to_string(vis, rls, tls, nvars).c_str());
     }
     
     if (nvars==0) return 0;
@@ -143,6 +149,7 @@ namespace OpenCLRunTime {
     cl_event old_event;
     for (int var=0; var<nvars; ++var) {
       int const vi = vis[var];
+      int const rl = rls[var]; assert(rl == 0); // TODO
       int const tl = tls[var];
       assert(tl > 0);
       
@@ -173,6 +180,7 @@ namespace OpenCLRunTime {
   CCTK_INT
   OpenCLRunTime_CopyFromPast(CCTK_POINTER_TO_CONST const cctkGH_,
                              CCTK_INT const vis[],
+                             CCTK_INT const rls[],
                              CCTK_INT const tls[],
                              CCTK_INT const nvars)
   {
@@ -182,7 +190,7 @@ namespace OpenCLRunTime {
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "CopyFromPast: %s",
-                 vars_to_string(vis, tls, nvars).c_str());
+                 vars_to_string(vis, rls, tls, nvars).c_str());
     }
     
     if (nvars==0) return 0;
@@ -200,6 +208,8 @@ namespace OpenCLRunTime {
     for (int var=0; var<nvars; ++var) {
       int const vi=vis[var];
       assert(vi>=0);
+      int const rl=rls[var]; assert(rl == 0); // TODO
+      assert(rl>=0);
       int const tl=tls[var];
       assert(tl>=0);
       assert(tl+1 < int(device->mems.at(vi).size()));
@@ -220,6 +230,7 @@ namespace OpenCLRunTime {
   CCTK_INT
   OpenCLRunTime_CopyToDevice(CCTK_POINTER_TO_CONST const cctkGH_,
                              CCTK_INT const vis[],
+                             CCTK_INT const rls[],
                              CCTK_INT const tls[],
                              CCTK_INT const nvars,
                              CCTK_INT *const moved)
@@ -229,7 +240,7 @@ namespace OpenCLRunTime {
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "CopyToDevice: %s",
-                 vars_to_string(vis, tls, nvars).c_str());
+                 vars_to_string(vis, rls, tls, nvars).c_str());
     }
     
     *moved = 0;
@@ -270,6 +281,8 @@ namespace OpenCLRunTime {
       for (int var=0; var<nvars; ++var) {
         int const vi=vis[var];
         assert(vi>=0);
+        int const rl=rls[var]; assert(rl == 0); // TODO
+        assert(rl>=0);
         int const tl=tls[var];
         assert(tl>=0);
         assert(tl < int(device->mems.at(vi).size()));
@@ -336,6 +349,7 @@ namespace OpenCLRunTime {
   CCTK_INT
   OpenCLRunTime_CopyToHost(CCTK_POINTER_TO_CONST const cctkGH_,
                            CCTK_INT const vis[],
+                           CCTK_INT const rls[],
                            CCTK_INT const tls[],
                            CCTK_INT const nvars,
                            CCTK_INT *const moved)
@@ -345,7 +359,7 @@ namespace OpenCLRunTime {
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "CopyToHost: %s",
-                 vars_to_string(vis, tls, nvars).c_str());
+                 vars_to_string(vis, rls, tls, nvars).c_str());
     }
     
     *moved = 0;
@@ -388,6 +402,8 @@ namespace OpenCLRunTime {
       for (int var=0; var<nvars; ++var) {
         int const vi=vis[var];
         assert(vi>=0);
+        int const rl=rls[var]; assert(rl == 0); // TODO
+        assert(rl>=0);
         int const tl=tls[var];
         assert(tl>=0);
         assert(tl < int(device->mems.at(vi).size()));
@@ -461,6 +477,7 @@ namespace OpenCLRunTime {
   CCTK_INT
   OpenCLRunTime_CopyPreSync(CCTK_POINTER_TO_CONST const cctkGH_,
                             CCTK_INT const vis[],
+                            CCTK_INT const rls[],
                             CCTK_INT const tls[],
                             CCTK_INT const nvars)
   {
@@ -469,7 +486,7 @@ namespace OpenCLRunTime {
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "CopyPreSync: %s",
-                 vars_to_string(vis, tls, nvars).c_str());
+                 vars_to_string(vis, rls, tls, nvars).c_str());
     }
     
     if (nvars==0) return 0;
@@ -491,6 +508,8 @@ namespace OpenCLRunTime {
     for (int var=0; var<nvars; ++var) {
       int const vi=vis[var];
       assert(vi>=0);
+      int const rl=rls[var]; assert(rl == 0); // TODO
+      assert(rl>=0);
       int const tl=tls[var];
       assert(tl>=0);
       assert(tl < int(device->mems.at(vi).size()));
@@ -599,6 +618,7 @@ namespace OpenCLRunTime {
   CCTK_INT
   OpenCLRunTime_CopyPostSync(CCTK_POINTER_TO_CONST const cctkGH_,
                              CCTK_INT const vis[],
+                             CCTK_INT const rls[],
                              CCTK_INT const tls[],
                              CCTK_INT const nvars)
   {
@@ -607,7 +627,7 @@ namespace OpenCLRunTime {
     
     if (veryverbose) {
       CCTK_VInfo(CCTK_THORNSTRING, "CopyPostSync: %s",
-                 vars_to_string(vis, tls, nvars).c_str());
+                 vars_to_string(vis, rls, tls, nvars).c_str());
     }
     
     if (nvars==0) return 0;
@@ -629,6 +649,8 @@ namespace OpenCLRunTime {
     for (int var=0; var<nvars; ++var) {
       int const vi=vis[var];
       assert(vi>=0);
+      int const rl=rls[var]; assert(rl == 0); // TODO
+      assert(rl>=0);
       int const tl=tls[var];
       assert(tl>=0);
       assert(tl < int(device->mems.at(vi).size()));
