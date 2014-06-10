@@ -550,15 +550,15 @@ namespace {
       }
       
       if (comm_size > node_procs_active) {
-        printf(" [skipped -- too many MPI processes]\n");
+        printf("      [skipped -- too many MPI processes]\n");
         continue;
       }
       if (node_memsize_used > node_memsize * 3 / 4) {
-        printf(" [skipped -- too much memory requested]\n");
+        printf("      [skipped -- too much memory requested]\n");
         continue;
       }
       if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
-        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        printf("      [skipped -- avoiding large-memory benchmarks]\n");
         continue;
       }
       
@@ -664,15 +664,15 @@ namespace {
       }
       
       if (comm_size > node_procs_active) {
-        printf(" [skipped -- too many MPI processes]\n");
+        printf("      [skipped -- too many MPI processes]\n");
         continue;
       }
       if (node_memsize_used > node_memsize * 3 / 4) {
-        printf(" [skipped -- too much memory requested]\n");
+        printf("      [skipped -- too much memory requested]\n");
         continue;
       }
       if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
-        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        printf("      [skipped -- avoiding large-memory benchmarks]\n");
         continue;
       }
       
@@ -807,15 +807,15 @@ namespace {
       }
       
       if (comm_size > node_procs_active) {
-        printf(" [skipped -- too many MPI processes]\n");
+        printf("      [skipped -- too many MPI processes]\n");
         continue;
       }
       if (node_memsize_used > node_memsize * 3 / 4) {
-        printf(" [skipped -- too much memory requested]\n");
+        printf("      [skipped -- too much memory requested]\n");
         continue;
       }
       if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
-        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        printf("      [skipped -- avoiding large-memory benchmarks]\n");
         continue;
       }
       
@@ -966,15 +966,15 @@ namespace {
       }
       
       if (comm_size > node_procs_active) {
-        printf(" [skipped -- too many MPI processes]\n");
+        printf("      [skipped -- too many MPI processes]\n");
         continue;
       }
       if (node_memsize_used > node_memsize * 3 / 4) {
-        printf(" [skipped -- too much memory requested]\n");
+        printf("      [skipped -- too much memory requested]\n");
         continue;
       }
       if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
-        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        printf("      [skipped -- avoiding large-memory benchmarks]\n");
         continue;
       }
       
@@ -1114,15 +1114,15 @@ namespace {
       }
       
       if (comm_size > node_procs_active) {
-        printf(" [skipped -- too many MPI processes]\n");
+        printf("      [skipped -- too many MPI processes]\n");
         continue;
       }
       if (node_memsize_used > node_memsize * 3 / 4) {
-        printf(" [skipped -- too much memory requested]\n");
+        printf("      [skipped -- too much memory requested]\n");
         continue;
       }
       if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
-        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        printf("      [skipped -- avoiding large-memory benchmarks]\n");
         continue;
       }
       
@@ -1242,15 +1242,15 @@ namespace {
       }
       
       if (comm_size > node_procs_active) {
-        printf(" [skipped -- too many MPI processes]\n");
+        printf("      [skipped -- too many MPI processes]\n");
         continue;
       }
       if (node_memsize_used > node_memsize * 3 / 4) {
-        printf(" [skipped -- too much memory requested]\n");
+        printf("      [skipped -- too much memory requested]\n");
         continue;
       }
       if (skip_largemem_benchmarks && node_memsize_used > node_memsize / 4) {
-        printf(" [skipped -- avoiding large-memory benchmarks]\n");
+        printf("      [skipped -- avoiding large-memory benchmarks]\n");
         continue;
       }
       
@@ -1379,7 +1379,7 @@ namespace {
       if (comm_size > num_active_procs ||
           (skip_memsize + memsize) * comm_size > node_memory * 3 / 4)
       {
-        printf(" [skipped -- too many MPI processes]\n");
+        printf("      [skipped -- too many MPI processes]\n");
         continue;
       }
       vector<char> skiparray(skip_memsize, 1);
