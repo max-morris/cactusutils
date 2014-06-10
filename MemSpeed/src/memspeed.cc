@@ -1386,9 +1386,12 @@ namespace {
       // Allocate array
       const ptrdiff_t npa =
         (np + CCTK_REAL_VEC_SIZE - 1) / CCTK_REAL_VEC_SIZE * CCTK_REAL_VEC_SIZE;
-      vector<CCTK_REAL> srcv(npa*np*np), dstv(npa*np*np);
-      CCTK_REAL* restrict src = &srcv[0];
-      CCTK_REAL* restrict dst = &dstv[0];
+      vector<CCTK_REAL> srcv(npa*np*np + CCTK_REAL_VEC_SIZE - 1);
+      vector<CCTK_REAL> dstv(npa*np*np + CCTK_REAL_VEC_SIZE - 1);
+      CCTK_REAL* restrict src =
+        (CCTK_REAL*)(ptrdiff_t(&srcv[0]) & - sizeof(CCTK_REAL_VEC));
+      CCTK_REAL* restrict dst =
+        (CCTK_REAL*)(ptrdiff_t(&dstv[0]) & - sizeof(CCTK_REAL_VEC));
       const ptrdiff_t di = 1;
       const ptrdiff_t dj = di * npa;
       const ptrdiff_t dk = dj * np;
@@ -1414,22 +1417,22 @@ namespace {
         elapsed = 0.0;
         const double t0 = omp_get_wtime();
         for (int count=0; count<max_count; ++count) {
-          const ptrdiff_t imin = 1 & -CCTK_REAL_VEC_SIZE;
-          const ptrdiff_t imax = np-1;
+          const ptrdiff_t imin = 1 / CCTK_REAL_VEC_SIZE * CCTK_REAL_VEC_SIZE;
 #pragma omp parallel for num_threads(num_threads) collapse(3)
           for (ptrdiff_t k=1; k<np-1; ++k) {
             for (ptrdiff_t j=1; j<np-1; ++j) {
-              for (ptrdiff_t i=imin; i<imax; i+=CCTK_REAL_VEC_SIZE) {
+              for (ptrdiff_t i=imin; i<np-1; i+=CCTK_REAL_VEC_SIZE) {
                 const ptrdiff_t n = di*i + dj*j + dk*k;
                 CCTK_REAL_VEC x = vec_load(src[n]);
                 CCTK_REAL_VEC dxi, dxj, dxk;
-                dxi = kadd(vec_loadu(src[n-di]), vec_loadu(src[n+di]));
+                dxi = kadd(vec_loadu_maybe(-di, src[n-di]),
+                           vec_loadu_maybe(+di, src[n+di]));
                 dxj = kadd(vec_load(src[n-dj]), vec_load(src[n+dj]));
                 dxk = kadd(vec_load(src[n-dk]), vec_load(src[n+dk]));
                 x = kadd(kmul(vec_set1(0.5), x),
                          kmul(vec_set1(0.5/3.0), kadd(kadd(dxi, dxj), dxk)));
                 // vec_store(dst[n], x);
-                vec_store_partial_prepare(i, imin, imax);
+                vec_store_partial_prepare(i, 1, np-1);
                 vec_store_nta_partial(dst[n], x);
               }
             }
