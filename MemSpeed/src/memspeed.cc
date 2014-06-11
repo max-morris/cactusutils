@@ -1389,9 +1389,11 @@ namespace {
       vector<CCTK_REAL> srcv(npa*np*np + CCTK_REAL_VEC_SIZE - 1);
       vector<CCTK_REAL> dstv(npa*np*np + CCTK_REAL_VEC_SIZE - 1);
       CCTK_REAL* restrict src =
-        (CCTK_REAL*)(ptrdiff_t(&srcv[0]) & - sizeof(CCTK_REAL_VEC));
+        (CCTK_REAL*)(ptrdiff_t(&srcv[CCTK_REAL_VEC_SIZE-1]) &
+                     -sizeof(CCTK_REAL_VEC));
       CCTK_REAL* restrict dst =
-        (CCTK_REAL*)(ptrdiff_t(&dstv[0]) & - sizeof(CCTK_REAL_VEC));
+        (CCTK_REAL*)(ptrdiff_t(&dstv[CCTK_REAL_VEC_SIZE-1]) &
+                     -sizeof(CCTK_REAL_VEC));
       const ptrdiff_t di = 1;
       const ptrdiff_t dj = di * npa;
       const ptrdiff_t dk = dj * np;
