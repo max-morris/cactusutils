@@ -21,13 +21,16 @@ using namespace std;
 #  include <mpi.h>
 #else
 namespace {
-  typedef int MPI_Comm;
-  enum { MPI_DOUBLE, MPI_INT } MPI_Datatype;
-  enum { MPI_SUM } MPI_Op;
+  enum MPI_Comm { MPI_COMM_NULL, MPI_COMM_WORLD };
+  enum MPI_Datatype { MPI_CHAR, MPI_DOUBLE, MPI_INT };
+  enum MPI_Op { MPI_SUM };
+  const int MPI_UNDEFINED = -1;
   int MPI_Barrier(MPI_Comm) { return 0; }
   int MPI_Bcast(void*,int,MPI_Datatype,int,MPI_Comm) { return 0; }
   int MPI_Comm_free(MPI_Comm*) { return 0; }
   int MPI_Comm_split(MPI_Comm,int,int,MPI_Comm*) { return 0; }
+  int MPI_Comm_rank(MPI_Comm, int* rank) { *rank=0; return 0; }
+  int MPI_Comm_size(MPI_Comm, int* size) { *size=1; return 0; }
   int MPI_Allreduce(void* sendbuf, void* recvbuf, int count,
                     MPI_Datatype datatype, MPI_Op, MPI_Comm)
   {
@@ -1464,6 +1467,8 @@ namespace {
   
   
   
+#ifdef HAVE_CAPABILITY_MPI
+  
   void measure_mpi_latency(const MPI_Comm comm)
   {
     printf("    MPI latency:");
@@ -1534,6 +1539,8 @@ namespace {
     mpi_info.latency = nmax / (elapsed / 2);
     printf(" %g GByte/sec\n", mpi_info.latency / 1.0e+9);
   }
+  
+#endif
   
 }
 
@@ -1606,6 +1613,7 @@ void MemSpeed_MeasureSpeed(CCTK_ARGUMENTS)
     if (singlenode != MPI_COMM_NULL) MPI_Comm_free(&singlenode);
   }
   
+#ifdef HAVE_CAPABILITY_MPI
   if (mpi_info.mpi_num_procs_on_host > 1) {
     MPI_Comm samenode;
     MPI_Comm_split(world,
@@ -1643,4 +1651,5 @@ void MemSpeed_MeasureSpeed(CCTK_ARGUMENTS)
     
     if (twonodes != MPI_COMM_NULL) MPI_Comm_free(&twonodes);
   }
+#endif
 }
