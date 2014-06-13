@@ -697,7 +697,7 @@ namespace {
         ptrdiff_t i = 0;
         for (ptrdiff_t n=0; n<nmax; ++n) {
           if (n>0) assert(i!=0);
-          ptrdiff_t next_i = (i+offset) % nmax;
+          ptrdiff_t next_i = ((i+offset) % nmax + nmax) % nmax;
           if (array[i] && n != nmax-1) ++next_i;
           assert(!array[i]);
           array[i] = &array[next_i];
@@ -907,7 +907,8 @@ namespace {
         if (done) break;
         max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
       }
-      cache_info[cache].read_bandwidth = max_count * cache_memsize / elapsed;
+      cache_info[cache].read_bandwidth =
+        1.0 * max_count * cache_memsize / elapsed;
       if (verbose) {
         printf("      result:");
       }
@@ -1182,7 +1183,8 @@ namespace {
         if (done) break;
         max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
       }
-      cache_info[cache].write_bandwidth = max_count * cache_memsize / elapsed;
+      cache_info[cache].write_bandwidth =
+        1.0 * max_count * cache_memsize / elapsed;
       if (verbose) {
         printf("      result:");
       }
@@ -1330,7 +1332,8 @@ namespace {
         if (done) break;
         max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
       }
-      cache_info[cache].write_bandwidth = max_count * cache_memsize / elapsed;
+      cache_info[cache].write_bandwidth =
+        1.0 * max_count * cache_memsize / elapsed;
       if (verbose) {
         printf("      result:");
       }
@@ -1456,7 +1459,8 @@ namespace {
         if (done) break;
         max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
       }
-      cache_info[cache].stencil_performance = max_count * np*np*np / elapsed;
+      cache_info[cache].stencil_performance =
+        1.0 * max_count * np*np*np / elapsed;
       if (verbose) {
         printf("      result:");
       }
