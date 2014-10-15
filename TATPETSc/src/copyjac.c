@@ -1,5 +1,4 @@
 /* (C) 2003-11-10 Erik Schnetter <schnetter@aei.mpg.de> */
-/* $Header$ */
 
 #include <assert.h>
 #include <stdio.h>
@@ -8,7 +7,7 @@
 
 #include <mpi.h>
 
-#include <petscda.h>
+#include <petscdmda.h>
 
 #include "cctk.h"
 #include "cctk_Parameters.h"
@@ -17,10 +16,6 @@
 
 
 
-static const char *rcsid = "$Header$";
-      
-      
-      
 int TATPETSc_copyjac (Mat J, void *userptr)
 {
   DECLARE_CCTK_PARAMETERS;
@@ -113,16 +108,17 @@ int TATPETSc_copyjac (Mat J, void *userptr)
   }
   
   /* Local PETSc boundaries */
-  ierr = DAGetCorners (user->da, &xs[0],&xs[1],&xs[2], &xm[0],&xm[1],&xm[2]);
+  ierr = DMDAGetCorners (user->da, &xs[0],&xs[1],&xs[2], &xm[0],&xm[1],&xm[2]);
   CHKERRQ(ierr);
   
   /* Global PETSc boundaries */
-  ierr = DAGetInfo (user->da,
-		    PETSC_NULL,
-		    &XM[0],&XM[1],&XM[2],
-		    PETSC_NULL,PETSC_NULL,PETSC_NULL,
-		    PETSC_NULL,PETSC_NULL,
-		    PETSC_NULL,PETSC_NULL);
+  ierr = DMDAGetInfo (user->da,
+                      PETSC_NULL,
+                      &XM[0],&XM[1],&XM[2],
+                      PETSC_NULL,PETSC_NULL,PETSC_NULL,
+                      PETSC_NULL,PETSC_NULL,
+                      PETSC_NULL,PETSC_NULL,PETSC_NULL,
+                      PETSC_NULL);
   CHKERRQ(ierr);
   
   if (veryverbose) {
@@ -170,7 +166,7 @@ int TATPETSc_copyjac (Mat J, void *userptr)
   ierr = PetscMalloc(27*nvars*sizeof(int),&cols);CHKERRQ(ierr);
   assert (sizeof(PetscScalar) == sizeof(CCTK_REAL));
   ierr = PetscMalloc(27*nvars*sizeof(PetscScalar),&vals);CHKERRQ(ierr);
-  ierr = DAGetAO(user->da,&ao);CHKERRQ(ierr);
+  ierr = DMDAGetAO(user->da,&ao);CHKERRQ(ierr);
   
 #if PETSC_VERSION_MAJOR < 3
   ierr = MatSetOption(J,MAT_ROWS_SORTED);CHKERRQ(ierr);
@@ -186,16 +182,22 @@ int TATPETSc_copyjac (Mat J, void *userptr)
         
         for (n=0; n<nvars; ++n) {
           
-          const int rowind = n + nvars * (i0[0]+i + NI[0] * (i0[1]+j + NI[1] * (i0[2]+k)));
+          const int rowind =
+            n + nvars * (i0[0]+i + NI[0] * (i0[1]+j + NI[1] * (i0[2]+k)));
           rows[n] = rowind;
           
           for (dk=-1; dk<=1; ++dk) {
             for (dj=-1; dj<=1; ++dj) {
               for (di=-1; di<=1; ++di) {
                 const int m = di+1 + 3*(dj+1 + 3*(dk+1));
-                const int ind = bi[0]+i + ni[0] * (bi[1]+j + ni[1] * (bi[2]+k + ni[2] * m));
-                const int colind = n + nvars * (i0[0]+i+di + NI[0] * (i0[1]+j+dj + NI[1] * (i0[2]+k+dk)));
-                if (i+di>=0 && i+di<mi[0] && j+dj>=0 && j+dj<mi[1] && k+dk>=0 && k+dk<mi[2]) {
+                const int ind =
+                  bi[0]+i + ni[0] * (bi[1]+j + ni[1] * (bi[2]+k + ni[2] * m));
+                const int colind =
+                  n + nvars * (i0[0]+i+di + NI[0] * (i0[1]+j+dj +
+                                                     NI[1] * (i0[2]+k+dk)));
+                if (i+di>=0 && i+di<mi[0] && j+dj>=0 && j+dj<mi[1] && k+dk>=0 &&
+                    k+dk<mi[2])
+                {
                   cols[n+nvars*m] = colind;
                   vals[n+nvars*m] = var[n][ind];
                 } else {
@@ -210,18 +212,15 @@ int TATPETSc_copyjac (Mat J, void *userptr)
         
         ierr = AOApplicationToPetsc(ao,nvars,rows);CHKERRQ(ierr);
         ierr = AOApplicationToPetsc(ao,27*nvars,cols);CHKERRQ(ierr);
-        ierr = MatSetValues (J,nvars,rows,27*nvars,cols,vals,INSERT_VALUES);CHKERRQ(ierr);
+        ierr = MatSetValues (J,nvars,rows,27*nvars,cols,vals,INSERT_VALUES);
+        CHKERRQ(ierr);
         
       }
     }
   }
   ierr = MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);  
   ierr = MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);  
-#if PETSC_VERSION_MAJOR < 3
-  ierr = MatSetOption(J,MAT_NO_NEW_NONZERO_LOCATIONS);CHKERRQ(ierr);
-#else
   ierr = MatSetOption(J,MAT_NEW_NONZERO_LOCATIONS,PETSC_FALSE);CHKERRQ(ierr);
-#endif
   
   ierr = PetscFree(vals);CHKERRQ(ierr);
   ierr = PetscFree(rows);CHKERRQ(ierr);

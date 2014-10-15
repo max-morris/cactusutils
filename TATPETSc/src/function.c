@@ -1,11 +1,10 @@
 /* (C) 2001-04-18 Erik Schnetter <schnetter@uni-tuebingen.de> */
-/* $Header$ */
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <petscda.h>
+#include <petscdmda.h>
 #include <petscsnes.h>
 
 #include "cctk.h"

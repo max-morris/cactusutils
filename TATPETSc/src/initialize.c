@@ -1,5 +1,4 @@
 /* (C) 2001-04-18 Erik Schnetter <schnetter@uni-tuebingen.de> */
-/* $Header$ */
 
 #include <assert.h>
 #include <stdio.h>
@@ -20,9 +19,12 @@
 
 
 /* A new error handler that does nothing */
-int TATPETSc_error_handler (int line, char *fun, char *file, char *dir, int n, int p, char *mess, void *ctx)
+PetscErrorCode TATPETSc_error_handler (MPI_Comm comm, int line,
+                                       const char *func, const char *file,
+                                       PetscErrorCode n, PetscErrorType p,
+                                       const char *mess, void *ctx)
 {
-  return p;
+  return n;
 }
 
 

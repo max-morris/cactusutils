@@ -1,5 +1,4 @@
 /* (C) 2001-04-18 Erik Schnetter <schnetter@uni-tuebingen.de> */
-/* $Header$ */
 
 #include <assert.h>
 #include <stdio.h>
@@ -7,7 +6,7 @@
 
 #include <mpi.h>
 
-#include <petscda.h>
+#include <petscdmda.h>
 
 #include "cctk.h"
 #include "cctk_Parameters.h"
@@ -16,10 +15,6 @@
 
 
 
-static const char *rcsid = "$Header$";
-      
-      
-      
 int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
 {
   DECLARE_CCTK_PARAMETERS;
@@ -121,16 +116,17 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset)
   }
   
   /* Local PETSc boundaries */
-  ierr = DAGetCorners (user->da, &xs[0],&xs[1],&xs[2], &xm[0],&xm[1],&xm[2]);
+  ierr = DMDAGetCorners (user->da, &xs[0],&xs[1],&xs[2], &xm[0],&xm[1],&xm[2]);
   CHKERRQ(ierr);
   
   /* Global PETSc boundaries */
-  ierr = DAGetInfo (user->da,
-		    PETSC_NULL,
-		    &XM[0],&XM[1],&XM[2],
-		    PETSC_NULL,PETSC_NULL,PETSC_NULL,
-		    PETSC_NULL,PETSC_NULL,
-		    PETSC_NULL,PETSC_NULL);
+  ierr = DMDAGetInfo (user->da,
+                      PETSC_NULL,
+                      &XM[0],&XM[1],&XM[2],
+                      PETSC_NULL,PETSC_NULL,PETSC_NULL,
+                      PETSC_NULL,PETSC_NULL,
+                      PETSC_NULL,PETSC_NULL,PETSC_NULL,
+                      PETSC_NULL);
   CHKERRQ(ierr);
   
   if (veryverbose) {

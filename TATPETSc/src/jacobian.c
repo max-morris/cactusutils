@@ -1,11 +1,10 @@
 /* (C) 2001-04-18 Erik Schnetter <schnetter@uni-tuebingen.de> */
-/* $Header$ */
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <petscda.h>
+#include <petscdmda.h>
 #include <petscmat.h>
 #include <petscsnes.h>
 
@@ -16,8 +15,7 @@
       
       
       
-int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B,
-		       MatStructure *flag, void *userptr)
+int TATPETSc_jacobian (SNES snes, Vec x, Mat J, Mat B, void *userptr)
 {
   DECLARE_CCTK_PARAMETERS;
   int ierr;
@@ -39,9 +37,7 @@ int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B,
   
   TATPETSc_copy (x, userptr, TATcopyout, TATcopyvars);
   ierr = (user->jac) (cctkGH, -1, user->data);
-  TATPETSc_copyjac (*J, userptr);
-  
-  *flag = SAME_NONZERO_PATTERN;
+  TATPETSc_copyjac (J, userptr);
   
   if (veryverbose) CCTK_INFO ("*** TATPETSc_jacobian done.");
   

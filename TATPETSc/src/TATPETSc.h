@@ -1,5 +1,4 @@
 /* (C) 2001-04-22 Erik Schnetter <schnetter@uni-tuebingen.de> */
-/* $Header$ */
 
 #ifndef TATPETSC_H
 #define TATPETSC_H
@@ -8,7 +7,7 @@
 
 #include <mpi.h>
 
-#include <petscda.h>
+#include <petscdmda.h>
 #include <petscsnes.h>
 
 #include "cctk.h"
@@ -24,13 +23,13 @@ typedef enum { TATcopyvars, TATcopyvals } TATvarset;
 
 
 
-#define MAGIC 0xcafebabe
+#define MAGIC 0xcafebabeUL
 
 typedef struct {
-  int magic;
+  unsigned long magic;
   const cGH *cctkGH;
   MPI_Comm comm;
-  DA da;
+  DM da;
   int nvars;
   int *var;
   int *val;
@@ -52,10 +51,12 @@ int TATPETSc_copy (Vec x, void *userptr, TATdir dir, TATvarset varset);
 int TATPETSc_copyjac (Mat J, void *userptr);
 
 int TATPETSc_function (SNES snes, Vec x, Vec f, void *userptr);
-int TATPETSc_jacobian (SNES snes, Vec x, Mat *J, Mat *B, MatStructure *flag,
-		       void *userptr);
+int TATPETSc_jacobian (SNES snes, Vec x, Mat J, Mat B, void *userptr);
 
-int TATPETSc_error_handler (int line, char *fun, char *file, char *dir, int n, int p, char *mess, void *ctx);
+PetscErrorCode TATPETSc_error_handler (MPI_Comm comm, int line,
+                                       const char *func, const char *file,
+                                       PetscErrorCode n, PetscErrorType p,
+                                       const char *mess, void *ctx);
 
 
 
@@ -64,8 +65,10 @@ int TATPETSc_error_handler (int line, char *fun, char *file, char *dir, int n, i
 int TATPETSc_solve (const cGH *cctkGH,
 		    const int *var, const int *val, int nvars,
 		    int options_table,
-		    int (*fun) (const cGH *cctkGH, int options_table, void *data),
-		    int (*bnd) (const cGH *cctkGH, int options_table, void *data),
+		    int (*fun) (const cGH *cctkGH, int options_table,
+                                void *data),
+		    int (*bnd) (const cGH *cctkGH, int options_table,
+                                void *data),
 		    void *data);
 
 

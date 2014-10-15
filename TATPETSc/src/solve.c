@@ -1,5 +1,4 @@
 /* (C) 2001-04-18 Erik Schnetter <schnetter@uni-tuebingen.de> */
-/* $Header$ */
 
 #include <assert.h>
 #include <stdio.h>
@@ -10,7 +9,7 @@
 
 #include <mpi.h>
 
-#include <petscda.h>
+#include <petscdmda.h>
 #include <petscsnes.h>
 #include <petscversion.h>
 
@@ -29,8 +28,10 @@
 int TATPETSc_solve (const cGH *cctkGH,
 		    const int *var, const int *val, int nvars,
 		    int options_table,
-		    int (*fun) (const cGH *cctkGH, int options_table, void *data),
-		    int (*bnd) (const cGH *cctkGH, int options_table, void *data),
+		    int (*fun) (const cGH *cctkGH, int options_table,
+                                void *data),
+		    int (*bnd) (const cGH *cctkGH, int options_table,
+                                void *data),
 		    void *data)
 {
   DECLARE_CCTK_PARAMETERS;
@@ -42,7 +43,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   CCTK_FPOINTER ptmp;
   CCTK_INT * restrict jac0;
   int (*jac) (const cGH *cctkGH, int options_table, void *data);
-  int (*get_coloring) (DA da, ISColoring *iscoloring, Mat *J, void *data);
+  int (*get_coloring) (DM da, ISColoring *iscoloring, Mat *J, void *data);
   
   /* world communicator */
   MPI_Comm comm;
@@ -58,12 +59,11 @@ int TATPETSc_solve (const cGH *cctkGH,
   SNESConvergedReason reason;
   
   /* distributed array */
-  DA da;
+  DM da;
   
   /* matrix coloring */
   ISColoring iscoloring;
   MatFDColoring matfdcoloring;
-  MatStructure flag;
   
   /* vectors */
   Vec x;			/* solution */
@@ -94,9 +94,6 @@ int TATPETSc_solve (const cGH *cctkGH,
   
   /* product_prefix of nprocs_dim */
   int proc_offset_dim[DIM];	/* [dim] */
-  
-  /* total number of grid points per direction */
-  int npoints[DIM];		/* [dim] */
   
   /* number of grid points per direction and per processor */
   int *npoints_proc[DIM];	/* [dim][nprocs_dim[dim]] */
@@ -211,7 +208,8 @@ int TATPETSc_solve (const cGH *cctkGH,
   }
   assert (ierr == 2*dim);
   
-  ierr = Util_TableGetIntArray (options_table, 2*DIM, nboundaryzones, "nboundaryzones");
+  ierr = Util_TableGetIntArray (options_table, 2*DIM, nboundaryzones,
+                                "nboundaryzones");
   if (ierr == UTIL_ERROR_TABLE_NO_SUCH_KEY) {
     for (d=0; d<2*dim; ++d) nboundaryzones[d] = user.dyndata.nghostzones[d/2];
     ierr = 2*dim;
@@ -356,48 +354,43 @@ int TATPETSc_solve (const cGH *cctkGH,
   }
   switch (user.dyndata.dim) {
   case 1:
-    if (veryverbose) CCTK_INFO ("DACreate1d");
-    ierr = DACreate1d (comm,
-		       periodic[0] ? DA_XPERIODIC : DA_NONPERIODIC,
-		       NI[0],
-		       nvars	/* degrees of freedom */,
-		       sw	/* stencil width */,
-		       lx[0],
-		       &da);
+    if (veryverbose) CCTK_INFO ("DMDACreate1d");
+    ierr = DMDACreate1d (comm,
+                         periodic[0] ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE,
+                         NI[0],
+                         nvars               /* degrees of freedom */,
+                         sw                  /* stencil width */,
+                         lx[0],
+                         &da);
     CHKERRQ(ierr);
     break;
   case 2:
-    if (veryverbose) CCTK_INFO ("DACreate2d");
-    ierr = DACreate2d (comm,
-		       periodic[0]
-		       ? (periodic[1] ? DA_XYPERIODIC : DA_XPERIODIC)
-		       : (periodic[1] ? DA_YPERIODIC : DA_NONPERIODIC),
-		       DA_STENCIL_BOX,
-		       NI[0],NI[1],
-		       nprocs_dim[0],nprocs_dim[1],
-		       nvars	/* degrees of freedom */,
-		       sw	/* stencil width */,
-		       lx[0],lx[1],
-		       &da);
+    if (veryverbose) CCTK_INFO ("DMDACreate2d");
+    ierr = DMDACreate2d (comm,
+                         periodic[0] ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE,
+                         periodic[1] ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE,
+                         DMDA_STENCIL_BOX,
+                         NI[0],NI[1],
+                         nprocs_dim[0],nprocs_dim[1],
+                         nvars               /* degrees of freedom */,
+                         sw                  /* stencil width */,
+                         lx[0],lx[1],
+                         &da);
     CHKERRQ(ierr);
     break;
   case 3:
-    if (veryverbose) CCTK_INFO ("DACreate3d");
-    ierr = DACreate3d (comm,
-		       periodic[0]
-		       ? (periodic[1]
-			  ? (periodic[2] ? DA_XYZPERIODIC : DA_XYPERIODIC)
-			  : (periodic[2] ? DA_XZPERIODIC : DA_XPERIODIC))
-		       : (periodic[1]
-			  ? (periodic[2] ? DA_YZPERIODIC : DA_YPERIODIC)
-			  : (periodic[2] ? DA_ZPERIODIC : DA_NONPERIODIC)),
-		       DA_STENCIL_BOX,
-		       NI[0],NI[1],NI[2],
-		       nprocs_dim[0],nprocs_dim[1],nprocs_dim[2],
-		       nvars	/* degrees of freedom */,
-		       sw	/* stencil width */,
-		       lx[0],lx[1],lx[2],
-		       &da);
+    if (veryverbose) CCTK_INFO ("DMDACreate3d");
+    ierr = DMDACreate3d (comm,
+                         periodic[0] ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE,
+                         periodic[1] ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE,
+                         periodic[2] ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE,
+                         DMDA_STENCIL_BOX,
+                         NI[0],NI[1],NI[2],
+                         nprocs_dim[0],nprocs_dim[1],nprocs_dim[2],
+                         nvars               /* degrees of freedom */,
+                         sw                  /* stencil width */,
+                         lx[0],lx[1],lx[2],
+                         &da);
     CHKERRQ(ierr);
     break;
   default:
@@ -406,7 +399,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   user.da = da;
   
   for (n=0; n<nvars; ++n) {
-    ierr = DASetFieldName (da, n, CCTK_VarName(var[n]));
+    ierr = DMDASetFieldName (da, n, CCTK_VarName(var[n]));
     CHKERRQ(ierr);
   }
   
@@ -416,10 +409,10 @@ int TATPETSc_solve (const cGH *cctkGH,
   
   
   
-  /* Extract global and local vectors from DA */
+  /* Extract global and local vectors from DMDA */
   
-  if (veryverbose) CCTK_INFO ("DACreateGlobalVector");
-  ierr = DACreateGlobalVector (da, &x);
+  if (veryverbose) CCTK_INFO ("DMCreateGlobalVector");
+  ierr = DMCreateGlobalVector (da, &x);
   CHKERRQ(ierr);
   ierr = VecDuplicate (x, &f);
   CHKERRQ(ierr);
@@ -445,31 +438,13 @@ int TATPETSc_solve (const cGH *cctkGH,
   if (jac) {
     /* Calculate Jacobian directly through a user given function */
     
-    if (veryverbose) CCTK_INFO ("DAGetMatrix");
-/*     ierr = DAGetMatrix (da, MATAIJ, &J); */
-/*     CHKERRQ(ierr); */
-    if (size==1) {
-      ierr = DAGetMatrix (da, MATSEQAIJ, &J);
-      CHKERRQ(ierr);
-    } else {
-      ierr = DAGetMatrix (da, MATMPIAIJ, &J);
-      CHKERRQ(ierr);
-    }
-    if (veryverbose) CCTK_INFO ("DAGetColoring");
-#if PETSC_VERSION_MAJOR < 2 ||                                          \
-  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3) ||              \
-  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR == 3 && PETSC_VERSION_SUBMINOR < 3)
-    ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
+    if (veryverbose) CCTK_INFO ("DMCreateMatrix");
+    ierr = DMCreateMatrix (da, &J);
     CHKERRQ(ierr);
-#elif PETSC_VERSION_MAJOR < 3 ||                        \
-  (PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR < 1)
-    ierr = DAGetColoring (da, IS_COLORING_GLOBAL, &iscoloring);
+    if (veryverbose) CCTK_INFO ("DMCreateColoring");
+    ierr = DMCreateColoring (da, IS_COLORING_GLOBAL, &iscoloring);
     CHKERRQ(ierr);
-#else
-    ierr = DAGetColoring (da, IS_COLORING_GLOBAL, MATAIJ, &iscoloring);
-    CHKERRQ(ierr);
-#endif
-    ierr = TATPETSc_jacobian (snes, x, &J, &J, &flag, &user);
+    ierr = TATPETSc_jacobian (snes, x, J, J, &user);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("SNESSetJacobian");
     ierr = SNESSetJacobian (snes, J, J, TATPETSc_jacobian, &user);
@@ -479,30 +454,12 @@ int TATPETSc_solve (const cGH *cctkGH,
     /* Approximate Jacobian numerically (automatically) */
     
     if (!get_coloring) {
-      if (veryverbose) CCTK_INFO ("DAGetMatrix");
-/*       ierr = DAGetMatrix (da, MATAIJ, &J); */
-/*       CHKERRQ(ierr); */
-      if (size==1) {
-        ierr = DAGetMatrix (da, MATSEQAIJ, &J);
-        CHKERRQ(ierr);
-      } else {
-        ierr = DAGetMatrix (da, MATMPIAIJ, &J);
-        CHKERRQ(ierr);
-      }
-      if (veryverbose) CCTK_INFO ("DAGetColoring");
-#if PETSC_VERSION_MAJOR < 2 ||                                          \
-  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3) ||              \
-  (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR == 3 && PETSC_VERSION_SUBMINOR < 3)
-      ierr = DAGetColoring (da, IS_COLORING_LOCAL, &iscoloring);
+      if (veryverbose) CCTK_INFO ("DMCreateMatrix");
+      ierr = DMCreateMatrix (da, &J);
       CHKERRQ(ierr);
-#elif PETSC_VERSION_MAJOR < 3 ||                        \
-  (PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR < 1)
-      ierr = DAGetColoring (da, IS_COLORING_GLOBAL, &iscoloring);
+      if (veryverbose) CCTK_INFO ("DMCreateColoring");
+      ierr = DMCreateColoring (da, IS_COLORING_GLOBAL, &iscoloring);
       CHKERRQ(ierr);
-#else
-      ierr = DAGetColoring (da, IS_COLORING_GLOBAL, MATAIJ, &iscoloring);
-      CHKERRQ(ierr);
-#endif
     } else {
       if (veryverbose) CCTK_INFO ("get_coloring");
       ierr = get_coloring (da, &iscoloring, &J, data);
@@ -512,7 +469,7 @@ int TATPETSc_solve (const cGH *cctkGH,
     ierr = MatFDColoringCreate (J, iscoloring, &matfdcoloring);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("ISColoringDestroy");
-    ierr = ISColoringDestroy (iscoloring);
+    ierr = ISColoringDestroy (&iscoloring);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("MatFDColoringSetFunction");
     ierr = MatFDColoringSetFunction (matfdcoloring,
@@ -522,7 +479,7 @@ int TATPETSc_solve (const cGH *cctkGH,
     ierr = MatFDColoringSetFromOptions (matfdcoloring);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("SNESSetJacobian");
-    ierr = SNESSetJacobian (snes, J, J, SNESDefaultComputeJacobianColor,
+    ierr = SNESSetJacobian (snes, J, J, SNESComputeJacobianDefaultColor,
 			    matfdcoloring);
     CHKERRQ(ierr);
     
@@ -579,7 +536,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   
 #if 0
   if (veryverbose) CCTK_INFO ("DMMGSetInitialGuess");
-  ierr = DMMGSetInitialGuess (dmmg, ???);
+  ierr = DMMGSetInitialGuess (dmmg, ?);
   CHKERRQ(ierr);
 #endif
   
@@ -606,7 +563,7 @@ int TATPETSc_solve (const cGH *cctkGH,
   clk_tck = sysconf(_SC_CLK_TCK);
   assert (clk_tck>0);
   ticks0 = times(&tms_buffer);
-  assert (ticks0!=-1);
+  assert (ticks0!=(clock_t)-1);
   time0 = tms_buffer.tms_utime + tms_buffer.tms_stime;
   
 #if 1
@@ -666,7 +623,7 @@ int TATPETSc_solve (const cGH *cctkGH,
 #endif
   
   ticks1 = times(&tms_buffer);
-  assert (ticks1!=-1);
+  assert (ticks1!=(clock_t)-1);
   time1 = tms_buffer.tms_utime + tms_buffer.tms_stime;
   
   if (verbose) {
@@ -690,22 +647,19 @@ int TATPETSc_solve (const cGH *cctkGH,
   CHKERRQ(ierr);
   
   switch (reason) {
-  case SNES_CONVERGED_FNORM_ABS:      msg = "FNORM_ABS (F < F_minabs)"; break;
-  case SNES_CONVERGED_FNORM_RELATIVE: msg = "FNORM_RELATIVE (F < F_mintol*F_initial)"; break;
-  case SNES_CONVERGED_PNORM_RELATIVE: msg = "PNORM_RELATIVE (step size small)"; break;
-#if PETSC_VERSION_MAJOR < 2 || (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR <= 1)
-  case SNES_CONVERGED_GNORM_ABS:      msg = "GNORM_ABS (grad F < grad F_min)"; break;
-  case SNES_CONVERGED_TR_REDUCTION:   msg = "TR_REDUCTION"; break;
-#endif
-  case SNES_CONVERGED_TR_DELTA:       msg = "TR_DELTA"; break;
-  case SNES_DIVERGED_FUNCTION_COUNT:  msg = "FUNCTION_COUNT"; break;
-  case SNES_DIVERGED_FNORM_NAN:       msg = "FNORM_NAN"; break;
-  case SNES_DIVERGED_MAX_IT:          msg = "MAX_IT"; break;
-  case SNES_DIVERGED_LS_FAILURE:      msg = "LS_FAILURE"; break;
-#if PETSC_VERSION_MAJOR < 2 || (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR <= 1)
-  case SNES_DIVERGED_TR_REDUCTION:    msg = "TR_REDUCTION"; break;
-#endif
-  case SNES_DIVERGED_LOCAL_MIN:       msg = "LOCAL_MIN (|| J^T b || is small, implies converged to local minimum of F())"; break;
+  case SNES_CONVERGED_FNORM_ABS:      msg = "SNES_CONVERGED_FNORM_ABS: ||F|| < atol"; break;
+  case SNES_CONVERGED_FNORM_RELATIVE: msg = "SNES_CONVERGED_FNORM_RELATIVE: ||F|| < rtol*||F_initial||"; break;
+  case SNES_CONVERGED_SNORM_RELATIVE: msg = "SNES_CONVERGED_SNORM_RELATIVE: Newton computed step size small; || delta x || < stol || x ||"; break;
+  case SNES_CONVERGED_ITS:            msg = "SNES_CONVERGED_ITS: maximum iterations reached"; break;
+  case SNES_CONVERGED_TR_DELTA:       msg = "SNES_CONVERGED_TR_DELTA: diverged"; break;
+  case SNES_DIVERGED_FUNCTION_DOMAIN: msg = "SNES_DIVERGED_FUNCTION_DOMAIN: the new x location passed the function is not in the domain of F"; break;
+  case SNES_DIVERGED_FUNCTION_COUNT:  msg = "SNES_DIVERGED_FUNCTION_COUNT"; break;
+  case SNES_DIVERGED_LINEAR_SOLVE:    msg = "SNES_DIVERGED_LINEAR_SOLVE: the linear solve failed"; break;
+  case SNES_DIVERGED_FNORM_NAN:       msg = "SNES_DIVERGED_FNORM_NAN"; break;
+  case SNES_DIVERGED_MAX_IT:          msg = "SNES_DIVERGED_MAX_IT"; break;
+  case SNES_DIVERGED_LINE_SEARCH:     msg = "SNES_DIVERGED_LINE_SEARCH: the line search failed"; break;
+  case SNES_DIVERGED_INNER:           msg = "SNES_DIVERGED_INNER: inner solve failed"; break;
+  case SNES_DIVERGED_LOCAL_MIN:       msg = "SNES_DIVERGED_LOCAL_MIN: || J^T b || is small, implies converged to local minimum of F()"; break;
   case SNES_CONVERGED_ITERATING:      msg = "ITERATING"; break;
   default:                            msg = "(unknown reason)";
   }
@@ -746,35 +700,35 @@ int TATPETSc_solve (const cGH *cctkGH,
 #if 1
   
   if (veryverbose) CCTK_INFO ("VecDestroy");
-  ierr = VecDestroy (x);
+  ierr = VecDestroy (&x);
   CHKERRQ(ierr);
-  ierr = VecDestroy (f);
+  ierr = VecDestroy (&f);
   CHKERRQ(ierr);
   
   if (veryverbose) CCTK_INFO ("MatDestroy");
-  ierr = MatDestroy (J);
+  ierr = MatDestroy (&J);
   CHKERRQ(ierr);
   
   if (!jac) {
     if (veryverbose) CCTK_INFO ("MatFDColoringDestroy");
-    ierr = MatFDColoringDestroy (matfdcoloring);
+    ierr = MatFDColoringDestroy (&matfdcoloring);
     CHKERRQ(ierr);
   }
   
   if (veryverbose) CCTK_INFO ("SNESDestroy");
-  ierr = SNESDestroy (snes);
+  ierr = SNESDestroy (&snes);
   CHKERRQ(ierr);
   
 #else
   
   if (veryverbose) CCTK_INFO ("DMMGDestroy");
-  ierr = DMMGDestroy (dmmg);
+  ierr = DMMGDestroy (&dmmg);
   CHKERRQ(ierr);
   
 #endif
   
-  if (veryverbose) CCTK_INFO ("DADestroy");
-  ierr = DADestroy (da);
+  if (veryverbose) CCTK_INFO ("DMDestroy");
+  ierr = DMDestroy (&da);
   CHKERRQ(ierr);
   
   user.nvars = 0;
