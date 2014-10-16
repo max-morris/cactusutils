@@ -1,5 +1,4 @@
 # Interface definition for thorn TATPETSc
-# $Header$
 
 IMPLEMENTS: TATPETSc
 

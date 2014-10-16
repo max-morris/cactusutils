@@ -1,7 +1,4 @@
 # Schedule definitions for thorn TATPETSc
-# $Header$
-
-
 
 SCHEDULE TATPETSc_initialize AT startup AFTER Driver_Startup
 {
