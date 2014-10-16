@@ -1,8 +1,0 @@
-# Main make.code.defn file for thorn TATPETSc   -*-Makefile-*-
-
-# Source files in this directory
-SRCS =	copy.c copyjac.c finalize.c function.c initialize.c jacobian.c solve.c
-
-# Subdirectories containing source files
-SUBDIRS = 
-
