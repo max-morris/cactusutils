@@ -468,15 +468,18 @@ int TATPETSc_solve (const cGH *cctkGH,
     if (veryverbose) CCTK_INFO ("MatFDColoringCreate");
     ierr = MatFDColoringCreate (J, iscoloring, &matfdcoloring);
     CHKERRQ(ierr);
-    if (veryverbose) CCTK_INFO ("ISColoringDestroy");
-    ierr = ISColoringDestroy (&iscoloring);
-    CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("MatFDColoringSetFunction");
     ierr = MatFDColoringSetFunction (matfdcoloring,
 				     (int(*)(void))TATPETSc_function, &user);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("MatFDColoringSetFromOptions");
     ierr = MatFDColoringSetFromOptions (matfdcoloring);
+    CHKERRQ(ierr);
+    if (veryverbose) CCTK_INFO ("MatFDColoringSetUp");
+    ierr = MatFDColoringSetUp (J, iscoloring, matfdcoloring);
+    CHKERRQ(ierr);
+    if (veryverbose) CCTK_INFO ("ISColoringDestroy");
+    ierr = ISColoringDestroy (&iscoloring);
     CHKERRQ(ierr);
     if (veryverbose) CCTK_INFO ("SNESSetJacobian");
     ierr = SNESSetJacobian (snes, J, J, SNESComputeJacobianDefaultColor,

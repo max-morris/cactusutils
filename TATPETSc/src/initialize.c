@@ -94,12 +94,7 @@ int TATPETSc_initialize (void)
   } else {
     comm = MPI_COMM_WORLD;
   }
-#if PETSC_VERSION_MAJOR < 2 || (PETSC_VERSION_MAJOR == 2 && PETSC_VERSION_MINOR < 3)
-  ierr = PetscSetCommWorld (comm);
-  CHKERRQ(ierr);
-#else
   PETSC_COMM_WORLD = comm;
-#endif
   
   ierr = PetscInitialize (&argc, &argv, PETSC_NULL, PETSC_NULL);
   CHKERRQ(ierr);
