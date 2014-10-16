@@ -1,6 +1,7 @@
 /* (C) 2001-04-18 Erik Schnetter <schnetter@uni-tuebingen.de> */
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -285,14 +286,19 @@ int TATPETSc_solve (const cGH *cctkGH,
   nprocs = CCTK_nProcs(cctkGH);
   assert (nprocs>0);
   
+  MPI_Datatype mpi_ptr_t;
+  switch (sizeof(uintptr_t)) {
+  case 4: mpi_ptr_t = MPI_UINT32_T; break;
+  case 8: mpi_ptr_t = MPI_UINT64_T; break;
+  default: CCTK_ERROR("No MPI type for C pointers");
+  }
+  
   all_lbnd = malloc(nprocs * dim * sizeof(*all_lbnd));
   assert (all_lbnd);
-  assert (sizeof(*lbnd) == sizeof(MPI_INT));
-  MPI_Allgather ((void*)lbnd, dim, MPI_INT, all_lbnd, dim, MPI_INT, comm);
+  MPI_Allgather ((void*)lbnd, dim, mpi_ptr_t, all_lbnd, dim, mpi_ptr_t, comm);
   all_lsh = malloc(nprocs * dim * sizeof(*all_lsh));
   assert (all_lsh);
-  assert (sizeof(*lsh) == sizeof(MPI_INT));
-  MPI_Allgather ((void*)lsh, dim, MPI_INT, all_lsh, dim, MPI_INT, comm);
+  MPI_Allgather ((void*)lsh, dim, mpi_ptr_t, all_lsh, dim, mpi_ptr_t, comm);
   
   for (d=0; d<dim; ++d) {
     nprocs_dim[d] = 1;
