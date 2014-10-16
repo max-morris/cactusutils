@@ -364,8 +364,8 @@ int TATPETSc_solve (const cGH *cctkGH,
     ierr = DMDACreate1d (comm,
                          periodic[0] ? DM_BOUNDARY_PERIODIC : DM_BOUNDARY_NONE,
                          NI[0],
-                         nvars               /* degrees of freedom */,
-                         sw                  /* stencil width */,
+                         nvars, /* degrees of freedom */
+                         sw,    /* stencil width */
                          lx[0],
                          &da);
     CHKERRQ(ierr);
@@ -378,8 +378,8 @@ int TATPETSc_solve (const cGH *cctkGH,
                          DMDA_STENCIL_BOX,
                          NI[0],NI[1],
                          nprocs_dim[0],nprocs_dim[1],
-                         nvars               /* degrees of freedom */,
-                         sw                  /* stencil width */,
+                         nvars, /* degrees of freedom */
+                         sw,    /* stencil width */
                          lx[0],lx[1],
                          &da);
     CHKERRQ(ierr);
@@ -393,8 +393,8 @@ int TATPETSc_solve (const cGH *cctkGH,
                          DMDA_STENCIL_BOX,
                          NI[0],NI[1],NI[2],
                          nprocs_dim[0],nprocs_dim[1],nprocs_dim[2],
-                         nvars               /* degrees of freedom */,
-                         sw                  /* stencil width */,
+                         nvars, /* degrees of freedom */
+                         sw,    /* stencil width */
                          lx[0],lx[1],lx[2],
                          &da);
     CHKERRQ(ierr);
