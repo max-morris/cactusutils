@@ -1,5 +1,4 @@
 # Schedule definitions for thorn NaNCatcher
-# $Header$
 
 SCHEDULE catch_nans AT startup
 {

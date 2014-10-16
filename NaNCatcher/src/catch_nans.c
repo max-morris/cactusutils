@@ -1,16 +1,13 @@
-/* $Header$ */
-
-
-
-/* XXX C99 provides standard functions to deal with floating point exceptions.
- * Alas, they fail to provide the features we want. If you manage to figure out
- * a portable way to enable individual traps , tell us about it. For now, we
- * only support glibc-based and x86 systems. [dk]
+/* C99 provides standard functions to deal with floating point
+ * exceptions. Alas, they fail to provide the features we want. If you
+ * manage to figure out a portable way to enable individual traps,
+ * tell us about it. For now, we only support glibc-based and x86
+ * systems. [dk]
  */
 
 #define _GNU_SOURCE
 
-#include "cctk.h"
+#include <cctk.h>
 
 
 
@@ -32,33 +29,33 @@ int no_catch_nans (void);
 #if __GLIBC__ >= 2 && __GLIBC_PREREQ(2,2)
 
 /*
- * Glibc 2.2 provides a simple and easy to use way to deal with individual
- * exceptions as a GNU extension. If we are on a GNU system, this is the
- * preferred way to proceed.
+ * Glibc 2.2 provides a simple and easy to use way to deal with
+ * individual exceptions as a GNU extension. If we are on a GNU
+ * system, this is the preferred way to proceed.
  */
 
 # include <fenv.h>
 
 int catch_nans (void)
 {
-	if (-1 != feenableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID)) {
-		CCTK_INFO("NaNCatcher enabled");
-		return 0;
-	}
-
-	CCTK_WARN (1, "NaNCatcher disabled -- failed to enable traps");
-	return 0;
+  if (-1 != feenableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID)) {
+    CCTK_INFO("NaNCatcher enabled");
+    return 0;
+  }
+  
+  CCTK_WARN (1, "NaNCatcher disabled -- failed to enable traps");
+  return 0;
 }
 
 int no_catch_nans (void)
 {
-	if (-1 != fedisableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID)) {
-		CCTK_INFO ("NaNCatcher disabled");
-		return 0;
-	}
-
-	CCTK_WARN (1, "NaNCatcher -- failed to disable traps");
-	return 0;
+  if (-1 != fedisableexcept(FE_DIVBYZERO | FE_OVERFLOW | FE_INVALID)) {
+    CCTK_INFO ("NaNCatcher disabled");
+    return 0;
+  }
+  
+  CCTK_WARN (1, "NaNCatcher -- failed to disable traps");
+  return 0;
 }
 
 
@@ -66,8 +63,8 @@ int no_catch_nans (void)
 #elif defined(__linux__) && defined(__i386__) && (defined(__GNUC__) || defined(__INTEL_COMPILER))
 
 /*
- * Here's an x86-only fallback for non-glibc systems that use the GNU or
- * Intel compilers.
+ * Here's an x86-only fallback for non-glibc systems that use the GNU
+ * or Intel compilers.
  */
 
 # include <fpu_control.h>
@@ -155,12 +152,12 @@ enum {
 
 /* Equivalent to fegetenv, but returns a fenv_t instead of taking a
    pointer.  */
-#define fegetenv_register() \
-        ({ fenv_t env; asm volatile ("mffs %0" : "=f" (env)); env; })
+#define fegetenv_register()                                             \
+  ({ fenv_t env; asm volatile ("mffs %0" : "=f" (env)); env; })
 
 /* Equivalent to fesetenv, but takes a fenv_t instead of a pointer.  */
-#define fesetenv_register(env) \
-        ({ double d = (env); asm volatile ("mtfsf 0xff,%0" : : "f" (d)); })
+#define fesetenv_register(env)                                          \
+  ({ double d = (env); asm volatile ("mtfsf 0xff,%0" : : "f" (d)); })
 
 int catch_nans (void)
 {
@@ -202,14 +199,16 @@ int no_catch_nans (void)
 
 int catch_nans (void)
 {
-  CCTK_WARN (1, "NaNCatcher disabled -- no support for your compiler");
+  CCTK_WARN (CCTK_WARN_ALERT,
+             "NaNCatcher disabled -- no support for your compiler");
   
   return 0;
 }
 
 int no_catch_nans (void)
 {
-  CCTK_WARN (1, "NaNCatcher disabled -- no support for your compiler");
+  CCTK_WARN (CCTK_WARN_ALERT,
+             "NaNCatcher disabled -- no support for your compiler");
   
   return 0;
 }

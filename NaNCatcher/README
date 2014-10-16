@@ -1,6 +1,5 @@
 Cactus Code Thorn NaNCatcher
 Authors    : Erik Schnetter <schnetter@uni-tuebingen.de>
-CVS info   : $Header$
 --------------------------------------------------------------------------
 
 Purpose of the thorn:
@@ -20,7 +19,7 @@ Linux systems with an IA32 (aka i386) processor, when the compiler is
 GNU or Intel, using <fpu_control.h>.
 
 PowerPC systems with a GNU compiler, using code taken from the GNU C
-library.  (
+library.
 
 In cases where the nan-catcher does not work, you will see a warning
 message "NaNCatcher disabled -- no support for your compiler" early at
