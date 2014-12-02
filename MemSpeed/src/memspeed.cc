@@ -1333,7 +1333,7 @@ namespace {
         max_count *= llrint(max(2.0, min(10.0, 1.1 * min_elapsed / elapsed)));
       }
       cache_info[cache].write_bandwidth =
-        1.0 * max_count * cache_memsize / elapsed;
+        1.0 * max_count * (nmax * sizeof(CCTK_REAL)) / elapsed;
       if (verbose) {
         printf("      result:");
       }
