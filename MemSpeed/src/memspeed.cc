@@ -546,11 +546,11 @@ namespace {
         printf("    Memory allocation performance for %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
                node_num_allocs, cache_memsize);
-        fflush(stdout);
       } else {
         printf("    Memory allocation performance for %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      fflush(stdout);
       
       if (comm_size > node_procs_active) {
         printf("      [skipped -- too many MPI processes]\n");
@@ -660,11 +660,11 @@ namespace {
         printf("    Read latency of %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
                node_num_allocs, cache_memsize);
-        fflush(stdout);
       } else {
         printf("    Read latency of %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      fflush(stdout);
       
       if (comm_size > node_procs_active) {
         printf("      [skipped -- too many MPI processes]\n");
@@ -803,11 +803,11 @@ namespace {
         printf("    Read bandwidth of %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
                node_num_allocs, cache_memsize);
-        fflush(stdout);
       } else {
         printf("    Read bandwidth of %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      fflush(stdout);
       
       if (comm_size > node_procs_active) {
         printf("      [skipped -- too many MPI processes]\n");
@@ -963,11 +963,11 @@ namespace {
         printf("    Write latency of %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
                node_num_allocs, cache_memsize);
-        fflush(stdout);
       } else {
         printf("    Write latency of %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      fflush(stdout);
       
       if (comm_size > node_procs_active) {
         printf("      [skipped -- too many MPI processes]\n");
@@ -1111,11 +1111,11 @@ namespace {
         printf("    Write bandwidth of %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
                node_num_allocs, cache_memsize);
-        fflush(stdout);
       } else {
         printf("    Write bandwidth of %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      fflush(stdout);
       
       if (comm_size > node_procs_active) {
         printf("      [skipped -- too many MPI processes]\n");
@@ -1240,11 +1240,11 @@ namespace {
         printf("    Write bandwidth via cache-bypassing stores for %s (for %d PUs) (using %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
                node_num_allocs, cache_memsize);
-        fflush(stdout);
       } else {
         printf("    Write bandwidth via cache-bypassing stores for %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      fflush(stdout);
       
       if (comm_size > node_procs_active) {
         printf("      [skipped -- too many MPI processes]\n");
@@ -1376,11 +1376,11 @@ namespace {
         printf("    Stencil code performance of %s (for %d PUs) (using %d*%td^3 grid points, %d*%td bytes):\n",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus,
                num_allocs, np, num_allocs, 2 * sizeof(CCTK_REAL) * np*np*np);
-        fflush(stdout);
       } else {
         printf("    Stencil code performance %s (for %d PUs):",
                cache_info[cache].name.c_str(), cache_info[cache].num_pus);
       }
+      fflush(stdout);
       const ptrdiff_t node_memory = cache_info[cache_info.size()-1].size;
       if (comm_size > num_active_procs ||
           (skip_memsize + memsize) * comm_size > node_memory * 3 / 4)
