@@ -1264,7 +1264,8 @@ namespace {
       vector<char> skiparray(skip_memsize, 1);
       
       // Allocate benchmark data structures
-      const ptrdiff_t nmax = cache_memsize / sizeof(CCTK_REAL);
+      const ptrdiff_t nmax =
+        (cache_memsize / sizeof(CCTK_REAL)) & (-8*CCTK_REAL_VEC_SIZE);
       // Allocate array, set all elements to 1.0
       vector<vector<CCTK_REAL> > raw_arrays(proc_num_allocs);
       vector<CCTK_REAL*> arrays(proc_num_allocs);
@@ -1272,11 +1273,11 @@ namespace {
       if (omp_get_thread_num() % thread_alloc_every == 0) {
         const int alloc = omp_get_thread_num() / thread_alloc_every;
         assert(alloc < proc_num_allocs);
-        raw_arrays[alloc].resize(nmax + CCTK_REAL_VEC_SIZE-1);
+        raw_arrays[alloc].resize(nmax + 8*CCTK_REAL_VEC_SIZE-1);
         arrays[alloc] =
-          (CCTK_REAL*)(ptrdiff_t(&raw_arrays[alloc][CCTK_REAL_VEC_SIZE-1]) &
-                       -sizeof(CCTK_REAL_VEC));
-        CCTK_REAL* restrict const array = &arrays[alloc][0];
+          (CCTK_REAL*)(ptrdiff_t(&raw_arrays[alloc][8*CCTK_REAL_VEC_SIZE-1]) &
+                       (-8*sizeof(CCTK_REAL_VEC)));
+        CCTK_REAL* restrict const array = arrays[alloc];
         for (ptrdiff_t n=0; n<nmax; ++n) {
           array[n] = 1.0;
         }
