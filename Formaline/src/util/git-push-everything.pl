@@ -61,7 +61,9 @@ if ($?) {
 
 
 
-if (defined $git_local_repo) {
+my $did_push_to_local = 0;
+
+if (defined $git_local_repo && $git_local_repo ne '') {
     $ENV{'GIT_DIR'} = "$git_master_repo/.git";
     
     print "Formaline: Pushing to local repository $git_local_repo...\n";
@@ -78,14 +80,20 @@ if (defined $git_local_repo) {
     if ($?) {
         die "Could not push tags\nCommand was\n   $git_cmd push -v -f --tags '$git_local_repo'";
     }
+    $did_push_to_local = 1;
     
     system "${bindir}/git-gc-repo.pl '$git_cmd' '$git_local_repo'";
 }
 
 
 
-if (defined $git_central_repo) {
-    $ENV{'GIT_DIR'} = "$git_master_repo/.git";
+if (defined $git_central_repo && $git_central_repo ne '') {
+    if ($did_push_to_local) {
+        $ENV{'GIT_DIR'} = "$git_local_repo/.git";
+    } else {
+        $ENV{'GIT_DIR'} = "$git_master_repo/.git";
+    }
+    $ENV{'GIT_SSH'} = "$bindir/git-ssh.sh";
     
     print "Formaline: Pushing to central repository $git_central_repo...\n";
     
