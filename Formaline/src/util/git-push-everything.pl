@@ -73,7 +73,7 @@ if (defined $git_local_repo) {
         die "Could not push branches\nCommand was\n   $git_cmd push -v -f --all '$git_local_repo'";
     }
     
-    print "$git_cmd push -v -f --tags '$git_local_repo'\n" unless $silent;
+    print "Executing: $git_cmd push -v -f --tags '$git_local_repo'\n" unless $silent;
     system "$git_cmd push -v -f --tags '$git_local_repo' $silencer";
     if ($?) {
         die "Could not push tags\nCommand was\n   $git_cmd push -v -f --tags '$git_local_repo'";
@@ -96,7 +96,7 @@ if (defined $git_central_repo) {
         die "Could not push branches\nCommand was\n   $git_cmd push -v -f --all '$git_central_repo'";
     }
     
-    print "$git_cmd push -v -f --tags '$git_central_repo'\n" unless $silent;
+    print "Executing: $git_cmd push -v -f --tags '$git_central_repo'\n" unless $silent;
     system "$git_cmd push -v -f --tags '$git_central_repo' $silencer";
     if ($?) {
         die "Could not push tags\nCommand was\n   $git_cmd push -v -f --tags '$git_central_repo'";
