@@ -69,6 +69,14 @@ namespace Formaline
   
   
   void file::
+  close_group (storage * group)
+  {
+    delete group;
+  }
+  
+  
+  
+  void file::
   store (char const * const key,
          bool const value)
   {

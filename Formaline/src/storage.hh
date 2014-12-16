@@ -34,6 +34,10 @@ namespace Formaline
     = 0;
     
     virtual void
+    close_group (storage * group)
+    = 0;
+    
+    virtual void
     store (char const * key,
            bool value)
     = 0;

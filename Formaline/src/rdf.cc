@@ -548,6 +548,14 @@ namespace Formaline
 
 
   void rdf::
+  close_group (storage * group)
+  {
+    delete group;
+  }
+
+
+
+  void rdf::
   store (char const * const key,
          bool const value)
   {

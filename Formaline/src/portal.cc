@@ -359,8 +359,16 @@ namespace Formaline
     return new portal (0, get_state (), name1.c_str(), this);
   }
   
-
-
+  
+  
+  void portal::
+  close_group (storage * group)
+  {
+    delete group;
+  }
+  
+  
+  
   void portal::
   store (char const * const key,
          bool const value)

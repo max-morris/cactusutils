@@ -35,6 +35,9 @@ namespace Formaline
     void
     add_storage (storage *);
     
+    storage *
+    remove_storage ();
+    
     int
     num_storages ()
       const;
@@ -43,6 +46,9 @@ namespace Formaline
     
     void
     open_group (multistorage &, char const * name);
+    
+    void
+    close_group (multistorage &);
     
     
     

@@ -70,6 +70,9 @@ namespace Formaline
     
     virtual rdf *
     open_group (char const * name);
+    
+    virtual void
+    close_group (storage * group);
   
     virtual void
     store (char const * key,

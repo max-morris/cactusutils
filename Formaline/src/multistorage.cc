@@ -44,6 +44,16 @@ namespace Formaline
   
   
   
+  storage * multistorage::
+  remove_storage ()
+  {
+    storage * const s = stores.front();
+    stores.pop_front ();
+    return s;
+  }
+  
+  
+  
   int multistorage::
   num_storages ()
     const
@@ -60,6 +70,18 @@ namespace Formaline
            it = stores.begin(); it != stores.end(); ++ it)
     {
       ms.add_storage ((* it)->open_group (name));
+    }
+  }
+  
+  
+  
+  void
+  multistorage::close_group (multistorage & ms)
+  {
+    for (list<storage *>::const_iterator
+           it = stores.begin(); it != stores.end(); ++ it)
+    {
+      (* it)->close_group (ms.remove_storage());
     }
   }
   

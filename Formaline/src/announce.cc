@@ -478,28 +478,27 @@ namespace Formaline
       // All Cactus thorns
   
       {
+        multistorage thorn_stores;
+        stores.open_group (thorn_stores, "thorns");
         int const numthorns = CCTK_NumCompiledThorns ();
         for (int thorn = 0; thorn < numthorns; ++ thorn)
         {
           char const * const thornname = CCTK_CompiledThorn (thorn);
-      
-          ostringstream keybuf;
-          keybuf << "thorns/" << thornname;
-          string const keystr = keybuf.str();
-          char const * const key = keystr.c_str();
-      
           if (CCTK_IsThornActive (thornname))
           {
-            stores.store (key, "active");
+            thorn_stores.store (thornname, "active");
           }
           else
           {
-            stores.store (key, "inactive");
+            thorn_stores.store (thornname, "inactive");
           }
         }
+        stores.close_group (thorn_stores);
       }
       
       {
+        multistorage arrangement_stores;
+        stores.open_group (arrangement_stores, "thorn_arrangements");
         int const numthorns = ThornList::NumThorns ();
         char const * const * const thornnames = ThornList::ThornNames ();
         for (int thorn = 0; thorn < numthorns; ++ thorn)
@@ -509,16 +508,9 @@ namespace Formaline
           assert (sep != string::npos);
           string const arrangement = combination.substr (0, sep);
           string const thornname   = combination.substr (sep + 1);
-          
-          ostringstream keybuf;
-          keybuf << "thorns_arrangement/" << thornname;
-          string const keystr = keybuf.str();
-          char const * const key = keystr.c_str();
-          
-          char const * const value = arrangement.c_str();
-          
-          stores.store (key, value);
+          arrangement_stores.store (thornname.c_str(), arrangement.c_str());
         }
+        stores.close_group (arrangement_stores);
       }
   
   
@@ -526,6 +518,8 @@ namespace Formaline
       // All Cactus parameters
   
       {
+        multistorage parameter_stores;
+        stores.open_group (parameter_stores, "parameters");
         typedef pair<string, cParamData const *> param;
     
         // Collect all parameters into a list
@@ -568,12 +562,8 @@ namespace Formaline
         {
           char const * const parameter_fullname = parameter->first.c_str();
           cParamData const * const parameter_data = parameter->second;
-      
-          ostringstream keybuf;
-          keybuf << "parameters/" << parameter_fullname;
-          string const keystr = keybuf.str();
-          char const * const key = keystr.c_str();
-      
+          char const * const key = parameter_fullname;
+          
           int type;
           void const * const parameter_value
             = CCTK_ParameterGet (parameter_data->name, parameter_data->thorn,
@@ -597,7 +587,7 @@ namespace Formaline
                 = * static_cast<CCTK_INT const *> (parameter_value);
               if (times_set > 0 or value != default_value)
               {
-                stores.store (key, (bool) value);
+                parameter_stores.store (key, (bool) value);
               }
             }
             break;
@@ -609,7 +599,7 @@ namespace Formaline
                 = * static_cast<CCTK_INT const *> (parameter_value);
               if (times_set > 0 or value != default_value)
               {
-                stores.store (key, value);
+                parameter_stores.store (key, value);
               }
             }
             break;
@@ -633,7 +623,7 @@ namespace Formaline
                 = * static_cast<CCTK_REAL const *> (parameter_value);
               if (times_set > 0 or value != default_value)
               {
-                stores.store (key, value);
+                parameter_stores.store (key, value);
               }
             }
             break;
@@ -644,7 +634,7 @@ namespace Formaline
               if (times_set > 0
                   or Util_StrCmpi (parameter_data->defval, value) != 0)
               {
-                stores.store (key, value);
+                parameter_stores.store (key, value);
               }
             }
             break;
@@ -654,7 +644,7 @@ namespace Formaline
                 = * static_cast<char const * const *> (parameter_value);
               if (times_set > 0 or strcmp (parameter_data->defval, value) != 0)
               {
-                stores.store (key, value);
+                parameter_stores.store (key, value);
               }
             }
             break;
@@ -662,6 +652,7 @@ namespace Formaline
             assert (0);
           }
         } // for all parameters
+        stores.close_group (parameter_stores);
       }
       
       
