@@ -48,6 +48,7 @@
 
 #include "file.hh"
 #include "id.hh"
+#include "json_file.hh"
 #include "multistorage.hh"
 #include "portal.hh"
 #include "rdf.hh"
@@ -159,6 +160,12 @@ namespace Formaline
       if (store_into_file)
       {
         stores.add_storage (new file (get_run_id (cctkGH), storage::initial));
+      }
+  
+      if (store_into_json_file)
+      {
+        stores.add_storage
+          (new json_file (get_run_id (cctkGH), storage::initial));
       }
   
       if (stores.num_storages() == 0) return;

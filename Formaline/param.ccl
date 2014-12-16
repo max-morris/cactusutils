@@ -106,10 +106,19 @@ BOOLEAN store_into_file "Store meta information in a file" STEERABLE=always
 {
 } yes
 
+BOOLEAN store_into_json_file "Store meta information in a file in JSON format" STEERABLE=always
+{
+} yes
+
 STRING storage_filename "File name for meta information" STEERABLE=always
 {
   "" :: ""
 } "formaline-jar.txt"
+
+STRING storage_json_filename "File name for meta information in JSON format" STEERABLE=always
+{
+  "" :: ""
+} "formaline-jar.json"
 
 
 
