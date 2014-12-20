@@ -175,8 +175,9 @@ namespace {
   
   
   // Query hwloc about each cache level and the memory
-  void load_cache_info()
+  bool load_cache_info()
   {
+    bool error = false;
     const int num_cache_levels = GetCacheInfo1(0, 0, 0, 0, 0, 0, 0);
     vector<CCTK_POINTER_TO_CONST> names_(num_cache_levels);
     vector<CCTK_INT>              types_(num_cache_levels);
@@ -195,7 +196,9 @@ namespace {
       cache_info[n].linesize = linesizes_[n];
       cache_info[n].stride   = strides_[n];
       cache_info[n].num_pus  = num_puss_[n];
+      error |= cache_info[n].num_pus == 0;
     }
+    return error;
   }
   
   
@@ -1559,7 +1562,12 @@ void MemSpeed_MeasureSpeed(CCTK_ARGUMENTS)
   CCTK_INFO("Measuring CPU, cache, memory, and communication speeds:");
   
   load_mpi_info();
-  load_cache_info();
+  bool error = load_cache_info();
+  if (error) {
+    CCTK_WARN(CCTK_WARN_ALERT,
+              "hwloc reports an inconsistent configuration. "
+              "Aborting " CCTK_THORNSTRING ".");
+  }
   
   MPI_Comm world = MPI_COMM_WORLD;
   
