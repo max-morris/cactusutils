@@ -1562,11 +1562,14 @@ void MemSpeed_MeasureSpeed(CCTK_ARGUMENTS)
   CCTK_INFO("Measuring CPU, cache, memory, and communication speeds:");
   
   load_mpi_info();
-  bool error = load_cache_info();
+  int my_error = load_cache_info();
+  int error;
+  MPI_Allreduce(&my_error, &error, 1, MPI_INT, MPI_LOR, MPI_COMM_WORLD);
   if (error) {
     CCTK_WARN(CCTK_WARN_ALERT,
               "hwloc reports an inconsistent configuration. "
               "Aborting " CCTK_THORNSTRING ".");
+    return;
   }
   
   MPI_Comm world = MPI_COMM_WORLD;
