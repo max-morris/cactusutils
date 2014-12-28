@@ -135,7 +135,7 @@ int Nice_Renice(void)
         /* this should never occur because of the error handling before */
         CCTK_VInfo(CCTK_THORNSTRING,
                    "Process reniced to nice level %d instead of %d.",
-                   new_nice, Nice_nice);
+                   new_nice, (int)Nice_nice);
     }
 
     return 0;
