@@ -316,7 +316,7 @@ namespace Accelerator {
     vector<CCTK_INT> vars_read;
     get_read_variables(attribute,vars_read);
 
-    for (vector<int>::iterator iter = vars_read.begin();
+    for (vector<CCTK_INT>::iterator iter = vars_read.begin();
          iter != vars_read.end(); ++iter) {
       int const vi = *iter;
       assert(vi >= 0);
@@ -364,7 +364,7 @@ namespace Accelerator {
     vector<CCTK_INT> vars_written;
     get_written_variables(attribute,vars_written);
 
-    for (vector<int>::iterator iter = vars_written.begin();
+    for (vector<CCTK_INT>::iterator iter = vars_written.begin();
          iter != vars_written.end(); ++iter) {
       int const vi = *iter;
       assert(vi >= 0);
@@ -521,7 +521,7 @@ namespace Accelerator {
       vector<CCTK_INT> vars_written;
       get_written_variables(attribute,vars_written);
 
-      for (vector<int>::iterator iter = vars_written.begin();
+      for (vector<CCTK_INT>::iterator iter = vars_written.begin();
            iter != vars_written.end(); ++iter) {
         int const vi = *iter;
         assert(vi >= 0);
