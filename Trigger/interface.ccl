@@ -1,4 +1,4 @@
-# Interface definition for thorn Nice
+# Interface definition for thorn Trigger
 
 inherits: IO
 implements: trigger
