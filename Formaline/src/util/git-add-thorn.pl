@@ -35,31 +35,14 @@ $ENV{'GIT_DIR'} = "$git_repo/.git";
 # system "cd '$git_root' && $git_cmd add @files" or die;
 
 my $srcdir = $git_root;
-my $dstdir = "$scratch/tmp-$thorn";
-
-rmtree $dstdir;                 # ignore errors
 
 for my $file (@files) {
     if (! -f "$file") {                 # only accept normal files.
-        die "ERROR: Refusing to make hard link from \"$srcdir/$file\" as it is not a regular file";
+        die "ERROR: Refusing to add \"$srcdir/$file\" as it is not a regular file";
     }
-    my $dir = $file;
-    if ($dir =~ m+/+) {
-        $dir =~ s+/[^/]*$++;
-    } else {
-        $dir = '.';
-    }
-    mkpath "$dstdir/$dir";      # ignore errors
-    link "$srcdir/$file", "$dstdir/$file" or
-        die "ERROR: Cannot create hard link from \"$srcdir/$file\" to \"$dstdir/$file\"";
+    my $mode = -x "$file" ? "100755" : "100644";
+    my $hash = `cd $git_root ; git hash-object -w --stdin <$file $silencer`;
+    chomp $hash;
+    # use 3-arguments version of cacheinfo due to old git versions on some clusters
+    system "$git_cmd update-index --add --cacheinfo $mode $hash $file $silencer";
 }
-
-if (@files) {
-    print "Executing: cd '$dstdir' && $git_cmd add @files\n" unless $silent;
-    system "cd '$dstdir' && $git_cmd add @files $silencer";
-    if ($?) {
-        die "Could not add thorn $thorn to git repository\nCommand was\n   cd '$dstdir' && $git_cmd add @files";
-    }
-}
-
-rmtree $dstdir or die;
