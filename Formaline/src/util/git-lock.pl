@@ -5,7 +5,6 @@
 # 2008-03-06 Erik Schnetter <schnetter@cct.lsu.edu>
 
 use strict;
-use Cwd;
 use POSIX;
 #use Fcntl ':flock';
 use sigtrap qw(die normal-signals);
