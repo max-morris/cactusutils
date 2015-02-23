@@ -6,6 +6,7 @@
 
 use strict;
 use File::Path;
+use File::stat;
 
 
 
@@ -40,7 +41,8 @@ for my $file (@files) {
     if (! -f "$file") {                 # only accept normal files.
         die "ERROR: Refusing to add \"$srcdir/$file\" as it is not a regular file";
     }
-    my $mode = -x "$file" ? "100755" : "100644";
+    my $st = stat ($file) or die "ERROR: could not stat \"$srcdir/$file\"";
+    my $mode = sprintf ("%o", $st->mode);
     my $hash = `cd $git_root ; git hash-object -w --stdin <$file $silencer`;
     chomp $hash;
     # use 3-arguments version of cacheinfo due to old git versions on some clusters
