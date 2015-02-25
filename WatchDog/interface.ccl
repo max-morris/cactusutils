@@ -1,0 +1,2 @@
+# Interface definition for thorn WatchDog
+IMPLEMENTS: WatchDog

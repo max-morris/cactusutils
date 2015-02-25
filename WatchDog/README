@@ -1,0 +1,13 @@
+Cactus Code Thorn WatchDog
+Author(s)    : David Radice <dradice@caltech.edu>
+Maintainer(s): David Radice <dradice@caltech.edu>
+Licence      : GPLv3
+--------------------------------------------------------------------------
+
+1. Purpose
+
+Kills a simulation if it hangs
+
+2. Usage
+
+Activate the WatchDog thorn 

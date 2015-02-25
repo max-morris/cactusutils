@@ -1,0 +1,8 @@
+# Parameter definitions for thorn WatchDog
+
+PRIVATE:
+
+CCTK_INT check_every "Check that the run is progressing every so many seconds" STEERABLE=RECOVER
+{
+    1:* :: "Any positive integer"
+} 3600

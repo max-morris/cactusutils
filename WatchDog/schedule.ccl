@@ -1,0 +1,6 @@
+# Schedule definitions for thorn WatchDog
+
+SCHEDULE WatchDog AT CCTK_ANALYSIS
+{
+    LANG: C
+} "Make sure that the run is progressing"
