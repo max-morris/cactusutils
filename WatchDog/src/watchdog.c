@@ -52,7 +52,7 @@ static void * patrol(void * arg) {
                     tstamp, param.mpi_rank);
             fprintf(stderr, "[WATCHDOG (%s)] Terminating...\n", tstamp);
             fflush(stderr);
-            exit(1);
+            abort();
         }
         else {
             if(0 == param.mpi_rank) {
