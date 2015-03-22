@@ -1,6 +1,6 @@
 !DESC "TOV from TOVSolverC, ICN, Marquina, PPM, Polytrope"
 
-ActiveThorns = "time MoL pugh pughreduce pughslab coordbase symbase cartgrid3d ioutil ioascii iobasic boundary admbase staticconformal spacemask admcoupling coordgauge admmacros hydrobase grhydro grhydro_initdata tovsolver nanchecker eos_omni ML_BSSN ML_BSSN_Helper GenericFD TmunuBase NewRad admconstraints Constants localreduce InitBase LoopControl"
+ActiveThorns = "time MoL pugh pughreduce pughslab coordbase symbase cartgrid3d ioutil ioascii iobasic boundary admbase staticconformal spacemask admcoupling coordgauge admmacros hydrobase grhydro grhydro_initdata tovsolver nanchecker eos_omni ML_BSSN ML_BSSN_Helper GenericFD TmunuBase NewRad Constants localreduce InitBase LoopControl"
 
 TmunuBase::stress_energy_storage	=	yes
 TmunuBase::stress_energy_at_RHS		=	yes
@@ -36,8 +36,6 @@ ML_BSSN::fdOrder             = 2
 
 ml_bssn::harmonicF      = 2.0
 
-admconstraints::bound     = "static"
-ADMConstraints::constraints_persist	= yes
 
 boundary::radpower        = 2
 
