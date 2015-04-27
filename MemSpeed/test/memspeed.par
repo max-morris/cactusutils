@@ -1,5 +1,5 @@
 # Activate thorn MeMSpeed to run it
-ActiveThorns = "hwloc MemSpeed"
+ActiveThorns = "hwloc MemSpeed SystemTopology"
 
 MemSpeed::verbose                  = yes
 MemSpeed::skip_largemem_benchmarks = yes
