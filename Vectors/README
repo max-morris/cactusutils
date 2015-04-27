@@ -65,3 +65,13 @@ Vectors thorn is in the list of ActiveThorns. This aims to test all vector
 operations by comparing the results with the same operations done using a
 scalar implementation. The number of passed tests is always reported. If any
 test fails, the run is aborted immediately.
+
+
+
+4. Related software
+
+[1] Vc: portable, zero-overhead SIMD library for C++,
+<http://compeng.uni-frankfurt.de/index.php?id=88>
+
+[2] SLEEF - SIMD Library for Evaluating Elementary Functions,
+<http://shibatch.sourceforge.net>
