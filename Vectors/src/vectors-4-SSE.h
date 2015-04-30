@@ -597,82 +597,82 @@ CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4acos(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(acos,x);
+  return K4REPL(acosf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4acosh(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(acosh,x);
+  return K4REPL(acoshf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4asin(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(asin,x);
+  return K4REPL(asinf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4asinh(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(asinh,x);
+  return K4REPL(asinhf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4atan(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(atan,x);
+  return K4REPL(atanf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4atan2(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-  return K4REPL2(atan2,x,y);
+  return K4REPL2(atan2f,x,y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4atanh(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(atanh,x);
+  return K4REPL(atanhf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4cos(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(cos,x);
+  return K4REPL(cosf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4cosh(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(cosh,x);
+  return K4REPL(coshf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4exp(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(exp,x);
+  return K4REPL(expf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4log(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(log,x);
+  return K4REPL(logf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4pow(CCTK_REAL4_VEC const x, CCTK_REAL4 const a)
 {
-  return K4REPL2S(pow,x,a);
+  return K4REPL2S(powf,x,a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4sin(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(sin,x);
+  return K4REPL(sinf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4sinh(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(sinh,x);
+  return K4REPL(sinhf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4tan(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(tan,x);
+  return K4REPL(tanf,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
 {
-  return K4REPL(tanh,x);
+  return K4REPL(tanhf,x);
 }
 
 #endif
