@@ -261,6 +261,7 @@
 
 #ifdef __cplusplus
 
+#include <cmath>
 #include <cstdlib>
 
 template<typename T>
@@ -279,6 +280,11 @@ struct vecprops {
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
   vector_t loadu (scalar_t const& a)
+  {
+    return a;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t set1 (scalar_t const& a)
   {
     return a;
   }
@@ -317,6 +323,11 @@ struct vecprops {
   {
     return x*y+z;
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t sqrt (vector_t const& x)
+  {
+    return std::sqrt(x);
+  }
 };
 
 template<>
@@ -337,6 +348,11 @@ struct vecprops<CCTK_REAL4> {
    vector_t loadu (scalar_t const& a)
   {
     return vec4_loadu(a);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t set1 (scalar_t const& a)
+  {
+    return vec4_set1(a);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
   scalar_t elt (vector_t const& x, int const d)
@@ -373,6 +389,11 @@ struct vecprops<CCTK_REAL4> {
   {
     return k4madd(x,y,z);
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t sqrt (vector_t const& x)
+  {
+    return k4sqrt(x);
+  }
 };
 
 template<>
@@ -393,6 +414,11 @@ struct vecprops<CCTK_REAL8> {
   vector_t loadu (scalar_t const& a)
   {
     return vec8_loadu(a);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t set1 (scalar_t const& a)
+  {
+    return vec8_set1(a);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
   scalar_t elt (vector_t const& x, int const d)
@@ -429,11 +455,15 @@ struct vecprops<CCTK_REAL8> {
   {
     return k8madd(x,y,z);
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+  vector_t sqrt (vector_t const& x)
+  {
+    return k8sqrt(x);
+  }
 };
 
 template<typename T>
-struct vectype {
-private:
+class vectype {
   typedef vecprops<T> props;
 public:
   typedef typename props::vector_t vector_t;
@@ -442,6 +472,7 @@ public:
   vectype() { }
   vectype(vectype const& x): v(x.v) { }
   vectype(vector_t const& x): v(x) { }
+  explicit vectype(scalar_t const& a): v(props::set1(a)) { }
   operator vector_t() const { return v; }
   vectype& operator=(vectype const& x) { v=x.v; return *this; }
   
@@ -520,6 +551,13 @@ public:
     return *this = *this/x;
   }
 };
+
+template<typename T>
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+vectype<T> sqrt(vectype<T> const& x)
+{
+  return vecprops<T>::sqrt(x);
+}
 
 #endif
 
