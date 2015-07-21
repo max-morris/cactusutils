@@ -7,4 +7,4 @@
 
 using namespace std;
 
-#endif  // #ifndef DEFS_H
+#endif // #ifndef DEFS_H

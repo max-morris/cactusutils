@@ -1,3 +1,1 @@
-__kernel void test_opencl(int dummy)
-{
-}
+__kernel void test_opencl(int dummy) {}
