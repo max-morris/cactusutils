@@ -413,7 +413,8 @@ namespace Accelerator {
       cout << "   Copy in:";
       for (int n=0; n<vars.nvars(); ++n) {
         char *const fullname = CCTK_FullName(vars.vi_ptr()[n]);
-        cout << " " << fullname << "/" << vars.tl_ptr()[n];
+        cout << " " << fullname
+             << "[rl=" << vars.rl_ptr()[n] << ",tl=" << vars.tl_ptr()[n] << "]";
         free(fullname);
       }
       cout << "\n";
@@ -551,7 +552,9 @@ namespace Accelerator {
         cout << "   Copy in:";
         for (int n=0; n<vars.nvars(); ++n) {
           char *const fullname = CCTK_FullName(vars.vi_ptr()[n]);
-          cout << " " << fullname << "/" << vars.tl_ptr()[n];
+          cout << " " << fullname
+               << "[rl=" << vars.rl_ptr()[n] << ",tl=" << vars.tl_ptr()[n]
+               << "]";
           free(fullname);
         }
         cout << "\n";
