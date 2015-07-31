@@ -44,7 +44,8 @@ namespace Accelerator {
       }
     } else {
       // Not a group - should be a variable
-      const int v = CCTK_VarIndex(name); assert(v >= 0);
+      const int v = CCTK_VarIndex(name);
+      assert(v >= 0);
       vars.push_back(v);
     }
     free(name);
