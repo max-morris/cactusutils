@@ -80,6 +80,11 @@ typedef struct {
   const char *restriction_mask;
 } t_nanchecker_info;
 
+/* provide support for older Cactus flesh */
+#ifndef HAVE_CCTK_DECLARED_TIMELEVELS
+#define CCTK_MaxActiveTimeLevelsVI(cctkGH, vi) CCTK_MaxTimeLevelsVI(vi)
+#endif
+
 /********************************************************************
  ********************    Static Variables    ************************
  ********************************************************************/
