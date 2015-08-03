@@ -741,7 +741,7 @@ void CheckForNaN(int vindex, const char *optstring, void *_info) {
     } else {
       timelevel = strtol(optstring + 10, &endptr, 10);
       if (*endptr != ']' || timelevel < 0 ||
-          timelevel >= CCTK_MaxTimeLevelsVI(vindex)) {
+          timelevel >= CCTK_MaxActiveTimeLevelsVI(info->GH, vindex)) {
         CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
                    "CheckForNaN: Invalid timelevel '%s' given for variable "
                    "'%s'",
@@ -943,7 +943,8 @@ void SetToNaN(int vindex, const char *optstring, void *_info) {
       return;
     } else {
       timelevel = strtol(optstring + 10, &endptr, 10);
-      if (timelevel < 0 || timelevel >= CCTK_MaxTimeLevelsVI(vindex)) {
+      if (timelevel < 0 ||
+          timelevel >= CCTK_MaxActiveTimeLevelsVI(info->GH, vindex)) {
         CCTK_VWarn(1, __LINE__, __FILE__, CCTK_THORNSTRING,
                    "SetToNaN: Invalid timelevel '%s' given for variable "
                    "'%s'",
