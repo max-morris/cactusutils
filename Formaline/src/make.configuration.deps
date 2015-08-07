@@ -309,10 +309,13 @@ FRM-OBJS-words = $(words $(FRM-OBJS))
 ifeq ($(shell uname),AIX)
 # Be conservative about the maximum number of objects that can be
 # handled at once.  AIX has a command line length limit of about
-# 32000.  Each object's path name may be about 200 characters long.
-FRM-OBJS-words-max = 100
+# 32000.  Each object's path name may be about 100 characters long.
+FRM-OBJS-words-max = 200
+else ifneq ($(findstring CYGWIN_NT,$(shell uname)),)
+# Ditto
+FRM-OBJS-words-max = 200
 else
-# Assume that the system has no limit to speak of.
+# Assume that the system has no limit to speak of
 FRM-OBJS-words-max = 10000
 endif
 
