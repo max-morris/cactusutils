@@ -176,7 +176,7 @@ void mpi_host_mapping_t::load() {
   MPI_Gather(procname, MPI_MAX_PROCESSOR_NAME, MPI_CHAR, &procnames[0],
              MPI_MAX_PROCESSOR_NAME, MPI_CHAR, root, comm);
   vector<int> host_byproc;
-  map<int, list<int>> host2procs1;
+  map<int, list<int> > host2procs1;
   if (mpi_proc_num == root) {
     map<string, int> hostname2host;
     vector<string> hostnames;
@@ -208,7 +208,7 @@ void mpi_host_mapping_t::load() {
   vector<int> num_procs_on_host_byproc;
   vector<int> proc_num_on_host_byproc;
   if (mpi_proc_num == root) {
-    vector<vector<int>> host2procs(mpi_num_hosts);
+    vector<vector<int> > host2procs(mpi_num_hosts);
     vector<int> num_procs_on_host_byhost(mpi_num_hosts);
     num_procs_on_host_byproc.resize(mpi_num_procs);
     proc_num_on_host_byproc.resize(mpi_num_procs);
