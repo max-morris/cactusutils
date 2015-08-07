@@ -176,7 +176,7 @@ extern "C" void OpenCLRunTime_DeviceInfo(CCTK_ARGUMENTS) {
   checkErr(clGetPlatformIDs(0, NULL, &num_platforms));
   file << "NUM_PLATFORMS:  " << num_platforms << endl;
   vector<cl_platform_id> platforms(num_platforms);
-  vector<vector<cl_device_id>> devices(num_platforms);
+  vector<vector<cl_device_id> > devices(num_platforms);
   checkErr(clGetPlatformIDs(num_platforms, &platforms[0], &num_platforms));
   for (cl_uint plat_ind = 0; plat_ind < num_platforms; ++plat_ind) {
     file << "PLATFORM_INDEX: " << plat_ind << "\n";

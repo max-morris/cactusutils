@@ -99,7 +99,7 @@ struct OpenCLDevice {
   bool memory_aligned; // device memory is aligned
   bool same_padding;   // host and device have same padding
 
-  vector<vector<mem_t>> mems; // [vi][tl]
+  vector<vector<mem_t> > mems; // [vi][tl]
 
   // point  (smallest unit)
   // vector (same execution path)

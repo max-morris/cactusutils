@@ -258,7 +258,7 @@ OpenCLKernel::OpenCLKernel(cGH const *const cctkGH, char const *const thorn,
   checkErr(clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,
                             num_devices * sizeof(size_t), &binary_sizes.front(),
                             NULL));
-  vector<vector<char>> binaries(num_devices);
+  vector<vector<char> > binaries(num_devices);
   vector<char *> binary_ptrs(num_devices);
   for (size_t n = 0; n < num_devices; ++n) {
     binaries.at(n).resize(binary_sizes.at(n));
