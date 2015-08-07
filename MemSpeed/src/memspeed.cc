@@ -667,7 +667,7 @@ void measure_read_latency(const MPI_Comm comm, const int proc_num_threads) {
     const ptrdiff_t offset = 0xa1d2d5ff; // a random number
     const ptrdiff_t nmax = cache_memsize / sizeof(void *);
     // Linked list (see latex)
-    vector<vector<void *>> arrays(proc_num_allocs);
+    vector<vector<void *> > arrays(proc_num_allocs);
 #pragma omp parallel num_threads(proc_num_threads)
     if (omp_get_thread_num() % thread_alloc_every == 0) {
       const int alloc = omp_get_thread_num() / thread_alloc_every;
@@ -808,7 +808,7 @@ void measure_read_bandwidth(const MPI_Comm comm, const int proc_num_threads) {
     // Allocate benchmark data structures
     const ptrdiff_t nmax = cache_memsize / sizeof(CCTK_REAL);
     // Allocate array, set all elements to 1.0
-    vector<vector<CCTK_REAL>> raw_arrays(proc_num_allocs);
+    vector<vector<CCTK_REAL> > raw_arrays(proc_num_allocs);
     vector<CCTK_REAL *> arrays(proc_num_allocs);
 #pragma omp parallel num_threads(proc_num_threads)
     if (omp_get_thread_num() % thread_alloc_every == 0) {
@@ -969,7 +969,7 @@ void measure_write_latency(const MPI_Comm comm, const int proc_num_threads) {
     // Define a mask for efficient modulo operations
     const ptrdiff_t size_mask = nmax - 1;
     const ptrdiff_t offset = 0xa1d2d5ff; // a random number
-    vector<vector<char>> arrays(proc_num_allocs);
+    vector<vector<char> > arrays(proc_num_allocs);
 #pragma omp parallel num_threads(proc_num_threads)
     if (omp_get_thread_num() % thread_alloc_every == 0) {
       const int alloc = omp_get_thread_num() / thread_alloc_every;
@@ -1108,7 +1108,7 @@ void measure_write_bandwidth(const MPI_Comm comm, const int proc_num_threads) {
     vector<char> skiparray(skip_memsize, 1);
 
     // Allocate benchmark data structures
-    vector<vector<char>> arrays(proc_num_allocs);
+    vector<vector<char> > arrays(proc_num_allocs);
 #pragma omp parallel num_threads(proc_num_threads)
     if (omp_get_thread_num() % thread_alloc_every == 0) {
       const int alloc = omp_get_thread_num() / thread_alloc_every;
@@ -1239,7 +1239,7 @@ void measure_write_bandwidth2(const MPI_Comm comm, const int proc_num_threads) {
     const ptrdiff_t nmax =
         (cache_memsize / sizeof(CCTK_REAL)) & (-8 * CCTK_REAL_VEC_SIZE);
     // Allocate array, set all elements to 1.0
-    vector<vector<CCTK_REAL>> raw_arrays(proc_num_allocs);
+    vector<vector<CCTK_REAL> > raw_arrays(proc_num_allocs);
     vector<CCTK_REAL *> arrays(proc_num_allocs);
 #pragma omp parallel num_threads(proc_num_threads)
     if (omp_get_thread_num() % thread_alloc_every == 0) {
@@ -1597,7 +1597,7 @@ extern "C" void MemSpeed_MeasureSpeed(CCTK_ARGUMENTS) {
   if (mpi_info.mpi_num_procs_on_host > 1) {
     MPI_Comm samenode;
     MPI_Comm_split(world,
-                   (mpi_info.mpi_host_num == 0 && mpi_info.mpi_proc_num < 2)
+                   mpi_info.mpi_host_num == 0 && mpi_info.mpi_proc_num < 2
                        ? 0
                        : MPI_UNDEFINED,
                    mpi_info.mpi_proc_num, &samenode);
@@ -1616,11 +1616,11 @@ extern "C" void MemSpeed_MeasureSpeed(CCTK_ARGUMENTS) {
 
   if (mpi_info.mpi_num_hosts > 1) {
     MPI_Comm twonodes;
-    MPI_Comm_split(
-        world, (mpi_info.mpi_host_num < 2 && mpi_info.mpi_proc_num_on_host == 0)
-                   ? 0
-                   : MPI_UNDEFINED,
-        mpi_info.mpi_proc_num, &twonodes);
+    MPI_Comm_split(world, mpi_info.mpi_host_num < 2 &&
+                                  mpi_info.mpi_proc_num_on_host == 0
+                              ? 0
+                              : MPI_UNDEFINED,
+                   mpi_info.mpi_proc_num, &twonodes);
 
     printf("  Dual-node measurements:\n");
 
