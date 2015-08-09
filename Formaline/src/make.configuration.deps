@@ -329,23 +329,13 @@ $(FRM-LIB).objectlist.custom:
 
 else
 
-# The list is long.  Create the file via a set of rules, one rule per
-# object file.
-
-FRM-OBJS-added = $(FRM-OBJS:%=%.added) $(FRM-OBJS-other:%=%.added)
+# The list is long.  Create it one object file a time.
 
 .PHONY: $(FRM-LIB).objectlist.custom
-$(FRM-LIB).objectlist.custom: $(FRM-OBJS-added)
-
-# Truncate the file
-.PHONY: $(FRM-LIB).objectlist.create
-$(FRM-LIB).objectlist.create:
-	: > $(FRM-LIB).objectlist
-
-# Add a line to the file
-.PHONY: $(FRM-OBJS-added)
-$(FRM-OBJS-added): $(FRM-LIB).objectlist.create
-	echo $(@:%.added=%) >> $(FRM-LIB).objectlist
+$(FRM-LIB).objectlist.custom:
+	: > $(FRM-LIB).objectlist.tmp
+	$(foreach obj, $(FRM-OBJS) $(FRM-OBJS-other), $(shell echo $(obj) >> $(FRM-LIB).objectlist.tmp))
+	mv $(FRM-LIB).objectlist.tmp $(FRM-LIB).objectlist
 
 endif
 
