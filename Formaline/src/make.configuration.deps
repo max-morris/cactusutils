@@ -333,7 +333,7 @@ else
 
 .PHONY: $(FRM-LIB).objectlist.custom
 $(FRM-LIB).objectlist.custom:
-	: > $(FRM-LIB).objectlist.tmp
+	$(shell : > $(FRM-LIB).objectlist.tmp)
 	$(foreach obj, $(FRM-OBJS) $(FRM-OBJS-other), $(shell echo $(obj) >> $(FRM-LIB).objectlist.tmp))
 	mv $(FRM-LIB).objectlist.tmp $(FRM-LIB).objectlist
 
