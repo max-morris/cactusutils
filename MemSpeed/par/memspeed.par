@@ -1,1 +1,1 @@
-ActiveThorns = "hwloc MemSpeed"
+ActiveThorns = "hwloc MemSpeed SystemTopology"
