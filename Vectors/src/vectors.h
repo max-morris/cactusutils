@@ -87,6 +87,7 @@
 #  define vec_store_nta(p,x)         (vec_mem_inc, vec4_store_nta(p,x))
 #  define vec_store_partial_prepare  vec4_store_partial_prepare
 #  define vec_store_nta_partial(p,x) (vec_mem_inc, vec4_store_nta_partial(p,x))
+#  define vec_storeu_partial(p,x)    (vec_mem_inc, vec4_storeu_partial(p,x))
 #  define vec_store_nta_partial_lo   vec4_store_nta_partial_lo
 #  define vec_store_nta_partial_hi   vec4_store_nta_partial_hi
 #  define vec_store_nta_partial_mid  vec4_store_nta_partial_mid
@@ -117,9 +118,11 @@
 #  define kfabs(x)   (vec_op_inc, k4fabs(x))
 #  define kfmax(x,y) (vec_op_inc, k4fmax(x,y))
 #  define kfmin(x,y) (vec_op_inc, k4fmin(x,y))
+#  define kfmod(x,y) (vec_op_inc, k4fmod(x,y))
 #  define kfnabs(x)  (vec_op_inc, k4fnabs(x))
 #  define klog      k4log
 #  define kpow      k4pow
+#  define ksignbit(x) (vec_op_inc, k4signbit(x))
 #  define ksin      k4sin
 #  define ksinh     k4sinh
 #  define ksgn      k4sgn
@@ -168,7 +171,10 @@
 #  define vec_store(p,x)             (vec_mem_inc, vec8_store(p,x))
 #  define vec_store_nta(p,x)         (vec_mem_inc, vec8_store_nta(p,x))
 #  define vec_store_partial_prepare  vec8_store_partial_prepare
+#  define vec_store_partial_prepare_fixed       \
+  vec8_store_partial_prepare_fixed
 #  define vec_store_nta_partial(p,x) (vec_mem_inc, vec8_store_nta_partial(p,x))
+#  define vec_storeu_partial(p,x)    (vec_mem_inc, vec8_storeu_partial(p,x))
 #  define vec_store_nta_partial_lo   vec8_store_nta_partial_lo
 #  define vec_store_nta_partial_hi   vec8_store_nta_partial_hi
 #  define vec_store_nta_partial_mid  vec8_store_nta_partial_mid
@@ -199,9 +205,11 @@
 #  define kfabs(x)   (vec_op_inc, k8fabs(x))
 #  define kfmax(x,y) (vec_op_inc, k8fmax(x,y))
 #  define kfmin(x,y) (vec_op_inc, k8fmin(x,y))
+#  define kfmod(x,y) (vec_op_inc, k8fmod(x,y))
 #  define kfnabs(x)  (vec_op_inc, k8fnabs(x))
 #  define klog      k8log
 #  define kpow      k8pow
+#  define ksignbit(x) (vec_op_inc, k8signbit(x))
 #  define ksin      k8sin
 #  define ksinh     k8sinh
 #  define ksgn      k8sgn
@@ -559,6 +567,24 @@ vectype<T> sqrt(vectype<T> const& x)
   return vecprops<T>::sqrt(x);
 }
 
+#endif
+
+
+
+// Cache information
+
+// Size of a a cache line in bytes
+#ifndef CCTK_CACHELINE_SIZE
+// TODO: Determine this properly
+#  define CCTK_CACHELINE_SIZE 64
+#endif
+
+// Number of CCTK_REALs in a cache line
+#define CCTK_REAL_CACHELINE_SIZE (CCTK_CACHELINE_SIZE / CCTK_REAL_PRECISION)
+// If this fails, something is most likely wrong -- this would be a
+// very weird (and inefficient?) architecture indeed
+#if CCTK_REAL_CACHELINE_SIZE % CCTK_REAL_VEC_SIZE != 0
+#  error "The cache line size is not a multiple of sizeof(CCTK_REAL_VEC)"
 #endif
 
 

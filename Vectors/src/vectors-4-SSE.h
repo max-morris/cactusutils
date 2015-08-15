@@ -483,6 +483,11 @@ CCTK_REAL4_VEC k4fnabs(CCTK_REAL4_VEC const x)
   return _mm_or_ps(I2R(k4sign), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_BOOLEAN4_VEC k4signbit(CCTK_REAL4_VEC const x)
+{
+  return R2I(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4sqrt(CCTK_REAL4_VEC const x)
 {
   // TODO: maybe use rsqrt and Newton-Raphson
@@ -544,6 +549,11 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4exp(CCTK_REAL4_VEC const x)
 {
   return _mm_exp_ps(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4fmod(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
+{
+  return _mm_fmod_ps(x,y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4log(CCTK_REAL4_VEC const x)
@@ -643,6 +653,11 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4exp(CCTK_REAL4_VEC const x)
 {
   return K4REPL(expf,x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL4_VEC k4fmod(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
+{
+  return K4REPL2(fmodf,x,y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4log(CCTK_REAL4_VEC const x)

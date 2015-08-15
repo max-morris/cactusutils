@@ -98,6 +98,7 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
 #define k8fabs(x)       (fabs(x))
 #define k8fmax(x,y)     (fmax(x,y))
 #define k8fmin(x,y)     (fmin(x,y))
+#define k8fmod(x,y)     (fmod(x,y))
 #define k8fnabs(x)      (-fabs(x))
 #define k8log(x)        (log(x))
 #define k8pow(x,a)      (pow(x,a))

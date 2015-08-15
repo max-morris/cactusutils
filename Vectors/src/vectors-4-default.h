@@ -104,6 +104,7 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
 #define k4fabs(x)       (fabsf(x))
 #define k4fmax(x,y)     (fmaxf(x,y))
 #define k4fmin(x,y)     (fminf(x,y))
+#define k4fmod(x,y)     (fmodf(x,y))
 #define k4fnabs(x)      (-fabsf(x))
 #define k4log(x)        (logf(x))
 #define k4pow(x,a)      (powf(x,a))

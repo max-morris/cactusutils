@@ -258,6 +258,8 @@ void vec8_store_nta(CCTK_REAL8& p, CCTK_REAL8_VEC const x)
 }
 #endif
 
+// TODO: Use _mm_maskstore_pd if AVX is available?
+
 // Store a partial vector (aligned and non-temporal)
 #define vec8_store_partial_prepare(i, imin,imax)                        \
   bool v8stp_lo, v8stp_hi;                                              \
@@ -271,6 +273,11 @@ void vec8_store_partial_prepare_(bool& lo, bool& hi,
   lo = i >= imin;
   hi = i+CCTK_REAL8_VEC_SIZE-1 < imax;
 }
+
+// Store a partial vector (aligned and non-temporal)
+#define vec8_store_partial_prepare_fixed(i, imin,imax)  \
+  vec8_store_partial_prepare(i, imin,imax)
+
 #define vec8_store_nta_partial(p, x)                    \
   vec8_store_nta_partial_(v8stp_lo, v8stp_hi, p, x)
 #if VECTORISE_STREAMING_STORES && defined(__SSE4A__)
@@ -302,6 +309,22 @@ void vec8_store_nta_partial_(bool const lo, bool const hi,
   }
 }
 #endif
+
+#define vec8_storeu_partial(p, x)                       \
+  vec8_storeu_partial_(v8stp_lo, v8stp_hi, p, x)
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+void vec8_storeu_partial_(bool const lo, bool const hi,
+                          CCTK_REAL8& p,
+                          CCTK_REAL8_VEC const x)
+{
+  if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+    vec8_storeu(p, x);
+  } else if (lo) {
+    _mm_storel_pd(&p, x);
+  } else if (hi) {
+    _mm_storeh_pd(&p+1, x);
+  }
+}
 
 // Store a lower or higher partial vector (aligned and non-temporal)
 #if ! VECTORISE_STREAMING_STORES
@@ -521,6 +544,11 @@ CCTK_REAL8_VEC k8fnabs(CCTK_REAL8_VEC const x)
   return _mm_or_pd(I2R(k8sign), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_BOOLEAN8_VEC k8signbit(CCTK_REAL8_VEC const x)
+{
+  return R2I(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8sqrt(CCTK_REAL8_VEC const x)
 {
   return _mm_sqrt_pd(x);
@@ -581,6 +609,11 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8exp(CCTK_REAL8_VEC const x)
 {
   return _mm_exp_pd(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL8_VEC k8fmod(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y)
+{
+  return _mm_fmod_pd(x,y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8log(CCTK_REAL8_VEC const x)
@@ -674,6 +707,11 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8exp(CCTK_REAL8_VEC const x)
 {
   return K8REPL(exp,x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL8_VEC k8fmod(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y)
+{
+  return K8REPL2(fmod,x,y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8log(CCTK_REAL8_VEC const x)

@@ -304,6 +304,7 @@ static const k8const_t k8mone = {{ -1.0, -1.0, }};
 #define k8cos(x)     K8REPL(cos,x)
 #define k8cosh(x)    K8REPL(cosh,x)
 #define k8exp(x)     K8REPL(exp,x)
+#define k8fmod(x,y)  K8REPL2(fmod,x,y)
 #define k8log(x)     K8REPL(log,x)
 #define k8pow(x,a)   K8REPL2S(pow,x,a)
 #define k8sin(x)     K8REPL(sin,x)

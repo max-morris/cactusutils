@@ -388,6 +388,7 @@ struct CCTK_REAL8_VEC {
 #define k8cos(x)     cosd4(x)
 #define k8cosh(x)    coshd4(x)
 #define k8exp(x)     expd4(x)
+#define k8fmod(x,y)  fmodd4(x,y)
 #define k8log(x)     logd4(x)
 #define k8pow(x,a)   powd4(x,vec_set1(a))
 #define k8sin(x)     sind4(x)

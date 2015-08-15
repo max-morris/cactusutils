@@ -183,6 +183,7 @@
 #define k4cos(x)     K4REPL(cosf,x)
 #define k4cosh(x)    K4REPL(coshf,x)
 #define k4exp(x)     K4REPL(expf,x)
+#define k4fmod(x,y)  K4REPL2(fmodf,x,y)
 #define k4log(x)     K4REPL(logf,x)
 #define k4pow(x,a)   K4REPL2S(powf,x,a)
 #define k4sin(x)     K4REPL(sinf,x)

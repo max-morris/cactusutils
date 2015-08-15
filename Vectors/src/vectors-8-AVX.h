@@ -84,6 +84,14 @@ CCTK_REAL8_VEC vec8_set(CCTK_REAL8 const a,
 {
   return _mm256_set_pd(d,c,b,a); // note reversed arguments
 }
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_INTEGER8_VEC vec8_seti(CCTK_INTEGER8 const a,
+                            CCTK_INTEGER8 const b,
+                            CCTK_INTEGER8 const c,
+                            CCTK_INTEGER8 const d)
+{
+  return _mm256_set_epi64x(d,c,b,a); // note reversed arguments
+}
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8 vec8_elt(CCTK_REAL8_VEC const x, std::ptrdiff_t const d)
@@ -234,6 +242,27 @@ void vec8_store_partial_prepare_(bool& all, __m256i& mask,
   }
 }
 
+// Store a partial vector (aligned and non-temporal)
+#define vec8_store_partial_prepare_fixed(i, imin,imax)                  \
+  bool v8stp_all;                                                       \
+  __m256i v8stp_mask;                                                   \
+  vec8_store_partial_prepare_fixed_(v8stp_all, v8stp_mask, i, imin, imax)
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+void vec8_store_partial_prepare_fixed_(bool& all, __m256i& mask,
+                                       std::ptrdiff_t const i,
+                                       std::ptrdiff_t const imin,
+                                       std::ptrdiff_t const imax)
+{
+  all = i>=imin and i+CCTK_REAL8_VEC_SIZE-1<imax;
+  
+  if (not CCTK_BUILTIN_EXPECT(all, true)) {
+    mask = vec8_seti(i+0>=imin and i+0<imax ? ~0 : 0,
+                     i+1>=imin and i+1<imax ? ~0 : 0,
+                     i+2>=imin and i+2<imax ? ~0 : 0,
+                     i+3>=imin and i+3<imax ? ~0 : 0);
+  }
+}
+
 #define vec8_store_nta_partial(p, x)                    \
   vec8_store_nta_partial_(v8stp_all, v8stp_mask, p, x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
@@ -243,6 +272,20 @@ void vec8_store_nta_partial_(bool const all, __m256i const mask,
 {
   if (CCTK_BUILTIN_EXPECT(all, true)) {
     vec8_store_nta(p, x);
+  } else {
+    _mm256_maskstore_pd(&p, mask, x);
+  }
+}
+
+#define vec8_storeu_partial(p, x)                       \
+  vec8_storeu_partial_(v8stp_all, v8stp_mask, p, x)
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+void vec8_storeu_partial_(bool const all, __m256i const mask,
+                          CCTK_REAL8& p,
+                          CCTK_REAL8_VEC const x)
+{
+  if (CCTK_BUILTIN_EXPECT(all, true)) {
+    vec8_storeu(p, x);
   } else {
     _mm256_maskstore_pd(&p, mask, x);
   }
@@ -440,6 +483,11 @@ CCTK_REAL8_VEC k8fnabs(CCTK_REAL8_VEC const x)
   return _mm256_or_pd(I2R(k8sign), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_BOOLEAN8_VEC k8signbit(CCTK_REAL8_VEC const x)
+{
+  return R2I(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8sqrt(CCTK_REAL8_VEC const x)
 {
   return _mm256_sqrt_pd(x);
@@ -500,6 +548,11 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8exp(CCTK_REAL8_VEC const x)
 {
   return _mm256_exp_pd(x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL8_VEC k8fmod(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y)
+{
+  return _mm256_fmod_pd(x, y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8log(CCTK_REAL8_VEC const x)
@@ -600,6 +653,11 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8exp(CCTK_REAL8_VEC const x)
 {
   return K8REPL(exp,x);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL8_VEC k8fmod(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y)
+{
+  return K8REPL2(fmod,x,y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8log(CCTK_REAL8_VEC const x)

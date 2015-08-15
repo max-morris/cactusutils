@@ -518,6 +518,11 @@ CCTK_REAL8_VEC k8exp(CCTK_REAL8_VEC const x)
   return K8REPL(exp,x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
+CCTK_REAL8_VEC k8fmod(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y)
+{
+  return K8REPL2(fmod,x,y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8log(CCTK_REAL8_VEC const x)
 {
   return K8REPL(log,x);
