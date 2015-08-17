@@ -46,5 +46,5 @@ for my $file (@files) {
     my $hash = `cd $git_root ; git hash-object -w --stdin <$file $silencer`;
     chomp $hash;
     # use 3-arguments version of cacheinfo due to old git versions on some clusters
-    system "$git_cmd update-index --add --cacheinfo $mode $hash $file $silencer";
+    system "$git_cmd update-index --add --cacheinfo $mode $hash '$file' $silencer";
 }
