@@ -497,6 +497,23 @@ CCTK_REAL4_VEC k4sqrt(CCTK_REAL4_VEC const x)
 
 
 // Expensive functions
+
+#define K4REPL(f,x)                             \
+  vec4_set(f(vec4_elt(x,0)),                    \
+           f(vec4_elt(x,1)),                    \
+           f(vec4_elt(x,2)),                    \
+           f(vec4_elt(x,3)));
+#define K4REPL2S(f,x,a)                         \
+  vec4_set(f(vec4_elt(x,0),a),                  \
+           f(vec4_elt(x,1),a),                  \
+           f(vec4_elt(x,2),a),                  \
+           f(vec4_elt(x,3),a));
+#define K4REPL2(f,x,y)                          \
+  vec4_set(f(vec4_elt(x,0),vec4_elt(y,0)),      \
+           f(vec4_elt(x,1),vec4_elt(y,1)),      \
+           f(vec4_elt(x,2),vec4_elt(y,2)),      \
+           f(vec4_elt(x,3),vec4_elt(y,3)));
+
 #if defined __ICC
 // The Intel compiler provides intrinsics for these
 
@@ -553,7 +570,11 @@ CCTK_REAL4_VEC k4exp(CCTK_REAL4_VEC const x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4fmod(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
+#if __ICC > 1310
   return _mm_fmod_ps(x,y);
+#else
+  return K4REPL2(fmodf,x,y);
+#endif
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4log(CCTK_REAL4_VEC const x)
@@ -587,22 +608,6 @@ CCTK_REAL4_VEC k4tanh(CCTK_REAL4_VEC const x)
 }
 
 #else
-
-#define K4REPL(f,x)                             \
-  vec4_set(f(vec4_elt(x,0)),                    \
-           f(vec4_elt(x,1)),                    \
-           f(vec4_elt(x,2)),                    \
-           f(vec4_elt(x,3)));
-#define K4REPL2S(f,x,a)                         \
-  vec4_set(f(vec4_elt(x,0),a),                  \
-           f(vec4_elt(x,1),a),                  \
-           f(vec4_elt(x,2),a),                  \
-           f(vec4_elt(x,3),a));
-#define K4REPL2(f,x,y)                          \
-  vec4_set(f(vec4_elt(x,0),vec4_elt(y,0)),      \
-           f(vec4_elt(x,1),vec4_elt(y,1)),      \
-           f(vec4_elt(x,2),vec4_elt(y,2)),      \
-           f(vec4_elt(x,3),vec4_elt(y,3)));
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4acos(CCTK_REAL4_VEC const x)

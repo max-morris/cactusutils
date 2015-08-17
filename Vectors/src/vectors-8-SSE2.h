@@ -557,6 +557,17 @@ CCTK_REAL8_VEC k8sqrt(CCTK_REAL8_VEC const x)
 
 
 // Expensive functions
+
+#define K8REPL(f,x)                             \
+  vec8_set(f(vec8_elt(x,0)),                    \
+           f(vec8_elt(x,1)));
+#define K8REPL2S(f,x,a)                         \
+  vec8_set(f(vec8_elt(x,0),a),                  \
+           f(vec8_elt(x,1),a));
+#define K8REPL2(f,x,y)                          \
+  vec8_set(f(vec8_elt(x,0),vec8_elt(y,0)),      \
+           f(vec8_elt(x,1),vec8_elt(y,1)));
+
 #if defined __ICC
 // The Intel compiler provides intrinsics for these
 
@@ -613,7 +624,11 @@ CCTK_REAL8_VEC k8exp(CCTK_REAL8_VEC const x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8fmod(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y)
 {
+#if __ICC > 1310
   return _mm_fmod_pd(x,y);
+#else
+  return K8REPL2(fmod,x,y);
+#endif
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8log(CCTK_REAL8_VEC const x)
@@ -647,16 +662,6 @@ CCTK_REAL8_VEC k8tanh(CCTK_REAL8_VEC const x)
 }
 
 #else
-
-#define K8REPL(f,x)                             \
-  vec8_set(f(vec8_elt(x,0)),                    \
-           f(vec8_elt(x,1)));
-#define K8REPL2S(f,x,a)                         \
-  vec8_set(f(vec8_elt(x,0),a),                  \
-           f(vec8_elt(x,1),a));
-#define K8REPL2(f,x,y)                          \
-  vec8_set(f(vec8_elt(x,0),vec8_elt(y,0)),      \
-           f(vec8_elt(x,1),vec8_elt(y,1)));
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8acos(CCTK_REAL8_VEC const x)
