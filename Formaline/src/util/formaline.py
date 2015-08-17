@@ -14,15 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+""" Usage: gdb -P formaline.py exe/cactus_sim or gdb -x formaline.py exe/cactus_sim """
 import io
 import sys
 
-# for some reason gdb passes an empty string in argv[0] if no argument is given
-if(not sys.argv[0]):
-  raise ValueError("needexactly one argument: gdb -P formaline.py exe/cactus_sim")
+if not gdb.inferiors(): # RedHat and Debian differ in how scripts are used 
+  # for some reason gdb passes an empty string in argv[0] if no argument is given
+  if(not sys.argv[0]):
+    raise ValueError("needexactly one argument: gdb -P formaline.py exe/cactus_sim")
+  # open executable and get handle to FOrmalin'e top-level source object
+  gdb.execute("file %s" % sys.argv[0])
 
-# open executable and get handle to FOrmalin'e top-level source object
-gdb.execute("file %s" % sys.argv[0])
 inferior = gdb.inferiors()[0]
 cactus_source = gdb.parse_and_eval("cactus_source")
 
