@@ -570,7 +570,7 @@ CCTK_REAL4_VEC k4exp(CCTK_REAL4_VEC const x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL4_VEC k4fmod(CCTK_REAL4_VEC const x, CCTK_REAL4_VEC const y)
 {
-#if __ICC > 1310
+#if __ICC > 1400
   return _mm_fmod_ps(x,y);
 #else
   return K4REPL2(fmodf,x,y);

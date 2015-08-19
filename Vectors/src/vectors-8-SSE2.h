@@ -624,7 +624,7 @@ CCTK_REAL8_VEC k8exp(CCTK_REAL8_VEC const x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE
 CCTK_REAL8_VEC k8fmod(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y)
 {
-#if __ICC > 1310
+#if __ICC > 1400
   return _mm_fmod_pd(x,y);
 #else
   return K8REPL2(fmod,x,y);
