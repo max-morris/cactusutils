@@ -231,41 +231,42 @@ void Vectors_Test(CCTK_ARGUMENTS)
     }
   }
 
-  VECTEST("kneg",   kneg(av),           -a[i]                 );
+  VECTEST("kneg", kneg(av), -a[i]);
 
-  VECTEST("kadd",   kadd(av, bv),       a[i] + b[i]           );
-  VECTEST("ksub",   ksub(av, bv),       a[i] - b[i]           );
-  VECTEST("kmul",   kmul(av, bv),       a[i] * b[i]           );
-  VECTEST("kdiv",   kdiv(av, bv),       a[i] / b[i]           );
+  VECTEST("kadd", kadd(av, bv), a[i] + b[i]);
+  VECTEST("ksub", ksub(av, bv), a[i] - b[i]);
+  VECTEST("kmul", kmul(av, bv), a[i] * b[i]);
+  VECTEST("kdiv", kdiv(av, bv), a[i] / b[i]);
 
-  VECTEST("kmadd",  kmadd(av, bv, cv),   a[i] * b[i] + c[i]   );
-  VECTEST("kmsub",  kmsub(av, bv, cv),   a[i] * b[i] - c[i]   );
-  VECTEST("knmadd", knmadd(av, bv, cv), -a[i] * b[i] - c[i]   );
-  VECTEST("knmsub", knmsub(av, bv, cv), -a[i] * b[i] + c[i]   );
+  VECTEST("kmadd", kmadd(av, bv, cv), +a[i] * b[i] + c[i]);
+  VECTEST("kmsub", kmsub(av, bv, cv), +a[i] * b[i] - c[i]);
+  VECTEST("knmadd", knmadd(av, bv, cv), -a[i] * b[i] - c[i]);
+  VECTEST("knmsub", knmsub(av, bv, cv), -a[i] * b[i] + c[i]);
 
-  VECTEST("kacos",     kacos(xv),         acos(x[i])          );
-  VECTEST("kacosh",    kacosh(zv),        acosh(z[i])         );
-  VECTEST("kasin",     kasin(xv),         asin(x[i])          );
-  VECTEST("kasinh",    kasinh(xv),        asinh(x[i])         );
-  VECTEST("katan",     katan(xv),         atan(x[i])          );
-  VECTEST("katan2",    katan2(xv, yv),    atan2(x[i], y[i])   );
-  VECTEST("katanh",    katanh(xv),        atanh(x[i])         );
+  VECTEST("kacos", kacos(xv), acos(x[i]));
+  VECTEST("kacosh", kacosh(zv), acosh(z[i]));
+  VECTEST("kasin", kasin(xv), asin(x[i]));
+  VECTEST("kasinh", kasinh(xv), asinh(x[i]));
+  VECTEST("katan", katan(xv), atan(x[i]));
+  VECTEST("katan2", katan2(xv, yv), atan2(x[i], y[i]));
+  VECTEST("katanh", katanh(xv), atanh(x[i]));
   VECTEST("kcopysign", kcopysign(xv, yv), copysign(x[i], y[i]));
-  VECTEST("kcos",      kcos(xv),          cos(x[i])           );
-  VECTEST("kcosh",     kcosh(xv),         cosh(x[i])          );
-  VECTEST("kexp",      kexp(xv),          exp(x[i])           );
-  VECTEST("kfabs",     kfabs(xv),         fabs(x[i])          );
-  VECTEST("kfmax",     kfmax(xv, yv),     fmax(x[i], y[i])    );
-  VECTEST("kfmin",     kfmin(xv, yv),     fmin(x[i], y[i])    );
-  VECTEST("kfnabs",    kfnabs(xv),        -fabs(x[i])         );
-  VECTEST("klog",      klog(yv),          log(y[i])           );
-  VECTEST("kpow",      kpow(yv, x[0]),    pow(y[i], x[0])     );
-  VECTEST("ksin",      ksin(xv),          sin(x[i])           );
-  VECTEST("ksinh",     ksinh(xv),         sinh(x[i])          );
-  VECTEST("ksgn",      ksgn(xv),          my_sgn(x[i])        );
-  VECTEST("ksqrt",     ksqrt(yv),         sqrt(y[i])          );
-  VECTEST("ktan",      ktan(xv),          tan(x[i])           );
-  VECTEST("ktanh",     ktanh(xv),         tanh(x[i])          );
+  VECTEST("kcos", kcos(xv), cos(x[i]));
+  VECTEST("kcosh", kcosh(xv), cosh(x[i]));
+  VECTEST("kexp", kexp(xv), exp(x[i]));
+  VECTEST("kfabs", kfabs(xv), fabs(x[i]));
+  VECTEST("kfmax", kfmax(xv, yv), fmax(x[i], y[i]));
+  VECTEST("kfmin", kfmin(xv, yv), fmin(x[i], y[i]));
+  VECTEST("kfmod", kfmod(xv, yv), fmod(x[i], y[i]));
+  VECTEST("kfnabs", kfnabs(xv), -fabs(x[i]));
+  VECTEST("klog", klog(yv), log(y[i]));
+  VECTEST("kpow", kpow(yv, x[0]), pow(y[i], x[0]));
+  VECTEST("ksin", ksin(xv), sin(x[i]));
+  VECTEST("ksinh", ksinh(xv), sinh(x[i]));
+  VECTEST("ksgn", ksgn(xv), my_sgn(x[i]));
+  VECTEST("ksqrt", ksqrt(yv), sqrt(y[i]));
+  VECTEST("ktan", ktan(xv), tan(x[i]));
+  VECTEST("ktanh", ktanh(xv), tanh(x[i]));
 
 #if 0
   VECTEST("kifpos positive",
@@ -312,6 +313,7 @@ void Vectors_Test(CCTK_ARGUMENTS)
   VECBITTEST("kcmple", kcmple(av,bv), a[i]<=b[i]?kltrue1:klfalse1);
 
   CCTK_VInfo(CCTK_THORNSTRING, "%d/%d tests passed ", passed, numtests);
+  fflush(stdout);
   if (passed != numtests) {
     CCTK_VWarn(CCTK_WARN_ALERT, __LINE__, __FILE__, CCTK_THORNSTRING,
                "Failed %d correctness tests", numtests - passed);
