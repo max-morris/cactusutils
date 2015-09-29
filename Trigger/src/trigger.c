@@ -16,6 +16,8 @@ typedef struct
   int *output_variables_number;
   int *steered_scalar;
   int *last_checked;
+  int *trigger_once;
+  int *trigger_count;
   const char **relation;
   const char **reduction;
   const char **checked_parameter_thorn;
@@ -42,7 +44,7 @@ int Trigger_Write(const cGH *GH, int varindex, const char *method)
            "%s%s", "trigger_", CCTK_VarName(varindex));
   if (my_GH->debug)
     CCTK_VInfo(CCTK_THORNSTRING,
-      "Doing tiggered output of %s with method %s in file %s.\n",
+      "Doing tiggered output of %s with method %s in file %s.",
       full_name, method, file_name);
   CCTK_OutputVarAsByMethod(GH, full_name, method, file_name);
   free(file_name);
@@ -56,7 +58,6 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
 {
   TriggerGH *my_GH;
   int varindex, reduction_handle=0, errno, ret;
-  const CCTK_REAL *tmp_value;
   CCTK_REAL value;
 
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
@@ -65,12 +66,20 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
    * wanted and _later_ (OutputGH) they are not allocated anymore */
   if (my_GH->debug)
     CCTK_VInfo(CCTK_THORNSTRING,
-               "last_checked: %d\n", my_GH->last_checked[trigger]);
+               "last_checked: %d", my_GH->last_checked[trigger]);
   if (my_GH->last_checked[trigger]>=GH->cctk_iteration)
   {
     if (my_GH->debug)
       CCTK_VInfo(CCTK_THORNSTRING,
-                 "not doing output for trigger %d twice\n", trigger);
+                 "not doing output for trigger %d twice", trigger);
+    return 0;
+  }
+  if (my_GH->trigger_count[trigger] > 0 && my_GH->trigger_once[trigger])
+  {
+    if (my_GH->debug)
+      CCTK_VInfo(CCTK_THORNSTRING,
+                 "skipping trigger %d because it was already "
+                 "triggered in the past.", trigger);
     return 0;
   }
   /* do we have to use a reduction? */
@@ -95,12 +104,13 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
 
     if (my_GH->debug)
       CCTK_VInfo(CCTK_THORNSTRING,
-                 "reducing %d %d\n", reduction_handle, varindex);
+                 "reducing trigger %d red_handle %d varindex %d",
+                 trigger, reduction_handle, varindex);
     errno=CCTK_Reduce(GH, -1, reduction_handle, 1,
                       vartype, &anytypevalue, 1, varindex);
     if (my_GH->debug)
       CCTK_VInfo(CCTK_THORNSTRING,
-                 "reducing was ok\n");
+                 "reducing was ok");
     if (errno)
       CCTK_WARN(0, "Reduce returned an error.");
 
@@ -174,18 +184,21 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
      )
     ret=1;
   if (ret)
-    if (varindex>=0)
-      CCTK_VInfo(CCTK_THORNSTRING,"trigger nr. %d fullfilled for %s (%f%s%f)",
-                 trigger, CCTK_VarName(varindex),
-                 value, my_GH->relation[trigger],
-                 my_GH->checked_value[trigger]);
-    else
-      CCTK_VInfo(CCTK_THORNSTRING,
-                 "trigger nr. %d fullfilled for %s::%s (%f%s%f)",
-                 trigger, my_GH->checked_parameter_name[trigger],
-                          my_GH->checked_parameter_thorn[trigger],
-                 value, my_GH->relation[trigger],
-                 my_GH->checked_value[trigger]);
+    if (my_GH->debug)
+    {
+      if (varindex>=0)
+        CCTK_VInfo(CCTK_THORNSTRING,"trigger nr. %d fullfilled for %s (%f%s%f)",
+                   trigger, CCTK_VarName(varindex),
+                   value, my_GH->relation[trigger],
+                   my_GH->checked_value[trigger]);
+      else
+        CCTK_VInfo(CCTK_THORNSTRING,
+                   "trigger nr. %d fullfilled for %s::%s (%f%s%f)",
+                   trigger, my_GH->checked_parameter_name[trigger],
+                            my_GH->checked_parameter_thorn[trigger],
+                   value, my_GH->relation[trigger],
+                   my_GH->checked_value[trigger]);
+    }
   else
     if (my_GH->debug)
     {
@@ -227,7 +240,7 @@ int Trigger_TimeForOutput(const cGH *GH, int varindex)
       {
         if (my_GH->debug)
           CCTK_VInfo(CCTK_THORNSTRING,
-            "Trigger_TimeForOutput: requesting output for %d\n", varindex);
+            "Trigger_TimeForOutput: requesting output for %d", varindex);
         return 1;
       }
     }
@@ -246,7 +259,7 @@ int Trigger_TriggerOutput(const cGH *GH, int varindex)
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
   if (my_GH->debug)
     CCTK_VInfo(CCTK_THORNSTRING,
-               "Trigger_TriggerOutput, varindex %d\n", varindex);
+               "Trigger_TriggerOutput, varindex %d", varindex);
   /* loop over all triggers */
   for (i=0; i<my_GH->number; i++)
   {
@@ -255,7 +268,7 @@ int Trigger_TriggerOutput(const cGH *GH, int varindex)
     {
       if (my_GH->debug)
         CCTK_VInfo(CCTK_THORNSTRING,
-                   "io-method: %s, wanted:%s\n", CCTK_IOMethod(handle)->name,
+                   "io-method: %s, wanted:%s", CCTK_IOMethod(handle)->name,
                    my_GH->output_method[i]);
       /* check if we want to output using that io method */
       if (CCTK_EQUALS(CCTK_IOMethod(handle)->name, my_GH->output_method[i]))
@@ -294,7 +307,7 @@ void Trigger_Check(CCTK_ARGUMENTS)
   TriggerGH *my_GH;
   my_GH = (TriggerGH*)CCTK_GHExtension(cctkGH, "Trigger");
   if (my_GH->debug)
-    CCTK_VInfo(CCTK_THORNSTRING, "Testing triggers\n");
+    CCTK_VInfo(CCTK_THORNSTRING, "Testing triggers");
   /* refresh internal variables */
   trigger_cctk_iteration[0]=(CCTK_REAL)cctk_iteration;
   trigger_cctk_time[0]=(CCTK_REAL)cctk_time;
@@ -309,6 +322,8 @@ void Trigger_Check(CCTK_ARGUMENTS)
   /* loop over all triggers */
   for (i=0; i<my_GH->number; i++)
   {
+    // Reset this from parameter because it might have been steered
+    my_GH->trigger_once[i] = Trigger_Once[i];
     if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
     {
       if (Trigger_TriggerFullFilled(cctkGH, i))
@@ -321,13 +336,15 @@ void Trigger_Check(CCTK_ARGUMENTS)
         {
           free(valstr);
           if (my_GH->debug)
-            CCTK_VInfo(CCTK_THORNSTRING, "Steering parameter\n");
+            CCTK_VInfo(CCTK_THORNSTRING, "Steering parameter");
           ret=CCTK_ParameterSet(Trigger_Steered_Parameter_Name[i],
                                 Trigger_Steered_Parameter_Thorn[i],
                                 Trigger_Steered_Parameter_Value[i]);
           switch(ret)
           {
-            case  0: CCTK_VInfo(CCTK_THORNSTRING, "Parameter steered\n"); break;
+            case  0: my_GH->trigger_count[i] += 1;
+                     if (my_GH->debug) CCTK_VInfo(CCTK_THORNSTRING, "Parameter steered");
+                     break;
             case -1: CCTK_WARN(1,"Parameter is out of range."); break;
             case -2: CCTK_WARN(0,"Parameter was not found."); break;
             case -3: CCTK_WARN(0,"Parameter is not steerable."); break;
@@ -342,7 +359,7 @@ void Trigger_Check(CCTK_ARGUMENTS)
       if (Trigger_TriggerFullFilled(cctkGH, i))
       {
         if (my_GH->debug)
-          CCTK_VInfo(CCTK_THORNSTRING, "Steering scalar\n");
+          CCTK_VInfo(CCTK_THORNSTRING, "Steering scalar");
         int type = CCTK_VarTypeI(my_GH->steered_scalar[i]);
         if (type == CCTK_VARIABLE_REAL)
         {
@@ -354,6 +371,7 @@ void Trigger_Check(CCTK_ARGUMENTS)
           }
 
           myVar[Trigger_Steered_Scalar_Index[i]] = atof(Trigger_Steered_Scalar_Value[i]);
+          my_GH->trigger_count[i] += 1;
         }
         else if (type == CCTK_VARIABLE_INT)
         {
@@ -364,6 +382,7 @@ void Trigger_Check(CCTK_ARGUMENTS)
                       "Variable '%s' has no storage", CCTK_FullName(my_GH->steered_scalar[i]));
           }
           myVar[Trigger_Steered_Scalar_Index[i]] = atoi(Trigger_Steered_Scalar_Value[i]);
+          my_GH->trigger_count[i] += 1;
         }
         else
           CCTK_WARN(0, "Cannot handle other types than CCTK_REAL and CCTK_INT");
@@ -420,7 +439,11 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
   my_GH = (TriggerGH*) malloc(sizeof(TriggerGH));
   info = (transverse_info*) malloc(sizeof(transverse_info));
 
-  my_GH->last_checked     = (int*)   
+  my_GH->last_checked    = (int*)   
+                           calloc(Trigger_Number,sizeof(int));
+  my_GH->trigger_once    = (int*)   
+                           calloc(Trigger_Number,sizeof(int));
+  my_GH->trigger_count   = (int*)   
                            calloc(Trigger_Number,sizeof(int));
   my_GH->checked_variable= (int*)   
                            calloc(Trigger_Number,sizeof(int));
@@ -457,6 +480,8 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
   for (i=Trigger_Number-1; i>=0; i--)
   {
     my_GH->last_checked [i]=-1;
+    my_GH->trigger_once [i]=Trigger_Once[i];
+    my_GH->trigger_count[i]= 0;
     my_GH->output_method[i]=Trigger_Output_Method[i];
     my_GH->reaction     [i]=Trigger_Reaction[i];
     my_GH->relation     [i]=Trigger_Relation[i];
@@ -505,8 +530,8 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
         if (!CCTK_ParameterGet(Trigger_Steered_Parameter_Name[i],
                                Trigger_Steered_Parameter_Thorn[i],NULL))
             CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                       "No parameter with the name '%s' found",
-                       Trigger_Steered_Parameter_Name[i]);
+                       "No parameter with the name '%s' found in trigger %d",
+                       Trigger_Steered_Parameter_Name[i], i);
         /* TODO: check for steerability */
         my_GH->output_variables
                  [i*CCTK_NumVars() + my_GH->output_variables_number[i]]
@@ -532,8 +557,8 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
                                Trigger_Transverse_Callback,
                                info, CCTK_GROUP_OR_VAR))
         CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                   "No variable with the name '%s' found",
-                   Trigger_Output_Variables[i]);
+                   "No variable with the name '%s' found in trigger %d",
+                   Trigger_Output_Variables[i], i);
     }
   }
   free(info);

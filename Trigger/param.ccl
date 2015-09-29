@@ -39,7 +39,7 @@ STRING Trigger_Reduction[10] "valid reduction method" STEERABLE=RECOVER
 {
   ".+" :: "some relations e.g. 'norm2'"
   "^$" :: "An empty string for no reduction (for scalars)"
-} "norm2"
+} ""
 
 KEYWORD Trigger_Reaction[10] "how to react on a positive trigger" STEERABLE=RECOVER
 {
@@ -94,6 +94,11 @@ STRING Trigger_Steered_Scalar_Value[10] "Scalar value to be changed to" STEERABL
   ".+" :: "scalar value"
   "^$" :: "can be empty"
 } ""
+
+INT Trigger_Once[10] "Should this trigger only be triggered (and checked) once?" STEERABLE=ALWAYS
+{
+  0:1 :: "0 (no), 1 (yes)"
+} 0
 
 CCTK_INT Trigger_Debug "turnes on debug messages" STEERABLE=RECOVER
 {
