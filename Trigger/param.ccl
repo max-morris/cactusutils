@@ -1,0 +1,107 @@
+# Parameter definitions for thorn Nice
+
+# parameter values are parsed into a GH extension at startup so cannot be
+# (meaningfully) steered at runtime
+CCTK_INT Trigger_Number "Number of triggers" STEERABLE=RECOVER
+{
+  0:10 :: "The number of triggers that are defined"
+} 0
+
+STRING Trigger_Checked_Variable[10] "variable to be checked for" STEERABLE=RECOVER
+{
+  ".+" :: "fully qualified variable name, 'param' for a parameter"
+  "^$" :: "An empty string to trigger nothing"
+} ""
+
+STRING Trigger_Checked_Parameter_Thorn[10] "thorn of parameter to be checked for" STEERABLE=RECOVER
+{
+  ".+" :: "thorn name"
+  "^$" :: "An empty string to trigger nothing"
+} ""
+
+STRING Trigger_Checked_Parameter_Name[10] "parameter name to be checked for" STEERABLE=RECOVER
+{
+  ".+" :: "parameter name"
+  "^$" :: "An empty string to trigger nothing"
+} ""
+
+STRING Trigger_Relation[10] "relation operator for checked variable" STEERABLE=RECOVER
+{
+  "^<|>|==|!=$" :: "some relations"
+} ">"
+
+CCTK_REAL Trigger_Checked_Value[10] "triggered value for checked variable" STEERABLE=RECOVER
+{
+  *:* :: "value to be triggered for"
+} 1.0
+
+STRING Trigger_Reduction[10] "valid reduction method" STEERABLE=RECOVER
+{
+  ".+" :: "some relations e.g. 'norm2'"
+  "^$" :: "An empty string for no reduction (for scalars)"
+} ""
+
+KEYWORD Trigger_Reaction[10] "how to react on a positive trigger" STEERABLE=RECOVER
+{
+  "output"     :: "enable output"
+  "steerparam" :: "steer parameter"
+  "steerscalar":: "steer grid scalar"
+} "output"
+
+STRING Trigger_Output_Method[10] "IO-output method for this trigger" STEERABLE=RECOVER
+{
+  ".+" :: "an enabled IO-method"
+  "^$" :: "An empty string for no output"
+} "1D"
+
+STRING Trigger_Output_Variables[10] "variable to be put out 'param' for parameter" STEERABLE=RECOVER
+{
+  ".+" :: "Space-separated list of fully qualified variable name"
+  "^$" :: "An empty string to trigger nothing"     
+} ""
+
+STRING Trigger_Steered_Parameter_Thorn[10] "thorn of parameter to be changed" STEERABLE=ALWAYS
+{
+  ".+" :: "thorn name"
+  "^$" :: "An empty string to change nothing"
+} ""
+
+STRING Trigger_Steered_Parameter_Name[10] "parameter name to be changed" STEERABLE=ALWAYS
+{
+  ".+" :: "parameter name"
+  "^$" :: "An empty string to change nothing"
+} ""
+
+STRING Trigger_Steered_Parameter_Value[10] "parameter value to be changed to" STEERABLE=ALWAYS
+{
+  ".+" :: "parameter value"
+  "^$" :: "can be empty"
+} ""
+
+STRING Trigger_Steered_Scalar[10] "Scalar to be changed" STEERABLE=ALWAYS
+{
+  ".+" :: "scalar name"
+  "^$" :: "can be empty"
+} ""
+
+INT Trigger_Steered_Scalar_Index[10] "Scalar index to be changed" STEERABLE=ALWAYS
+{
+  0:* :: ">=0"
+} 0
+
+STRING Trigger_Steered_Scalar_Value[10] "Scalar value to be changed to" STEERABLE=ALWAYS
+{
+  ".+" :: "scalar value"
+  "^$" :: "can be empty"
+} ""
+
+INT Trigger_Once[10] "Should this trigger only be triggered (and checked) once?" STEERABLE=ALWAYS
+{
+  0:1 :: "0 (no), 1 (yes)"
+} 0
+
+CCTK_INT Trigger_Debug "turnes on debug messages" STEERABLE=RECOVER
+{
+   0:1 :: "Only 0 (off, default) or 1 (on)"
+} 0
+

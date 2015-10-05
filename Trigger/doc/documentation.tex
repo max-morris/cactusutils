@@ -1,0 +1,134 @@
+% *======================================================================*
+%  Thorn documentation in the latex file doc/documentation.tex 
+%  will be included in ThornGuides built with the Cactus make system.
+%  The scripts employed by the make system automatically include 
+%  pages about variables, parameters and scheduling parsed from the 
+%  relevant thorn CCL files.
+%  
+%  This template contains guidelines which help to assure that your     
+%  documentation will be correctly added to ThornGuides. More 
+%  information is available in the Cactus UsersGuide.
+%                                                    
+%  Guidelines:
+%   - Do not change anything before the line
+%       % START CACTUS THORNGUIDE",
+%     except for filling in the title, author, date etc. fields.
+%        - Each of these fields should only be on ONE line.
+%        - Author names should be separated with a \\ or a comma
+%   - You can define your own macros are OK, but they must appear after
+%     the START CACTUS THORNGUIDE line, and do not redefine standard 
+%     latex commands.
+%   - To avoid name clashes with other thorns, 'labels', 'citations', 
+%     'references', and 'image' names should conform to the following 
+%     convention:          
+%       ARRANGEMENT_THORN_LABEL
+%     For example, an image wave.eps in the arrangement CactusWave and 
+%     thorn WaveToyC should be renamed to CactusWave_WaveToyC_wave.eps
+%   - Graphics should only be included using the graphix package. 
+%     More specifically, with the "includegraphics" command. Do
+%     not specify any graphic file extensions in your .tex file. This 
+%     will allow us (later) to create a PDF version of the ThornGuide
+%     via pdflatex. |
+%   - References should be included with the latex "bibitem" command. 
+%   - use \begin{abstract}...\end{abstract} instead of \abstract{...}
+%   - For the benefit of our Perl scripts, and for future extensions, 
+%     please use simple latex.     
+%
+% *======================================================================* 
+% 
+% Example of including a graphic image:
+% \begin{figure}[ht]
+%  \begin{center}
+%   \includegraphics[width=6cm]{MyArrangement_MyThorn_MyFigure}
+%  \end{center}
+%  \caption{Illustration of this and that}
+%  \label{MyArrangement_MyThorn_MyLabel}
+% \end{figure}
+%
+% Example of using a label:
+%   \label{MyArrangement_MyThorn_MyLabel}
+%
+% Example of a citation:
+%    \cite{MyArrangement_MyThorn_Author99}
+%
+% Example of including a reference
+%   \bibitem{MyArrangement_MyThorn_Author99}
+%   {J. Author, {\em The Title of the Book, Journal, or periodical}, 1 (1999), 
+%   1--16. {\tt http://www.nowhere.com/}}
+%
+% *======================================================================* 
+
+\documentclass{article}
+
+% Use the Cactus ThornGuide style file
+% (Automatically used from Cactus distribution, if you have a 
+%  thorn without the Cactus Flesh download this from the Cactus
+%  homepage at www.cactuscode.org)
+\usepackage{../../../../doc/latex/cactus}
+
+\begin{document}
+
+% The author of the documentation
+\author{Frank L\"offler \textless knarf@cct.lsu.edu\textgreater}
+
+% The title of the document (not necessarily the name of the Thorn)
+\title{Trigger}
+
+% the date your document was last changed, if your document is in CVS, 
+% please use:
+\date{October 23, 2012}
+
+\maketitle
+
+% Do not delete next line
+% START CACTUS THORNGUIDE
+
+% Add all definitions used in this documentation here 
+%   \def\mydef etc
+
+% Add an abstract for this thorn's documentation
+\begin{abstract}
+
+Trigger can be used to steer (change) parameters depending on data from
+the simulation. Examples would be enabling refinement levels when the density
+reaches a certain threshold or enabling output within a certain time window.
+
+\end{abstract}
+
+\section{Parameters}
+
+\begin{itemize}
+ \item \textbf{Trigger\_Number} specifies the total number of triggers you want to specify.
+ \item \textbf{Trigger\_Checked\_Variable[index]} holds the fully specified variable name that the trigger with that index should depend on. Leave it empty if it shouldn't.
+ \item \textbf{Trigger\_Checked\_Parameter\_Thorn} and \textbf{Trigger\_Checked\_Parameter\_Name} hold the information about which parameter this trigger should depend on.
+ \item \textbf{Trigger\_Relation} defines a mathematical relation between whatever is checked and a some value. Allowed values are $<$, $>$, $==$ and $!=$.
+ \item \textbf{Trigger\_Checked\_Value} specifies the actual value that is used for the comparison. This has to be a real number.
+ \item \textbf{Trigger\_Reduction} specifies which reduction should be used in case you specified a grid function as variable to be checked. Leave empty for grid scalars and parameters.
+ \item \textbf{Trigger\_Reaction} specifies what should happen in case the check above is true.
+  \begin{itemize}
+   \item \textbf{"output"}: some output should be enabled. File names will be prefixed with "trigger\_".
+    \begin{itemize}
+     \item \textbf{Trigger\_Output\_Method} specifies which type of output should be enabled.
+     \item \textbf{Trigger\_Output\_Variables} specifies a space-separated list of fully qualified variable names to be output.
+    \end{itemize}
+   \item \textbf{"steerparam"}: Steer a parameter
+    \begin{itemize}
+     \item \textbf{Trigger\_Steered\_Parameter\_Thorn} Name of the thorn of the parameter to be steered.
+     \item \textbf{Trigger\_Steered\_Parameter\_Name} Name of the parameter to be steered.
+     \item \textbf{Trigger\_Steered\_Parameter\_Value} Value the parameter should be steered to. Given as string, as it could be of any Cactus type.
+    \end{itemize}
+   \item \textbf{"steerscalar"}: Change the value of a scalar
+    \begin{itemize}
+     \item \textbf{Trigger\_Steered\_Scalar}: Name of the scalar to be changed
+     \item \textbf{Trigger\_Steered\_Scalar\_Index}: Index of the scalar (in case it happens to be an array of scalars, otherwise leave it at 0)
+     \item \textbf{Trigger\_Steered\_Scalar\_Value}: Value the scalar should be changed to - given as string
+    \end{itemize}
+  \end{itemize}
+ \item \textbf{Trigger\_Debug}: Turn on Debug output (not generally recommended, but useful if something doesn't trigger as expected). This is an integer, allowed is 0 or 1.
+\end{itemize}
+
+% Do not delete next line
+% END CACTUS THORNGUIDE
+
+\end{document}
+

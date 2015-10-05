@@ -1,0 +1,21 @@
+# Schedule definitions for thorn Trigger
+schedule Trigger_Startup at STARTUP
+{
+    LANG: C
+}   "Startup Routine"
+
+schedule Trigger_ParamCheck AT PARAMCHECK
+{
+    LANG: C
+}   "Parameter checking"
+
+schedule Trigger_Check at ANALYSIS before AHFinderDirect_setupupdate
+{
+    LANG: C
+    # schedule global-early so that eg. output frequency parameters are taken
+    # into account for all grid functions
+    OPTIONS: global-early
+    # only used for reductions in this routine, not checkpointed
+    STORAGE: Trigger_Vars
+}   "test"
+
