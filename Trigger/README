@@ -1,3 +1,9 @@
+Cactus Code Thorn SystemStatistics
+Author(s)    : Frank Loeffler <knarf@cct.lsu.edu>
+Maintainer(s): Frank Loeffler <knarf@cct.lsu.edu>
+Licence      : LGPLv2.1 or later
+--------------------------------------------------------------------------
+
 Purpose of this thorn
 ---------------------
 This thorn can be used to define triggers to output variables due to
