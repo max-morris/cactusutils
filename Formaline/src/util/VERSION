@@ -5,3 +5,4 @@ Thus, whenever this file changes, all auto-generated files are recreated.
 2005-08-22: Change layout of struct sourceinfo
 2010-06-23: Move thorn to a new arrangement
 2010-08-06: Correct severe error in autogeneration
+2015-10-23: Simplify handling git repositories

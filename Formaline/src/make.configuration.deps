@@ -4,8 +4,6 @@
 
 # Some configury magic
 
-# Should we use gtar or tar?
-TAR = $(shell gtar --help > /dev/null 2> /dev/null && echo gtar || echo tar)
 # Is this gnu tar? If so, set this to 1, otherwise to 0. This is used
 # to treat an exit code of 1 from gnu tar as non-fatal. This exit code
 # indicates that files changed while reading, which can happen if the
@@ -145,7 +143,7 @@ $(TARBALL_DIR)/config-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNA
 		cp -r OptionList properties.ini RunScript ScriptFile SubmitScript ThornList config-data config-info $(TARBALL_DIR)/configs/$(notdir $(TOP)) 2>/dev/null; \
 	} || true
 	cd $(TARBALL_DIR) && \
-	find configs/$(notdir $(TOP))/ \
+	find configs/$(notdir $(TOP))/. \
 		-name 'CVS' -prune -o \
 		-name '_darcs' -prune -o \
 		-name '.git' -prune -o \
@@ -156,7 +154,7 @@ $(TARBALL_DIR)/config-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNA
 		-name '.?*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
-		-print > $@.tmp
+		-print | sed -e 's+/[.]/+/+g' > $@.tmp
 	mv $@.tmp $@
 	$(RM) -rf $(TARBALL_DIR)/configs
 
@@ -204,7 +202,7 @@ $(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
 # files that do not influence the executable.
 $(TARBALL_DIR)/flesh-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/flesh-Cactus.ccldeps #$(CONFIG)/make.thornlist
 	cd $(CCTK_HOME) && \
-	find CONTRIBUTORS COPYRIGHT Makefile lib/ src/ \
+	find CONTRIBUTORS COPYRIGHT Makefile lib/. src/. \
 		-name 'CVS' -prune -o \
 		-name '_darcs' -prune -o \
 		-name '.git' -prune -o \
@@ -215,7 +213,7 @@ $(TARBALL_DIR)/flesh-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAM
 		-name '.?*' -prune -o \
 		-name '*~' -prune -o \
 		! -type d \
-		-print > $@.tmp
+		-print | sed -e 's+/[.]/+/+g' > $@.tmp
 	mv $@.tmp $@
 
 -include $(TARBALL_DIR)/flesh-Cactus.ccldeps
@@ -345,8 +343,6 @@ endif
 # Git repository of source code
 ###############################################################################
 
-
-
 # Does git exist, or should we do nothing instead?
 GIT-CMD := $(shell env PATH="$(SCRATCH_BUILD)/external/git/bin:$(SCRATCH_BUILD)/git-1.6.6.1/bin:$(SCRATCH_BUILD)/git-1.6.0.6/bin:$$HOME/git/bin:$$PATH" which git)
 HAVE-GIT := $(shell '$(GIT-CMD)' --version > /dev/null 2>&1 && echo 'true' || echo 'false')
@@ -358,117 +354,43 @@ ifeq ($(HAVE-GIT),true)
 
 main: git-store-source
 
-.PHONY: git-store-source
-git-store-source: git-commit-everything git-push-everything
-	echo "Formaline: Done."
-	echo "Formaline: (Formaline has finished updating the git repositories."
-	echo "Formaline:  If the build process seems to hang, some other command"
-	echo "Formaline:  is still running, e.g. the final link stage.)"
-
 GIT-TAG-DIR     = $(SCRATCH_BUILD)/Formaline
 GIT-BIN         = $(FORMALINE_BIN_DIR)
 GIT-ROOT        = $(CCTK_HOME)
 GIT-REPO        = $(TOP)/configjar.git
 GIT-MASTER-REPO = $(CCTK_HOME)/cactusjar.git
+GIT-LOCAL-REPO  = $(CCTK_HOME)/../CactusSourceJar.git
 
 GIT-THORNS      = $(notdir $(THORNS))
 
 BUILD-ID-FILE   = $(TOP)/BUILD-ID
 CONFIG-ID-FILE  = $(TOP)/CONFIG-ID
 
-.PHONY: git-push-everything
-git-push-everything: git-commit-everything $(BUILD-ID-FILE) | $(FORMALINE-UTILS)
-	{ \
-	'$(GIT-BIN)/git-init-master-repo.pl' '$(GIT)' '$(GIT-MASTER-REPO)' && \
-	eval "$$('$(GIT-BIN)/git-get-localdir.pl' '$(GIT)')" && \
-	if [ -e "$(CCTK_HOME)/cactus.config" ]; then \
-		export 'CCTK_HOME=$(CCTK_HOME)' && \
+.PHONY: git-store-source
+git-store-source: $(BUILD-ID-FILE) $(TARBALL_DIR)/flesh-Cactus.files \
+	$(GIT-THORNS:%=$(TARBALL_DIR)/thorn-%.files) \
+	$(TARBALL_DIR)/config-Cactus.files | $(FORMALINE-UTILS)
+	export 'CCTK_HOME=$(CCTK_HOME)' && \
+	if [ -e '$(CCTK_HOME)/cactus.config' ]; then \
 		. '$(CCTK_HOME)/cactus.config'; \
 	fi && \
-	export CACTUS_LOCAL_GIT_REPO CACTUS_CENTRAL_GIT_REPO CACTUS_CENTRAL_SSH_ID && \
-	'$(GIT-BIN)/git-push-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-MASTER-REPO)'; \
-	} || echo "Formaline: WARNING: Error while pushing to master repository"
-
-.PHONY: git-commit-everything
-git-commit-everything: $(GIT-TAG-DIR)/flesh-Cactus.git-tag $(GIT-THORNS:%=$(GIT-TAG-DIR)/thorn-%.git-tag) $(BUILD-ID-FILE) git-rm-unused-thorns | $(FORMALINE-UTILS)
+	export 'GIT_SSH=$(GIT-BIN)/git-ssh.sh' && \
+	export 'CACTUS_CENTRAL_SSH_ID' && \
 	{ \
-	'$(GIT-BIN)/git-commit-everything.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' "$$(cat $(BUILD-ID-FILE))" "$$(cat $(CONFIG-ID-FILE))"; \
-	} || echo "Formaline: WARNING: Error while committing to repository"
-
-# Wait until after thorn Formaline has been built, so that its
-# utilities are available
-.PHONY: git-rm-unused-thorns
-git-rm-unused-thorns: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX) | $(FORMALINE-UTILS)
-	{ \
-	'$(GIT-BIN)/git-rm-unused-thorns.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' $(THORNS); \
-	} || echo "Formaline: WARNING: Error while removing unused thorns"
-
-.PRECIOUS: $(GIT-TAG-DIR)/flesh-Cactus.git-tag
-$(GIT-TAG-DIR)/flesh-Cactus.git-tag: $(TARBALL_DIR)/flesh-Cactus.files | $(FORMALINE-UTILS)
-	mkdir -p $(GIT-TAG-DIR)
-	{ \
-	'$(GIT-BIN)/git-init-repo.pl' '$(GIT)' '$(GIT-REPO)' && \
-	echo "Formaline: Adding flesh to git repository..." && \
-	'$(GIT-BIN)/git-rm-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' 'Cactus' CONTRIBUTORS COPYRIGHT Makefile lib src configs && \
-	xargs '$(GIT-BIN)/git-add-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' 'Cactus' < $(TARBALL_DIR)/flesh-Cactus.files && \
-	: > $@; \
-	} || echo "Formaline: WARNING: Error while adding flesh to git repository"
-
-.PRECIOUS: $(GIT-TAG-DIR)/thorn-%.git-tag
-$(GIT-TAG-DIR)/thorn-%.git-tag: $(TARBALL_DIR)/thorn-%.files | $(FORMALINE-UTILS)
-	mkdir -p $(GIT-TAG-DIR)
-	{ \
-	'$(GIT-BIN)/git-init-repo.pl' '$(GIT)' '$(GIT-REPO)' && \
-	echo "Formaline: Adding thorn $* to git repository..." && \
-	'$(GIT-BIN)/git-rm-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' '$*' "'"'arrangements/*/$*'"'" && \
-	xargs '$(GIT-BIN)/git-add-thorn.pl' '$(GIT)' '$(GIT-REPO)' '$(GIT-ROOT)' '$*' < $(TARBALL_DIR)/thorn-$*.files && \
-	: > $@; \
-	} || echo "Formaline: WARNING: Error while adding thorn $* to git repository"
+		cat '$(TARBALL_DIR)/flesh-Cactus.files' && \
+		for thorn in $(GIT-THORNS); do \
+			cat "$(TARBALL_DIR)/thorn-$$thorn.files"; \
+		done && \
+		cat '$(TARBALL_DIR)/config-Cactus.files' && \
+		echo 'configs/$(notdir $(TOP))/BUILD-ID' && \
+		echo 'configs/$(notdir $(TOP))/CONFIG-ID'; \
+  } | \
+	'$(GIT-BIN)/update-git-repo.pl' '$(GIT-CMD)' '$(GIT-REPO)' \
+		'$(GIT-MASTER-REPO)' '$(GIT-LOCAL-REPO)' "$$CACTUS_CENTRAL_GIT_REPO" \
+		'$(GIT-ROOT)' `cat $(BUILD-ID-FILE)` `cat $(CONFIG-ID-FILE)`
+	echo "Formaline: Done."
+	echo "Formaline: (Formaline has finished updating the git repositories."
+	echo "Formaline:  If the build process seems to hang, some other command"
+	echo "Formaline:  is still running, e.g. the final link stage.)"
 
 endif
-
-
-
-# NOTE:
-
-# Define environment variable CACTUS_CENTRAL_GIT_REPO where the source trees
-# are automatically pushed
-
-# git-archive --prefix=Cactus/ wavetoy | gzip > wavetoy.tar.gz
-# git-archive --prefix=Cactus/ wavetoy | { cd /somewhere && tar xf -; }
-
-# git init
-# git pull <repo> <branch>
-
-# git clone <repo>
-# git checkout <tag>
-
-
-
-# TODO:
-# 8. Create a separate git repository for every thorn, which would
-#    make git operations more parallel
-# 9. Do not copy all branches/tags to the central repo all the time
-# 10. Add a "git reset --mixed" in the beginning to ensure the
-#     repository is in a consistent state.  Add "git rm -r --cached ."
-#     as well?
-# 11. Execute a "rm scratch/*.git-tag" if there are problems, and try
-#     again
-# 12. Use subdirectories in scratch directory
-# 13. Calculate and output md5sum for source files and the source tree
-#     to see more easily whether and which files changed
-# 14. cd into thorn directory, and use lstat/readlink to follow
-#     symbolic links, to make thing work with recent versions of git
-
-
-
-# DONE:
-# 1. Remember git-archive to get a tarball
-# 3. Push the commits automatically to a central (write-only?) repository
-# 4. What if the Cactus directory is alread the root of a git repository?
-# 5. Place the .git repository into the config subdirectory
-# 6. Push it automatically into a subdirectory of the main Cactus directory
-# 7. Figure out how to handle conflicting branch names
-
-# WONT:
-# 2. Don't create a version history; instead, leave all commits independent
