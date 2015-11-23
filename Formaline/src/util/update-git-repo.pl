@@ -2,6 +2,23 @@
 
 # 2015-10-17 Erik Schnetter <schnetter@gmail.com>
 
+# Take a snapshot of the Cactus source tree rooted at the current directory,
+# creating a commit in the git repository located at $git_repo. The repository
+# is expected to be for a single Cactus configuration, and is created if it does
+# not exist. The commit is daisy-chained onto the previous commit (if there is
+# one). A branch is created with a name unique to this machine, source tree, and
+# configuration; and a tag is created that additionally contains a unique time
+# stamp. These use the unique configuration and build ids from Formaline.
+
+# The content of the git repository is then pushed into a "master" repository
+# for the source tree (which thus collects information about all
+# configurations). This repo is in turn pushed into a "local" repository,
+# collecting information about all source trees on this machine.
+
+# Furthermore, if a remote "central" git repository is configured (url, user
+# name, ssh key), then the master and/or local repo are pushed there. This
+# "central" git repository might e.g. be located on Bitbucket.
+
 use strict;
 use File::Path;
 use File::stat;
@@ -218,7 +235,6 @@ sub main()
       runcmd "Pushing to local git repository", "$git_cmd --git-dir='$git_master_repo/.git' push -v -f --all '$git_local_repo'";
       runcmd "Pushing tags to local git repository", "$git_cmd --git-dir='$git_master_repo/.git' push -v -f --tags '$git_local_repo'";
       gc_repo $git_local_repo;
-
       if ($git_central_repo ne '') {
         print "Formaline: Pushing to central repository $git_central_repo...\n";
         runcmd "Pushing to central git repository", "$git_cmd --git-dir='$git_local_repo/.git' push -v -f --all '$git_central_repo'";
