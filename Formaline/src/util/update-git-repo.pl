@@ -195,7 +195,8 @@ sub main()
       push @to_remove, $file;
       next;
     } elsif (! -f $file) {
-      die "ERROR: Refusing to add \"$git_root/$file\" as it is not a regular file";
+      warn "WARNING: Refusing to add \"$git_root/$file\" as it is not a regular file";
+      next;
     }
     my $st = stat $file or die "ERROR: could not stat \"$git_root/$file\"";
     my $mode = sprintf "%o", $st->mode;
