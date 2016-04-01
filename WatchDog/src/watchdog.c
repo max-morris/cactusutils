@@ -18,7 +18,6 @@ static struct {
     int mpi_rank;
 } param;
 
-static pthread_t dog;
 static void * patrol(void * arg) {
     time_t time_old, time_new, ltime;
     char tstamp[128];
@@ -78,6 +77,7 @@ void WatchDog(CCTK_ARGUMENTS) {
     if(first_time) {
         param.timeout_sec = check_every;
         param.mpi_rank = CCTK_MyProc(cctkGH);
+        pthread_t dog; /* not used beyond passed to phread_ceate */
         int ierr = pthread_create(&dog, NULL, patrol, NULL);
         if(ierr) {
             CCTK_ERROR("Dispatching watch dog thread failed");
