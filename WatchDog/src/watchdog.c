@@ -9,10 +9,6 @@
 #include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
-#ifndef CCTK_PTHREADS
-#error "WATCHDOG required PTHREADS. Please enable PTHREADS=yes in your option list."
-#endif
-
 #include <pthread.h>
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
