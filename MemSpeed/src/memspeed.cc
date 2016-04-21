@@ -409,7 +409,7 @@ void measure_cpu_iop_speed(const MPI_Comm comm, const int num_threads) {
     }
     MPI_Barrier(comm);
     elapsed = 0.0;
-    volatile ptrdiff_t use CCTK_ATTRIBUTE_UNUSED = 0;
+    volatile size_t use CCTK_ATTRIBUTE_UNUSED = 0;
 #pragma omp parallel num_threads(num_threads) reduction(+ : elapsed, use)
     {
 #pragma omp barrier
@@ -422,14 +422,14 @@ void measure_cpu_iop_speed(const MPI_Comm comm, const int num_threads) {
       // add operations. See latex file for a more detailed
       // description.
       for (ptrdiff_t count = 0; count < max_count; ++count) {
-        s0 = ptrdiff_t(&base[s0]);
-        s1 = ptrdiff_t(&base[2 * s1]);
-        s2 = ptrdiff_t(&base[3 * s2]);
-        s3 = ptrdiff_t(&base[4 * s3]);
-        s4 = ptrdiff_t(&base[5 * s4]);
-        s5 = ptrdiff_t(&base[6 * s5]);
-        s6 = ptrdiff_t(&base[7 * s6]);
-        s7 = ptrdiff_t(&base[8 * s7]);
+        s0 = size_t(&base[s0]);
+        s1 = size_t(&base[2 * s1]);
+        s2 = size_t(&base[3 * s2]);
+        s3 = size_t(&base[4 * s3]);
+        s4 = size_t(&base[5 * s4]);
+        s5 = size_t(&base[6 * s5]);
+        s6 = size_t(&base[7 * s6]);
+        s7 = size_t(&base[8 * s7]);
       }
       const double t1 = omp_get_wtime();
       elapsed += t1 - t0;
