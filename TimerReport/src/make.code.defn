@@ -2,7 +2,7 @@
 # $Header$
 
 # Source files in this directory
-SRCS = Output.c
+SRCS = Output.cc
 
 # Subdirectories containing source files
 SUBDIRS = 
