@@ -203,7 +203,12 @@ sub main()
     my $hash = callcmd "Calculating hash for file", "$git_cmd --git-dir='$git_repo/.git' hash-object -w --stdin <'$file'";
     chomp $hash;
     # Use 3-arguments version of cacheinfo due to old git versions on some clusters
-    runcmd "Adding file to git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --add --cacheinfo $mode $hash '$file'";
+
+    my $configs_dir = $ENV{'CACTUS_CONFIGS_DIR'};
+    my $relative_file = $file;
+    $relative_file =~ s|^$configs_dir/|configs/|g;
+    
+    runcmd "Adding file to git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --add --cacheinfo $mode $hash '$relative_file'";
   }
 
   # Commit
