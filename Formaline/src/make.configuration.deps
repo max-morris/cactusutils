@@ -131,7 +131,8 @@ $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.tar.gz $(CCTK_HOME)
 
 $(TARBALL_DIR)/config-Cactus.tar.gz: $(TARBALL_DIR)/config-Cactus.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
+	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
+	mv $@.tmp $@
 
 # This dependency means that the tarball for the configuration options
 # is only updated if the flesh is actually recompiled. This does not
@@ -195,7 +196,8 @@ $(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.tar.gz $(CCTK_HOME)/a
 
 $(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
+	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
+	mv $@.tmp $@
 
 # This dependency means that the tarball for the flesh is only updated
 # if the flesh is actually recompiled.  This does not catch changes to
@@ -253,7 +255,8 @@ $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangement
 
 $(TARBALL_DIR)/thorn-%.tar.gz: $(TARBALL_DIR)/thorn-%.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
+	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
+	mv $@.tmp $@
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
