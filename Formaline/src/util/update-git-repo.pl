@@ -24,9 +24,9 @@ use File::Path;
 use File::stat;
 
 # Read arguments
-$#ARGV == 7 or die;
+$#ARGV == 6 or die;
 my ($git_cmd, $git_repo, $git_master_repo, $git_local_repo, $git_central_repo,
-    $git_root, $build_id, $config_id) = @ARGV;
+    $build_id, $config_id) = @ARGV;
 
 # Define $silencer to hide stdout/stderr if desired
 my $silent = $ENV{'SILENT'};
@@ -40,7 +40,6 @@ if (!$silent) {
   print "Formaline: git_master_repo [$git_master_repo]\n";
   print "Formaline: git_local_repo [$git_local_repo]\n";
   print "Formaline: git_central_repo [$git_central_repo]\n";
-  print "Formaline: git_root [$git_root]\n";
   print "Formaline: build_id [$build_id]\n";
   print "Formaline: config_id [$config_id]\n";
 }
@@ -195,10 +194,10 @@ sub main()
       push @to_remove, $file;
       next;
     } elsif (! -f $file) {
-      warn "WARNING: Refusing to add \"$git_root/$file\" as it is not a regular file";
+      warn "WARNING: Refusing to add \"$file\" as it is not a regular file";
       next;
     }
-    my $st = stat $file or die "ERROR: could not stat \"$git_root/$file\"";
+    my $st = stat $file or die "ERROR: could not stat \"$file\"";
     my $mode = sprintf "%o", $st->mode;
     my $hash = callcmd "Calculating hash for file", "$git_cmd --git-dir='$git_repo/.git' hash-object -w --stdin <'$file'";
     chomp $hash;
