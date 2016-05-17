@@ -185,17 +185,16 @@ sub main()
   # Remove superfluous files
   my %want_files = map {$_ => 1} @want_files;
   my @to_remove = grep {not $want_files{$_}} @have_files;
-  # Remove the files one by one because we want to ignore errors, but git aborts
-  # after the first error
-  for my $file (@to_remove) {
-    #runcmd "Removing file from git repo", "$git_cmd --git-dir='$git_repo/.git' rm --cached -f '$file'";
-    runcmd "Removing file from git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --force-remove '$file'";
-  }
 
   # Add all current files to the index (since we don't know which files have
-  # changed)
+  # changed), add any missing files to list of removed files since Formaline's
+  # file tracking is not perfect for files that do not affect the executable.
   for my $file (@want_files) {
-    if (! -f $file) {                 # only accept normal files.
+    # only accept normal files, ignore missing files since our file tracking is not perfect
+    if (! -e $file) {
+      push @to_remove, $file;
+      next;
+    } elsif (! -f $file) {
       die "ERROR: Refusing to add \"$git_root/$file\" as it is not a regular file";
     }
     my $st = stat $file or die "ERROR: could not stat \"$git_root/$file\"";
@@ -210,6 +209,14 @@ sub main()
     
     runcmd "Adding file to git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --add --cacheinfo $mode $hash '$relative_file'";
   }
+
+  # Remove the files one by one because we want to ignore errors, but git aborts
+  # after the first error
+  for my $file (@to_remove) {
+    #runcmd "Removing file from git repo", "$git_cmd --git-dir='$git_repo/.git' rm --cached -f '$file'";
+    runcmd "Removing file from git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --force-remove '$file'";
+  }
+
 
   # Commit
   my $has_changes = callcmd "Checking whether there are source tree changes",
