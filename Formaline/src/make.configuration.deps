@@ -130,7 +130,7 @@ $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.tar.gz $(CCTK_HOME)
 	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' CactusConfig < $<
 
 $(TARBALL_DIR)/config-Cactus.tar.gz: $(TARBALL_DIR)/config-Cactus.files
-	cd $(CCTK_HOME) && \
+	cd $(CACTUS_CONFIGS_DIR) && \
 	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 	mv $@.tmp $@
 
@@ -143,8 +143,8 @@ $(TARBALL_DIR)/config-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNA
 		cd $(CACTUS_CONFIGS_DIR)/$(notdir $(TOP)) && \
 		cp -r OptionList properties.ini RunScript ScriptFile SubmitScript ThornList config-data config-info $(TARBALL_DIR)/configs/$(notdir $(TOP)) 2>/dev/null; \
 	} || true
-	cd $(TARBALL_DIR) && \
-	find configs/$(notdir $(TOP))/. \
+	cd $(TARBALL_DIR)/configs && \
+	find $(notdir $(TOP))/. \
 		-name 'CVS' -prune -o \
 		-name '_darcs' -prune -o \
 		-name '.git' -prune -o \
@@ -379,16 +379,17 @@ git-store-source: $(BUILD-ID-FILE) $(TARBALL_DIR)/flesh-Cactus.files \
 	fi && \
 	export 'GIT_SSH=$(GIT-BIN)/git-ssh.sh' && \
 	export 'CACTUS_CENTRAL_SSH_ID' && \
+	export CACTUS_CONFIGS_DIR=$(CACTUS_CONFIGS_DIR) && \
 	{ \
 		cat '$(TARBALL_DIR)/flesh-Cactus.files' && \
 		for thorn in $(GIT-THORNS); do \
 			cat "$(TARBALL_DIR)/thorn-$$thorn.files"; \
 		done && \
-		cat '$(TARBALL_DIR)/config-Cactus.files' && \
-		echo 'configs/$(notdir $(TOP))/BUILD-ID' && \
-		echo 'configs/$(notdir $(TOP))/CONFIG-ID'; \
+		sed 's|^|$(CACTUS_CONFIGS_DIR)/|' '$(TARBALL_DIR)/config-Cactus.files' && \
+		echo '$(CACTUS_CONFIGS_DIR)/$(notdir $(TOP))/BUILD-ID' && \
+		echo '$(CACTUS_CONFIGS_DIR)/$(notdir $(TOP))/CONFIG-ID'; \
   } | \
-	'$(GIT-BIN)/update-git-repo.pl' '$(GIT-CMD)' '$(GIT-REPO)' \
+        '$(GIT-BIN)/update-git-repo.pl' '$(GIT-CMD)' '$(GIT-REPO)' \
 		'$(GIT-MASTER-REPO)' '$(GIT-LOCAL-REPO)' "$$CACTUS_CENTRAL_GIT_REPO" \
 		'$(GIT-ROOT)' `cat $(BUILD-ID-FILE)` `cat $(CONFIG-ID-FILE)`
 	echo "Formaline: Done."
