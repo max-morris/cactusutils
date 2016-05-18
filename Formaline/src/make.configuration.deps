@@ -359,7 +359,6 @@ main: git-store-source
 
 GIT-TAG-DIR     = $(SCRATCH_BUILD)/Formaline
 GIT-BIN         = $(FORMALINE_BIN_DIR)
-GIT-ROOT        = $(CCTK_HOME)
 GIT-REPO        = $(TOP)/configjar.git
 GIT-MASTER-REPO = $(CCTK_HOME)/cactusjar.git
 GIT-LOCAL-REPO  = $(CCTK_HOME)/../CactusSourceJar.git
@@ -391,7 +390,7 @@ git-store-source: $(BUILD-ID-FILE) $(TARBALL_DIR)/flesh-Cactus.files \
   } | \
         '$(GIT-BIN)/update-git-repo.pl' '$(GIT-CMD)' '$(GIT-REPO)' \
 		'$(GIT-MASTER-REPO)' '$(GIT-LOCAL-REPO)' "$$CACTUS_CENTRAL_GIT_REPO" \
-		'$(GIT-ROOT)' `cat $(BUILD-ID-FILE)` `cat $(CONFIG-ID-FILE)`
+		`cat $(BUILD-ID-FILE)` `cat $(CONFIG-ID-FILE)`
 	echo "Formaline: Done."
 	echo "Formaline: (Formaline has finished updating the git repositories."
 	echo "Formaline:  If the build process seems to hang, some other command"

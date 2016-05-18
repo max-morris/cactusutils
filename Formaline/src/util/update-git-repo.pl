@@ -24,9 +24,9 @@ use File::Path;
 use File::stat;
 
 # Read arguments
-$#ARGV == 7 or die;
+$#ARGV == 6 or die;
 my ($git_cmd, $git_repo, $git_master_repo, $git_local_repo, $git_central_repo,
-    $git_root, $build_id, $config_id) = @ARGV;
+    $build_id, $config_id) = @ARGV;
 
 # Define $silencer to hide stdout/stderr if desired
 my $silent = $ENV{'SILENT'};
@@ -40,7 +40,6 @@ if (!$silent) {
   print "Formaline: git_master_repo [$git_master_repo]\n";
   print "Formaline: git_local_repo [$git_local_repo]\n";
   print "Formaline: git_central_repo [$git_central_repo]\n";
-  print "Formaline: git_root [$git_root]\n";
   print "Formaline: build_id [$build_id]\n";
   print "Formaline: config_id [$config_id]\n";
 }
@@ -185,20 +184,20 @@ sub main()
   # Remove superfluous files
   my %want_files = map {$_ => 1} @want_files;
   my @to_remove = grep {not $want_files{$_}} @have_files;
-  # Remove the files one by one because we want to ignore errors, but git aborts
-  # after the first error
-  for my $file (@to_remove) {
-    #runcmd "Removing file from git repo", "$git_cmd --git-dir='$git_repo/.git' rm --cached -f '$file'";
-    runcmd "Removing file from git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --force-remove '$file'";
-  }
 
   # Add all current files to the index (since we don't know which files have
-  # changed)
+  # changed), add any missing files to list of removed files since Formaline's
+  # file tracking is not perfect for files that do not affect the executable.
   for my $file (@want_files) {
-    if (! -f $file) {                 # only accept normal files.
-      die "ERROR: Refusing to add \"$git_root/$file\" as it is not a regular file";
+    # only accept normal files, ignore missing files since our file tracking is not perfect
+    if (! -e $file) {
+      push @to_remove, $file;
+      next;
+    } elsif (! -f $file) {
+      warn "WARNING: Refusing to add \"$file\" as it is not a regular file";
+      next;
     }
-    my $st = stat $file or die "ERROR: could not stat \"$git_root/$file\"";
+    my $st = stat $file or die "ERROR: could not stat \"$file\"";
     my $mode = sprintf "%o", $st->mode;
     my $hash = callcmd "Calculating hash for file", "$git_cmd --git-dir='$git_repo/.git' hash-object -w --stdin <'$file'";
     chomp $hash;
@@ -210,6 +209,14 @@ sub main()
     
     runcmd "Adding file to git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --add --cacheinfo $mode $hash '$relative_file'";
   }
+
+  # Remove the files one by one because we want to ignore errors, but git aborts
+  # after the first error
+  for my $file (@to_remove) {
+    #runcmd "Removing file from git repo", "$git_cmd --git-dir='$git_repo/.git' rm --cached -f '$file'";
+    runcmd "Removing file from git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --force-remove '$file'";
+  }
+
 
   # Commit
   my $has_changes = callcmd "Checking whether there are source tree changes",
