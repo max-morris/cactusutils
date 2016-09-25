@@ -20,6 +20,15 @@ SCHEDULE TerminationTrigger_CheckWalltime AT analysis
   LANG: C
 } "Check elapsed job walltime"
 
+SCHEDULE TerminationTrigger_StartSignalHandler AT startup
+{
+  LANG: C
+} "Start signal handler"
+
+SCHEDULE TerminationTrigger_CheckSignal AT analysis
+{
+  LANG: C
+} "Check if we received a termination signal"
 
 
 if (create_termination_file)
