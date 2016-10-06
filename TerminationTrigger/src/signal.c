@@ -10,6 +10,10 @@
  ************************************************************************/
 static void set_sighandler(const char *signame);
 static void sighandler(int signum);
+static void signal_name_callback(CCTK_ATTRIBUTE_UNUSED void *data,
+                                 CCTK_ATTRIBUTE_UNUSED const char *thorn,
+                                 CCTK_ATTRIBUTE_UNUSED const char *parameter,
+                                 const char *new_value);
 
 /*************************************************************************
  ********************** Local variable definitionsi **********************
@@ -26,6 +30,12 @@ int TerminationTrigger_StartSignalHandler(void) {
   DECLARE_CCTK_PARAMETERS;
 
   set_sighandler(signal_name);
+
+  /* actively listen to parameter changes so that the signal can be changed eg
+   * via the http thorn and is active right away */
+  CCTK_ParameterSetNotifyRegister(signal_name_callback, NULL,
+                                  CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
+                                  CCTK_THORNSTRING, "signal_name");
 
   return 1;
 }
@@ -69,6 +79,14 @@ static void set_sighandler(const char *signame) {
                signame);
   }
 
+  if(signum != current_signal) {
+    if(signum > 0) {
+      CCTK_VInfo(CCTK_THORNSTRING, "Listening for signal '%s'.", signame);
+    } else {
+      CCTK_VInfo(CCTK_THORNSTRING, "Stopped listening for signals.");
+    }
+  }
+
   if(old_handler != NULL) {
     assert(current_signal >= 0);
     signal(current_signal, old_handler);
@@ -85,4 +103,11 @@ static void sighandler(int signum) {
   /* ignore further identical signals just in case a user kills us more than
    * once and we don't want to just abort */
   signal(signum, SIG_IGN);
+}
+
+static void signal_name_callback(CCTK_ATTRIBUTE_UNUSED void *data,
+                                 CCTK_ATTRIBUTE_UNUSED const char *thorn,
+                                 CCTK_ATTRIBUTE_UNUSED const char *parameter,
+                                 const char *new_value) {
+  set_sighandler(new_value);
 }
