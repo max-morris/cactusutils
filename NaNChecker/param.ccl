@@ -62,3 +62,7 @@ STRING  restriction_mask "grid function to use to decide which points are restri
   "CarpetEvolutionMask[:][:]evolution_mask" :: "takes prolongation stencil into account"
   ".*[:][:].*" :: "any grid function with points masked out set to zero"
 } "CarpetReduce::weight"
+
+BOOLEAN setup_test "set up grid function with NaNs"
+{
+} "no"

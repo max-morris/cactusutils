@@ -55,3 +55,12 @@ if (*check_vars && check_every > 0)
     OPTIONS: global loop-level
   } "Output NaNChecker::NaNmask and take action according to NaNChecker::action_if_found"
 }
+
+if (setup_test) {
+  STORAGE: TestGF
+
+  schedule NaNChecker_SetupTest at INITIAL
+  {
+    LANG:    C
+  } "Set test grid function to NaN"
+}

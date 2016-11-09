@@ -46,3 +46,5 @@ private:
 INT NaNmask TYPE=GF TAGS='Prolongation="None" checkpoint="no"' "Grid function mask for NaN locations"
 
 INT NaNsFound TYPE=SCALAR TAGS='checkpoint="no"' "Scalar variable counting the number of NaNs found"
+
+REAL TestGF TYPE=GF TAGS='Prolongation="None" checkpoint="no"' "Grid function to hold NaNs for testsuite"

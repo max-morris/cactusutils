@@ -460,6 +460,13 @@ extern "C" void CCTK_FCALL
   free(vars);
 }
 
+extern "C" void NaNChecker_SetupTest(CCTK_ARGUMENTS) {
+  DECLARE_CCTK_PARAMETERS;
+  DECLARE_CCTK_ARGUMENTS;
+
+  NaNChecker_SetVarsToNaN(cctkGH, CCTK_THORNSTRING "::TestGF");
+}
+
 /********************************************************************
  ********************    Internal Routines   ************************
  ********************************************************************/
