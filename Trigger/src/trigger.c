@@ -131,23 +131,24 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
     }
   }
   else
+  {
     // -1 indicates a parameter
     if (varindex>=0)
     {
       void *myVar = CCTK_VarDataPtrI(GH , 0, varindex);
       if (myVar == NULL)
       {
-        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                  "Variable '%s' has no storage", CCTK_FullName(varindex));
+        CCTK_VError(__LINE__, __FILE__, CCTK_THORNSTRING,
+                    "Variable '%s' has no storage", CCTK_FullName(varindex));
       }
       if (CCTK_VARIABLE_REAL == CCTK_VarTypeI(varindex))
         value=*(CCTK_REAL*)myVar;
       else if (CCTK_VARIABLE_INT == CCTK_VarTypeI(varindex))
         value=(CCTK_REAL) *(CCTK_INT*)myVar;
       else
-        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                   "Variable '%s' isn't CCTK_REAL or CCTK_INT, I don't know what to do with that.",
-                   CCTK_FullName(varindex));
+        CCTK_VError(__LINE__, __FILE__, CCTK_THORNSTRING,
+                    "Variable '%s' isn't CCTK_REAL or CCTK_INT, I don't know what to do with that.",
+                    CCTK_FullName(varindex));
     }
     else
     {
@@ -171,6 +172,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
           break;
       }
     }
+  }
   /* check condition of this trigger */
   ret=0;
   if ( (CCTK_EQUALS(my_GH->relation[trigger], ">") &&
@@ -184,6 +186,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
      )
     ret=1;
   if (ret)
+  {
     if (my_GH->debug)
     {
       if (varindex>=0)
@@ -199,7 +202,9 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
                    value, my_GH->relation[trigger],
                    my_GH->checked_value[trigger]);
     }
+  }
   else
+  {
     if (my_GH->debug)
     {
       if (varindex>=0)
@@ -216,6 +221,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
                    value, my_GH->relation[trigger],
                    my_GH->checked_value[trigger]);
     }
+  }
   return ret;
 }
 
