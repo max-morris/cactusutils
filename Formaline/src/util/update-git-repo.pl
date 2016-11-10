@@ -175,6 +175,7 @@ sub main()
   # Determine the files that should be in the repo
   my @want_files = <STDIN>;
   chomp @want_files;
+  # remove tarballs (assumed to be from ExternalLibraries) from git repo
   @want_files = grep {!/\.tar\.gz$/} @want_files;
   map {s{//}{/}g;} @want_files;
 
