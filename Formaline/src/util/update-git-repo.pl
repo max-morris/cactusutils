@@ -178,6 +178,11 @@ sub main()
   @want_files = grep {!/\.tar\.gz$/} @want_files;
   map {s{//}{/}g;} @want_files;
 
+  my $scratch = $ENV{'SCRATCH_BUILD'};
+  defined $scratch or die;
+  my $dstdir = "$scratch/Formaline-tmp-tree";
+  rmtree $dstdir;
+
   print "Formaline: Updating files in git repository...\n";
   runcmd "Resetting git index", "$git_cmd --git-dir='$git_repo/.git' reset --mixed >/dev/null 2>&1 || true";
 
@@ -197,18 +202,36 @@ sub main()
       warn "WARNING: Refusing to add \"$file\" as it is not a regular file";
       next;
     }
-    my $st = stat $file or die "ERROR: could not stat \"$file\"";
-    my $mode = sprintf "%o", $st->mode;
-    my $hash = callcmd "Calculating hash for file", "$git_cmd --git-dir='$git_repo/.git' hash-object -w --stdin <'$file'";
-    chomp $hash;
-    # Use 3-arguments version of cacheinfo due to old git versions on some clusters
+    # first try building a shadow hierarchy of files that we can add in one git
+    # command taking advantage of git's lstat caching to speed things up
+    my $dir = $file;
+    if ($dir =~ m+/+) {
+        $dir =~ s+/[^/]*$++;
+    } else {
+        $dir = '.';
+    }
+    mkpath "$dstdir/$dir";      # ignore errors
+    if(not link $file, "$dstdir/$file") {
+      delete $want_files{$file}; # remove from list of files to later add
 
-    my $configs_dir = $ENV{'CACTUS_CONFIGS_DIR'};
-    my $relative_file = $file;
-    $relative_file =~ s|^$configs_dir/|configs/|g;
-    
-    runcmd "Adding file to git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --add --cacheinfo $mode $hash '$relative_file'";
+      my $st = stat $file or die "ERROR: could not stat \"$file\"";
+      my $mode = sprintf "%o", $st->mode;
+      my $hash = callcmd "Calculating hash for file", "$git_cmd --git-dir='$git_repo/.git' hash-object -w --stdin <'$file'";
+      chomp $hash;
+      # Use 3-arguments version of cacheinfo due to old git versions on some clusters
+
+      my $configs_dir = $ENV{'CACTUS_CONFIGS_DIR'};
+      my $relative_file = $file;
+      $relative_file =~ s|^$configs_dir/|configs/|g;
+
+      runcmd "Adding file to git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --add --cacheinfo $mode $hash '$relative_file'";
+    }
   }
+  @want_files = grep {$want_files{$_}} keys %want_files;
+  if (@want_files) {
+    runcmd "Adding files @want_files to git repo", "cd $dstdir; $git_cmd --git-dir='$git_repo/.git' add --no-all .";
+  }
+  rmtree $dstdir or die;
 
   # Remove the files one by one because we want to ignore errors, but git aborts
   # after the first error
