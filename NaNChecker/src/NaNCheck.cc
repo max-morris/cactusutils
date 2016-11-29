@@ -133,7 +133,8 @@ extern "C" void NaNChecker_NaNCheck_Prepare(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
   int i, nelems;
 
-  if (cctk_iteration < check_after || cctk_iteration % check_every) {
+  if (cctk_iteration < check_after ||
+      check_every == 0 || cctk_iteration % check_every) {
     return;
   }
 
@@ -178,7 +179,8 @@ extern "C" void NaNChecker_NaNCheck_Check(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  if (cctk_iteration < check_after || cctk_iteration % check_every ||
+  if (cctk_iteration < check_after ||
+      check_every == 0 || cctk_iteration % check_every ||
       (info.NaNmask && cctk_iteration == last_iteration_output)) {
     return;
   }
@@ -190,7 +192,8 @@ extern "C" void NaNChecker_NaNCheck_Finish(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  if (cctk_iteration < check_after || cctk_iteration % check_every ||
+  if (cctk_iteration < check_after ||
+      check_every == 0 || cctk_iteration % check_every ||
       (info.NaNmask && cctk_iteration == last_iteration_output)) {
     return;
   }
