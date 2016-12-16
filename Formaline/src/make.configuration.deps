@@ -379,7 +379,7 @@ $(TOP)/build/Formaline/git-store-source: $(BUILD-ID-FILE) $(TARBALL_DIR)/flesh-C
 	export 'CACTUS_CENTRAL_SSH_ID' && \
 	export CACTUS_CONFIGS_DIR=$(CACTUS_CONFIGS_DIR) && \
 	{ \
-		cat $(filter-out $(TARBALL_DIR)/config-Cactus.files,$?)  && \
+		cat /dev/null $(filter-out $(TARBALL_DIR)/config-Cactus.files,$?)  && \
 		$(if $(filter $(TARBALL_DIR)/config-Cactus.files,$?), \
 	             sed 's|^|$(CACTUS_CONFIGS_DIR)/|' '$(TARBALL_DIR)/config-Cactus.files', \
 	             :) && \
