@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "cctk.h"
 #include "cctk_Arguments.h"
@@ -9,12 +10,17 @@
 /*************************************************************************
  ********************** Local function prototypes ************************
  ************************************************************************/
-static void set_sighandler(const int which, const char *signame);
+static void set_sighandler(const int which, const char *signame,
+                           const int signum);
 static void sighandler(int signum);
 static void signal_name_callback(CCTK_ATTRIBUTE_UNUSED void *data,
                                  CCTK_ATTRIBUTE_UNUSED const char *thorn,
                                  const char *parameter,
                                  const char *new_value);
+static void signal_number_callback(CCTK_ATTRIBUTE_UNUSED void *data,
+                                   CCTK_ATTRIBUTE_UNUSED const char *thorn,
+                                   const char *parameter,
+                                   const char *new_value);
 
 /*************************************************************************
  ********************** Local variable definitionsi **********************
@@ -33,7 +39,7 @@ int TerminationTrigger_StartSignalHandler(void) {
   DECLARE_CCTK_PARAMETERS;
 
   for(int i = 0 ; i < MAX_NUM_SIGNALS ; i++) {
-    set_sighandler(i, signal_names[i]);
+    set_sighandler(i, signal_names[i], signal_numbers[i]);
   }
 
   /* actively listen to parameter changes so that the signal can be changed eg
@@ -41,6 +47,9 @@ int TerminationTrigger_StartSignalHandler(void) {
   CCTK_ParameterSetNotifyRegister(signal_name_callback, NULL,
                                   CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
                                   CCTK_THORNSTRING, "signal_names");
+  CCTK_ParameterSetNotifyRegister(signal_number_callback, NULL,
+                                  CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
+                                  CCTK_THORNSTRING, "signal_numbers");
 
   return 1;
 }
@@ -57,7 +66,7 @@ void TerminationTrigger_CheckSignal(CCTK_ARGUMENTS) {
 
   /* reset signal handler in case the signal we are listening too changed */
   for(int i = 0 ; i < MAX_NUM_SIGNALS ; i++) {
-    set_sighandler(i, signal_names[i]);
+    set_sighandler(i, signal_names[i], signal_numbers[i]);
   }
 }
 
@@ -65,35 +74,36 @@ void TerminationTrigger_CheckSignal(CCTK_ARGUMENTS) {
  ********************** Local function definitons ************************
  ************************************************************************/
 
-static void set_sighandler(const int which, const char *signame) {
-  int signum = 0;
+static void set_sighandler(const int which, const char *signame,
+                           const int signum) {
+  int my_signum = 0;
 
   if(CCTK_EQUALS(signame, "SIGHUP")) {
-    signum = SIGHUP;
-    assert(signum > 0);
+    my_signum = SIGHUP;
+    assert(my_signum > 0);
   } else if(CCTK_EQUALS(signame, "SIGINT")) {
-    signum = SIGINT;
-    assert(signum > 0);
+    my_signum = SIGINT;
+    assert(my_signum > 0);
   } else if(CCTK_EQUALS(signame, "SIGTERM")) {
-    signum = SIGTERM;
-    assert(signum > 0);
+    my_signum = SIGTERM;
+    assert(my_signum > 0);
   } else if(CCTK_EQUALS(signame, "SIGUSR1")) {
-    signum = SIGUSR1;
-    assert(signum > 0);
+    my_signum = SIGUSR1;
+    assert(my_signum > 0);
   } else if(CCTK_EQUALS(signame, "SIGUSR2")) {
-    signum = SIGUSR2;
-    assert(signum > 0);
+    my_signum = SIGUSR2;
+    assert(my_signum > 0);
   } else if(CCTK_EQUALS(signame, "")) {
-    signum = 0;
+    my_signum = signum;
   } else {
     CCTK_VWarn(CCTK_WARN_PICKY, __LINE__, __FILE__, CCTK_THORNSTRING,
                "Internal error: unknown signal '%s', continuing without",
                signame);
   }
-  assert(signum >= 0);
+  assert(my_signum >= 0);
 
-  if(signum != current_signals[which]) {
-    if(signum > 0) {
+  if(my_signum != current_signals[which]) {
+    if(my_signum > 0) {
       CCTK_VInfo(CCTK_THORNSTRING, "Listening for signal '%s'.", signame);
     } else {
       CCTK_VInfo(CCTK_THORNSTRING, "Stopped listening for signals.");
@@ -105,9 +115,9 @@ static void set_sighandler(const int which, const char *signame) {
     signal(current_signals[which], old_handlers[which]);
   }
 
-  if(signum > 0) {
-    old_handlers[which] = signal(signum, sighandler);
-    current_signals[which] = signum;
+  if(my_signum > 0) {
+    old_handlers[which] = signal(my_signum, sighandler);
+    current_signals[which] = my_signum;
   }
 }
 
@@ -125,5 +135,15 @@ static void signal_name_callback(CCTK_ATTRIBUTE_UNUSED void *data,
   int which;
   const int converted = sscanf("%*[a-zA-Z_0-9][%d]", parameter, &which);
   assert(converted == 1);
-  set_sighandler(which, new_value);
+  set_sighandler(which, new_value, 0);
+}
+
+static void signal_number_callback(CCTK_ATTRIBUTE_UNUSED void *data,
+                                   CCTK_ATTRIBUTE_UNUSED const char *thorn,
+                                   const char *parameter,
+                                   const char *new_value) {
+  int which;
+  const int converted = sscanf("%*[a-zA-Z_0-9][%d]", parameter, &which);
+  assert(converted == 1);
+  set_sighandler(which, "", atoi(new_value));
 }

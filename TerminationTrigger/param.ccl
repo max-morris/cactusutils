@@ -42,6 +42,12 @@ KEYWORD signal_names[10] "which signal to trigger on" STEERABLE = ALWAYS
   ""        :: "do not listen to signals"
 } ""
 
+INT signal_numbers[10] "which signal to trigger on, used only if signal_namees is empty" STEERABLE = ALWAYS
+{
+   1:* :: "any signal number understood by the OS"
+   0   :: "ignore this slot"
+} 0
+
 
 REAL output_remtime_every_minutes "Output remaining wall time every n minutes" STEERABLE = ALWAYS
 {
