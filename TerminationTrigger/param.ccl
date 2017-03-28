@@ -32,7 +32,7 @@ INT check_file_every "Check termination file every n timesteps" STEERABLE = ALWA
   1:* :: ""
 } 1
 
-KEYWORD signal_name "which signal to trigger on" STEERABLE = ALWAYS
+KEYWORD signal_names[10] "which signal to trigger on" STEERABLE = ALWAYS
 {
   "SIGHUP"  :: "hangup on controlling terminal"
   "SIGINT"  :: "interrupt from keyboard"
