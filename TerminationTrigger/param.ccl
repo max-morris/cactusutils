@@ -55,6 +55,10 @@ REAL output_remtime_every_minutes "Output remaining wall time every n minutes" S
   (0.0:* :: "Output"
 } 60.0
 
+BOOLEAN testsuite "manually trigger termination"
+{
+} "no"
+
 SHARES: IO
 
 USES STRING out_dir

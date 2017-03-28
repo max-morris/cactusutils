@@ -7,6 +7,8 @@
 #include "cctk_Arguments.h"
 #include "cctk_Parameters.h"
 
+#include "terminationtrigger.h"
+
 /*************************************************************************
  ********************** Local function prototypes ************************
  ************************************************************************/
@@ -58,10 +60,14 @@ void TerminationTrigger_CheckSignal(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
+  if (testsuite && current_signals[0] && cctk_iteration == 1) {
+    raise(current_signals[0]);
+  }
+
   if(signal_caught) {
     CCTK_VInfo(CCTK_THORNSTRING,
                "Received signal '%d'. Triggering termination...", signal_caught);
-    CCTK_TerminateNext(cctkGH);
+    TerminationTrigger_TriggerTermination(CCTK_PASS_CTOC);
   }
 
   /* reset signal handler in case the signal we are listening too changed */

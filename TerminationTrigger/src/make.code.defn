@@ -4,6 +4,7 @@
 SRCS = \
   file.c \
   signal.c \
+  trigger.c \
   walltime.c \
   $(NULL)
 

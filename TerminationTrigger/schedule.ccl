@@ -1,10 +1,15 @@
 # Schedule definitions for thorn TerminationTrigger
 
-STORAGE: watchminutes
+STORAGE: watchminutes triggered
 
 
 
-SCHEDULE TerminationTrigger_StartTimer AT wragh
+SCHEDULE TerminationTrigger_ResetTrigger AT BaseGrid
+{
+  LANG: C
+} "Clear trigger state"
+
+SCHEDULE TerminationTrigger_StartTimer AT BaseGrid
 {
   LANG: C
 } "Start timer"
@@ -33,7 +38,7 @@ SCHEDULE TerminationTrigger_CheckSignal AT analysis
 
 if (create_termination_file)
 {
-  SCHEDULE TerminationTrigger_CreateFile AT wragh
+  SCHEDULE TerminationTrigger_CreateFile AT BaseGrid
   {
     LANG: C
   } "Create termination file"
