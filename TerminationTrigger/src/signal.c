@@ -46,12 +46,25 @@ int TerminationTrigger_StartSignalHandler(void) {
 
   /* actively listen to parameter changes so that the signal can be changed eg
    * via the http thorn and is active right away */
-  CCTK_ParameterSetNotifyRegister(signal_name_callback, NULL,
-                                  CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
-                                  CCTK_THORNSTRING, "signal_names");
-  CCTK_ParameterSetNotifyRegister(signal_number_callback, NULL,
-                                  CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
-                                  CCTK_THORNSTRING, "signal_numbers");
+  int ierr;
+  ierr =
+    CCTK_ParameterSetNotifyRegister(signal_name_callback, NULL,
+                                    CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
+                                    CCTK_THORNSTRING, "signal_names");
+  if(ierr) {
+    CCTK_VWarn(CCTK_WARN_PICKY, __LINE__, __FILE__, CCTK_THORNSTRING,
+               "Could not register parameter change monitor for '%s'",
+               "signal_names");
+  }
+  ierr =
+    CCTK_ParameterSetNotifyRegister(signal_number_callback, NULL,
+                                    CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
+                                    CCTK_THORNSTRING, "signal_numbers");
+  if(ierr) {
+    CCTK_VWarn(CCTK_WARN_PICKY, __LINE__, __FILE__, CCTK_THORNSTRING,
+               "Could not register parameter change monitor for '%s'",
+               "signal_numbers");
+  }
 
   return 1;
 }
@@ -70,7 +83,7 @@ void TerminationTrigger_CheckSignal(CCTK_ARGUMENTS) {
     TerminationTrigger_TriggerTermination(CCTK_PASS_CTOC);
   }
 
-  /* reset signal handler in case the signal we are listening too changed */
+  /* reset signal handler in case the signal we are listening to changed */
   for(int i = 0 ; i < MAX_NUM_SIGNALS ; i++) {
     set_sighandler(i, signal_names[i], signal_numbers[i]);
   }
