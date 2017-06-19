@@ -746,10 +746,11 @@ void CheckForNaN(int vindex, const char *optstring, void *_info) {
 
   /* check if variable has storage assigned */
   gindex = CCTK_GroupIndexFromVarI(vindex);
-  if (report_missing_storage &&
-      CCTK_QueryGroupStorageI(info->GH, gindex) <= 0) {
-    CCTK_VWarn(3, __LINE__, __FILE__, CCTK_THORNSTRING,
-               "CheckForNaN: Ignoring variable '%s' (no storage)", fullname);
+  if (CCTK_QueryGroupStorageI(info->GH, gindex) <= 0) {
+    if(report_missing_storage) {
+      CCTK_VWarn(3, __LINE__, __FILE__, CCTK_THORNSTRING,
+                 "CheckForNaN: Ignoring variable '%s' (no storage)", fullname);
+    }
     free(fullname);
     return;
   }
