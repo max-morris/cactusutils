@@ -48,13 +48,12 @@
 
 // Operation counters
 #ifndef VEC_COUNT
-#define VEC_COUNT(x)
+#define VEC_COUNT(x) 0
 #endif
 // This expects variables declared as
 //    ptrdiff_t vec_op_counter, vec_mem_counter;
-#define vec_op_inc ((void)(VEC_COUNT(vec_op_counter += CCTK_REAL_VEC_SIZE) + 0))
-#define vec_mem_inc                                                            \
-  ((void)(VEC_COUNT(vec_mem_counter += CCTK_REAL_VEC_SIZE) + 0))
+#define vec_op_inc ((void)(VEC_COUNT(vec_op_counter += CCTK_REAL_VEC_SIZE)))
+#define vec_mem_inc ((void)(VEC_COUNT(vec_mem_counter += CCTK_REAL_VEC_SIZE)))
 
 // Define macros for CCTK_REAL
 
