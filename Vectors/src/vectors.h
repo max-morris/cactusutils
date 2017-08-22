@@ -20,7 +20,9 @@
 #include "vectors-4-Altivec.h"
 #endif
 
-#if defined __MIC__ // Intel MIC
+#if defined __knl__ || defined __AVX512F__ // Intel AVX512
+#include "vectors-8-AVX512.h"
+#elif defined __MIC__ || defined __knl__ // Intel MIC
 #include "vectors-8-MIC.h"
 #elif defined __AVX__ && !defined DISABLE_AVX // Intel AVX
 #include "vectors-8-AVX.h"
