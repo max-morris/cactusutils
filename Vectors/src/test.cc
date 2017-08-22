@@ -19,7 +19,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
 #define SCALARTEST(testname, vecexpr, scalarexpr)                              \
   do {                                                                         \
     if (verbose) {                                                             \
-      CCTK_VInfo(CCTK_THORNSTRING, "Test %s...", testname);                    \
+      CCTK_VINFO("Test %s...", testname);                                      \
       fflush(stdout);                                                          \
     }                                                                          \
     CCTK_REAL const res = (scalarexpr);                                        \
@@ -29,8 +29,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
         (CCTK_isnan(vecres) and CCTK_isnan(res))) {                            \
       passed++;                                                                \
     } else {                                                                   \
-      CCTK_VParamWarn(CCTK_THORNSTRING,                                        \
-                      "Failed test %s: expected %.17g, received %.17g",        \
+      CCTK_VPARAMWARN("Failed test %s: expected %.17g, received %.17g",        \
                       testname, (double)res, (double)vecres);                  \
     }                                                                          \
     numtests++;                                                                \
@@ -39,7 +38,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
 #define VECTEST(testname, vecexpr, scalarexpr)                                 \
   do {                                                                         \
     if (verbose) {                                                             \
-      CCTK_VInfo(CCTK_THORNSTRING, "Test %s...", testname);                    \
+      CCTK_VINFO("Test %s...", testname);                                      \
       fflush(stdout);                                                          \
     }                                                                          \
     CCTK_REAL_VEC rv = (vecexpr);                                              \
@@ -51,8 +50,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
           (CCTK_isnan(vecres) and CCTK_isnan(res))) {                          \
         passed++;                                                              \
       } else {                                                                 \
-        CCTK_VParamWarn(CCTK_THORNSTRING,                                      \
-                        "Failed test %s: "                                     \
+        CCTK_VPARAMWARN("Failed test %s: "                                     \
                         "for element %d, expected %.17g, received %.17g",      \
                         testname, i, (double)res, (double)vecres);             \
       }                                                                        \
@@ -63,7 +61,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
 #define VECBITTEST(testname, vecexpr, scalarexpr)                              \
   do {                                                                         \
     if (verbose) {                                                             \
-      CCTK_VInfo(CCTK_THORNSTRING, "Test %s...", testname);                    \
+      CCTK_VINFO("Test %s...", testname);                                      \
       fflush(stdout);                                                          \
     }                                                                          \
     CCTK_BOOLEAN_VEC rv = (vecexpr);                                           \
@@ -76,8 +74,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
         CCTK_INTEGER ires, ivecres;                                            \
         memcpy(&ires, &res, sizeof ires);                                      \
         memcpy(&ivecres, &vecres, sizeof ivecres);                             \
-        CCTK_VParamWarn(CCTK_THORNSTRING,                                      \
-                        "Failed test %s: "                                     \
+        CCTK_VPARAMWARN("Failed test %s: "                                     \
                         "for element %d, expected %lld, received %lld",        \
                         testname, i, (long long)ires, (long long)ivecres);     \
       }                                                                        \
@@ -311,10 +308,19 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
   VECBITTEST("kcmplt", kcmplt(av, bv), a[i] < b[i] ? kltrue1 : klfalse1);
   VECBITTEST("kcmple", kcmple(av, bv), a[i] <= b[i] ? kltrue1 : klfalse1);
 
-  CCTK_VInfo(CCTK_THORNSTRING, "%d/%d tests passed ", passed, numtests);
+  SCALARTEST("kall F", kall(klfalse), false);
+  SCALARTEST("kall T", kall(kltrue), true);
+  SCALARTEST("kany F", kany(klfalse), false);
+  SCALARTEST("kany T", kany(kltrue), true);
+  SCALARTEST("kmaximum", kmaximum(av), a[CCTK_REAL_VEC_SIZE - 1]);
+  SCALARTEST("kminimum", kminimum(av), a[0]);
+  SCALARTEST("ksum", ksum(av),
+             CCTK_REAL_VEC_SIZE * (CCTK_REAL_VEC_SIZE + 1) / 2 * a[0]);
+
+  CCTK_VINFO("%d/%d tests passed ", passed, numtests);
   fflush(stdout);
   if (passed != numtests) {
-    CCTK_VWarn(CCTK_WARN_ALERT, __LINE__, __FILE__, CCTK_THORNSTRING,
-               "Failed %d correctness tests", numtests - passed);
+    CCTK_VWARN(CCTK_WARN_ALERT, "Failed %d correctness tests",
+               numtests - passed);
   }
 }

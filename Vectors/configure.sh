@@ -48,6 +48,26 @@ case $(echo "x$VECTORISE_ALIGNED_ARRAYS" | tr '[:upper:]' '[:lower:]') in
            exit 1
 esac
 
+case $(echo "x$VECTORISE_ALIGN_FOR_CACHE" | tr '[:upper:]' '[:lower:]') in
+    (xyes) VECTORISE_ALIGN_FOR_CACHE=1 ;;
+    (xno)  VECTORISE_ALIGN_FOR_CACHE=0 ;;
+    (x)    VECTORISE_ALIGN_FOR_CACHE=0 ;; # default
+    (*)    echo "BEGIN ERROR"
+           echo "Illegal value of option VECTORISE_ALIGN_FOR_CACHE"
+           echo "END ERROR"
+           exit 1
+esac
+
+case $(echo "x$VECTORISE_ALIGN_INTERIOR" | tr '[:upper:]' '[:lower:]') in
+    (xyes) VECTORISE_ALIGN_INTERIOR=1 ;;
+    (xno)  VECTORISE_ALIGN_INTERIOR=0 ;;
+    (x)    VECTORISE_ALIGN_INTERIOR=0 ;; # default
+    (*)    echo "BEGIN ERROR"
+           echo "Illegal value of option VECTORISE_ALIGN_INTERIOR"
+           echo "END ERROR"
+           exit 1
+esac
+
 case $(echo "x$VECTORISE_ALWAYS_USE_UNALIGNED_LOADS" | tr '[:upper:]' '[:lower:]') in
     (xyes) VECTORISE_ALWAYS_USE_UNALIGNED_LOADS=1 ;;
     (xno)  VECTORISE_ALWAYS_USE_UNALIGNED_LOADS=0 ;;
@@ -98,6 +118,8 @@ esac
 echo "BEGIN DEFINE"
 echo "VECTORISE                            $VECTORISE"
 echo "VECTORISE_ALIGNED_ARRAYS             $VECTORISE_ALIGNED_ARRAYS"
+echo "VECTORISE_ALIGN_FOR_CACHE            $VECTORISE_ALIGN_FOR_CACHE"
+echo "VECTORISE_ALIGN_INTERIOR             $VECTORISE_ALIGN_INTERIOR"
 echo "VECTORISE_ALWAYS_USE_UNALIGNED_LOADS $VECTORISE_ALWAYS_USE_UNALIGNED_LOADS"
 echo "VECTORISE_ALWAYS_USE_ALIGNED_LOADS   $VECTORISE_ALWAYS_USE_ALIGNED_LOADS"
 echo "VECTORISE_INLINE                     $VECTORISE_INLINE"
@@ -107,6 +129,8 @@ echo "END DEFINE"
 echo "BEGIN MAKE_DEFINITION"
 echo "VECTORISE                            = $VECTORISE"
 echo "VECTORISE_ALIGNED_ARRAYS             = $VECTORISE_ALIGNED_ARRAYS"
+echo "VECTORISE_ALIGN_FOR_CACHE            = $VECTORISE_ALIGN_FOR_CACHE"
+echo "VECTORISE_ALIGN_INTERIOR             = $VECTORISE_ALIGN_INTERIOR"
 echo "VECTORISE_ALWAYS_USE_UNALIGNED_LOADS = $VECTORISE_ALWAYS_USE_UNALIGNED_LOADS"
 echo "VECTORISE_ALWAYS_USE_ALIGNED_LOADS   = $VECTORISE_ALWAYS_USE_ALIGNED_LOADS"
 echo "VECTORISE_INLINE                     = $VECTORISE_INLINE"

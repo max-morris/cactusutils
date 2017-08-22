@@ -1,19 +1,14 @@
 // -*-C++-*-
-// Vectorise using Intel's MIC
+// Vectorise using Intel's AVX512
 
 // Use the type __m512d directly, without introducing a wrapper class
-
-// See
-// <http://software.intel.com/sites/products/documentation/doclib/stdxe/2013/composerxe/compiler/cpp-lin/index.htm#GUID-B8DF6000-6872-47B4-AA64-D47A38AF21BD.htm>
-// and
-// <http://software.intel.com/sites/default/files/forum/278102/327364001en.pdf>.
 
 #include <cstdlib>
 #include <cstring>
 
 #include <immintrin.h>
 
-#define vec8_architecture "MIC (64-bit precision)"
+#define vec8_architecture "AVX512 (64-bit precision)"
 
 // Vector type corresponding to CCTK_REAL
 typedef __m512d CCTK_REAL8_VEC;
@@ -59,7 +54,7 @@ vec8_elt(CCTK_REAL8_VEC const x, std::ptrdiff_t const d) {
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8
 vec8_eltb(CCTK_BOOLEAN8_VEC const x, std::ptrdiff_t const d) {
-  return _mm512_mask2int(x) & (1 << d);
+  return x & (1 << d);
 }
 
 // Load and store vectors
@@ -72,10 +67,7 @@ vec8_load(CCTK_REAL8 const &p) {
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 vec8_loadu(CCTK_REAL8 const &p) {
-  CCTK_REAL8_VEC x = _mm512_undefined_pd();
-  x = _mm512_loadunpacklo_pd(x, &p);
-  x = _mm512_loadunpackhi_pd(x, &p + 8);
-  return x;
+  return _mm512_loadu_pd(&p);
 }
 #if VECTORISE_ALWAYS_USE_ALIGNED_LOADS
 #error "VECTORISE_ALWAYS_USE_ALIGNED_LOADS is not yet supported"
@@ -125,22 +117,21 @@ vec8_store(CCTK_REAL8 &p, CCTK_REAL8_VEC const x) {
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_storeu(CCTK_REAL8 &p, CCTK_REAL8_VEC const x) {
-  // TODO: Intel erratum suggests that hi should come before lo
-  _mm512_packstorehi_pd(&p + 8, x);
-  _mm512_packstorelo_pd(&p, x);
+  _mm512_storeu_pd(&p, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta(CCTK_REAL8 &p, CCTK_REAL8_VEC const x) {
-#if VECTORISE_STREAMING_STORES
+#if 0 && VECTORISE_STREAMING_STORES
+  // Possible implementations when using streaming stores include:
   // non-temporal hint:
-  // _mm512_extstore_pd(&p, x, _MM_DOWNCONV_PD_NONE, _MM_HINT_NT);
+  //   _mm512_extstore_pd(&p, x, _MM_DOWNCONV_PD_NONE, _MM_HINT_NT);
   // no-read hint:
-  _mm512_storenr_pd(&p, x);
-  _mm_clevict(&p, _MM_HINT_T1);
-// no-read hint, not globally ordered (requires fence?):
-// _mm512_storenrngo_pd(&p, x);
-// _mm_clevict(&p, _MM_HINT_T1);
-
+  //   _mm512_storenr_pd(&p, x);
+  //   _mm_clevict(&p, _MM_HINT_T1);
+  // no-read hint, not globally ordered (requires fence?):
+  //   _mm512_storenrngo_pd(&p, x);
+  //   _mm_clevict(&p, _MM_HINT_T1);
+  // However, these all seem slower, so we don't use streaming stores.
 #else
   _mm512_store_pd(&p, x);
 #endif
@@ -163,8 +154,10 @@ vec8_store_partial_prepare_(__mmask8 &mask, std::ptrdiff_t const i,
     /* clear upper i+CCTK_REAL8_VEC_SIZE-imax bits */
     m &= 255 >> (i + CCTK_REAL8_VEC_SIZE - imax);
   }
-  mask = _mm512_int2mask(m);
+  mask = m;
 }
+
+#define vec8_store_partial_prepare_fixed vec8_store_partial_prepare
 
 #define vec8_store_nta_partial(p, x) vec8_store_nta_partial_(v8stp_mask, p, x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
@@ -174,21 +167,28 @@ vec8_store_nta_partial_(__mmask8 const mask, CCTK_REAL8 &p,
   _mm512_mask_store_pd(&p, mask, x);
 }
 
+#define vec8_storeu_partial(p, x) vec8_storeu_partial_(v8stp_mask, p, x)
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+vec8_storeu_partial_(__mmask8 const mask, CCTK_REAL8 &p,
+                     CCTK_REAL8_VEC const x) {
+  // TODO: use vec8_storeu(p, x) if all=true?
+  _mm512_mask_storeu_pd(&p, mask, x);
+}
+
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_lo(CCTK_REAL8 &p, CCTK_REAL8_VEC const x,
                           ptrdiff_t const n) {
-  _mm512_mask_store_pd(&p, _mm512_int2mask(255 >> (8 - n)), x);
+  _mm512_mask_store_pd(&p, 255 >> (8 - n), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_hi(CCTK_REAL8 &p, CCTK_REAL8_VEC const x,
                           ptrdiff_t const n) {
-  _mm512_mask_store_pd(&p, _mm512_int2mask(255 << (8 - n)), x);
+  _mm512_mask_store_pd(&p, 255 << (8 - n), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_mid(CCTK_REAL8 &p, CCTK_REAL8_VEC const x,
                            ptrdiff_t const nlo, ptrdiff_t const nhi) {
-  _mm512_mask_store_pd(
-      &p, _mm512_int2mask((255 >> (8 - nlo)) & (255 << (8 - nhi))), x);
+  _mm512_mask_store_pd(&p, (255 >> (8 - nlo)) & (255 << (8 - nhi)), x);
 }
 
 // Functions and operators
@@ -215,7 +215,45 @@ k8mul(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8div(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
+#if 0
+  // This is accurate, but slow; it is internally evaluated unvectorized
   return _mm512_div_pd(x, y);
+#endif
+#if 0
+  // Starting from a reciprocal is facter, but leads to some round-off error
+  // Approximate solution
+  CCTK_REAL8_VEC const r0 = _mm512_mul_pd(x, _mm512_rcp28_pd(y));
+  // One Newton iteration
+  // Note: Don't rewrite this expression, this may introduce
+  // cancellation errors
+  // r += r * (x - y * r)
+  CCTK_REAL8_VEC const r1 = _mm512_fmadd_pd(r0, _mm512_fnmadd_pd(y, r0, x), r0);
+  return r1;
+#endif
+#if defined __knl__
+  // Best algorithm: Start with an approximate result, then perform Newton
+  // iteration until convergence. Theoretically the result should be exact.
+  // Approximate solution
+  CCTK_REAL8_VEC const r0 = _mm512_rcp28_pd(y);
+  // One Newton iteration
+  // Note: Don't rewrite this expression, this may introduce
+  // cancellation errors
+  // r += r * (1 - y * r)
+  CCTK_REAL8_VEC const r1 =
+      _mm512_fmadd_pd(r0, _mm512_fnmadd_pd(y, r0, vec8_set1(1.0)), r0);
+  return _mm512_mul_pd(x, r1);
+#else
+  // Best algorithm: Start with an approximate result, then perform Newton
+  // iteration until convergence. Theoretically the result should be exact.
+  // Approximate solution
+  CCTK_REAL8_VEC const r0 = _mm512_rcp14_pd(y);
+  // Two Newton iterations
+  CCTK_REAL8_VEC const r1 =
+      _mm512_fmadd_pd(r0, _mm512_fnmadd_pd(y, r0, vec8_set1(1.0)), r0);
+  CCTK_REAL8_VEC const r2 =
+      _mm512_fmadd_pd(r1, _mm512_fnmadd_pd(y, r1, vec8_set1(1.0)), r1);
+  return _mm512_mul_pd(x, r2);
+#endif
 }
 
 // Fused multiply-add, defined as [+-]x*y[+-]z
@@ -254,11 +292,11 @@ k8fabs(CCTK_REAL8_VEC const x) {
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8fmax(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return _mm512_gmax_pd(x, y);
+  return _mm512_max_pd(x, y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8fmin(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return _mm512_gmin_pd(x, y);
+  return _mm512_min_pd(x, y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8fnabs(CCTK_REAL8_VEC const x) {
@@ -267,9 +305,46 @@ k8fnabs(CCTK_REAL8_VEC const x) {
   CCTK_INTEGER8_VEC ir = _mm512_or_epi64(k8sign, ix);
   return _mm512_castsi512_pd(ir);
 }
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8signbit(CCTK_REAL8_VEC const x) {
+  CCTK_INTEGER8_VEC ix = _mm512_castpd_si512(x);
+  return _mm512_test_epi64_mask(k8sign, ix);
+}
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8sqrt(CCTK_REAL8_VEC const x) {
+#if 0
+  // This is accurate, but slow; it is internally evaluated unvectorized
   return _mm512_sqrt_pd(x);
+#endif
+#if defined __knl__
+  // We start with an approximate result, then perform Goldschmidt iterations
+  // <https://en.wikipedia.org/wiki/Methods_of_computing_square_roots>.
+  // Theoretically the result should be exact.
+  // Initialisation
+  CCTK_REAL8_VEC const y0 = _mm512_rsqrt28_pd(x);
+  CCTK_REAL8_VEC const x0 = _mm512_mul_pd(x, y0);
+  CCTK_REAL8_VEC const h0 = _mm512_mul_pd(vec8_set1(0.5), y0);
+  // Step
+  CCTK_REAL8_VEC const r0 = _mm512_fnmadd_pd(x0, h0, vec8_set1(0.5));
+  CCTK_REAL8_VEC const x1 = _mm512_fmadd_pd(x0, r0, x0);
+  return x1;
+#else
+  // We start with an approximate result, then perform Goldschmidt iterations
+  // <https://en.wikipedia.org/wiki/Methods_of_computing_square_roots>.
+  // Theoretically the result should be exact.
+  // Initialisation
+  CCTK_REAL8_VEC const y0 = _mm512_rsqrt14_pd(x);
+  CCTK_REAL8_VEC const x0 = _mm512_mul_pd(x, y0);
+  CCTK_REAL8_VEC const h0 = _mm512_mul_pd(vec8_set1(0.5), y0);
+  // Step
+  CCTK_REAL8_VEC const r0 = _mm512_fnmadd_pd(x0, h0, vec8_set1(0.5));
+  CCTK_REAL8_VEC const x1 = _mm512_fmadd_pd(x0, r0, x0);
+  CCTK_REAL8_VEC const h1 = _mm512_fmadd_pd(h0, r0, h0);
+  // Step
+  CCTK_REAL8_VEC const r1 = _mm512_fnmadd_pd(x1, h1, vec8_set1(0.5));
+  CCTK_REAL8_VEC const x2 = _mm512_fmadd_pd(x1, r1, x1);
+  return x2;
+#endif
 }
 
 // Expensive functions
@@ -347,6 +422,10 @@ k8pow(CCTK_REAL8_VEC const x, CCTK_REAL8 const a) {
   return _mm512_pow_pd(x, _mm512_set1_pd(a));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8pown(CCTK_REAL8_VEC const x, int const i) {
+  return _mm512_pow_pd(x, _mm512_set1_pd(CCTK_REAL8(i)));
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8sin(CCTK_REAL8_VEC const x) {
   return _mm512_sin_pd(x);
 }
@@ -418,6 +497,22 @@ k8pow(CCTK_REAL8_VEC const x, CCTK_REAL8 const a) {
   return K8REPL2S(pow, x, a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8pown(CCTK_REAL8_VEC x, int i) {
+  // return k8repl2si(pow, x, i);
+  if (i < 0) {
+    x = k8div(vec8_set1(1), x);
+    i = -i;
+  }
+  CCTK_REAL8_VEC r = vec8_set1(1);
+  while (i != 0) {
+    if (i & 1)
+      r = k8mul(x, r);
+    x = k8mul(x, x);
+    i >>= 1;
+  }
+  return r;
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8sin(CCTK_REAL8_VEC const x) {
   return K8REPL(sin, x);
 }
@@ -437,8 +532,8 @@ k8tanh(CCTK_REAL8_VEC const x) {
 #endif
 
 // TODO: try k8lxor(x,x) and k8lxnor(x,x)
-#define k8lfalse (_mm512_int2mask(0))
-#define k8ltrue (_mm512_int2mask(~0))
+#define k8lfalse (0)
+#define k8ltrue (~0)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8lnot(CCTK_BOOLEAN8_VEC const x) {
   return _mm512_knot(x);
@@ -469,27 +564,27 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC k8ifthen(
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8cmpeq(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return _mm512_cmpeq_pd_mask(x, y);
+  return _mm512_cmp_pd_mask(x, y, _MM_CMPINT_EQ);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8cmpne(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return _mm512_cmpneq_pd_mask(x, y);
+  return _mm512_cmp_pd_mask(x, y, _MM_CMPINT_NE);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8cmpgt(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return _mm512_cmpnle_pd_mask(x, y);
+  return _mm512_cmp_pd_mask(x, y, _MM_CMPINT_GT);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8cmpge(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return _mm512_cmpnlt_pd_mask(x, y);
+  return _mm512_cmp_pd_mask(x, y, _MM_CMPINT_GE);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8cmplt(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return _mm512_cmplt_pd_mask(x, y);
+  return _mm512_cmp_pd_mask(x, y, _MM_CMPINT_LT);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8cmple(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return _mm512_cmple_pd_mask(x, y);
+  return _mm512_cmp_pd_mask(x, y, _MM_CMPINT_LE);
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
@@ -498,4 +593,45 @@ k8sgn(CCTK_REAL8_VEC const x) {
   CCTK_BOOLEAN8_VEC const isneg = k8cmplt(x, vec8_set1(0.0));
   return k8ifthen(iszero, vec8_set1(0.0),
                   k8ifthen(isneg, vec8_set1(-1.0), vec8_set1(+1.0)));
+}
+
+// Reduction operations
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
+k8all(CCTK_BOOLEAN8_VEC const x) {
+  // return mm512_kortestc(x, x);
+  return x == 0b11111111;
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
+k8any(CCTK_BOOLEAN8_VEC const x) {
+  // return !bool(_mm512_kortestz(x, x));
+  return x != 0b00000000;
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8maximum(CCTK_REAL8_VEC const x1) {
+  __m256d const x2 =
+      _mm256_max_pd(_mm512_castpd512_pd256(x1), _mm512_extractf64x4_pd(x1, 1));
+  __m128d const x4 =
+      _mm_max_pd(_mm256_castpd256_pd128(x2), _mm256_extractf128_pd(x2, 1));
+  return _mm_cvtsd_f64(_mm_max_sd(x4, _mm_shuffle_pd(x4, x4, 0b01)));
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8minimum(CCTK_REAL8_VEC const x1) {
+  __m256d const x2 =
+      _mm256_min_pd(_mm512_castpd512_pd256(x1), _mm512_extractf64x4_pd(x1, 1));
+  __m128d const x4 =
+      _mm_min_pd(_mm256_castpd256_pd128(x2), _mm256_extractf128_pd(x2, 1));
+  return _mm_cvtsd_f64(_mm_min_sd(x4, _mm_shuffle_pd(x4, x4, 0b01)));
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8sum(CCTK_REAL8_VEC const x1) {
+  __m256d const x2 =
+      _mm256_add_pd(_mm512_castpd512_pd256(x1), _mm512_extractf64x4_pd(x1, 1));
+  __m128d const x4 =
+      _mm_add_pd(_mm256_castpd256_pd128(x2), _mm256_extractf128_pd(x2, 1));
+  return _mm_cvtsd_f64(_mm_hadd_pd(x4, x4));
 }

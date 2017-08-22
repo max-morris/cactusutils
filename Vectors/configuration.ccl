@@ -7,6 +7,8 @@ PROVIDES Vectors
   OPTIONS                                \
     VECTORISE                            \
     VECTORISE_ALIGNED_ARRAYS             \
+    VECTORISE_ALIGN_FOR_CACHE            \
+    VECTORISE_ALIGN_INTERIOR             \
     VECTORISE_ALWAYS_USE_UNALIGNED_LOADS \
     VECTORISE_ALWAYS_USE_ALIGNED_LOADS   \
     VECTORISE_INLINE                     \
