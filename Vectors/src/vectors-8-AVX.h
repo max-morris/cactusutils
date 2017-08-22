@@ -352,6 +352,11 @@ k8mul(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8div(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
+  // TODO: try:
+  //   _mm256_cvtpd_ps
+  //   _mm_rcp_ps
+  //   _mm256_cvtps_pd
+  //   [iterate twice]
   return _mm256_div_pd(x, y);
 }
 
