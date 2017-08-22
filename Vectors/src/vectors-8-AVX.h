@@ -3,6 +3,7 @@
 
 // Use the type __m256d directly, without introducing a wrapper class
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 
@@ -11,12 +12,18 @@
 #include <x86intrin.h>
 #endif
 
+#ifdef __AVX2__
+#define vec8_architecture_AVX2 "+AVX2"
+#else
+#define vec8_architecture_AVX2 ""
+#endif
 #ifdef __FMA4__
 #define vec8_architecture_FMA4 "+FMA4"
 #else
 #define vec8_architecture_FMA4 ""
 #endif
-#define vec8_architecture "AVX" vec8_architecture_FMA4 " (64-bit precision)"
+#define vec8_architecture                                                      \
+  "AVX" vec8_architecture_AVX2 vec8_architecture_FMA4 " (64-bit precision)"
 
 // Vector type corresponding to CCTK_REAL
 // Note: some boolean masks (e.g. ~0) correspond to nan when
@@ -69,6 +76,16 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_INTEGER8_VEC
 vec8_seti(CCTK_INTEGER8 const a, CCTK_INTEGER8 const b, CCTK_INTEGER8 const c,
           CCTK_INTEGER8 const d) {
   return _mm256_set_epi64x(d, c, b, a); // note reversed arguments
+}
+
+// original order is 0123
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+vec8_swap1032(CCTK_REAL8_VEC const x) {
+  return _mm256_shuffle_pd(x, x, 0b0101);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+vec8_swap2301(CCTK_REAL8_VEC const x) {
+  return _mm256_permute2f128_pd(x, x, 1);
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
@@ -173,26 +190,28 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_partial_prepare_(bool &all, __m256i &mask, std::ptrdiff_t const i,
                             std::ptrdiff_t const imin,
                             std::ptrdiff_t const imax) {
-  all = i >= imin and i + CCTK_REAL8_VEC_SIZE - 1 < imax;
+  // all = i >= imin and i + CCTK_REAL8_VEC_SIZE - 1 < imax;
+  all = false;
 
-  if (not CCTK_BUILTIN_EXPECT(all, true)) {
-    /* __m256i const v8stp_mask = */
-    /*   _mm256_andnot_pd(_mm256_add_epi64(_mm256_set1_epi64x(i-imin), */
-    /*                                     vec_index), */
-    /*                    _mm256_add_epi64(_mm256_set1_epi64x(i-imax), */
-    /*                                     vec_index)); */
-    __m128i const termlo01 =
-        _mm_add_epi64(_mm_set1_epi64x(i - imin), _mm_set_epi64x(1, 0));
-    __m128i const termup01 =
-        _mm_add_epi64(_mm_set1_epi64x(i - imax), _mm_set_epi64x(1, 0));
-    __m128i const term01 = _mm_andnot_si128(termlo01, termup01);
-    __m128i const termlo23 =
-        _mm_add_epi64(_mm_set1_epi64x(i - imin), _mm_set_epi64x(3, 2));
-    __m128i const termup23 =
-        _mm_add_epi64(_mm_set1_epi64x(i - imax), _mm_set_epi64x(3, 2));
-    __m128i const term23 = _mm_andnot_si128(termlo23, termup23);
-    mask = _mm256_insertf128_si256(_mm256_castsi128_si256(term01), term23, 1);
-  }
+// if (not CCTK_BUILTIN_EXPECT(all, true)) {
+#ifdef __AVX2__
+  mask = _mm256_andnot_si256(
+      _mm256_add_epi64(vec8_set1i(i - imin), vec8_seti(0, 1, 2, 3)),
+      _mm256_add_epi64(vec8_set1i(i - imax), vec8_seti(0, 1, 2, 3)));
+#else
+  __m128i const termlo01 =
+      _mm_add_epi64(_mm_set1_epi64x(i - imin), _mm_set_epi64x(1, 0));
+  __m128i const termup01 =
+      _mm_add_epi64(_mm_set1_epi64x(i - imax), _mm_set_epi64x(1, 0));
+  __m128i const term01 = _mm_andnot_si128(termlo01, termup01);
+  __m128i const termlo23 =
+      _mm_add_epi64(_mm_set1_epi64x(i - imin), _mm_set_epi64x(3, 2));
+  __m128i const termup23 =
+      _mm_add_epi64(_mm_set1_epi64x(i - imax), _mm_set_epi64x(3, 2));
+  __m128i const term23 = _mm_andnot_si128(termlo23, termup23);
+  mask = _mm256_insertf128_si256(_mm256_castsi128_si256(term01), term23, 1);
+#endif
+  // }
 }
 
 // Store a partial vector (aligned and non-temporal)
@@ -415,10 +434,37 @@ k8sqrt(CCTK_REAL8_VEC const x) {
 #define K8REPL2S(f, x, a)                                                      \
   vec8_set(f(vec8_elt(x, 0), a), f(vec8_elt(x, 1), a), f(vec8_elt(x, 2), a),   \
            f(vec8_elt(x, 3), a));
+#define K8REPL2SI(f, x, i)                                                     \
+  vec8_set(f(vec8_elt(x, 0), i), f(vec8_elt(x, 1), i), f(vec8_elt(x, 2), i),   \
+           f(vec8_elt(x, 3), i));
 #define K8REPL2(f, x, y)                                                       \
   vec8_set(                                                                    \
       f(vec8_elt(x, 0), vec8_elt(y, 0)), f(vec8_elt(x, 1), vec8_elt(y, 1)),    \
       f(vec8_elt(x, 2), vec8_elt(y, 2)), f(vec8_elt(x, 3), vec8_elt(y, 3)));
+
+static CCTK_ATTRIBUTE_NOINLINE __attribute__((__noclone__))
+CCTK_ATTRIBUTE_UNUSED CCTK_REAL8_VEC
+k8repl(CCTK_REAL8 (*const f)(CCTK_REAL8), CCTK_REAL8_VEC const x) {
+  return K8REPL(f, x);
+}
+static CCTK_ATTRIBUTE_NOINLINE __attribute__((__noclone__))
+CCTK_ATTRIBUTE_UNUSED CCTK_REAL8_VEC
+k8repl2s(CCTK_REAL8 (*const f)(CCTK_REAL8, CCTK_REAL8), CCTK_REAL8_VEC const x,
+         CCTK_REAL8 const a) {
+  return K8REPL2S(f, x, a);
+}
+static CCTK_ATTRIBUTE_NOINLINE __attribute__((__noclone__))
+CCTK_ATTRIBUTE_UNUSED CCTK_REAL8_VEC
+k8repl2si(CCTK_REAL8 (*const f)(CCTK_REAL8, int), CCTK_REAL8_VEC const x,
+          int const i) {
+  return K8REPL2S(f, x, i);
+}
+static CCTK_ATTRIBUTE_NOINLINE __attribute__((__noclone__))
+CCTK_ATTRIBUTE_UNUSED CCTK_REAL8_VEC
+k8repl2(CCTK_REAL8 (*const f)(CCTK_REAL8, CCTK_REAL8), CCTK_REAL8_VEC const x,
+        CCTK_REAL8_VEC const y) {
+  return K8REPL2(f, x, y);
+}
 
 #if defined __ICC
 // The Intel compiler provides intrinsics for these
@@ -480,6 +526,10 @@ k8pow(CCTK_REAL8_VEC const x, CCTK_REAL8 const a) {
   return _mm256_pow_pd(x, _mm256_set1_pd(a));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8pown(CCTK_REAL8_VEC const x, int const i) {
+  return _mm256_pow_pd(x, _mm256_set1_pd(CCTK_REAL8(i)));
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8sin(CCTK_REAL8_VEC const x) {
   return _mm256_sin_pd(x);
 }
@@ -500,71 +550,87 @@ k8tanh(CCTK_REAL8_VEC const x) {
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8acos(CCTK_REAL8_VEC const x) {
-  return K8REPL(acos, x);
+  return k8repl(acos, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8acosh(CCTK_REAL8_VEC const x) {
-  return K8REPL(acosh, x);
+  return k8repl(acosh, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8asin(CCTK_REAL8_VEC const x) {
-  return K8REPL(asin, x);
+  return k8repl(asin, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8asinh(CCTK_REAL8_VEC const x) {
-  return K8REPL(asinh, x);
+  return k8repl(asinh, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8atan(CCTK_REAL8_VEC const x) {
-  return K8REPL(atan, x);
+  return k8repl(atan, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8atan2(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return K8REPL2(atan2, x, y);
+  return k8repl2(atan2, x, y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8atanh(CCTK_REAL8_VEC const x) {
-  return K8REPL(atanh, x);
+  return k8repl(atanh, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8cos(CCTK_REAL8_VEC const x) {
-  return K8REPL(cos, x);
+  return k8repl(cos, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8cosh(CCTK_REAL8_VEC const x) {
-  return K8REPL(cosh, x);
+  return k8repl(cosh, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8exp(CCTK_REAL8_VEC const x) {
-  return K8REPL(exp, x);
+  return k8repl(exp, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8fmod(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
-  return K8REPL2(fmod, x, y);
+  return k8repl2(fmod, x, y);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8log(CCTK_REAL8_VEC const x) {
-  return K8REPL(log, x);
+  return k8repl(log, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8pow(CCTK_REAL8_VEC const x, CCTK_REAL8 const a) {
-  return K8REPL2S(pow, x, a);
+  return k8repl2s(pow, x, a);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8pown(CCTK_REAL8_VEC x, int i) {
+  // return k8repl2si(pow, x, i);
+  if (i < 0) {
+    x = k8div(vec8_set1(1), x);
+    i = -i;
+  }
+  CCTK_REAL8_VEC r = vec8_set1(1);
+  while (i != 0) {
+    if (i & 1)
+      r = k8mul(x, r);
+    x = k8mul(x, x);
+    i >>= 1;
+  }
+  return r;
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8sin(CCTK_REAL8_VEC const x) {
-  return K8REPL(sin, x);
+  return k8repl(sin, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8sinh(CCTK_REAL8_VEC const x) {
-  return K8REPL(sinh, x);
+  return k8repl(sinh, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8tan(CCTK_REAL8_VEC const x) {
-  return K8REPL(tan, x);
+  return k8repl(tan, x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 k8tanh(CCTK_REAL8_VEC const x) {
-  return K8REPL(tanh, x);
+  return k8repl(tanh, x);
 }
 
 #endif
@@ -623,6 +689,45 @@ k8sgn(CCTK_REAL8_VEC const x) {
   CCTK_REAL8_VEC const sign = _mm256_and_pd(I2R(k8sign), x);
   CCTK_REAL8_VEC const signedone = _mm256_or_pd(sign, vec8_set1(1.0));
   return k8ifthen(iszero, vec8_set1(0.0), signedone);
+}
+
+// Reduction operations
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
+k8all(CCTK_BOOLEAN8_VEC const x) {
+  CCTK_REAL8_VEC const x1 = I2R(x);
+  CCTK_REAL8_VEC const x2 = _mm256_and_pd(x1, vec8_swap1032(x1));
+  CCTK_REAL8_VEC const x4 = _mm256_and_pd(x2, vec8_swap2301(x2));
+  return vec8_eltb(R2I(x4), 0) < 0;
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
+k8any(CCTK_BOOLEAN8_VEC const x) {
+  CCTK_REAL8_VEC const x1 = I2R(x);
+  CCTK_REAL8_VEC const x2 = _mm256_or_pd(x1, vec8_swap1032(x1));
+  CCTK_REAL8_VEC const x4 = _mm256_or_pd(x2, vec8_swap2301(x2));
+  return vec8_eltb(R2I(x4), 0) < 0;
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8maximum(CCTK_REAL8_VEC const x1) {
+  CCTK_REAL8_VEC const x2 = _mm256_max_pd(x1, vec8_swap1032(x1));
+  CCTK_REAL8_VEC const x4 = _mm256_max_pd(x2, vec8_swap2301(x2));
+  return vec8_elt(x4, 0);
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8minimum(CCTK_REAL8_VEC const x1) {
+  CCTK_REAL8_VEC const x2 = _mm256_min_pd(x1, vec8_swap1032(x1));
+  CCTK_REAL8_VEC const x4 = _mm256_min_pd(x2, vec8_swap2301(x2));
+  return vec8_elt(x4, 0);
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8sum(CCTK_REAL8_VEC const x1) {
+  CCTK_REAL8_VEC const x2 = _mm256_hadd_pd(x1, x1);
+  CCTK_REAL8_VEC const x4 = _mm256_add_pd(x2, vec8_swap2301(x2));
+  return vec8_elt(x4, 0);
 }
 
 #undef I2R

@@ -308,6 +308,15 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
   VECBITTEST("kcmplt", kcmplt(av, bv), a[i] < b[i] ? kltrue1 : klfalse1);
   VECBITTEST("kcmple", kcmple(av, bv), a[i] <= b[i] ? kltrue1 : klfalse1);
 
+  SCALARTEST("kall F", kall(klfalse), false);
+  SCALARTEST("kall T", kall(kltrue), true);
+  SCALARTEST("kany F", kany(klfalse), false);
+  SCALARTEST("kany T", kany(kltrue), true);
+  SCALARTEST("kmaximum", kmaximum(av), a[CCTK_REAL_VEC_SIZE - 1]);
+  SCALARTEST("kminimum", kminimum(av), a[0]);
+  SCALARTEST("ksum", ksum(av),
+             CCTK_REAL_VEC_SIZE * (CCTK_REAL_VEC_SIZE + 1) / 2 * a[0]);
+
   CCTK_VINFO("%d/%d tests passed ", passed, numtests);
   fflush(stdout);
   if (passed != numtests) {

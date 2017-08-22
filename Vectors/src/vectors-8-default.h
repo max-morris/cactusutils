@@ -119,3 +119,10 @@ static inline CCTK_REAL8_VEC k8sgn(CCTK_REAL8_VEC const x) {
   return x == (CCTK_REAL8)0.0 ? (CCTK_REAL8)0.0
                               : k8copysign((CCTK_REAL8)1.0, x);
 }
+
+// Reduction operations
+#define k8all(x) (x)
+#define k8any(x) (x)
+#define k8maximum(x) (x)
+#define k8minimum(x) (x)
+#define k8sum(x) (x)

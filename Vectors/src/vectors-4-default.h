@@ -5,8 +5,8 @@
 // don't like to inline functions. This should also make debug builds
 // (which may not inline) more efficient.
 
-#include <assert.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
 
 #define vec4_architecture "scalar (no vectorisation, 32-bit precision)"
 
@@ -87,7 +87,7 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
 #define k4atan(x) (atanf(x))
 #define k4atan2(x, y) (atan2f(x, y))
 #define k4atanh(x) (atanhf(x))
-#define k4copysign(x, y) (copysign(x, y))
+#define k4copysign(x, y) (std::copysign(x, y))
 #define k4cos(x) (cosf(x))
 #define k4cosh(x) (coshf(x))
 #define k4exp(x) (expf(x))
@@ -128,3 +128,10 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
 #define k4cmpge(x, y) ((x) >= (y))
 #define k4cmplt(x, y) ((x) < (y))
 #define k4cmple(x, y) ((x) <= (y))
+
+// Reduction operations
+#define k4all(x) (x)
+#define k4any(x) (x)
+#define k4maximum(x) (x)
+#define k4minimum(x) (x)
+#define k4sum(x) (x)

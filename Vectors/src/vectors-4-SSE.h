@@ -644,5 +644,44 @@ k4sgn(CCTK_REAL4_VEC const x) {
   return k4ifthen(iszero, vec4_set1(0.0), signedone);
 }
 
+// Reduction operations
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
+k4all(CCTK_BOOLEAN4_VEC const x) {
+  CCTK_REAL4_VEC const x1 = I2R(x);
+  CCTK_REAL4_VEC const x2 = _mm_and_ps(x1, vec4_swap1032(x1));
+  CCTK_REAL4_VEC const x4 = _mm_and_ps(x2, vec4_swap2301(x2));
+  return vec4_eltb(R2I(x4), 0) < 0;
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
+k4any(CCTK_BOOLEAN4_VEC const x) {
+  CCTK_REAL4_VEC const x1 = I2R(x);
+  CCTK_REAL4_VEC const x2 = _mm_or_ps(x1, vec4_swap1032(x1));
+  CCTK_REAL4_VEC const x4 = _mm_or_ps(x2, vec4_swap2301(x2));
+  return vec4_eltb(R2I(x4), 0) < 0;
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4
+k4maximum(CCTK_REAL4_VEC const x1) {
+  CCTK_REAL4_VEC const x2 = _mm_max_ps(x1, vec4_swap1032(x1));
+  CCTK_REAL4_VEC const x4 = _mm_max_ps(x2, vec4_swap2301(x2));
+  return vec4_elt(x4, 0);
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4
+k4minimum(CCTK_REAL4_VEC const x1) {
+  CCTK_REAL4_VEC const x2 = _mm_min_ps(x1, vec4_swap1032(x1));
+  CCTK_REAL4_VEC const x4 = _mm_min_ps(x2, vec4_swap2301(x2));
+  return vec4_elt(x4, 0);
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4
+k4sum(CCTK_REAL4_VEC const x1) {
+  CCTK_REAL4_VEC const x2 = _mm_hadd_ps(x1, x1);
+  CCTK_REAL4_VEC const x4 = _mm_hadd_ps(x2, x2);
+  return vec4_elt(x4, 0);
+}
+
 #undef I2R
 #undef R2I

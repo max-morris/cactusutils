@@ -141,6 +141,12 @@
 #define kcmplt k4cmplt
 #define kcmple k4cmple
 
+#define kall k4all
+#define kany k4any
+#define kmaximum k4maximum
+#define kminimum k4minimum
+#define ksum k4sum
+
 #elif defined CCTK_REAL_PRECISION_8
 
 #define vec_architecture vec8_architecture
@@ -227,6 +233,12 @@
 #define kcmplt k8cmplt
 #define kcmple k8cmple
 
+#define kall k8all
+#define kany k8any
+#define kmaximum k8maximum
+#define kminimum k8minimum
+#define ksum k8sum
+
 #else
 
 #error "Unknown CCTK_REAL_PRECISION"
@@ -259,65 +271,138 @@
 #ifdef __cplusplus
 
 #include <cmath>
+#include <cstddef>
 #include <cstdlib>
 
 template <typename T> struct vecprops {
   typedef T scalar_t;
   typedef T vector_t;
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE std::size_t size() { return 1; }
+  typedef bool bscalar_t;
+  typedef bool bvector_t;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr std::size_t size() {
+    return 1;
+  }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t load(scalar_t const &a) {
-    return a;
+    return vec_mem_inc, a;
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t loadu(scalar_t const &a) {
+    return vec_mem_inc, a;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  set1(scalar_t const &a) {
     return a;
   }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t set1(scalar_t const &a) {
-    return a;
-  }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE scalar_t
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr scalar_t
   elt(vector_t const &x, std::ptrdiff_t const d) {
     return x;
   }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t neg(vector_t const &x) {
-    return -x;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  neg(vector_t const &x) {
+    return vec_op_inc, -x;
   }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t add(vector_t const &x,
-                                                          vector_t const &y) {
-    return x + y;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  add(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x + y;
   }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t sub(vector_t const &x,
-                                                          vector_t const &y) {
-    return x - y;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  sub(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x - y;
   }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t mul(vector_t const &x,
-                                                          vector_t const &y) {
-    return x * y;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  mul(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x * y;
   }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t div(vector_t const &x,
-                                                          vector_t const &y) {
-    return x / y;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  div(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x / y;
   }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t madd(vector_t const &x,
-                                                           vector_t const &y,
-                                                           vector_t const &z) {
-    return x * y + z;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  madd(vector_t const &x, vector_t const &y, vector_t const &z) {
+    return vec_op_inc, vec_op_inc, x * y + z;
   }
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t sqrt(vector_t const &x) {
-    return std::sqrt(x);
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  cmpeq(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x == y;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  cmpne(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x != y;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  cmpgt(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x > y;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  cmpge(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x >= y;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  cmplt(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x < y;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  cmple(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, x <= y;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t
+  good_copysign(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4copysign(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  fabs(vector_t const &x) {
+    return vec_op_inc, std::fabs(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  ifthen(bvector_t const &c, vector_t const &x, vector_t const &y) {
+    return vec_op_inc, c ? x : y;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  fmax(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, std::fmax(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  fmin(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, std::fmin(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  sqrt(vector_t const &x) {
+    return vec_op_inc, std::sqrt(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bool
+  all(bvector_t const &x) {
+    return vec_op_inc, x;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bool
+  any(bvector_t const &x) {
+    return vec_op_inc, x;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr scalar_t
+  maximum(vector_t const &x) {
+    return vec_op_inc, x;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr scalar_t
+  minimum(vector_t const &x) {
+    return vec_op_inc, x;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr scalar_t
+  sum(vector_t const &x) {
+    return vec_op_inc, x;
   }
 };
 
 template <> struct vecprops<CCTK_REAL4> {
   typedef CCTK_REAL4 scalar_t;
   typedef CCTK_REAL4_VEC vector_t;
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE int size() {
+  typedef CCTK_BOOLEAN4 bscalar_t;
+  typedef CCTK_BOOLEAN4_VEC bvector_t;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr std::size_t size() {
     return CCTK_REAL4_VEC_SIZE;
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t load(scalar_t const &a) {
-    return vec4_load(a);
+    return vec_mem_inc, vec4_load(a);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t loadu(scalar_t const &a) {
-    return vec4_loadu(a);
+    return vec_mem_inc, vec4_loadu(a);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t set1(scalar_t const &a) {
     return vec4_set1(a);
@@ -327,45 +412,107 @@ template <> struct vecprops<CCTK_REAL4> {
     return vec4_elt(x, d);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t neg(vector_t const &x) {
-    return k4neg(x);
+    return vec_op_inc, k4neg(x);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t add(vector_t const &x,
                                                           vector_t const &y) {
-    return k4add(x, y);
+    return vec_op_inc, k4add(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t sub(vector_t const &x,
                                                           vector_t const &y) {
-    return k4sub(x, y);
+    return vec_op_inc, k4sub(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t mul(vector_t const &x,
                                                           vector_t const &y) {
-    return k4mul(x, y);
+    return vec_op_inc, k4mul(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t div(vector_t const &x,
                                                           vector_t const &y) {
-    return k4div(x, y);
+    return vec_op_inc, k4div(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t madd(vector_t const &x,
                                                            vector_t const &y,
                                                            vector_t const &z) {
-    return k4madd(x, y, z);
+    return vec_op_inc, vec_op_inc, k4madd(x, y, z);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmpeq(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4cmpeq(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmpne(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4cmpne(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmpgt(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4cmpgt(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmpge(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4cmpge(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmplt(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4cmplt(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmple(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4cmple(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t
+  good_copysign(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4copysign(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t fabs(vector_t const &x) {
+    return vec_op_inc, k4fabs(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t
+  ifthen(bvector_t const &c, vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k4ifthen(c, x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t fmax(vector_t const &x,
+                                                           vector_t const &y) {
+    return vec_op_inc, k4fmax(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t fmin(vector_t const &x,
+                                                           vector_t const &y) {
+    return vec_op_inc, k4fmin(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t sqrt(vector_t const &x) {
-    return k4sqrt(x);
+    return vec_op_inc, k4sqrt(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool all(bvector_t const &x) {
+    return vec_op_inc, k4all(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool any(bvector_t const &x) {
+    return vec_op_inc, k4any(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE scalar_t
+  maximum(vector_t const &x) {
+    return vec_op_inc, k4maximum(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE scalar_t
+  minimum(vector_t const &x) {
+    return vec_op_inc, k4minimum(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE scalar_t sum(vector_t const &x) {
+    return vec_op_inc, k4sum(x);
   }
 };
 
 template <> struct vecprops<CCTK_REAL8> {
   typedef CCTK_REAL8 scalar_t;
   typedef CCTK_REAL8_VEC vector_t;
-  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE int size() {
+  typedef CCTK_BOOLEAN8 bscalar_t;
+  typedef CCTK_BOOLEAN8_VEC bvector_t;
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr std::size_t size() {
     return CCTK_REAL8_VEC_SIZE;
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t load(scalar_t const &a) {
-    return vec8_load(a);
+    return vec_mem_inc, vec8_load(a);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t loadu(scalar_t const &a) {
-    return vec8_loadu(a);
+    return vec_mem_inc, vec8_loadu(a);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t set1(scalar_t const &a) {
     return vec8_set1(a);
@@ -375,31 +522,91 @@ template <> struct vecprops<CCTK_REAL8> {
     return vec8_elt(x, d);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t neg(vector_t const &x) {
-    return k8neg(x);
+    return vec_op_inc, k8neg(x);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t add(vector_t const &x,
                                                           vector_t const &y) {
-    return k8add(x, y);
+    return vec_op_inc, k8add(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t sub(vector_t const &x,
                                                           vector_t const &y) {
-    return k8sub(x, y);
+    return vec_op_inc, k8sub(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t mul(vector_t const &x,
                                                           vector_t const &y) {
-    return k8mul(x, y);
+    return vec_op_inc, k8mul(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t div(vector_t const &x,
                                                           vector_t const &y) {
-    return k8div(x, y);
+    return vec_op_inc, k8div(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t madd(vector_t const &x,
                                                            vector_t const &y,
                                                            vector_t const &z) {
-    return k8madd(x, y, z);
+    return vec_op_inc, vec_op_inc, k8madd(x, y, z);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmpeq(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k8cmpeq(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmpne(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k8cmpne(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmpgt(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k8cmpgt(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmpge(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k8cmpge(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmplt(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k8cmplt(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bvector_t
+  cmple(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k8cmple(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t
+  good_copysign(vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k8copysign(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t fabs(vector_t const &x) {
+    return vec_op_inc, k8fabs(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t
+  ifthen(bvector_t const &c, vector_t const &x, vector_t const &y) {
+    return vec_op_inc, k8ifthen(c, x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t fmax(vector_t const &x,
+                                                           vector_t const &y) {
+    return vec_op_inc, k8fmax(x, y);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t fmin(vector_t const &x,
+                                                           vector_t const &y) {
+    return vec_op_inc, k8fmin(x, y);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t sqrt(vector_t const &x) {
-    return k8sqrt(x);
+    return vec_op_inc, k8sqrt(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool all(bvector_t const &x) {
+    return vec_op_inc, k8all(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool any(bvector_t const &x) {
+    return vec_op_inc, k8any(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE scalar_t
+  maximum(vector_t const &x) {
+    return vec_op_inc, k8maximum(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE scalar_t
+  minimum(vector_t const &x) {
+    return vec_op_inc, k8minimum(x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE scalar_t sum(vector_t const &x) {
+    return vec_op_inc, k8sum(x);
   }
 };
 
@@ -407,20 +614,22 @@ template <typename T> class vectype {
   typedef vecprops<T> props;
 
 public:
-  typedef typename props::vector_t vector_t;
   typedef typename props::scalar_t scalar_t;
+  typedef typename props::vector_t vector_t;
+  typedef typename props::bscalar_t bscalar_t;
+  typedef typename props::bvector_t bvector_t;
   vector_t v;
   vectype() {}
-  vectype(vectype const &x) : v(x.v) {}
-  vectype(vector_t const &x) : v(x) {}
-  explicit vectype(scalar_t const &a) : v(props::set1(a)) {}
-  operator vector_t() const { return v; }
-  vectype &operator=(vectype const &x) {
+  constexpr vectype(vectype const &x) : v(x.v) {}
+  constexpr vectype(vector_t const &x) : v(x) {}
+  explicit constexpr vectype(scalar_t const &a) : v(props::set1(a)) {}
+  constexpr operator vector_t() const { return v; }
+  constexpr vectype &operator=(vectype const &x) {
     v = x.v;
     return *this;
   }
 
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE std::size_t size() const {
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr std::size_t size() const {
     return props::size();
   }
 
@@ -431,55 +640,205 @@ public:
     return props::loadu(a);
   }
 
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE scalar_t
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype set1(scalar_t const &a) {
+    return props::set1(a);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr scalar_t
   elt(std::ptrdiff_t const d) const {
     return props::elt(*this, d);
   }
 
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype operator+() const {
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype operator+() const {
     return *this;
   }
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype operator-() const {
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype operator-() const {
     return props::neg(*this);
   }
 
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype
   operator+(vectype const &x) const {
     return props::add(*this, x);
   }
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype
   operator-(vectype const &x) const {
     return props::sub(*this, x);
   }
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype
   operator*(vectype const &x) const {
     return props::mul(*this, x);
   }
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype
   operator/(vectype const &x) const {
     return props::div(*this, x);
   }
 
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype &operator+=(vectype const &x) {
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype &
+  operator+=(vectype const &x) {
     return *this = *this + x;
   }
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype &operator-=(vectype const &x) {
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype &
+  operator-=(vectype const &x) {
     return *this = *this - x;
   }
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype &operator*=(vectype const &x) {
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype &
+  operator*=(vectype const &x) {
     return *this = *this * x;
   }
-  inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype &operator/=(vectype const &x) {
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype &
+  operator/=(vectype const &x) {
     return *this = *this / x;
+  }
+
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  operator==(vectype const &x) const {
+    return props::cmpeq(*this, x);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  operator!=(vectype const &x) const {
+    return props::cmpne(*this, x);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  operator>(vectype const &x) const {
+    return props::cmpgt(*this, x);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  operator>=(vectype const &x) const {
+    return props::cmpge(*this, x);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  operator<(vectype const &x) const {
+    return props::cmplt(*this, x);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
+  operator<=(vectype const &x) const {
+    return props::cmple(*this, x);
   }
 };
 
+// Cactus defines "copysign" to "Cactus::copysign"
+namespace std {
+namespace Cactus {
 template <typename T>
-static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype<T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype<T>
+good_copysign(vectype<T> const &x, vectype<T> const &y) {
+  return vecprops<T>::good_copysign(x, y);
+}
+}
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE T ifthen(bool const &c, T const &x,
+                                             T const &y) {
+  return c ? x : y;
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+ifthen(typename vectype<T>::bvector_t const &c, vectype<T> const &x,
+       vectype<T> const &y) {
+  return vecprops<T>::ifthen(c, x, y);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+fabs(vectype<T> const &x) {
+  return vecprops<T>::fabs(x);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+fmax(vectype<T> const &x, vectype<T> const &y) {
+  return vecprops<T>::fmax(x, y);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+fmin(vectype<T> const &x, vectype<T> const &y) {
+  return vecprops<T>::fmin(x, y);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
 sqrt(vectype<T> const &x) {
   return vecprops<T>::sqrt(x);
 }
 
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr T all(vectype<T> const &x) {
+  return vecprops<T>::all(x);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr T any(vectype<T> const &x) {
+  return vecprops<T>::any(x);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr T maximum(vectype<T> const &x) {
+  return vecprops<T>::maximum(x);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr T minimum(vectype<T> const &x) {
+  return vecprops<T>::minimum(x);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr T sum(vectype<T> const &x) {
+  return vecprops<T>::sum(x);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype<T> vload(const T *a,
+                                                     ptrdiff_t ind) {
+  return vectype<T>::loadu(a[ind]);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype<T> vloada(const T *a,
+                                                      ptrdiff_t ind) {
+  return vectype<T>::load(a[ind]);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE void vstore(T *a, ptrdiff_t ind,
+                                                vectype<T> x) {
+  return x.storeu(a[ind]);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE void vstorea(T *a, ptrdiff_t ind,
+                                                 vectype<T> x) {
+  return x.store(a[ind]);
+}
+
+struct vmask {
+  // This mask is active (i.e. will load or store) for those element where both
+  // `mpos >= 0` and `mneg < 0`.
+  const ptrdiff_t mpos, mneg;
+  vmask(const vmask &) = default;
+  vmask(vmask &&) = default;
+  vmask &operator=(const vmask &) = default;
+  vmask &operator=(vmask &&) = default;
+  vmask(ptrdiff_t mpos, ptrdiff_t mneg) : mpos(mpos), mneg(mneg){};
+  // Call this as `vmask(i, imin, imax)` where `i` is the current loop index,
+  // `imin` is the first loop index where the mask should be active, and `imax`
+  // is one past the last loop index where the mask should be active.
+  vmask(ptrdiff_t i, ptrdiff_t imin, ptrdiff_t imax)
+      : mpos(i - imin), mneg(i - imax){};
+};
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+vstore_masked(T *a, ptrdiff_t ind, vectype<T> x, const vmask &mask) {
+  return x.storeu_partial(a[ind], 0, -mask.mpos, -mask.mneg);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+vstorea_masked(T *a, ptrdiff_t ind, vectype<T> x, const vmask &mask) {
+  return x.store_partial(a[ind], 0, -mask.mpos, -mask.mneg);
+}
 #endif
 
 // Cache information
