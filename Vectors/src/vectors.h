@@ -118,6 +118,7 @@
 #define kfnabs(x) (vec_op_inc, k4fnabs(x))
 #define klog k4log
 #define kpow k4pow
+#define kpown k4pown
 #define ksignbit(x) (vec_op_inc, k4signbit(x))
 #define ksin k4sin
 #define ksinh k4sinh
@@ -210,6 +211,7 @@
 #define kfnabs(x) (vec_op_inc, k8fnabs(x))
 #define klog k8log
 #define kpow k8pow
+#define kpown k8pown
 #define ksignbit(x) (vec_op_inc, k8signbit(x))
 #define ksin k8sin
 #define ksinh k8sinh
