@@ -224,11 +224,13 @@ vec4_store_partial_prepare_(bool &all, __m256i &mask, std::ptrdiff_t const i,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec4_store_nta_partial_(bool const all, __m256i const mask, CCTK_REAL4 &p,
                         CCTK_REAL4_VEC const x) {
-  // if (CCTK_BUILTIN_EXPECT(all, true)) {
-  //   vec4_store_nta(p, x);
-  // } else {
+#if 0
+  if (CCTK_BUILTIN_EXPECT(all, true))
+    vec4_store_nta(p, x);
+  else
+    _mm256_maskstore_ps(&p, mask, x);
+#endif
   _mm256_maskstore_ps(&p, mask, x);
-  // }
 }
 
 #define vec4_storeu_partial(p, x)                                              \
@@ -236,11 +238,13 @@ vec4_store_nta_partial_(bool const all, __m256i const mask, CCTK_REAL4 &p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec4_storeu_partial_(bool const all, __m256i const mask, CCTK_REAL4 &p,
                      CCTK_REAL4_VEC const x) {
-  // if (CCTK_BUILTIN_EXPECT(all, true)) {
-  //   vec4_storeu(p, x);
-  // } else {
+#if 0
+  if (CCTK_BUILTIN_EXPECT(all, true))
+    vec4_store_nta(p, x);
+  else
+    _mm256_maskstore_ps(&p, mask, x);
+#endif
   _mm256_maskstore_ps(&p, mask, x);
-  // }
 }
 
 // Store a lower or higher partial vector (aligned and non-temporal);

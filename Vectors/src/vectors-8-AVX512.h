@@ -122,15 +122,16 @@ vec8_storeu(CCTK_REAL8 &p, CCTK_REAL8_VEC const x) {
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta(CCTK_REAL8 &p, CCTK_REAL8_VEC const x) {
 #if 0 && VECTORISE_STREAMING_STORES
+  // Possible implementations when using streaming stores include:
   // non-temporal hint:
-  // _mm512_extstore_pd(&p, x, _MM_DOWNCONV_PD_NONE, _MM_HINT_NT);
+  //   _mm512_extstore_pd(&p, x, _MM_DOWNCONV_PD_NONE, _MM_HINT_NT);
   // no-read hint:
-  _mm512_storenr_pd(&p, x);
-  _mm_clevict(&p, _MM_HINT_T1);
-// no-read hint, not globally ordered (requires fence?):
-// _mm512_storenrngo_pd(&p, x);
-// _mm_clevict(&p, _MM_HINT_T1);
-
+  //   _mm512_storenr_pd(&p, x);
+  //   _mm_clevict(&p, _MM_HINT_T1);
+  // no-read hint, not globally ordered (requires fence?):
+  //   _mm512_storenrngo_pd(&p, x);
+  //   _mm_clevict(&p, _MM_HINT_T1);
+  // However, these all seem slower, so we don't use streaming stores.
 #else
   _mm512_store_pd(&p, x);
 #endif
