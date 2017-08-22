@@ -239,13 +239,41 @@ vec4_store_partial_prepare_(std::ptrdiff_t &lo_skip, std::ptrdiff_t &hi_skip,
   hi_skip = std::max(std::ptrdiff_t(0), i + CCTK_REAL4_VEC_SIZE - imax);
 }
 #define vec4_store_nta_partial(p, x)                                           \
-  vec4_store_nta_partial_(v8stp_lo_skip, v8stp_hi_skip, p, x)
+  vec4_store_nta_partial_(v4stp_lo_skip, v4stp_hi_skip, p, x)
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec4_store_nta_partial_(std::ptrdiff_t const lo_skip,
                         std::ptrdiff_t const hi_skip, CCTK_REAL4 &p,
                         CCTK_REAL4_VEC const x) {
   if (CCTK_BUILTIN_EXPECT(lo_skip == 0 and hi_skip == 0, true)) {
     vec4_store_nta(p, x);
+  } else {
+    // these cases fall through
+    switch (lo_skip) {
+    case 0:
+      (&p)[0] = vec4_elt(x, 0);
+    case 1:
+      if (hi_skip >= 3)
+        break;
+      (&p)[1] = vec4_elt(x, 1);
+    case 2:
+      if (hi_skip >= 2)
+        break;
+      (&p)[2] = vec4_elt(x, 2);
+    case 3:
+      if (hi_skip >= 1)
+        break;
+      (&p)[3] = vec4_elt(x, 3);
+    }
+  }
+}
+
+#define vec4_storeu_partial(p, x)                                              \
+  vec4_storeu_partial_(v4stp_lo_skip, v4stp_hi_skip, p, x)
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+vec4_storeu_partial_(std::ptrdiff_t const lo_skip, std::ptrdiff_t const hi_skip,
+                     CCTK_REAL4 &p, CCTK_REAL4_VEC const x) {
+  if (CCTK_BUILTIN_EXPECT(lo_skip == 0 and hi_skip == 0, true)) {
+    vec4_storeu(p, x);
   } else {
     // these cases fall through
     switch (lo_skip) {

@@ -288,6 +288,19 @@ template <typename T> struct vecprops {
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t loadu(scalar_t const &a) {
     return vec_mem_inc, a;
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void store(scalar_t &a,
+                                                        vector_t const &x) {
+    vec_mem_inc, a = x;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void storeu(scalar_t &a,
+                                                         vector_t const &x) {
+    vec_mem_inc, a = x;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+  storeu_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
+                 ptrdiff_t imax) {
+    vec_mem_inc, a = x;
+  }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
   set1(scalar_t const &a) {
     return a;
@@ -404,6 +417,21 @@ template <> struct vecprops<CCTK_REAL4> {
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t loadu(scalar_t const &a) {
     return vec_mem_inc, vec4_loadu(a);
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void store(scalar_t &a,
+                                                        vector_t const &x) {
+    vec_mem_inc, vec4_store(a, x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void storeu(scalar_t &a,
+                                                         vector_t const &x) {
+    vec_mem_inc, vec4_storeu(a, x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+  storeu_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
+                 ptrdiff_t imax) {
+    vec_mem_inc;
+    vec4_store_partial_prepare(i, imin, imax);
+    vec4_storeu_partial(a, x);
+  }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t set1(scalar_t const &a) {
     return vec4_set1(a);
   }
@@ -513,6 +541,21 @@ template <> struct vecprops<CCTK_REAL8> {
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t loadu(scalar_t const &a) {
     return vec_mem_inc, vec8_loadu(a);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void store(scalar_t &a,
+                                                        vector_t const &x) {
+    vec_mem_inc, vec8_store(a, x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void storeu(scalar_t &a,
+                                                         vector_t const &x) {
+    vec_mem_inc, vec8_storeu(a, x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+  storeu_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
+                 ptrdiff_t imax) {
+    vec_mem_inc;
+    vec8_store_partial_prepare(i, imin, imax);
+    vec8_storeu_partial(a, x);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t set1(scalar_t const &a) {
     return vec8_set1(a);
@@ -638,6 +681,17 @@ public:
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype loadu(scalar_t const &a) {
     return props::loadu(a);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE void store(scalar_t &a) const {
+    props::store(a, v);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE void storeu(scalar_t &a) const {
+    props::storeu(a, v);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+  storeu_partial(scalar_t &a, ptrdiff_t i, ptrdiff_t imin,
+                 ptrdiff_t imax) const {
+    props::storeu_partial(a, v, i, imin, imax);
   }
 
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype set1(scalar_t const &a) {

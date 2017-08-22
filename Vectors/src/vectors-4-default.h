@@ -50,13 +50,14 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
 
 // Aligned store
 #define vec4_store(p, x) ((p) = (x))
-#define vec4_storeu(p, x) ((p) = (x))
+#define vec4_store_nta(p, x) ((p) = (x))
 
 // Unaligned store
-#define vec4_store_nta(p, x) ((p) = (x))
+#define vec4_storeu(p, x) ((p) = (x))
 
 #define vec4_store_partial_prepare(i, imin, imax) ((void)0)
 #define vec4_store_nta_partial(p, x) (vec4_store_nta(p, x))
+#define vec4_storeu_partial(p, x) (vec4_storeu(p, x))
 // Store the n lower elements of a vector to memory
 #define vec4_store_nta_partial_lo(p, x, n) (CCTK_BUILTIN_UNREACHABLE())
 // Store the n higher elements of a vector into memory. This stores

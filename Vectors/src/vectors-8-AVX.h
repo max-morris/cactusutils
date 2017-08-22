@@ -226,12 +226,11 @@ vec8_store_partial_prepare_fixed_(bool &all, __m256i &mask,
                                   std::ptrdiff_t const imax) {
   all = i >= imin and i + CCTK_REAL8_VEC_SIZE - 1 < imax;
 
-  if (not CCTK_BUILTIN_EXPECT(all, true)) {
+  if (not CCTK_BUILTIN_EXPECT(all, true))
     mask = vec8_seti(i + 0 >= imin and i + 0 < imax ? ~0 : 0,
                      i + 1 >= imin and i + 1 < imax ? ~0 : 0,
                      i + 2 >= imin and i + 2 < imax ? ~0 : 0,
                      i + 3 >= imin and i + 3 < imax ? ~0 : 0);
-  }
 }
 
 #define vec8_store_nta_partial(p, x)                                           \
@@ -239,11 +238,10 @@ vec8_store_partial_prepare_fixed_(bool &all, __m256i &mask,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_(bool const all, __m256i const mask, CCTK_REAL8 &p,
                         CCTK_REAL8_VEC const x) {
-  if (CCTK_BUILTIN_EXPECT(all, true)) {
+  if (CCTK_BUILTIN_EXPECT(all, true))
     vec8_store_nta(p, x);
-  } else {
+  else
     _mm256_maskstore_pd(&p, mask, x);
-  }
 }
 
 #define vec8_storeu_partial(p, x)                                              \
@@ -251,11 +249,10 @@ vec8_store_nta_partial_(bool const all, __m256i const mask, CCTK_REAL8 &p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_storeu_partial_(bool const all, __m256i const mask, CCTK_REAL8 &p,
                      CCTK_REAL8_VEC const x) {
-  if (CCTK_BUILTIN_EXPECT(all, true)) {
+  if (CCTK_BUILTIN_EXPECT(all, true))
     vec8_storeu(p, x);
-  } else {
+  else
     _mm256_maskstore_pd(&p, mask, x);
-  }
 }
 
 // Store a lower or higher partial vector (aligned and non-temporal);
