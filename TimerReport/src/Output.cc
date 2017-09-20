@@ -9,6 +9,7 @@
 
 #include <cctk.h>
 #include <cctk_Arguments.h>
+#include <cctk_Arguments_TimerReport.h>
 #include <cctk_Parameters.h>
 #include <cctk_Schedule.h>
 
@@ -90,7 +91,7 @@ const string sep(70, '=');
   @enddesc
 @@*/
 void TimerReport_OutputEvery(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_OutputEvery;
   DECLARE_CCTK_PARAMETERS;
 
   if (next || out_at == cctk_iteration ||
@@ -114,7 +115,7 @@ void TimerReport_OutputEvery(CCTK_ARGUMENTS) {
   @enddesc
 @@*/
 void TimerReport_OutputTerminate(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_OutputTerminate;
   DECLARE_CCTK_PARAMETERS;
 
   CCTK_VInfo(CCTK_THORNSTRING,
@@ -132,7 +133,7 @@ void TimerReport_OutputTerminate(CCTK_ARGUMENTS) {
   @enddesc
 @@*/
 void TimerReport_Checkpoint(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_Checkpoint;
   DECLARE_CCTK_PARAMETERS;
 
   if (before_checkpoint &&
@@ -149,7 +150,7 @@ void TimerReport_Checkpoint(CCTK_ARGUMENTS) {
  ********************************************************************/
 
 void Output(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_OutputEvery;
   DECLARE_CCTK_PARAMETERS;
 
   if (output_schedule_timers) {
@@ -174,7 +175,7 @@ void Output(CCTK_ARGUMENTS) {
 }
 
 void PrintTimes(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_OutputEvery;
   DECLARE_CCTK_PARAMETERS;
 
   if (CCTK_EQUALS(out_filename, "")) {
@@ -210,7 +211,7 @@ void PrintTimes(CCTK_ARGUMENTS) {
 }
 
 void OutputAllTimers(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_OutputEvery;
   DECLARE_CCTK_PARAMETERS;
 
   static bool first_time = true;
@@ -288,7 +289,7 @@ void OutputAllTimers(CCTK_ARGUMENTS) {
 }
 
 void OutputAllTimersTogether(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_OutputEvery;
   DECLARE_CCTK_PARAMETERS;
 
   timer_stats timers;
@@ -392,7 +393,7 @@ void OutputAllTimersTogether(CCTK_ARGUMENTS) {
 }
 
 void OutputAllTimersReadable(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_OutputEvery;
   DECLARE_CCTK_PARAMETERS;
 
   timer_stats timers;
@@ -453,7 +454,7 @@ void OutputAllTimersReadable(CCTK_ARGUMENTS) {
 }
 
 void PrintTopTimers(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TimerReport_OutputEvery;
   DECLARE_CCTK_PARAMETERS;
 
   // Collect timing information from all processes

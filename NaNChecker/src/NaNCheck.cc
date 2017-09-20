@@ -19,6 +19,7 @@
 #include "cctk.h"
 #include "cctk_WarnLevel.h"
 #include "cctk_Arguments.h"
+#include "cctk_Arguments_NaNChecker.h"
 #include "cctk_Parameters.h"
 #include "cctk_Termination.h"
 #include "cctk_FortranString.h"
@@ -105,7 +106,7 @@ int last_iteration_output = -1;
   @endvar
 @@*/
 void NaNChecker_ResetCounter(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_NaNChecker_ResetCounter;
 
   *NaNsFound = 0;
 }
@@ -129,7 +130,7 @@ void NaNChecker_ResetCounter(CCTK_ARGUMENTS) {
 @@*/
 t_nanchecker_info info;
 extern "C" void NaNChecker_NaNCheck_Prepare(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_NaNChecker_NaNCheck_Prepare;
   DECLARE_CCTK_PARAMETERS;
   int i, nelems;
 
@@ -176,7 +177,7 @@ extern "C" void NaNChecker_NaNCheck_Prepare(CCTK_ARGUMENTS) {
 }
 
 extern "C" void NaNChecker_NaNCheck_Check(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_NaNChecker_NaNCheck_Check;
   DECLARE_CCTK_PARAMETERS;
 
   if (cctk_iteration < check_after ||
@@ -189,7 +190,7 @@ extern "C" void NaNChecker_NaNCheck_Check(CCTK_ARGUMENTS) {
 }
 
 extern "C" void NaNChecker_NaNCheck_Finish(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_NaNChecker_NaNCheck_Finish;
   DECLARE_CCTK_PARAMETERS;
 
   if (cctk_iteration < check_after ||
@@ -222,7 +223,7 @@ extern "C" void NaNChecker_NaNCheck_Finish(CCTK_ARGUMENTS) {
   @endvar
 @@*/
 extern "C" void NaNChecker_TakeAction(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_NaNChecker_TakeAction;
   DECLARE_CCTK_PARAMETERS;
 
   /* if no NaNs were found then this routine doesn't do anything */
@@ -465,7 +466,7 @@ extern "C" void CCTK_FCALL
 
 extern "C" void NaNChecker_SetupTest(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_NaNChecker_SetupTest;
 
   NaNChecker_SetVarsToNaN(cctkGH, CCTK_THORNSTRING "::TestGF");
 }
