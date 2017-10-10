@@ -7,6 +7,10 @@
 #include <cmath>
 
 #include <emmintrin.h>
+#ifdef __SSE3__
+// Intel's SSE 3
+#include <pmmintrin.h>
+#endif
 #ifdef __SSE4_1__
 // Intel's SSE 4.1
 #include <smmintrin.h>
@@ -750,7 +754,11 @@ k8minimum(CCTK_REAL8_VEC const x1) {
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
 k8sum(CCTK_REAL8_VEC const x1) {
+#ifdef __SSE3__
   CCTK_REAL8_VEC const x2 = _mm_hadd_pd(x1, x1);
+#else
+  CCTK_REAL8_VEC const x2 = _mm_add_pd(x1, vec8_swap10(x1));
+#endif
   return vec8_elt(x2, 0);
 }
 

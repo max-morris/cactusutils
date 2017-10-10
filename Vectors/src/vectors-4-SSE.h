@@ -9,6 +9,10 @@
 #include <cstring>
 
 #include <xmmintrin.h>
+#ifdef __SSE3__
+// Intel's SSE 3
+#include <pmmintrin.h>
+#endif
 #ifdef __SSE4_1__
 // Intel's SSE 4.1
 #include <smmintrin.h>
@@ -706,8 +710,13 @@ k4minimum(CCTK_REAL4_VEC const x1) {
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4
 k4sum(CCTK_REAL4_VEC const x1) {
+#ifdef __SSE3__
   CCTK_REAL4_VEC const x2 = _mm_hadd_ps(x1, x1);
   CCTK_REAL4_VEC const x4 = _mm_hadd_ps(x2, x2);
+#else
+  CCTK_REAL4_VEC const x2 = _mm_add_ps(x1, vec4_swap1032(x1));
+  CCTK_REAL4_VEC const x4 = _mm_add_ps(x2, vec4_swap2301(x2));
+#endif
   return vec4_elt(x4, 0);
 }
 
