@@ -7,17 +7,21 @@ STORAGE: watchminutes
 SCHEDULE TerminationTrigger_StartTimer AT wragh
 {
   LANG: C
+  WRITES: TerminationTrigger::watchminutes(everywhere) #scalar
 } "Start timer"
 
 SCHEDULE TerminationTrigger_ResetMinutes AT post_recover_variables
 {
   LANG: C
   OPTIONS: global
+  WRITES: TerminationTrigger::watchminutes(everywhere) #scalar
 } "Reset Watchtime"
 
 SCHEDULE TerminationTrigger_CheckWalltime AT analysis
 {
   LANG: C
+  READS: TerminationTrigger::watchminutes(everywhere) #scalar
+  WRITES: TerminationTrigger::watchminutes(everywhere) #scalar
 } "Check elapsed job walltime"
 
 

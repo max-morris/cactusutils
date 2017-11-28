@@ -4,12 +4,13 @@
 
 #include "cctk.h"
 #include "cctk_Arguments.h"
+#include "cctk_Arguments_TerminationTrigger.h"
 #include "cctk_Parameters.h"
 #include "cctk_Termination.h"
 #include "cctk_Timers.h"
 
 void TerminationTrigger_StartTimer(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TerminationTrigger_StartTimer;
   DECLARE_CCTK_PARAMETERS;
 
   /* only one processor needs to query the elapsed runtime */
@@ -25,7 +26,7 @@ void TerminationTrigger_StartTimer(CCTK_ARGUMENTS) {
 }
 
 void TerminationTrigger_ResetMinutes(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TerminationTrigger_ResetMinutes;
   DECLARE_CCTK_PARAMETERS;
 
   /* only one processor needs to query the elapsed runtime */
@@ -37,7 +38,7 @@ void TerminationTrigger_ResetMinutes(CCTK_ARGUMENTS) {
 }
 
 void TerminationTrigger_CheckWalltime(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_TerminationTrigger_CheckWalltime;
   DECLARE_CCTK_PARAMETERS;
 
   CCTK_REAL time;
