@@ -82,6 +82,19 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
     }                                                                          \
   } while (0)
 
+namespace {
+void cxxtests()
+{
+  const CCTK_REAL s(1);
+  const CCTK_REAL_VEC v(vec_set1(s));
+  const CCTK_REAL_VEC w(v);
+  const vectype<CCTK_REAL> x(s);
+  const vectype<CCTK_REAL> y(v);
+  const vectype<CCTK_REAL> z(y);
+  auto r CCTK_ATTRIBUTE_UNUSED = w;
+}
+}
+
 extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
@@ -316,6 +329,9 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
   SCALARTEST("kminimum", kminimum(av), a[0]);
   SCALARTEST("ksum", ksum(av),
              CCTK_REAL_VEC_SIZE * (CCTK_REAL_VEC_SIZE + 1) / 2 * a[0]);
+
+  // C++ tests
+  cxxtests();
 
   CCTK_VINFO("%d/%d tests passed ", passed, numtests);
   fflush(stdout);
