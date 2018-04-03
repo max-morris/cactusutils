@@ -8,7 +8,7 @@
 
 #include "cctk.h" 
 #include "cctk_Arguments.h" 
-#include "cctk_Arguments_SystemStatistics.h" 
+#include "cctk_Arguments_Checked.h" 
 #include "cctk_Parameters.h" 
 
 #ifdef HAVE_MALLOC_H
