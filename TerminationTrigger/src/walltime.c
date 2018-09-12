@@ -9,6 +9,8 @@
 #include "cctk_Termination.h"
 #include "cctk_Timers.h"
 
+#include "terminationtrigger.h"
+
 void TerminationTrigger_StartTimer(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS_TerminationTrigger_StartTimer;
   DECLARE_CCTK_PARAMETERS;
@@ -57,6 +59,10 @@ void TerminationTrigger_CheckWalltime(CCTK_ARGUMENTS) {
   /* get walltime in seconds */
   time = CCTK_RunTime();
 
+  if (testsuite && cctk_iteration == 1) {
+    time = max_walltime * 3600. - on_remaining_walltime*60. + 1.;
+  }
+
   if ((time / 60.0 > *watchminutes) && *watchminutes != 0) {
     *watchminutes += output_remtime_every_minutes;
     CCTK_INFO("***********************************************************");
@@ -71,6 +77,6 @@ void TerminationTrigger_CheckWalltime(CCTK_ARGUMENTS) {
                "Remaining wallclock time for your job is %g minutes.  "
                "Triggering termination...",
                (double)(max_walltime * 60.0 - time / 60.0));
-    CCTK_TerminateNext(cctkGH);
+    TerminationTrigger_TriggerTermination(CCTK_PASS_CTOC);
   }
 }

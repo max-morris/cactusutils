@@ -32,11 +32,32 @@ INT check_file_every "Check termination file every n timesteps" STEERABLE = ALWA
   1:* :: ""
 } 1
 
+KEYWORD signal_names[10] "which signal to trigger on" STEERABLE = ALWAYS
+{
+  "SIGHUP"  :: "hangup on controlling terminal"
+  "SIGINT"  :: "interrupt from keyboard"
+  "SIGTERM" :: "termination signals, often used by queueing systems to request shutdown"
+  "SIGUSR1" :: "user signal 1"
+  "SIGUSR2" :: "user signal 2"
+  ""        :: "do not listen to signals"
+} ""
+
+INT signal_numbers[10] "which signal to trigger on, used only if signal_namees is empty" STEERABLE = ALWAYS
+{
+   1:* :: "any signal number understood by the OS"
+   0   :: "ignore this slot"
+} 0
+
+
 REAL output_remtime_every_minutes "Output remaining wall time every n minutes" STEERABLE = ALWAYS
 {
   0.0    :: "No output"
   (0.0:* :: "Output"
 } 60.0
+
+BOOLEAN testsuite "manually trigger termination"
+{
+} "no"
 
 SHARES: IO
 

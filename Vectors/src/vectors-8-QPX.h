@@ -120,10 +120,10 @@ struct CCTK_REAL8_VEC {
     off &= CCTK_REAL8_VEC_SIZE - 1;                                            \
     v1 = vec_lda(0, &p - off);                                                 \
     v2 = vec_lda(0, &p - off + CCTK_REAL8_VEC_SIZE);                           \
-    off == 1 ? vec_sldw(v1, v2, 1) : off == 2                                  \
-                                         ? vec_sldw(v1, v2, 2)                 \
-                                         : off == 3 ? vec_sldw(v1, v2, 3)      \
-                                                    : (vec8_assert(0), v1);    \
+    off == 1                                                                   \
+        ? vec_sldw(v1, v2, 1)                                                  \
+        : off == 2 ? vec_sldw(v1, v2, 2)                                       \
+                   : off == 3 ? vec_sldw(v1, v2, 3) : (vec8_assert(0), v1);    \
   })
 
 // Load a vector from memory that may or may not be aligned, as
@@ -544,10 +544,10 @@ inline CCTK_REAL8_VEC vec8_loadu_off(ptrdiff_t off, const CCTK_REAL8 &p) {
   off &= CCTK_REAL8_VEC_SIZE - 1;
   v1 = vec_lda(0, (CCTK_REAL8 *)&p - off);
   v2 = vec_lda(0, (CCTK_REAL8 *)&p - off + CCTK_REAL8_VEC_SIZE);
-  return off == 1 ? vec_sldw(v1, v2, 1) : off == 2
-                                              ? vec_sldw(v1, v2, 2)
-                                              : off == 3 ? vec_sldw(v1, v2, 3)
-                                                         : (vec8_assert(0), v1);
+  return off == 1
+             ? vec_sldw(v1, v2, 1)
+             : off == 2 ? vec_sldw(v1, v2, 2)
+                        : off == 3 ? vec_sldw(v1, v2, 3) : (vec8_assert(0), v1);
 }
 
 // Load a vector from memory that may or may not be aligned, as

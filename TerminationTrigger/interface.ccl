@@ -3,3 +3,5 @@
 IMPLEMENTS: TerminationTrigger
 
 CCTK_REAL watchminutes TYPE=scalar
+
+CCTK_INT triggered TYPE=scalar

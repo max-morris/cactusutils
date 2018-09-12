@@ -69,6 +69,7 @@ void PrintWarning(const char *error_type, int verbose, int linear_index,
 typedef struct {
   const cGH *GH;
   int verbose;
+  bool report_missing_storage;
   int report_max;
   const char *action_if_found;
   CCTK_INT count;
@@ -145,6 +146,9 @@ extern "C" void NaNChecker_NaNCheck_Prepare(CCTK_ARGUMENTS) {
   info.report_max = report_max;
   info.action_if_found = action_if_found;
   info.verbose = CCTK_Equals(verbose, "all");
+  /* don't report missing storage variables if we check everything since there
+   * will be very many variables without storage */
+  info.report_missing_storage = not CCTK_EQUALS(check_vars, "all");
   info.cctk_iteration = cctk_iteration;
   info.ignore_restricted_points = ignore_restricted_points;
   info.restriction_mask = restriction_mask;
@@ -345,6 +349,9 @@ extern "C" int NaNChecker_CheckVarsForNaN(const cGH *GH, int report_max,
   info.count = 0;
   info.bitmask = 0;
   info.verbose = CCTK_Equals(verbose, "all");
+  /* don't report missing storage variables if we check everything since there
+   * will be very many variables without storage */
+  info.report_missing_storage = not CCTK_EQUALS(vars, "all");
   info.report_max = report_max;
   info.action_if_found = action_if_found;
   info.NaNmask = NULL;
@@ -701,10 +708,12 @@ void CheckForNaN(int vindex, const char *optstring, void *_info) {
   CCTK_REAL *CarpetWeights;
   int reflevel, map;
   int cctk_iteration, ignore_restricted_points;
+  bool report_missing_storage;
   const char *restriction_mask;
 
   info = (t_nanchecker_info *)_info;
   cctk_iteration = info->cctk_iteration;
+  report_missing_storage = info->report_missing_storage;
   ignore_restricted_points = info->ignore_restricted_points;
   restriction_mask = info->restriction_mask;
 
@@ -739,8 +748,10 @@ void CheckForNaN(int vindex, const char *optstring, void *_info) {
   /* check if variable has storage assigned */
   gindex = CCTK_GroupIndexFromVarI(vindex);
   if (CCTK_QueryGroupStorageI(info->GH, gindex) <= 0) {
-    CCTK_VWarn(3, __LINE__, __FILE__, CCTK_THORNSTRING,
-               "CheckForNaN: Ignoring variable '%s' (no storage)", fullname);
+    if(report_missing_storage) {
+      CCTK_VWarn(3, __LINE__, __FILE__, CCTK_THORNSTRING,
+                 "CheckForNaN: Ignoring variable '%s' (no storage)", fullname);
+    }
     free(fullname);
     return;
   }

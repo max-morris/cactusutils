@@ -1,10 +1,15 @@
 # Schedule definitions for thorn TerminationTrigger
 
-STORAGE: watchminutes
+STORAGE: watchminutes triggered
 
 
 
-SCHEDULE TerminationTrigger_StartTimer AT wragh
+SCHEDULE TerminationTrigger_ResetTrigger AT BaseGrid
+{
+  LANG: C
+} "Clear trigger state"
+
+SCHEDULE TerminationTrigger_StartTimer AT BaseGrid
 {
   LANG: C
   WRITES: TerminationTrigger::watchminutes(everywhere) #scalar
@@ -24,11 +29,20 @@ SCHEDULE TerminationTrigger_CheckWalltime AT analysis
   WRITES: TerminationTrigger::watchminutes(everywhere) #scalar
 } "Check elapsed job walltime"
 
+SCHEDULE TerminationTrigger_StartSignalHandler AT startup
+{
+  LANG: C
+} "Start signal handler"
+
+SCHEDULE TerminationTrigger_CheckSignal AT analysis
+{
+  LANG: C
+} "Check if we received a termination signal"
 
 
 if (create_termination_file)
 {
-  SCHEDULE TerminationTrigger_CreateFile AT wragh
+  SCHEDULE TerminationTrigger_CreateFile AT BaseGrid
   {
     LANG: C
   } "Create termination file"

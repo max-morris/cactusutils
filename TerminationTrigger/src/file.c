@@ -9,6 +9,8 @@
 #include "cctk_Timers.h"
 #include "util_String.h"
 
+#include "terminationtrigger.h"
+
 enum { BUFLEN = 10000 };
 
 static const char *get_termination_file(void) {
@@ -85,6 +87,18 @@ void TerminationTrigger_CheckFile(CCTK_ARGUMENTS) {
     return;
   }
 
+  if (testsuite && cctk_iteration == 1) {
+    file = fopen(get_termination_file(), "w");
+    if (!file) {
+      CCTK_VWarn(CCTK_WARN_ABORT, __LINE__, __FILE__, CCTK_THORNSTRING,
+                 "Could not create termination file \'%s\'",
+                 get_termination_file());
+    }
+    fprintf(file, "1\n");
+
+    fclose(file);
+  }
+
   file = fopen(get_termination_file(), "r");
 
   if (file != NULL) {
@@ -95,7 +109,7 @@ void TerminationTrigger_CheckFile(CCTK_ARGUMENTS) {
       CCTK_INFO("Found termination signal in termination file.  "
                 "Triggering termination...");
 
-      CCTK_TerminateNext(cctkGH);
+      TerminationTrigger_TriggerTermination(CCTK_PASS_CTOC);
     }
   }
 }
