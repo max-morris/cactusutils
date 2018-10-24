@@ -58,7 +58,8 @@ int TerminationTrigger_StartSignalHandler(void) {
   }
   ierr =
     CCTK_ParameterSetNotifyRegister(signal_number_callback, NULL,
-                                    CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
+                                    CCTK_THORNSTRING
+                                    "WATCH_SIGNAL_NUMBER_CHANGE",
                                     CCTK_THORNSTRING, "signal_numbers");
   if(ierr) {
     CCTK_VWarn(CCTK_WARN_PICKY, __LINE__, __FILE__, CCTK_THORNSTRING,
