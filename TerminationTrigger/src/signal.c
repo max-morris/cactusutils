@@ -53,8 +53,8 @@ int TerminationTrigger_StartSignalHandler(void) {
                                     CCTK_THORNSTRING, "signal_names");
   if(ierr) {
     CCTK_VWarn(CCTK_WARN_PICKY, __LINE__, __FILE__, CCTK_THORNSTRING,
-               "Could not register parameter change monitor for '%s'",
-               "signal_names");
+               "Could not register parameter change monitor for "
+               "'signal_names': %d", ierr);
   }
   ierr =
     CCTK_ParameterSetNotifyRegister(signal_number_callback, NULL,
@@ -63,8 +63,8 @@ int TerminationTrigger_StartSignalHandler(void) {
                                     CCTK_THORNSTRING, "signal_numbers");
   if(ierr) {
     CCTK_VWarn(CCTK_WARN_PICKY, __LINE__, __FILE__, CCTK_THORNSTRING,
-               "Could not register parameter change monitor for '%s'",
-               "signal_numbers");
+               "Could not register parameter change monitor for "
+               "'signal_numbers': %d", ierr);
   }
 
   return 1;
