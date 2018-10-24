@@ -98,6 +98,8 @@ static void set_sighandler(const int which, const char *signame,
                            const int signum) {
   int my_signum = 0;
 
+  assert(which >= 0 && which < MAX_NUM_SIGNALS);
+
   if(CCTK_EQUALS(signame, "SIGHUP")) {
     my_signum = SIGHUP;
     assert(my_signum > 0);
