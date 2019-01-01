@@ -775,6 +775,30 @@ public:
   }
 };
 
+// ops between scalars and vectype
+// these cannot be members of vectype since they take a scalar_t as their first
+// argument
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+operator+(T const &a, vectype<T> const &b) {
+  return vectype<T>(a) + b;
+}
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+operator-(T const &a, vectype<T> const &b) {
+  return vectype<T>(a) - b;
+}
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+operator*(T const &a, vectype<T> const &b) {
+  return vectype<T>(a) * b;
+}
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+operator/(T const &a, vectype<T> const &b) {
+  return vectype<T>(a) / b;
+}
+
 // Cactus defines "copysign" to "Cactus::copysign"
 namespace std {
 namespace Cactus {
