@@ -672,7 +672,9 @@ public:
   // vector_t are the same type (e.g. if vectorization is disabled)
   template<typename = int>
   constexpr vectype(scalar_t const &a) : v(props::set1(a)) {}
+  template<typename = int>
   constexpr operator vector_t() const { return v; }
+  template<typename = int>
   constexpr vectype &operator=(vectype const &x) {
     v = x.v;
     return *this;
