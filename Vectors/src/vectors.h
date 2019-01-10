@@ -305,6 +305,11 @@ template <typename T> struct vecprops {
     vec_mem_inc, a = x;
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+  store_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
+                ptrdiff_t imax) {
+    vec_mem_inc, a = x;
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
   storeu_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
                  ptrdiff_t imax) {
     vec_mem_inc, a = x;
@@ -447,6 +452,13 @@ template <> struct vecprops<CCTK_REAL4> {
     vec_mem_inc, vec4_storeu(a, x);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+  store_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
+                ptrdiff_t imax) {
+    vec_mem_inc;
+    vec4_store_partial_prepare(i, imin, imax);
+    vec4_store_nta_partial(a, x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
   storeu_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
                  ptrdiff_t imax) {
     vec_mem_inc;
@@ -583,6 +595,13 @@ template <> struct vecprops<CCTK_REAL8> {
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void storeu(scalar_t &a,
                                                          vector_t const &x) {
     vec_mem_inc, vec8_storeu(a, x);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+  store_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
+                ptrdiff_t imax) {
+    vec_mem_inc;
+    vec8_store_partial_prepare(i, imin, imax);
+    vec8_store_nta_partial(a, x);
   }
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
   storeu_partial(scalar_t &a, vector_t const &x, ptrdiff_t i, ptrdiff_t imin,
@@ -738,6 +757,12 @@ public:
   }
   inline CCTK_ATTRIBUTE_ALWAYS_INLINE void storeu(scalar_t &a) const {
     props::storeu(a, v);
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE void store_partial(scalar_t &a,
+                                                         ptrdiff_t i,
+                                                         ptrdiff_t imin,
+                                                         ptrdiff_t imax) const {
+    props::store_partial(a, v, i, imin, imax);
   }
   inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
   storeu_partial(scalar_t &a, ptrdiff_t i, ptrdiff_t imin,
