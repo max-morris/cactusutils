@@ -1197,6 +1197,18 @@ struct vmask {
 };
 
 template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype<T>
+vload_masked(const T *a, ptrdiff_t ind, vectype<T> x0, vmask mask) {
+  return ifthen(mask.boolmask<T>(), vload(a, ind), x0);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype<T>
+vloada_masked(const T *a, ptrdiff_t ind, vectype<T> x0, vmask mask) {
+  return ifthen(mask.boolmask<T>(), vloada(a, ind), x0);
+}
+
+template <typename T>
 inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vstore_masked(T *a, ptrdiff_t ind, vectype<T> x, vmask mask) {
   return x.storeu_partial(a[ind], 0, -mask.mpos, -mask.mneg);
