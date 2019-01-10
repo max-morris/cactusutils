@@ -278,6 +278,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 
 template <typename T> struct vecprops {
   typedef T scalar_t;
@@ -816,6 +817,17 @@ public:
   inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvector_t
   operator<=(vectype const &x) const {
     return props::cmple(*this, x);
+  }
+
+  friend std::ostream &operator<<(std::ostream &os, vectype const &x) {
+    os << "[";
+    for (std::size_t d = 0; d < x.size(); ++d) {
+      if (d != 0)
+        os << ",";
+      os << x.elt(d);
+    }
+    os << "]";
+    return os;
   }
 };
 
