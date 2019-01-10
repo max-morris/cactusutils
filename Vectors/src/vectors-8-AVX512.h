@@ -149,14 +149,14 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_partial_prepare_(__mmask8 &mask, std::ptrdiff_t const i,
                             std::ptrdiff_t const imin,
                             std::ptrdiff_t const imax) {
-  unsigned char m = 255;
+  __mmask8 m = -1;
   if (i < imin) {
     /* clear lower imin-i bits */
-    m &= 255 << (imin - i);
+    m &= 0xff << (imin - i);
   }
   if (i + CCTK_REAL8_VEC_SIZE > imax) {
     /* clear upper i+CCTK_REAL8_VEC_SIZE-imax bits */
-    m &= 255 >> (i + CCTK_REAL8_VEC_SIZE - imax);
+    m &= 0xff >> (i + CCTK_REAL8_VEC_SIZE - imax);
   }
   mask = m;
 }
@@ -182,17 +182,17 @@ vec8_storeu_partial_(__mmask8 const mask, CCTK_REAL8 &p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_lo(CCTK_REAL8 &p, CCTK_REAL8_VEC const x,
                           ptrdiff_t const n) {
-  _mm512_mask_store_pd(&p, 255 >> (8 - n), x);
+  _mm512_mask_store_pd(&p, 0xff >> (8 - n), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_hi(CCTK_REAL8 &p, CCTK_REAL8_VEC const x,
                           ptrdiff_t const n) {
-  _mm512_mask_store_pd(&p, 255 << (8 - n), x);
+  _mm512_mask_store_pd(&p, 0xff << (8 - n), x);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_mid(CCTK_REAL8 &p, CCTK_REAL8_VEC const x,
                            ptrdiff_t const nlo, ptrdiff_t const nhi) {
-  _mm512_mask_store_pd(&p, (255 >> (8 - nlo)) & (255 << (8 - nhi)), x);
+  _mm512_mask_store_pd(&p, (0xff >> (8 - nlo)) & (0xff << (8 - nhi)), x);
 }
 
 // Functions and operators
@@ -610,13 +610,13 @@ k8sgn(CCTK_REAL8_VEC const x) {
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
 k8all(CCTK_BOOLEAN8_VEC const x) {
   // return mm512_kortestc(x, x);
-  return x == 0b11111111;
+  return x == 0xff;
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
 k8any(CCTK_BOOLEAN8_VEC const x) {
   // return !bool(_mm512_kortestz(x, x));
-  return x != 0b00000000;
+  return x != 0x00;
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
