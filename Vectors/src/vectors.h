@@ -284,9 +284,11 @@ template <typename T> struct vecprops {
   typedef T vector_t;
   typedef bool bscalar_t;
   typedef bool bvector_t;
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr std::size_t size() {
     return 1;
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t load(scalar_t const &a) {
     return vec_mem_inc, a;
   }
@@ -306,6 +308,7 @@ template <typename T> struct vecprops {
                  ptrdiff_t imax) {
     vec_mem_inc, a = x;
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
   set1(scalar_t const &a) {
     return a;
@@ -362,6 +365,7 @@ template <typename T> struct vecprops {
   cmple(vector_t const &x, vector_t const &y) {
     return vec_op_inc, x <= y;
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t
   good_copysign(vector_t const &x, vector_t const &y) {
     return vec_op_inc, k4copysign(x, y);
@@ -422,9 +426,11 @@ template <> struct vecprops<CCTK_REAL4> {
   typedef CCTK_REAL4_VEC vector_t;
   typedef CCTK_BOOLEAN4 bscalar_t;
   typedef CCTK_BOOLEAN4_VEC bvector_t;
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr std::size_t size() {
     return CCTK_REAL4_VEC_SIZE;
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t load(scalar_t const &a) {
     return vec_mem_inc, vec4_load(a);
   }
@@ -446,6 +452,7 @@ template <> struct vecprops<CCTK_REAL4> {
     vec4_store_partial_prepare(i, imin, imax);
     vec4_storeu_partial(a, x);
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t set1(scalar_t const &a) {
     return vec4_set1(a);
   }
@@ -501,6 +508,7 @@ template <> struct vecprops<CCTK_REAL4> {
   cmple(vector_t const &x, vector_t const &y) {
     return vec_op_inc, k4cmple(x, y);
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t
   good_copysign(vector_t const &x, vector_t const &y) {
     return vec_op_inc, k4copysign(x, y);
@@ -556,9 +564,11 @@ template <> struct vecprops<CCTK_REAL8> {
   typedef CCTK_REAL8_VEC vector_t;
   typedef CCTK_BOOLEAN8 bscalar_t;
   typedef CCTK_BOOLEAN8_VEC bvector_t;
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr std::size_t size() {
     return CCTK_REAL8_VEC_SIZE;
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t load(scalar_t const &a) {
     return vec_mem_inc, vec8_load(a);
   }
@@ -580,6 +590,7 @@ template <> struct vecprops<CCTK_REAL8> {
     vec8_store_partial_prepare(i, imin, imax);
     vec8_storeu_partial(a, x);
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t set1(scalar_t const &a) {
     return vec8_set1(a);
   }
@@ -635,6 +646,7 @@ template <> struct vecprops<CCTK_REAL8> {
   cmple(vector_t const &x, vector_t const &y) {
     return vec_op_inc, k8cmple(x, y);
   }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t
   good_copysign(vector_t const &x, vector_t const &y) {
     return vec_op_inc, k8copysign(x, y);
@@ -694,6 +706,7 @@ public:
   typedef typename props::bscalar_t bscalar_t;
   typedef typename props::bvector_t bvector_t;
   vector_t v;
+
   vectype() {}
   constexpr vectype(vectype const &x) : v(x.v) {}
   constexpr vectype(vector_t const &x) : v(x) {}

@@ -170,7 +170,7 @@ vec8_store_nta_partial_(__mmask8 const mask, CCTK_REAL8 &p,
   if (mask == 0xff)
     vec8_store_nta(p, x);
   else
-  _mm512_mask_store_pd(&p, mask, x);
+    _mm512_mask_store_pd(&p, mask, x);
 }
 
 #define vec8_storeu_partial(p, x) vec8_storeu_partial_(v8stp_mask, p, x)
@@ -180,7 +180,7 @@ vec8_storeu_partial_(__mmask8 const mask, CCTK_REAL8 &p,
   if (mask == 0xff)
     vec8_storeu(p, x);
   else
-  _mm512_mask_storeu_pd(&p, mask, x);
+    _mm512_mask_storeu_pd(&p, mask, x);
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
