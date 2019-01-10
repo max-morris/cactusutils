@@ -319,41 +319,7 @@ k8signbit(CCTK_REAL8_VEC const x) {
   return _mm512_test_epi64_mask(k8sign, ix);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
-k8sqrt(CCTK_REAL8_VEC const x) {
-#if 0
-  // This is accurate, but slow; it is internally evaluated unvectorized
-  return _mm512_sqrt_pd(x);
-#endif
-#if defined __knl__
-  // We start with an approximate result, then perform Goldschmidt iterations
-  // <https://en.wikipedia.org/wiki/Methods_of_computing_square_roots>.
-  // Theoretically the result should be exact.
-  // Initialisation
-  CCTK_REAL8_VEC const y0 = _mm512_rsqrt28_pd(x);
-  CCTK_REAL8_VEC const x0 = _mm512_mul_pd(x, y0);
-  CCTK_REAL8_VEC const h0 = _mm512_mul_pd(vec8_set1(0.5), y0);
-  // Step
-  CCTK_REAL8_VEC const r0 = _mm512_fnmadd_pd(x0, h0, vec8_set1(0.5));
-  CCTK_REAL8_VEC const x1 = _mm512_fmadd_pd(x0, r0, x0);
-  return x1;
-#else
-  // We start with an approximate result, then perform Goldschmidt iterations
-  // <https://en.wikipedia.org/wiki/Methods_of_computing_square_roots>.
-  // Theoretically the result should be exact.
-  // Initialisation
-  CCTK_REAL8_VEC const y0 = _mm512_rsqrt14_pd(x);
-  CCTK_REAL8_VEC const x0 = _mm512_mul_pd(x, y0);
-  CCTK_REAL8_VEC const h0 = _mm512_mul_pd(vec8_set1(0.5), y0);
-  // Step
-  CCTK_REAL8_VEC const r0 = _mm512_fnmadd_pd(x0, h0, vec8_set1(0.5));
-  CCTK_REAL8_VEC const x1 = _mm512_fmadd_pd(x0, r0, x0);
-  CCTK_REAL8_VEC const h1 = _mm512_fmadd_pd(h0, r0, h0);
-  // Step
-  CCTK_REAL8_VEC const r1 = _mm512_fnmadd_pd(x1, h1, vec8_set1(0.5));
-  CCTK_REAL8_VEC const x2 = _mm512_fmadd_pd(x1, r1, x1);
-  return x2;
-#endif
-}
+k8sqrt(CCTK_REAL8_VEC const x); // implemented below
 
 // Expensive functions
 
@@ -649,4 +615,43 @@ k8sum(CCTK_REAL8_VEC const x1) {
   __m128d const x4 =
       _mm_add_pd(_mm256_castpd256_pd128(x2), _mm256_extractf128_pd(x2, 1));
   return _mm_cvtsd_f64(_mm_hadd_pd(x4, x4));
+}
+
+// sqrt calls k8cmpeq and k8ifthen
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8sqrt(CCTK_REAL8_VEC const x) {
+#if 0
+  // This is accurate, but slow; it is internally evaluated unvectorized
+  return _mm512_sqrt_pd(x);
+#endif
+#if defined __knl__
+  // We start with an approximate result, then perform Goldschmidt iterations
+  // <https://en.wikipedia.org/wiki/Methods_of_computing_square_roots>.
+  // Theoretically the result should be exact.
+  // Initialisation
+#error "sqrt(0) is wrong"
+  CCTK_REAL8_VEC const y0 = _mm512_rsqrt28_pd(x);
+  CCTK_REAL8_VEC const x0 = k8mul(x, y0);
+  CCTK_REAL8_VEC const h0 = k8mul(vec8_set1(0.5), y0);
+  // Step
+  CCTK_REAL8_VEC const r0 = k8nmsub(x0, h0, vec8_set1(0.5));
+  CCTK_REAL8_VEC const x1 = k8madd(x0, r0, x0);
+  return k8ifthen(k8cmpeq(x, vec8_set1(0.0)), x, x1);
+#else
+  // We start with an approximate result, then perform Goldschmidt iterations
+  // <https://en.wikipedia.org/wiki/Methods_of_computing_square_roots>.
+  // Theoretically the result should be exact.
+  // Initialisation
+  CCTK_REAL8_VEC const y0 = _mm512_rsqrt14_pd(x);
+  CCTK_REAL8_VEC const x0 = k8mul(x, y0);
+  CCTK_REAL8_VEC const h0 = k8mul(vec8_set1(0.5), y0);
+  // Step
+  CCTK_REAL8_VEC const r0 = k8nmsub(x0, h0, vec8_set1(0.5));
+  CCTK_REAL8_VEC const x1 = k8madd(x0, r0, x0);
+  CCTK_REAL8_VEC const h1 = k8madd(h0, r0, h0);
+  // Step
+  CCTK_REAL8_VEC const r1 = k8nmsub(x1, h1, vec8_set1(0.5));
+  CCTK_REAL8_VEC const x2 = k8madd(x1, r1, x1);
+  return k8ifthen(k8cmpeq(x, vec8_set1(0.0)), x, x2);
+#endif
 }
