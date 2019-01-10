@@ -1198,13 +1198,13 @@ struct vmask {
 
 template <typename T>
 inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
-vstore_masked(T *a, ptrdiff_t ind, vectype<T> x, const vmask &mask) {
+vstore_masked(T *a, ptrdiff_t ind, vectype<T> x, vmask mask) {
   return x.storeu_partial(a[ind], 0, -mask.mpos, -mask.mneg);
 }
 
 template <typename T>
 inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
-vstorea_masked(T *a, ptrdiff_t ind, vectype<T> x, const vmask &mask) {
+vstorea_masked(T *a, ptrdiff_t ind, vectype<T> x, vmask mask) {
   return x.store_partial(a[ind], 0, -mask.mpos, -mask.mneg);
 }
 #endif
