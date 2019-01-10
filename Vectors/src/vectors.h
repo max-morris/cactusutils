@@ -1137,7 +1137,7 @@ inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bool all(bvectype<T> const &x) {
 }
 
 template <typename T>
-inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr T any(vectype<T> const &x) {
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bool any(bvectype<T> const &x) {
   return vecprops<T>::any(x);
 }
 
