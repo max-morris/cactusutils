@@ -1074,8 +1074,8 @@ inline CCTK_ATTRIBUTE_ALWAYS_INLINE vectype<T>
 good_copysign(vectype<T> const &x, vectype<T> const &y) {
   return vecprops<T>::good_copysign(x, y);
 }
-}
-}
+} // namespace Cactus
+} // namespace std
 
 template <typename T>
 inline CCTK_ATTRIBUTE_ALWAYS_INLINE T ifthen(bool const &c, T const &x,
