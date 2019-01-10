@@ -38,6 +38,10 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_INTEGER8_VEC
 vec8_set1i(CCTK_INT8 const a) {
   return _mm512_set1_epi64(a);
 }
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+vec8_set1b(CCTK_BOOLEAN8 const a) {
+  return a ? 0xff : 0x00;
+}
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 vec8_set(CCTK_REAL8 const a0, CCTK_REAL8 const a1, CCTK_REAL8 const a2,
          CCTK_REAL8 const a3, CCTK_REAL8 const a4, CCTK_REAL8 const a5,
@@ -532,23 +536,29 @@ k8tanh(CCTK_REAL8_VEC const x) {
 #endif
 
 // TODO: try k8lxor(x,x) and k8lxnor(x,x)
-#define k8lfalse (0)
-#define k8ltrue (~0)
+// #define k8lfalse (CCTK_BOOLEAN8_VEC(0))
+// #define k8ltrue (CCTK_BOOLEAN8_VEC(-1))
+#define k8lfalse (vec8_set1b(false))
+#define k8ltrue (vec8_set1b(true))
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8lnot(CCTK_BOOLEAN8_VEC const x) {
-  return _mm512_knot(x);
+  // return _mm512_knot(x);
+  return ~x;
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8land(CCTK_BOOLEAN8_VEC const x, CCTK_BOOLEAN8_VEC const y) {
-  return _mm512_kand(x, y);
+  // return _mm512_kand(x, y);
+  return x & y;
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8lor(CCTK_BOOLEAN8_VEC const x, CCTK_BOOLEAN8_VEC const y) {
-  return _mm512_kor(x, y);
+  // return _mm512_kor(x, y);
+  return x | y;
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
 k8lxor(CCTK_BOOLEAN8_VEC const x, CCTK_BOOLEAN8_VEC const y) {
-  return _mm512_kxor(x, y);
+  // return _mm512_kxor(x, y);
+  return x ^ y;
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC k8ifthen(
     CCTK_BOOLEAN8_VEC const x, CCTK_REAL8_VEC const y, CCTK_REAL8_VEC const z) {
