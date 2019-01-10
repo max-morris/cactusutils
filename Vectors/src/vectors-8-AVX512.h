@@ -167,7 +167,9 @@ vec8_store_partial_prepare_(__mmask8 &mask, std::ptrdiff_t const i,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_(__mmask8 const mask, CCTK_REAL8 &p,
                         CCTK_REAL8_VEC const x) {
-  // TODO: use vec8_store_nta(p, x) if all=true?
+  if (mask == 0xff)
+    vec8_store_nta(p, x);
+  else
   _mm512_mask_store_pd(&p, mask, x);
 }
 
@@ -175,7 +177,9 @@ vec8_store_nta_partial_(__mmask8 const mask, CCTK_REAL8 &p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_storeu_partial_(__mmask8 const mask, CCTK_REAL8 &p,
                      CCTK_REAL8_VEC const x) {
-  // TODO: use vec8_storeu(p, x) if all=true?
+  if (mask == 0xff)
+    vec8_storeu(p, x);
+  else
   _mm512_mask_storeu_pd(&p, mask, x);
 }
 
@@ -564,12 +568,13 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC k8ifthen(
     CCTK_BOOLEAN8_VEC const x, CCTK_REAL8_VEC const y, CCTK_REAL8_VEC const z) {
 // This leads to an ICE
 // return _mm512_mask_blend_pd(x, z, y);
-#if 0
+#if 1
   // This works:
   return _mm512_mask_mov_pd(z, x, y);
-#endif
+#else
   // Intel suggests this:
   return x == 0 ? z : _mm512_mask_blend_pd(x, z, y);
+#endif
 }
 
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
