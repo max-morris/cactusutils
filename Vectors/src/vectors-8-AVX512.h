@@ -25,8 +25,8 @@ vec_static_assert(sizeof(CCTK_REAL8_VEC) ==
 typedef CCTK_INT8 CCTK_INTEGER8;
 typedef bool CCTK_BOOLEAN8;
 
-#define k8sign (vec8i_set1i((CCTK_INTEGER8)(1ULL << 63ULL)))
-#define k8notsign (vec8i_set1i(~(CCTK_INTEGER8)(1ULL << 63ULL)))
+#define k8sign (vec8_set1i((CCTK_INTEGER8)(1ULL << 63ULL)))
+#define k8notsign (vec8_set1i(~(CCTK_INTEGER8)(1ULL << 63ULL)))
 
 // Create vectors, extract vector elements
 
@@ -35,7 +35,7 @@ vec8_set1(CCTK_REAL8 const a) {
   return _mm512_set1_pd(a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_INTEGER8_VEC
-vec8i_set1i(CCTK_INT8 const a) {
+vec8_set1i(CCTK_INT8 const a) {
   return _mm512_set1_epi64(a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
