@@ -516,6 +516,10 @@ k4pow(CCTK_REAL4_VEC const x, CCTK_REAL4 const a) {
   return _mm256_pow_ps(x, _mm256_set1_ps(a));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4_VEC
+k4pown(CCTK_REAL4_VEC const x, int const i) {
+  return _mm256_pow_ps(x, _mm256_set1_ps(CCTK_REAL4(i)));
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4_VEC
 k4sin(CCTK_REAL4_VEC const x) {
   return _mm256_sin_ps(x);
 }
@@ -584,6 +588,10 @@ k4log(CCTK_REAL4_VEC const x) {
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4_VEC
 k4pow(CCTK_REAL4_VEC const x, CCTK_REAL4 const a) {
+  return K4REPL2S(powf, x, a);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4_VEC
+k4pown(CCTK_REAL4_VEC const x, int const a) {
   return K4REPL2S(powf, x, a);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4_VEC

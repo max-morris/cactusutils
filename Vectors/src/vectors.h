@@ -386,6 +386,15 @@ template <typename T> struct vecprops {
   sqrt(vector_t const &x) {
     return vec_op_inc, std::sqrt(x);
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  pow(vector_t const &x, int n) {
+    return vec_op_inc, std::pow(x, n);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vector_t
+  pow(vector_t const &x, scalar_t const &y) {
+    return vec_op_inc, std::pow(x, y);
+  }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bool
   all(bvector_t const &x) {
     return vec_op_inc, x;
@@ -514,6 +523,15 @@ template <> struct vecprops<CCTK_REAL4> {
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t sqrt(vector_t const &x) {
     return vec_op_inc, k4sqrt(x);
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t pow(vector_t const &x,
+                                                          scalar_t const &a) {
+    return vec_op_inc, k4pow(x, a);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t pow(vector_t const &x,
+                                                          int n) {
+    return vec_op_inc, k4pown(x, n);
+  }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool all(bvector_t const &x) {
     return vec_op_inc, k4all(x);
   }
@@ -639,6 +657,15 @@ template <> struct vecprops<CCTK_REAL8> {
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t sqrt(vector_t const &x) {
     return vec_op_inc, k8sqrt(x);
   }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t pow(vector_t const &x,
+                                                          scalar_t const &a) {
+    return vec_op_inc, k8pow(x, a);
+  }
+  static inline CCTK_ATTRIBUTE_ALWAYS_INLINE vector_t pow(vector_t const &x,
+                                                          int n) {
+    return vec_op_inc, k8pown(x, n);
+  }
+
   static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool all(bvector_t const &x) {
     return vec_op_inc, k8all(x);
   }
@@ -852,7 +879,19 @@ sqrt(vectype<T> const &x) {
 }
 
 template <typename T>
-inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr T all(vectype<T> const &x) {
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+pow(vectype<T> const &x, typename vectype<T>::scalar_t const &a) {
+  return vecprops<T>::pow(x, a);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+pow(vectype<T> const &x, int n) {
+  return vecprops<T>::pown(x, n);
+}
+
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bool all(bvectype<T> const &x) {
   return vecprops<T>::all(x);
 }
 
