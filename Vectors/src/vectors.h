@@ -1194,6 +1194,7 @@ struct vmask {
   // is one past the last loop index where the mask should be active.
   vmask(ptrdiff_t i, ptrdiff_t imin, ptrdiff_t imax)
       : mpos(i - imin), mneg(i - imax){};
+  template <typename T> bvectype<T> boolmask() const;
 };
 
 template <typename T>
@@ -1218,6 +1219,16 @@ template <typename T>
 inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vstorea_masked(T *a, ptrdiff_t ind, vectype<T> x, vmask mask) {
   return x.store_partial(a[ind], 0, -mask.mpos, -mask.mneg);
+}
+
+template <typename T> bvectype<T> vmask::boolmask() const {
+  struct arr {
+    T elts[vecprops<T>::size()];
+  } CCTK_ATTRIBUTE_ALIGNED(sizeof(vectype<T>));
+  arr m;
+  vstorea(m.elts, 0, vectype<T>(T(0.0)));
+  vstorea_masked(m.elts, 0, vectype<T>(T(1.0)), *this);
+  return vloada(m.elts, 0) != vectype<T>(T(0.0));
 }
 #endif
 
