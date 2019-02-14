@@ -53,17 +53,18 @@ int TerminationTrigger_StartSignalHandler(void) {
                                     CCTK_THORNSTRING, "signal_names");
   if(ierr) {
     CCTK_VWarn(CCTK_WARN_PICKY, __LINE__, __FILE__, CCTK_THORNSTRING,
-               "Could not register parameter change monitor for '%s'",
-               "signal_names");
+               "Could not register parameter change monitor for "
+               "'signal_names': %d", ierr);
   }
   ierr =
     CCTK_ParameterSetNotifyRegister(signal_number_callback, NULL,
-                                    CCTK_THORNSTRING "WATCH_SIGNAL_NAME_CHANGE",
+                                    CCTK_THORNSTRING
+                                    "WATCH_SIGNAL_NUMBER_CHANGE",
                                     CCTK_THORNSTRING, "signal_numbers");
   if(ierr) {
     CCTK_VWarn(CCTK_WARN_PICKY, __LINE__, __FILE__, CCTK_THORNSTRING,
-               "Could not register parameter change monitor for '%s'",
-               "signal_numbers");
+               "Could not register parameter change monitor for "
+               "'signal_numbers': %d", ierr);
   }
 
   return 1;
@@ -96,6 +97,8 @@ void TerminationTrigger_CheckSignal(CCTK_ARGUMENTS) {
 static void set_sighandler(const int which, const char *signame,
                            const int signum) {
   int my_signum = 0;
+
+  assert(which >= 0 && which < MAX_NUM_SIGNALS);
 
   if(CCTK_EQUALS(signame, "SIGHUP")) {
     my_signum = SIGHUP;

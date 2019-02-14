@@ -12,6 +12,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -472,13 +473,15 @@ void calc_memsizes(int cache, ptrdiff_t &skip_memsize, ptrdiff_t &memsize) {
     break;
   case mem_local:
     skip_memsize = 0;
-    memsize = cache_info[cache].size / 4;
+    // use either 1/4 of main memory or 1GB for memtest, whichever is smaller
+    memsize = min(cache_info[cache].size / 4, ptrdiff_t(1024*1024*1024));
     break;
   case mem_global:
     assert(cache > 0);
     assert(cache_info[cache - 1].type == mem_local);
     skip_memsize = cache_info[cache - 1].size;
-    memsize = skip_memsize / 4;
+    // use either 1/4 of main memory or 1GB for memtest, whichever is smaller
+    memsize = min(skip_memsize / 4, ptrdiff_t(1024*1024*1024));
     assert(skip_memsize + memsize <= cache_info[cache].size * 3 / 4);
     break;
   }

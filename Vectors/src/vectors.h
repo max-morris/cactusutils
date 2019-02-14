@@ -671,8 +671,10 @@ public:
   // Hide the constructor, which is necessary in case scalar_t and
   // vector_t are the same type (e.g. if vectorization is disabled)
   template<typename = int>
-  explicit constexpr vectype(scalar_t const &a) : v(props::set1(a)) {}
+  constexpr vectype(scalar_t const &a) : v(props::set1(a)) {}
+  template<typename = int>
   constexpr operator vector_t() const { return v; }
+  template<typename = int>
   constexpr vectype &operator=(vectype const &x) {
     v = x.v;
     return *this;
@@ -774,6 +776,30 @@ public:
     return props::cmple(*this, x);
   }
 };
+
+// ops between scalars and vectype
+// these cannot be members of vectype since they take a scalar_t as their first
+// argument
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+operator+(T const &a, vectype<T> const &b) {
+  return vectype<T>(a) + b;
+}
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+operator-(T const &a, vectype<T> const &b) {
+  return vectype<T>(a) - b;
+}
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+operator*(T const &a, vectype<T> const &b) {
+  return vectype<T>(a) * b;
+}
+template <typename T>
+inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype<T>
+operator/(T const &a, vectype<T> const &b) {
+  return vectype<T>(a) / b;
+}
 
 // Cactus defines "copysign" to "Cactus::copysign"
 namespace std {
