@@ -629,7 +629,6 @@ k8sqrt(CCTK_REAL8_VEC const x) {
   // <https://en.wikipedia.org/wiki/Methods_of_computing_square_roots>.
   // Theoretically the result should be exact.
   // Initialisation
-#error "sqrt(0) is wrong"
   CCTK_REAL8_VEC const y0 = _mm512_rsqrt28_pd(x);
   CCTK_REAL8_VEC const x0 = k8mul(x, y0);
   CCTK_REAL8_VEC const h0 = k8mul(vec8_set1(0.5), y0);
