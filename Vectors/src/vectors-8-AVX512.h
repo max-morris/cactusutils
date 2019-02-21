@@ -238,7 +238,7 @@ k8div(CCTK_REAL8_VEC const x, CCTK_REAL8_VEC const y) {
   CCTK_REAL8_VEC const r1 = _mm512_fmadd_pd(r0, _mm512_fnmadd_pd(y, r0, x), r0);
   return r1;
 #endif
-#if defined __knl__
+#if defined __knl__ || defined __AVX512ER__
   // Best algorithm: Start with an approximate result, then perform Newton
   // iteration until convergence. Theoretically the result should be exact.
   // Approximate solution
@@ -624,7 +624,7 @@ k8sqrt(CCTK_REAL8_VEC const x) {
   // This is accurate, but slow; it is internally evaluated unvectorized
   return _mm512_sqrt_pd(x);
 #endif
-#if defined __knl__
+#if defined __knl__ || defined __AVX512ER__
   // We start with an approximate result, then perform Goldschmidt iterations
   // <https://en.wikipedia.org/wiki/Methods_of_computing_square_roots>.
   // Theoretically the result should be exact.
