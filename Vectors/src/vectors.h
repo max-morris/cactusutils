@@ -968,7 +968,7 @@ public:
   constexpr bvectype(bvector_t const &x) : bv(x) {}
   // Hide the constructor, which is necessary in case scalar_t and
   // vector_t are the same type (e.g. if vectorization is disabled)
-  template <typename = int>
+  template <typename = void>
   explicit constexpr bvectype(bscalar_t const &a) : bv(props::bset1(a)) {}
   constexpr operator bvector_t() const { return bv; }
   constexpr bvectype &operator=(bvectype const &x) {
