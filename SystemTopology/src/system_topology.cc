@@ -291,7 +291,9 @@ void output_support(hwloc_topology_t topology) {
   OUTPUT_SUPPORT(membind->firsttouch_membind);
   OUTPUT_SUPPORT(membind->bind_membind);
   OUTPUT_SUPPORT(membind->interleave_membind);
+#if (HWLOC_API_VERSION < 0x00020000)
   OUTPUT_SUPPORT(membind->replicate_membind);
+#endif
   OUTPUT_SUPPORT(membind->nexttouch_membind);
   OUTPUT_SUPPORT(membind->migrate_membind);
 }
@@ -578,9 +580,20 @@ void node_topology_info_t::load(hwloc_topology_t const &topology,
   assert(num_smt_threads > 0);
 
   assert(cache_info.empty());
-  for (int cache_level = 1; true; ++cache_level) {
+  for (size_t cache_level = 1; true; ++cache_level) {
+#if (HWLOC_API_VERSION < 0x00020000)
     int const cache_depth =
         hwloc_get_cache_type_depth(topology, cache_level, HWLOC_OBJ_CACHE_DATA);
+#else
+    hwloc_obj_type_t const cache_type[] = {HWLOC_OBJ_L1CACHE, HWLOC_OBJ_L2CACHE,
+      HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L4CACHE, HWLOC_OBJ_L5CACHE};
+    if(cache_level > sizeof(cache_type)/sizeof(cache_type[0]))
+      break;
+    assert(cache_level >= 1);
+    assert(cache_level <= sizeof(cache_type)/sizeof(cache_type[0]));
+    int const cache_depth =
+      hwloc_get_type_depth(topology, cache_type[cache_level-1]);
+#endif
     if (cache_depth < 0)
       break;
     int const num_caches = hwloc_get_nbobjs_by_depth(topology, cache_depth);
@@ -588,7 +601,12 @@ void node_topology_info_t::load(hwloc_topology_t const &topology,
     int const cache_num = 0; // just look at first cache
     hwloc_obj_t const cache_obj =
         hwloc_get_obj_by_depth(topology, cache_depth, cache_num);
+#if (HWLOC_API_VERSION < 0x00020000)
     assert(cache_obj->type == HWLOC_OBJ_CACHE);
+#else
+    assert(hwloc_compare_types(cache_obj->type, HWLOC_OBJ_L5CACHE) <= 0);
+    assert(hwloc_compare_types(cache_obj->type, HWLOC_OBJ_L1CACHE) >= 0);
+#endif
     hwloc_obj_attr_u::hwloc_cache_attr_s const &cache_attr =
         cache_obj->attr->cache;
     char const *const cache_type_str =
@@ -656,7 +674,11 @@ void node_topology_info_t::load(hwloc_topology_t const &topology,
       hwloc_obj_t const node_obj =
           hwloc_get_obj_by_depth(topology, node_depth, node_num);
       assert(node_obj->type == obj_type);
+#if (HWLOC_API_VERSION < 0x00020000)
       hwloc_obj_memory_s const &memory_attr = node_obj->memory;
+#else
+      hwloc_obj_attr_u::hwloc_numanode_attr_s const &memory_attr = node_obj->attr->numanode;
+#endif
       for (int memory_level = 0; memory_level < num_memory_levels;
            ++memory_level) {
         int const num_memories = memory_level == 0 ? 1 : num_nodes;
