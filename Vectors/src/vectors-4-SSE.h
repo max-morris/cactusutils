@@ -513,7 +513,7 @@ k4pow(CCTK_REAL4_VEC const x, CCTK_REAL4 const a) {
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4_VEC
 k4pown(CCTK_REAL4_VEC const x, int const i) {
-  return _mm_pow_ps(x, _mm_set1_ps(CCTK_REAL4(a)));
+  return _mm_pow_ps(x, _mm_set1_ps(CCTK_REAL4(i)));
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL4_VEC
 k4sin(CCTK_REAL4_VEC const x) {
