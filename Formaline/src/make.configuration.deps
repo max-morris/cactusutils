@@ -9,10 +9,10 @@
 # indicates that files changed while reading, which can happen if the
 # atime changed. (An atime change means that another program read the
 # file, which is inconsequential.)
-IS_GNUTAR = $(shell $(TAR) --version 2>/dev/null | grep -q 'GNU tar' && echo "1" || echo "0")
+IS_GNUTAR := $(shell $(TAR) --version 2>/dev/null | grep -q 'GNU tar' && echo "1" || echo "0")
 
 # Does tr support -C, or should we use -c instead?
-TR_C = $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
+TR_C := $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
 
 
 
