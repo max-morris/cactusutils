@@ -69,8 +69,7 @@ $(FRM-LIB): $(FRM-OBJS)
 #  script gethostname.pl has been copied to the scratch directory)
 # (generates also $(TOP)/CONFIG-ID)
 .PRECIOUS: $(TOP)/BUILD-ID
-.PHONY: $(TOP)/BUILD-ID
-$(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX) | $(FORMALINE-UTILS)
+$(TOP)/BUILD-ID: $(TARBALL_DIR)/cactus-meta.c | $(FORMALINE-UTILS)
 	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'` && \
 	hostname=`$(FORMALINE_BIN_DIR)/gethostname.pl` && \
 	user="$$USER" && \
