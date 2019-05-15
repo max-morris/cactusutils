@@ -12,9 +12,26 @@
 
 using namespace std;
 
-inline CCTK_REAL my_sgn(CCTK_REAL const x) {
+namespace {
+constexpr inline CCTK_REAL my_sgn(CCTK_REAL const x) {
   return x == (CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : copysign((CCTK_REAL)1.0, x);
 }
+
+inline bool approx(CCTK_REAL const x, CCTK_REAL const y) {
+  if (CCTK_isnan(x) and CCTK_isnan(y))
+    return true;
+  if (CCTK_isnan(x) or CCTK_isnan(y))
+    return false;
+  if (x == y)
+    return true;
+  if (CCTK_isinf(x) or CCTK_isinf(y))
+    return false;
+  CCTK_REAL const d = fabs(x - y);
+  CCTK_REAL const s = fmax(CCTK_REAL(1), fmax(fabs(x), fabs(y)));
+  CCTK_REAL const eps = numeric_limits<CCTK_REAL>::epsilon();
+  return d <= 10 * eps * s;
+}
+} // namespace
 
 #define SCALARTEST(testname, vecexpr, scalarexpr)                              \
   do {                                                                         \
@@ -24,14 +41,11 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
     }                                                                          \
     CCTK_REAL const res = (scalarexpr);                                        \
     CCTK_REAL const vecres = (vecexpr);                                        \
-    CCTK_REAL const eps = numeric_limits<CCTK_REAL>::epsilon();                \
-    if ((fabs(vecres - res) <= 10 * eps) or                                    \
-        (CCTK_isnan(vecres) and CCTK_isnan(res))) {                            \
+    if (approx(vecres, res))                                                   \
       passed++;                                                                \
-    } else {                                                                   \
+    else                                                                       \
       CCTK_VPARAMWARN("Failed test %s: expected %.17g, received %.17g",        \
                       testname, (double)res, (double)vecres);                  \
-    }                                                                          \
     numtests++;                                                                \
   } while (0)
 
@@ -45,15 +59,12 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
     for (int i = 0; i < CCTK_REAL_VEC_SIZE; i++) {                             \
       CCTK_REAL res = (scalarexpr);                                            \
       CCTK_REAL vecres = vec_elt(rv, i);                                       \
-      CCTK_REAL eps = numeric_limits<CCTK_REAL>::epsilon();                    \
-      if ((fabs(vecres - res) <= 10 * eps) or                                  \
-          (CCTK_isnan(vecres) and CCTK_isnan(res))) {                          \
+      if (approx(vecres, res))                                                 \
         passed++;                                                              \
-      } else {                                                                 \
+      else                                                                     \
         CCTK_VPARAMWARN("Failed test %s: "                                     \
                         "for element %d, expected %.17g, received %.17g",      \
                         testname, i, (double)res, (double)vecres);             \
-      }                                                                        \
       numtests++;                                                              \
     }                                                                          \
   } while (0)
@@ -83,8 +94,7 @@ inline CCTK_REAL my_sgn(CCTK_REAL const x) {
   } while (0)
 
 namespace {
-void cxxtests()
-{
+void cxxtests() {
   const CCTK_REAL s(1);
   const CCTK_REAL_VEC v(vec_set1(s));
   const CCTK_REAL_VEC w(v);
@@ -93,7 +103,7 @@ void cxxtests()
   const vectype<CCTK_REAL> z(y);
   auto r CCTK_ATTRIBUTE_UNUSED = w;
 }
-}
+} // namespace
 
 extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
