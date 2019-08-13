@@ -22,7 +22,7 @@
 // #  define USE_FORK
 // #endif
 
-#ifdef CCTK_PTHREADS
+#ifdef HAVE_CAPABILITY_PTHREADS
 #define USE_PTHREADS
 #endif
 
@@ -118,10 +118,12 @@ static void do_output(cGH const *restrict const cctkGH) {
   }
 }
 
+#if defined(USE_PTHREADS)
 static void *start_routine(void *const arg) {
   do_output(arg);
   return NULL;
 }
+#endif
 
 void Formaline_OutputSource(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
