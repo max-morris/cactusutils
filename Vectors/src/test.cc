@@ -94,7 +94,8 @@ inline bool approx(CCTK_REAL const x, CCTK_REAL const y) {
   } while (0)
 
 namespace {
-void cxxtests() {
+void cxxtests()
+{
   const CCTK_REAL s(1);
   const CCTK_REAL_VEC v(vec_set1(s));
   const CCTK_REAL_VEC w(v);
@@ -103,7 +104,7 @@ void cxxtests() {
   const vectype<CCTK_REAL> z(y);
   auto r CCTK_ATTRIBUTE_UNUSED = w;
 }
-} // namespace
+}
 
 extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;

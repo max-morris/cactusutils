@@ -2,12 +2,11 @@
 // Vectorise using IBM's Altivec VSX (Power)
 
 // Use the type vector double directly, without introducing a wrapper class
-// Use macros instead of inline functions
 
 // See <http://pic.dhe.ibm.com/infocenter/comphelp/v111v131/index.jsp>
 
 #include <altivec.h>
-#include <math.h>
+#include <cmath>
 
 #define vec8_architecture "VSX"
 
@@ -28,26 +27,43 @@ typedef unsigned long long CCTK_BOOLEAN8;
 
 // Create vectors, extract vector elements
 
-#define vec8_set1(a) (vec_splats(a))
-#define vec8_set1i(a) (vec_splats(a))
-#define vec8_set(a, b)                                                         \
-  ({                                                                           \
-    CCTK_REAL8_VEC x;                                                          \
-    x[0] = (a);                                                                \
-    x[1] = (b);                                                                \
-    x;                                                                         \
-  })
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+vec8_set1(CCTK_REAL8 a) {
+  return vec_splats(a);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_INTEGER8_VEC
+vec8_set1i(CCTK_INT8 a) {
+  return vec_splats(a);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+vec8_set(CCTK_REAL8 a0, CCTK_REAL8 a1) {
+  CCTK_REAL8_VEC x;
+  x[0] = a0;
+  x[1] = a1;
+  return x;
+}
 
-#define vec8_elt0(x) ((x)[0])
-#define vec8_elt1(x) ((x)[1])
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+vec8_elt0(CCTK_REAL8_VEC x) {
+  return x[0];
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+vec8_elt1(CCTK_REAL8_VEC x) {
+  return x[1];
+}
 // #define vec8_elt(x,d)  ((x)[d])
 // #define vec8_elti(x,d) ((x)[d])
 // #define vec8_eltb(x,d) ((x)[d])
-static inline CCTK_REAL8 vec8_elt(CCTK_REAL8_VEC x, int d) { return x[d]; }
-static inline CCTK_INTEGER8 vec8_elti(CCTK_INTEGER8_VEC x, int d) {
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8 vec8_elt(CCTK_REAL8_VEC x,
+                                                               int d) {
   return x[d];
 }
-static inline CCTK_BOOLEAN8 vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_INTEGER8
+vec8_elti(CCTK_INTEGER8_VEC x, int d) {
+  return x[d];
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8
+vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
   return x[d];
 }
 
@@ -55,22 +71,47 @@ static inline CCTK_BOOLEAN8 vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
 
 // Load a vector from memory (aligned and unaligned); this loads from
 // a reference to a scalar
-#define vec8_load(p) (*(CCTK_REAL8_VEC const *)&(p))
-#define vec8_loadu(p) (*(CCTK_REAL8_VEC const *)&(p))
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+vec8_load(CCTK_REAL8 const &p) {
+  return *(CCTK_REAL8_VEC const *)&p;
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+vec8_loadu(CCTK_REAL8 const &p) {
+  return *(CCTK_REAL8_VEC const *)&p;
+}
 
 // Load a vector from memory that may or may not be aligned, as
 // decided by the offset and the vector size
-#define vec8_loadu_maybe(off, p) (vec8_loadu(p))
-#define vec8_loadu_maybe3(off1, off2, off3, p) (vec8_loadu(p))
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+vec8_loadu_maybe(std::ptrdiff_t off, CCTK_REAL8 const &p) {
+  return vec8_loadu(p);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+vec8_loadu_maybe3(std::ptrdiff_t off1, std::ptrdiff_t off2, std::ptrdiff_t off3,
+                  CCTK_REAL8 const &p) {
+  return vec8_loadu(p);
+}
 
 // Store a vector to memory (aligned and non-temporal); this stores to
 // a reference to a scalar
-#define vec8_store(p, x) (*(CCTK_REAL8_VEC *)&(p) = (x))
-#define vec8_storeu(p, x) (*(CCTK_REAL8_VEC *)&(p) = (x))
-// stvxl instruction doesn't exist for double precision
-#define vec8_store_nta(p, x) vec8_store(p, x)
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void vec8_store(CCTK_REAL8 &p,
+                                                           CCTK_REAL8_VEC x) {
+  *(CCTK_REAL8_VEC *)&p = x;
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void vec8_storeu(CCTK_REAL8 &p,
+                                                            CCTK_REAL8_VEC x) {
+  *(CCTK_REAL8_VEC *)&p = x;
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+vec8_store_nta(CCTK_REAL8 &p, CCTK_REAL8_VEC x) {
+  // stvxl instruction doesn't exist for double precision
+  vec8_store(p, x);
+}
 
 // Store a partial vector (aligned and non-temporal)
+#define vec8_store_partial_prepare_fixed(i, imin, imax)                        \
+  vec8_store_partial_prepare(i, imin, imax)
+
 #define vec8_store_partial_prepare(i, imin, imax)                              \
   bool const v8stp_lo = (i) >= (imin);                                         \
   bool const v8stp_hi = (i) + CCTK_REAL8_VEC_SIZE - 1 < (imax)
@@ -88,6 +129,19 @@ static inline CCTK_BOOLEAN8 vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
       (&p)[1] = vec8_elt1(x);                                                  \
     }                                                                          \
   })
+
+#define vec8_storeu_partial(p, x) vec8_storeu_partial_(v8stp_lo, v8stp_hi, p, x)
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
+vec8_storeu_partial_(bool const lo, bool const hi, CCTK_REAL8 &p,
+                     CCTK_REAL8_VEC const x) {
+  if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+    vec8_storeu(p, x);
+  } else if (lo) {
+    (&p)[0] = vec8_elt(x, 0);
+  } else if (hi) {
+    (&p)[1] = vec8_elt(x, 1);
+  }
+}
 
 // Store a lower or higher partial vector (aligned and non-temporal);
 // the non-temporal hint is probably ignored
@@ -117,39 +171,45 @@ static inline CCTK_BOOLEAN8 vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
 #define k8fmax(x, y) (vec_max(x, y))
 #define k8fmin(x, y) (vec_min(x, y))
 #define k8fnabs(x) (vec_nabs(x))
-#define k8sgn(x_)                                                              \
-  ({                                                                           \
-    CCTK_REAL8_VEC x__ = (x_);                                                 \
-    CCTK_REAL8_VEC x = x__;                                                    \
-    CCTK_BOOLEAN8_VEC iszero = k8cmpeq(x, vec8_set1((CCTK_REAL8)0.0));         \
-    CCTK_REAL8_VEC signedone = k8copysign(vec8_set1((CCTK_REAL8)1.0), x);      \
-    k8ifthen(iszero, vec8_set1((CCTK_REAL8)0.0), signedone);                   \
-  })
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8signbit(CCTK_REAL8_VEC const x) {
+  return vec_cmplt((CCTK_INTEGER8_VEC)x, vec8_set1i(0));
+}
 #define k8sqrt(x) (vec_sqrt(x))
 
+// Reduction operations
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
+k8all(CCTK_BOOLEAN8_VEC const x) {
+  return x[0] & x[1];
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE bool
+k8any(CCTK_BOOLEAN8_VEC const x) {
+  return x[0] | x[1];
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8maximum(CCTK_REAL8_VEC const x) {
+  return fmax(x[0], x[1]);
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8minimum(CCTK_REAL8_VEC const x) {
+  return fmin(x[0], x[1]);
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8
+k8sum(CCTK_REAL8_VEC const x) {
+  return x[0] + x[1];
+}
+
 // Expensive functions
-#define K8REPL(f, x_)                                                          \
-  ({                                                                           \
-    CCTK_REAL8_VEC const x__ = (x_);                                           \
-    CCTK_REAL8_VEC const x = x__;                                              \
-    vec8_set(f(vec8_elt0(x)), f(vec8_elt1(x)));                                \
-  })
-#define K8REPL2S(f, x_, a_)                                                    \
-  ({                                                                           \
-    CCTK_REAL8_VEC const x__ = (x_);                                           \
-    CCTK_REAL8 const a__ = (a_);                                               \
-    CCTK_REAL8_VEC const x = x__;                                              \
-    CCTK_REAL8 const a = a__;                                                  \
-    vec8_set(f(vec8_elt0(x), a), f(vec8_elt1(x), a));                          \
-  })
-#define K8REPL2(f, x_, y_)                                                     \
-  ({                                                                           \
-    CCTK_REAL8_VEC const x__ = (x_);                                           \
-    CCTK_REAL8_VEC const y__ = (y_);                                           \
-    CCTK_REAL8_VEC const x = x__;                                              \
-    CCTK_REAL8_VEC const y = y__;                                              \
-    vec8_set(f(vec8_elt0(x), vec8_elt0(y)), f(vec8_elt1(x), vec8_elt1(y)));    \
-  })
+#define K8REPL(f, x) vec8_set(f(vec8_elt0(x)), f(vec8_elt1(x)))
+#define K8REPL2S(f, x, a) vec8_set(f(vec8_elt0(x), a), f(vec8_elt1(x), a))
+#define K8REPL2I(f, x, i) vec8_set(f(vec8_elt0(x), i), f(vec8_elt1(x), i))
+#define K8REPL2(f, x, y)                                                       \
+  vec8_set(f(vec8_elt0(x), vec8_elt0(y)), f(vec8_elt1(x), vec8_elt1(y)))
 
 #define k8acos(x) K8REPL(acos, x)
 #define k8acosh(x) K8REPL(acosh, x)
@@ -163,7 +223,14 @@ static inline CCTK_BOOLEAN8 vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
 #define k8exp(x) K8REPL(exp, x)
 #define k8fmod(x, y) K8REPL2(fmod, x, y)
 #define k8log(x) K8REPL(log, x)
-#define k8pow(x, a) K8REPL2S(pow, x, a)
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8pow(CCTK_REAL8_VEC x, CCTK_REAL8 a) {
+  return K8REPL2S(std::pow, x, a);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8pown(CCTK_REAL8_VEC x, CCTK_INT8 i) {
+  return K8REPL2I(std::pow, x, i);
+}
 #define k8sin(x) K8REPL(sin, x)
 #define k8sinh(x) K8REPL(sinh, x)
 #define k8tan(x) K8REPL(tan, x)
@@ -171,33 +238,63 @@ static inline CCTK_BOOLEAN8 vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
 
 // canonical true is -1LL, canonical false is 0LL
 // truth values are interpreted bit-wise
-// #define k8lfalse        ({ CCTK_BOOLEAN8_VEC dummy; vec_xor(dummy,dummy); })
-// #define k8ltrue         (k8lnot(k8lfalse))
-static inline CCTK_BOOLEAN8_VEC k8lfalse1() {
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC k8lfalse1() {
   CCTK_BOOLEAN8_VEC dummy;
   return vec_xor(dummy, dummy);
 }
 #define k8lfalse (k8lfalse1())
 #define k8ltrue (k8lnot(k8lfalse))
 
-// #define k8lnot(x_)                              \
-//   ({                                            \
-//     CCTK_BOOLEAN8_VEC x__=(x_);                 \
-//     CCTK_BOOLEAN8_VEC x=x__;                    \
-//     vec_nor(x,x);                               \
-//   })
-static inline CCTK_BOOLEAN8_VEC k8lnot(CCTK_BOOLEAN8_VEC x) {
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8lnot(CCTK_BOOLEAN8_VEC x) {
   return vec_nor(x, x);
 }
 
-#define k8land(x, y) (vec_and(x, y))
-#define k8lor(x, y) (vec_or(x, y))
-#define k8lxor(x, y) (vec_xor(x, y))
-#define k8ifthen(x, y, z) (vec_sel(z, y, x))
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8land(CCTK_BOOLEAN8_VEC x, CCTK_BOOLEAN8_VEC y) {
+  return vec_and(x, y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8lor(CCTK_BOOLEAN8_VEC x, CCTK_BOOLEAN8_VEC y) {
+  return vec_or(x, y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8lxor(CCTK_BOOLEAN8_VEC x, CCTK_BOOLEAN8_VEC y) {
+  return vec_xor(x, y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8ifthen(CCTK_BOOLEAN8_VEC x, CCTK_REAL8_VEC y, CCTK_REAL8_VEC z) {
+  return vec_sel(z, y, x);
+}
 
-#define k8cmpeq(x, y) (vec_cmpeq(x, y))
-#define k8cmpne(x, y) (k8lnot(vec_cmpeq(x, y)))
-#define k8cmpgt(x, y) (vec_cmpgt(x, y))
-#define k8cmpge(x, y) (vec_cmpge(x, y))
-#define k8cmplt(x, y) (vec_cmplt(x, y))
-#define k8cmple(x, y) (vec_cmple(x, y))
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8cmpeq(CCTK_REAL8_VEC x, CCTK_REAL8_VEC y) {
+  return vec_cmpeq(x, y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8cmpne(CCTK_REAL8_VEC x, CCTK_REAL8_VEC y) {
+  return k8lnot(vec_cmpeq(x, y));
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8cmpgt(CCTK_REAL8_VEC x, CCTK_REAL8_VEC y) {
+  return vec_cmpgt(x, y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8cmpge(CCTK_REAL8_VEC x, CCTK_REAL8_VEC y) {
+  return vec_cmpge(x, y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8cmplt(CCTK_REAL8_VEC x, CCTK_REAL8_VEC y) {
+  return vec_cmplt(x, y);
+}
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_BOOLEAN8_VEC
+k8cmple(CCTK_REAL8_VEC x, CCTK_REAL8_VEC y) {
+  return vec_cmple(x, y);
+}
+
+static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
+k8sgn(CCTK_REAL8_VEC x) {
+  CCTK_BOOLEAN8_VEC iszero = k8cmpeq(x, vec8_set1((CCTK_REAL8)0.0));
+  CCTK_REAL8_VEC signedone = k8copysign(vec8_set1((CCTK_REAL8)1.0), x);
+  return k8ifthen(iszero, vec8_set1((CCTK_REAL8)0.0), signedone);
+}
