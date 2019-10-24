@@ -141,7 +141,8 @@ union k8const_t {
     CCTK_REAL8 &p = p__;                                                       \
     CCTK_REAL8_VEC const x__ = (x_);                                           \
     CCTK_REAL8_VEC const x = x__;                                              \
-    if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) {                    \
+    /* if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) { */              \
+    if (v8stp_lo and v8stp_hi) {                                               \
       vec8_store(p, x);                                                        \
     } else if (v8stp_lo) {                                                     \
       (&p)[0] = vec8_elt0(x);                                                  \
@@ -216,13 +217,16 @@ union k8const_t {
   })
 #define k8fnabs(x) (__fpnabs(x))
 static const k8const_t k8zero = {{
-    0.0, 0.0,
+    0.0,
+    0.0,
 }};
 static const k8const_t k8one = {{
-    +1.0, +1.0,
+    +1.0,
+    +1.0,
 }};
 static const k8const_t k8mone = {{
-    -1.0, -1.0,
+    -1.0,
+    -1.0,
 }};
 #define k8sgn(x_)                                                              \
   ({                                                                           \
@@ -307,10 +311,12 @@ static const k8const_t k8mone = {{
 // canonical true is +1.0, canonical false is -1.0
 // >=0 is true, -0 is true (?), nan is false (?)
 static const k8const_t k8lfalse_ = {{
-    -1.0, -1.0,
+    -1.0,
+    -1.0,
 }};
 static const k8const_t k8ltrue_ = {{
-    +1.0, +1.0,
+    +1.0,
+    +1.0,
 }};
 #define k8lfalse (k8lfalse_.vf)
 #define k8ltrue (k8ltrue_.vf)

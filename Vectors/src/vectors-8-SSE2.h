@@ -247,7 +247,8 @@ vec8_store_partial_prepare_(bool &lo, bool &hi, std::ptrdiff_t const i,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_(bool const lo, bool const hi, CCTK_REAL8 &p,
                         CCTK_REAL8_VEC const x) {
-  if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+  // if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+  if (lo and hi) {
     vec8_store_nta(p, x);
   } else if (lo) {
     _mm_stream_sd(&p, x);
@@ -259,7 +260,8 @@ vec8_store_nta_partial_(bool const lo, bool const hi, CCTK_REAL8 &p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta_partial_(bool const lo, bool const hi, CCTK_REAL8 &p,
                         CCTK_REAL8_VEC const x) {
-  if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+  // if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+  if (lo and hi) {
     vec8_store_nta(p, x);
   } else if (lo) {
     _mm_storel_pd(&p, x);
@@ -273,7 +275,8 @@ vec8_store_nta_partial_(bool const lo, bool const hi, CCTK_REAL8 &p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_storeu_partial_(bool const lo, bool const hi, CCTK_REAL8 &p,
                      CCTK_REAL8_VEC const x) {
-  if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+  // if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+  if (lo and hi) {
     vec8_storeu(p, x);
   } else if (lo) {
     _mm_storel_pd(&p, x);

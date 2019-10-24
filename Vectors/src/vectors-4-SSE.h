@@ -248,7 +248,8 @@ static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec4_store_nta_partial_(std::ptrdiff_t const lo_skip,
                         std::ptrdiff_t const hi_skip, CCTK_REAL4 &p,
                         CCTK_REAL4_VEC const x) {
-  if (CCTK_BUILTIN_EXPECT(lo_skip == 0 and hi_skip == 0, true)) {
+  // if (CCTK_BUILTIN_EXPECT(lo_skip == 0 and hi_skip == 0, true)) {
+  if (lo_skip == 0 and hi_skip == 0) {
     vec4_store_nta(p, x);
   } else {
     // these cases fall through
@@ -276,7 +277,8 @@ vec4_store_nta_partial_(std::ptrdiff_t const lo_skip,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec4_storeu_partial_(std::ptrdiff_t const lo_skip, std::ptrdiff_t const hi_skip,
                      CCTK_REAL4 &p, CCTK_REAL4_VEC const x) {
-  if (CCTK_BUILTIN_EXPECT(lo_skip == 0 and hi_skip == 0, true)) {
+  // if (CCTK_BUILTIN_EXPECT(lo_skip == 0 and hi_skip == 0, true)) {
+  if (lo_skip == 0 and hi_skip == 0) {
     vec4_storeu(p, x);
   } else {
     // these cases fall through

@@ -214,7 +214,8 @@ struct CCTK_REAL8_VEC {
                                                                                \
     v8stp_all = i >= imin and i + CCTK_REAL8_VEC_SIZE - 1 < imax;              \
                                                                                \
-    if (not CCTK_BUILTIN_EXPECT(v8stp_all, true)) {                            \
+    /* if (not CCTK_BUILTIN_EXPECT(v8stp_all, true)) { */                      \
+    if (not v8stp_all) {                                                       \
       CCTK_INTEGER8_VEC vp_lo, vp_hi;                                          \
       CCTK_BOOLEAN8_VEC mask_lo, mask_hi;                                      \
       /* this is correct but slow */                                           \
@@ -252,7 +253,8 @@ struct CCTK_REAL8_VEC {
     CCTK_REAL8_VEC x__ = (x_);                                                 \
     CCTK_REAL8 &p = p__;                                                       \
     CCTK_REAL8_VEC x = x__;                                                    \
-    if (CCTK_BUILTIN_EXPECT(v8stp_all, true)) {                                \
+    /* if (CCTK_BUILTIN_EXPECT(v8stp_all, true)) { */                          \
+    if (v8stp_all) {                                                           \
       vec8_store(p, x);                                                        \
     } else {                                                                   \
       /*                                                                       \
@@ -637,7 +639,8 @@ inline void vec8_store_nta(CCTK_REAL8 &p, CCTK_REAL8_VEC x) {
                                                                                \
     v8stp_all = i >= imin and i + CCTK_REAL8_VEC_SIZE - 1 < imax;              \
                                                                                \
-    if (not CCTK_BUILTIN_EXPECT(v8stp_all, true)) {                            \
+    /* if (not CCTK_BUILTIN_EXPECT(v8stp_all, true)) { */                      \
+    if (not v8stp_all) {                                                       \
       CCTK_INTEGER8_VEC vp_lo, vp_hi;                                          \
       CCTK_BOOLEAN8_VEC mask_lo, mask_hi;                                      \
       /* this is correct but slow */                                           \
@@ -675,7 +678,8 @@ inline void vec8_store_nta(CCTK_REAL8 &p, CCTK_REAL8_VEC x) {
     CCTK_REAL8_VEC x__ = (x_);                                                 \
     CCTK_REAL8 &p = p__;                                                       \
     CCTK_REAL8_VEC x = x__;                                                    \
-    if (CCTK_BUILTIN_EXPECT(v8stp_all, true)) {                                \
+    /* if (CCTK_BUILTIN_EXPECT(v8stp_all, true)) { */                          \
+    if (v8stp_all) {                                                           \
       vec8_store(p, x);                                                        \
     } else {                                                                   \
       /*                                                                       \

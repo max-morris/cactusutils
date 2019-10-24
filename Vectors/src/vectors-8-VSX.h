@@ -121,7 +121,8 @@ vec8_store_nta(CCTK_REAL8 &p, CCTK_REAL8_VEC x) {
     CCTK_REAL8 &p = p__;                                                       \
     CCTK_REAL8_VEC const x__ = (x_);                                           \
     CCTK_REAL8_VEC const x = x__;                                              \
-    if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) {                    \
+    /* if (CCTK_BUILTIN_EXPECT(v8stp_lo and v8stp_hi, true)) { */              \
+    if (v8stp_lo and v8stp_hi) {                                               \
       vec8_store(p, x);                                                        \
     } else if (v8stp_lo) {                                                     \
       (&p)[0] = vec8_elt0(x);                                                  \
@@ -134,7 +135,8 @@ vec8_store_nta(CCTK_REAL8 &p, CCTK_REAL8_VEC x) {
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_storeu_partial_(bool const lo, bool const hi, CCTK_REAL8 &p,
                      CCTK_REAL8_VEC const x) {
-  if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+  // if (CCTK_BUILTIN_EXPECT(lo and hi, true)) {
+  if (lo and hi) {
     vec8_storeu(p, x);
   } else if (lo) {
     (&p)[0] = vec8_elt(x, 0);
