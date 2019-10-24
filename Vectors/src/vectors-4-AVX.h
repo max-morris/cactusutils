@@ -197,26 +197,28 @@ vec4_store_partial_prepare_(bool &all, __m256i &mask, std::ptrdiff_t const i,
                             std::ptrdiff_t const imax) {
   all = i >= imin and i + CCTK_REAL4_VEC_SIZE - 1 < imax;
 
-// if (not CCTK_BUILTIN_EXPECT(all, true)) {
+  if (not CCTK_BUILTIN_EXPECT(all, true)) {
 #ifdef __AVX2__
-  mask = _mm256_andnot_si256(
-      _mm256_add_epi32(vec4_set1i(i - imin), vec4_seti(0, 1, 2, 3, 4, 5, 6, 7)),
-      _mm256_add_epi32(vec4_set1i(i - imax),
-                       vec4_seti(0, 1, 2, 3, 4, 5, 6, 7)));
+    mask = _mm256_andnot_si256(
+        _mm256_add_epi32(vec4_set1i(i - imin),
+                         vec4_seti(0, 1, 2, 3, 4, 5, 6, 7)),
+        _mm256_add_epi32(vec4_set1i(i - imax),
+                         vec4_seti(0, 1, 2, 3, 4, 5, 6, 7)));
 #else
-  __m128i const termlo0123 =
-      _mm_add_epi32(_mm_set1_epi32(i - imin), _mm_set_epi32(3, 2, 1, 0));
-  __m128i const termup0123 =
-      _mm_add_epi32(_mm_set1_epi32(i - imax), _mm_set_epi32(3, 2, 1, 0));
-  __m128i const term0123 = _mm_andnot_si128(termlo0123, termup0123);
-  __m128i const termlo4567 =
-      _mm_add_epi32(_mm_set1_epi32(i - imin), _mm_set_epi32(7, 6, 5, 4));
-  __m128i const termup4567 =
-      _mm_add_epi32(_mm_set1_epi32(i - imax), _mm_set_epi32(7, 6, 5, 4));
-  __m128i const term4567 = _mm_andnot_si128(termlo4567, termup4567);
-  mask = _mm256_insertf128_si256(_mm256_castsi128_si256(term0123), term4567, 1);
+    __m128i const termlo0123 =
+        _mm_add_epi32(_mm_set1_epi32(i - imin), _mm_set_epi32(3, 2, 1, 0));
+    __m128i const termup0123 =
+        _mm_add_epi32(_mm_set1_epi32(i - imax), _mm_set_epi32(3, 2, 1, 0));
+    __m128i const term0123 = _mm_andnot_si128(termlo0123, termup0123);
+    __m128i const termlo4567 =
+        _mm_add_epi32(_mm_set1_epi32(i - imin), _mm_set_epi32(7, 6, 5, 4));
+    __m128i const termup4567 =
+        _mm_add_epi32(_mm_set1_epi32(i - imax), _mm_set_epi32(7, 6, 5, 4));
+    __m128i const term4567 = _mm_andnot_si128(termlo4567, termup4567);
+    mask =
+        _mm256_insertf128_si256(_mm256_castsi128_si256(term0123), term4567, 1);
 #endif
-  // }
+  }
 }
 
 #define vec4_store_nta_partial(p, x)                                           \
@@ -252,60 +254,186 @@ vec4_storeu_partial_(bool const all, __m256i const mask, CCTK_REAL4 &p,
 // Masks indicating which vector element should be stored:
 static k4const_t const k4store_lo[9] = {
     {{
-        0, 0, 0, 0, 0, 0, 0, 0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     }},
     {{
-        ~0, 0, 0, 0, 0, 0, 0, 0,
+        ~0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     }},
     {{
-        ~0, ~0, 0, 0, 0, 0, 0, 0,
+        ~0,
+        ~0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     }},
     {{
-        ~0, ~0, ~0, 0, 0, 0, 0, 0,
+        ~0,
+        ~0,
+        ~0,
+        0,
+        0,
+        0,
+        0,
+        0,
     }},
     {{
-        ~0, ~0, ~0, ~0, 0, 0, 0, 0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        0,
+        0,
+        0,
+        0,
     }},
     {{
-        ~0, ~0, ~0, ~0, ~0, 0, 0, 0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        0,
+        0,
+        0,
     }},
     {{
-        ~0, ~0, ~0, ~0, ~0, ~0, 0, 0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        0,
+        0,
     }},
     {{
-        ~0, ~0, ~0, ~0, ~0, ~0, ~0, 0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        0,
     }},
     {{
-        ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
     }},
 };
 static k4const_t const k4store_hi[9] = {
     {{
-        0, 0, 0, 0, 0, 0, 0, 0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     }},
     {{
-        0, 0, 0, 0, 0, 0, 0, ~0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        ~0,
     }},
     {{
-        0, 0, 0, 0, 0, 0, ~0, ~0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        ~0,
+        ~0,
     }},
     {{
-        0, 0, 0, 0, 0, ~0, ~0, ~0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        ~0,
+        ~0,
+        ~0,
     }},
     {{
-        0, 0, 0, 0, ~0, ~0, ~0, ~0,
+        0,
+        0,
+        0,
+        0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
     }},
     {{
-        0, 0, 0, ~0, ~0, ~0, ~0, ~0,
+        0,
+        0,
+        0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
     }},
     {{
-        0, 0, ~0, ~0, ~0, ~0, ~0, ~0,
+        0,
+        0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
     }},
     {{
-        0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
+        0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
     }},
     {{
-        ~0, ~0, ~0, ~0, ~0, ~0, ~0, ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
+        ~0,
     }},
 };
 #if !defined(__INTEL_COMPILER) && defined(__GNUC__) && __GNUC__ == 4 &&        \
