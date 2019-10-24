@@ -192,7 +192,8 @@ vec8_store_partial_prepare_(bool &all, __m256i &mask, std::ptrdiff_t const i,
                             std::ptrdiff_t const imax) {
   all = i >= imin and i + CCTK_REAL8_VEC_SIZE - 1 < imax;
 
-  if (not CCTK_BUILTIN_EXPECT(all, true)) {
+  // if (not CCTK_BUILTIN_EXPECT(all, true)) {
+  if (not all) {
 #ifdef __AVX2__
     mask = _mm256_andnot_si256(
         _mm256_add_epi64(vec8_set1i(i - imin), vec8_seti(0, 1, 2, 3)),
