@@ -122,7 +122,8 @@ $(TARBALL_DIR)/config-Cactus.o: $(TARBALL_DIR)/config-Cactus.c
 	@echo "Creating Formaline tarball for the configuration options"
 	cd $(TARBALL_DIR) && \
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(^:%.c=%-????.c) && \
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $^
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $^ && \
+        $(RM) -f $(^:%.c=%-????.c)
 
 $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
 	$(RM) -f $(@:%.c=%-????.c)
@@ -246,7 +247,8 @@ $(TARBALL_DIR)/thorn-%.o: $(TARBALL_DIR)/thorn-%.c
 	cd $(TARBALL_DIR) && \
 	$(RM) -f $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.o)) && \
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.c)) && \
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^) && \
+        $(RM) -f $(^:%.c=%-????.c)
 
 $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
 	cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c)
