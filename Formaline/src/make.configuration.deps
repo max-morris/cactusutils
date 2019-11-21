@@ -108,7 +108,7 @@ $(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/fles
 	$(FORMALINE_BIN_DIR)/makemetablob.pl CactusConfig Cactus $(notdir $(THORNS)) > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/cactus-meta.c $(TARBALL_DIR)/cactus-meta.o
+.SECONDARY: $(TARBALL_DIR)/cactus-meta.c $(TARBALL_DIR)/cactus-meta.o
 
 
 
@@ -173,7 +173,8 @@ $(TARBALL_DIR)/config-Cactus.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files $(TARBALL_DIR)/config-Cactus.tar.gz $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/config-Cactus.o
+.PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files $(TARBALL_DIR)/config-Cactus.tar.gz
+.SECONDARY: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/config-Cactus.o
 
 
 
@@ -232,7 +233,8 @@ $(TARBALL_DIR)/flesh-Cactus.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/flesh-Cactus.ccldeps $(TARBALL_DIR)/flesh-Cactus.files $(TARBALL_DIR)/flesh-Cactus.tar.gz $(TARBALL_DIR)/flesh-Cactus.c $(TARBALL_DIR)/flesh-Cactus.o
+.PRECIOUS: $(TARBALL_DIR)/flesh-Cactus.ccldeps $(TARBALL_DIR)/flesh-Cactus.files $(TARBALL_DIR)/flesh-Cactus.tar.gz
+.SECONDARY: $(TARBALL_DIR)/flesh-Cactus.c $(TARBALL_DIR)/flesh-Cactus.o
 
 
 
@@ -292,7 +294,8 @@ $(TARBALL_DIR)/thorn-%.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/thorn-%.ccldeps $(TARBALL_DIR)/thorn-%.files $(TARBALL_DIR)/thorn-%.tar.gz $(TARBALL_DIR)/thorn-%.c $(TARBALL_DIR)/thorn-%.o
+.PRECIOUS: $(TARBALL_DIR)/thorn-%.ccldeps $(TARBALL_DIR)/thorn-%.files $(TARBALL_DIR)/thorn-%.tar.gz
+.SECONDARY: $(TARBALL_DIR)/thorn-%.c $(TARBALL_DIR)/thorn-%.o
 
 
 
