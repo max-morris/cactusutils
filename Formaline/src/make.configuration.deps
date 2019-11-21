@@ -131,8 +131,7 @@ $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.tar.gz $(CCTK_HOME)
 
 $(TARBALL_DIR)/config-Cactus.tar.gz: $(TARBALL_DIR)/config-Cactus.files
 	cd $(CACTUS_CONFIGS_DIR) && \
-	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
-	mv $@.tmp $@
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for the configuration options
 # is only updated if the flesh is actually recompiled. This does not
@@ -173,8 +172,9 @@ $(TARBALL_DIR)/config-Cactus.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files $(TARBALL_DIR)/config-Cactus.tar.gz
+.PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files
 .SECONDARY: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/config-Cactus.o
+.INTERMEDIATE: $(TARBALL_DIR)/config-Cactus.tar.gz
 
 
 
@@ -197,8 +197,7 @@ $(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.tar.gz $(CCTK_HOME)/a
 
 $(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
-	mv $@.tmp $@
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for the flesh is only updated
 # if the flesh is actually recompiled.  This does not catch changes to
@@ -233,8 +232,9 @@ $(TARBALL_DIR)/flesh-Cactus.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/flesh-Cactus.ccldeps $(TARBALL_DIR)/flesh-Cactus.files $(TARBALL_DIR)/flesh-Cactus.tar.gz
+.PRECIOUS: $(TARBALL_DIR)/flesh-Cactus.ccldeps $(TARBALL_DIR)/flesh-Cactus.files
 .SECONDARY: $(TARBALL_DIR)/flesh-Cactus.c $(TARBALL_DIR)/flesh-Cactus.o
+.INTERMEDIATE: $(TARBALL_DIR)/flesh-Cactus.tar.gz
 
 
 
@@ -258,8 +258,7 @@ $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangement
 
 $(TARBALL_DIR)/thorn-%.tar.gz: $(TARBALL_DIR)/thorn-%.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
-	mv $@.tmp $@
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
@@ -294,8 +293,9 @@ $(TARBALL_DIR)/thorn-%.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/thorn-%.ccldeps $(TARBALL_DIR)/thorn-%.files $(TARBALL_DIR)/thorn-%.tar.gz
+.PRECIOUS: $(TARBALL_DIR)/thorn-%.ccldeps $(TARBALL_DIR)/thorn-%.files
 .SECONDARY: $(TARBALL_DIR)/thorn-%.c $(TARBALL_DIR)/thorn-%.o
+.INTERMEDIATE: $(TARBALL_DIR)/thorn-%.tar.gz
 
 
 
