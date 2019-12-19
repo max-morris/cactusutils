@@ -14,10 +14,10 @@
 #include <cctk_Schedule.h>
 
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -506,10 +506,6 @@ void PrintTopTimers(CCTK_ARGUMENTS) {
   printf("%s\n", sep.c_str());
 }
 
-// Note: Timer names are truncated to 100 characters for simplicity
-const int TIMERNAME_LENGTH = 101; // this includes the terminating NUL character
-typedef array<char, TIMERNAME_LENGTH> timername_t;
-
 // Collect timer information onto the root processor
 int CollectTimerInfo(const cGH *restrict cctkGH, timer_stats &timers) {
   DECLARE_CCTK_PARAMETERS;
@@ -536,15 +532,34 @@ int CollectTimerInfo(const cGH *restrict cctkGH, timer_stats &timers) {
       total_ntimers += all_ntimers[p];
   }
 
+  // Determine longest name of any timer
+  int max_timername_length = int(strlen("DESTROYED TIMER 12345") + 1);
+  for (int n = 0; n < my_ntimers; ++n) {
+    const char *name = CCTK_TimerName(n);
+    if (name) {
+      max_timername_length = std::max(max_timername_length,
+                                      int(strlen(name) + 1));
+    }
+  }
+#ifdef CCTK_MPI
+  {
+    // TODO: could use MPI-2's MPI_IN_PLACE For sendbuf
+    int all_max_timername_length;
+    MPI_Allreduce(&max_timername_length, &all_max_timername_length, 1, MPI_INT,
+                  MPI_MAX, MPI_COMM_WORLD);
+    max_timername_length = all_max_timername_length;
+  }
+#endif
+
   // Determine local timer names and their values
-  vector<timername_t> my_timernames(my_ntimers);
+  vector<char> my_timernames(my_ntimers*max_timername_length);
   for (int n = 0; n < my_ntimers; ++n) {
     const char *name = CCTK_TimerName(n);
     if (name == nullptr)
-      snprintf(&my_timernames[n][0], TIMERNAME_LENGTH, "DESTROYED TIMER %5d",
+      snprintf(&my_timernames[n*max_timername_length], max_timername_length, "DESTROYED TIMER %5d",
                n);
     else
-      snprintf(&my_timernames[n][0], TIMERNAME_LENGTH, "%s", name);
+      snprintf(&my_timernames[n*max_timername_length], max_timername_length, "%s", name);
   }
   vector<double> my_timervalues(my_ntimers);
   {
@@ -568,10 +583,10 @@ int CollectTimerInfo(const cGH *restrict cctkGH, timer_stats &timers) {
   }
 
   // Gather timer names and values from each process
-  vector<timername_t> all_timernames;
+  vector<char> all_timernames;
   vector<double> all_timervalues;
   if (myproc == 0) {
-    all_timernames.resize(total_ntimers);
+    all_timernames.resize(total_ntimers*max_timername_length);
     all_timervalues.resize(total_ntimers);
   }
   vector<int> name_displacements, value_displacements, name_counts;
@@ -581,16 +596,16 @@ int CollectTimerInfo(const cGH *restrict cctkGH, timer_stats &timers) {
     name_counts.resize(nprocs);
     name_displacements[0] = 0;
     value_displacements[0] = 0;
-    name_counts[0] = all_ntimers[0] * TIMERNAME_LENGTH;
+    name_counts[0] = all_ntimers[0] * max_timername_length;
     for (int p = 1; p < nprocs; ++p) {
       name_displacements[p] =
-          name_displacements[p - 1] + all_ntimers[p - 1] * TIMERNAME_LENGTH;
+          name_displacements[p - 1] + all_ntimers[p - 1] * max_timername_length;
       value_displacements[p] = value_displacements[p - 1] + all_ntimers[p - 1];
-      name_counts[p] = all_ntimers[p] * TIMERNAME_LENGTH;
+      name_counts[p] = all_ntimers[p] * max_timername_length;
     }
   }
 #ifdef CCTK_MPI
-  MPI_Gatherv(&my_timernames[0], my_ntimers * TIMERNAME_LENGTH, MPI_CHAR,
+  MPI_Gatherv(&my_timernames[0], my_ntimers * max_timername_length, MPI_CHAR,
               &all_timernames[0], &name_counts[0], &name_displacements[0],
               MPI_CHAR, 0, MPI_COMM_WORLD);
   MPI_Gatherv(&my_timervalues[0], my_ntimers, MPI_DOUBLE, &all_timervalues[0],
@@ -615,10 +630,14 @@ int CollectTimerInfo(const cGH *restrict cctkGH, timer_stats &timers) {
   for (int i = 0; i < total_ntimers; ++i)
     sort_index[i] = i;
   sort(sort_index.begin(), sort_index.end(),
-       [&](int ia, int ib) { return all_timernames[ia] < all_timernames[ib]; });
+       [&](int ia, int ib) {
+         return strcmp(&all_timernames[ia*max_timername_length],
+                       &all_timernames[ib*max_timername_length]) < 0;
+  });
   sort_index.erase(
       unique(sort_index.begin(), sort_index.end(), [&](int ia, int ib) {
-        return all_timernames[ia] == all_timernames[ib];
+        return strcmp(&all_timernames[ia*max_timername_length],
+                      &all_timernames[ib*max_timername_length]) == 0;
       }), sort_index.end());
   int unique_timers = sort_index.size();
 
@@ -629,7 +648,7 @@ int CollectTimerInfo(const cGH *restrict cctkGH, timer_stats &timers) {
   timers.secs_min.resize(timers.ntimers);
   timers.secs_max.resize(timers.ntimers);
   for (int n = 0; n < timers.ntimers; ++n) {
-    timers.names[n] = &all_timernames[sort_index[n]][0];
+    timers.names[n] = &all_timernames[sort_index[n]*max_timername_length];
 
     // Reduce timer values
     CCTK_REAL count = 0.0;
@@ -638,11 +657,11 @@ int CollectTimerInfo(const cGH *restrict cctkGH, timer_stats &timers) {
     CCTK_REAL maxval = 0.0;
     // Reduce over all processes
     for (int p = 0; p < nprocs; ++p) {
-      int name_offset = name_displacements[p] / TIMERNAME_LENGTH;
+      int name_offset = name_displacements[p] / max_timername_length;
       // Look for this timer
       // TODO: use a map
       for (int i = 0; i < all_ntimers[p]; ++i) {
-        if (timers.names[n] == &all_timernames[name_offset + i][0]) {
+        if (timers.names[n] == &all_timernames[(name_offset + i)*max_timername_length]) {
           // Found the timer
           CCTK_REAL value = all_timervalues[value_displacements[p] + i];
           count += 1;

@@ -5,6 +5,7 @@ if (output_source)
   SCHEDULE Formaline_OutputSource AT wragh
   {
     LANG: C
+    OPTIONS: meta
   } "Output Cactus source tree"
 }
 

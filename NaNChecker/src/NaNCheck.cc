@@ -625,17 +625,7 @@ void CHECK_DATA(const cctk_type *_data, int nelems,
 /* now loop over all elements and check against NaN's */
 #pragma omp parallel for schedule(dynamic)
   for (int _i = 0; _i < nelems; _i++) {
-    bool is_inside = true;
-    int amended_index = _i;
-    if (fp_type == 2)
-      amended_index /= 2;
-    for (int d = 0; d < gdata.dim; ++d) {
-      int dir_index = amended_index % gdata.ash[d];
-      is_inside &= dir_index < gdata.lsh[d];
-      amended_index /= gdata.ash[d];
-    }
-    assert(amended_index == 0);
-    if (is_inside && (!CarpetWeights || CarpetWeights[_i] > 0.0)) {
+    if (!CarpetWeights || CarpetWeights[_i] > 0.0) {
 
       /* We call the C wrapper functions instead of the autoconfigured
          macros below, because some C++ compilers optimise away calls
@@ -649,14 +639,30 @@ void CHECK_DATA(const cctk_type *_data, int nelems,
       if (found_problem)
 #pragma omp critical
       {
-        nans_found++;
-        if (info->action_if_found &&
-            (info->report_max < 0 || nans_found <= info->report_max)) {
-          PrintWarning(found_nan ? "NaN" : "Inf", info->verbose, _i, reflevel,
-                       map, cctk_iteration, fp_type, coords, fullname, &gdata);
+        // checking whether we are inside is somewhat expensive due to the
+        // integer divisions, so doing it only for found issues reduces the
+        // number of divisions from nelems to something like
+        // gdata.ash-gdata.lsh if all "outside" points are NaN
+        bool is_inside = true;
+        int amended_index = _i;
+        if (fp_type == 2)
+          amended_index /= 2;
+        for (int d = 0; d < gdata.dim; ++d) {
+          int dir_index = amended_index % gdata.ash[d];
+          is_inside &= dir_index < gdata.lsh[d];
+          amended_index /= gdata.ash[d];
         }
-        if (info->NaNmask && gtype == CCTK_GF) {
-          info->NaNmask[_i] |= 1 << info->bitmask;
+        assert(amended_index == 0);
+        if (is_inside) {
+          nans_found++;
+          if (info->action_if_found &&
+              (info->report_max < 0 || nans_found <= info->report_max)) {
+            PrintWarning(found_nan ? "NaN" : "Inf", info->verbose, _i, reflevel,
+                         map, cctk_iteration, fp_type, coords, fullname, &gdata);
+          }
+          if (info->NaNmask && gtype == CCTK_GF) {
+            info->NaNmask[_i] |= 1 << info->bitmask;
+          }
         }
       }
     }

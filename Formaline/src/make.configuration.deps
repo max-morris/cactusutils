@@ -9,10 +9,10 @@
 # indicates that files changed while reading, which can happen if the
 # atime changed. (An atime change means that another program read the
 # file, which is inconsequential.)
-IS_GNUTAR = $(shell $(TAR) --version 2>/dev/null | grep -q 'GNU tar' && echo "1" || echo "0")
+IS_GNUTAR := $(shell $(TAR) --version 2>/dev/null | grep -q 'GNU tar' && echo "1" || echo "0")
 
 # Does tr support -C, or should we use -c instead?
-TR_C = $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
+TR_C := $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
 
 
 
@@ -69,8 +69,7 @@ $(FRM-LIB): $(FRM-OBJS)
 #  script gethostname.pl has been copied to the scratch directory)
 # (generates also $(TOP)/CONFIG-ID)
 .PRECIOUS: $(TOP)/BUILD-ID
-.PHONY: $(TOP)/BUILD-ID
-$(TOP)/BUILD-ID: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)Formaline$(LIBNAME_SUFFIX) | $(FORMALINE-UTILS)
+$(TOP)/BUILD-ID: $(TARBALL_DIR)/cactus-meta.c | $(FORMALINE-UTILS)
 	config=`echo "$(EXE:cactus_%=%)" | $(TR_C) -d '[:alnum:]+-._]'` && \
 	hostname=`$(FORMALINE_BIN_DIR)/gethostname.pl` && \
 	user="$$USER" && \
