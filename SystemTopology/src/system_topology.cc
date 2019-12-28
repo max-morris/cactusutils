@@ -604,8 +604,11 @@ void node_topology_info_t::load(hwloc_topology_t const &topology,
 #if (HWLOC_API_VERSION < 0x00020000)
     assert(cache_obj->type == HWLOC_OBJ_CACHE);
 #else
-    assert(hwloc_compare_types(cache_obj->type, HWLOC_OBJ_L5CACHE) <= 0);
-    assert(hwloc_compare_types(cache_obj->type, HWLOC_OBJ_L1CACHE) >= 0);
+    assert(cache_obj->type == HWLOC_OBJ_L5CACHE ||
+           cache_obj->type == HWLOC_OBJ_L4CACHE ||
+           cache_obj->type == HWLOC_OBJ_L3CACHE ||
+           cache_obj->type == HWLOC_OBJ_L2CACHE ||
+           cache_obj->type == HWLOC_OBJ_L1CACHE);
 #endif
     hwloc_obj_attr_u::hwloc_cache_attr_s const &cache_attr =
         cache_obj->attr->cache;
