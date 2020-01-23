@@ -1,3 +1,14 @@
+// fudge CCTK_REAL_PRECISION to 4 or 8 depending on the vector type we want to
+// test
+#define _CCTK_TYPES_H_
+#include "cctk_Config.h"
+#undef CCTK_REAL_PRECISION_16
+#undef CCTK_REAL_PRECISION_8
+#undef CCTK_REAL_PRECISION_4
+#define CCTK_REAL_PRECISION_4 1
+#undef _CCTK_TYPES_H_
+#include "cctk_Types.h"
+
 #include <cctk.h>
 #include <cctk_Arguments.h>
 #include <cctk_Parameters.h>
