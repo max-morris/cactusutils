@@ -119,6 +119,8 @@ void cxxtests()
   CCTK_REAL y[CCTK_REAL_VEC_SIZE]; // small and positive
   CCTK_REAL z[CCTK_REAL_VEC_SIZE]; // >=1
 
+  int n = 9; // some integer, not 2 to avoid optimization in compiler
+
   for (int i = 0; i < CCTK_REAL_VEC_SIZE; i++) {
     a[i] = (i + 1) * 1.23456789;
     b[i] = -(i + 1) * 9.87654321;
@@ -276,6 +278,7 @@ void cxxtests()
   VECTEST("kfnabs", kfnabs(xv), -fabs(x[i]));
   VECTEST("klog", klog(yv), log(y[i]));
   VECTEST("kpow", kpow(yv, x[0]), pow(y[i], x[0]));
+  VECTEST("kpown", kpown(yv, n), pow(y[i], n));
   VECTEST("ksin", ksin(xv), sin(x[i]));
   VECTEST("ksinh", ksinh(xv), sinh(x[i]));
   VECTEST("ksgn", ksgn(xv), my_sgn(x[i]));
