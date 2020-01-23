@@ -328,7 +328,7 @@ vec4_store_nta_partial_hi(CCTK_REAL4 &p, CCTK_REAL4_VEC const x,
   }
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
-vec4_store_nta_partial_hi(CCTK_REAL4 &p, CCTK_REAL4_VEC const x,
+vec4_store_nta_partial_mid(CCTK_REAL4 &p, CCTK_REAL4_VEC const x,
                           std::ptrdiff_t const nlo, std::ptrdiff_t const nhi) {
   // these cases fall through
   switch (nhi) {
