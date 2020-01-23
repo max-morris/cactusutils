@@ -61,7 +61,7 @@ vec_static_assert(sizeof(CCTK_REAL4_VEC) ==
 
 // Integer and boolean types corresponding to this real type
 typedef CCTK_INT4 CCTK_INTEGER4;
-typedef CCTK_REAL4 CCTK_BOOLEAN4;
+typedef CCTK_INT4 CCTK_BOOLEAN4;
 
 // These macros are undefined at the end of this file -- use them only
 // within functions, not within macros that are exported
