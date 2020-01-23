@@ -1,7 +1,7 @@
-#undef __AVX__
-//#undef __knl__
+//#undef __AVX__
+#undef __knl__
 #undef __MIC__
-//#undef __AVX512F__
+#undef __AVX512F__
 #undef __AVX512ER__
 #undef __SSE2__
 #undef __SSE__
