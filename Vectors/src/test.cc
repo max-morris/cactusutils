@@ -4,6 +4,7 @@
 
 #include "test-vectors.h"
 
+#define VECTOR_REAL_PRECISION CCTK_REAL_PRECISION
 #include "test.hcc"
 
 namespace Vectors {
