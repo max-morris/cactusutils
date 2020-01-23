@@ -21,12 +21,14 @@
 
 namespace Vectors {
 
-void Test_4_Altivec(CCTK_ARGUMENTS) {
+bool Test_4_Altivec(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __ALTIVEC__ // Power Altivec
-  Test(CCTK_PASS_CTOC, "4-AltiVec");
+  return Test(CCTK_PASS_CTOC, "4-AltiVec");
+#else
+  return true;
 #endif
 }
 

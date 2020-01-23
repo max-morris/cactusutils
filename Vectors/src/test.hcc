@@ -100,7 +100,7 @@ void cxxtests()
 }
 
  CCTK_ATTRIBUTE_UNUSED
- void Test(CCTK_ARGUMENTS, const string veceng) {
+ bool Test(CCTK_ARGUMENTS, const string veceng) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
@@ -345,5 +345,7 @@ void cxxtests()
     CCTK_VWARN(CCTK_WARN_ALERT, "Failed %d correctness tests",
                numtests - passed);
   }
+
+  return passed == numtests;
 }
 } // namespace

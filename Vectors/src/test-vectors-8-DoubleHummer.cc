@@ -21,12 +21,14 @@
 
 namespace Vectors {
 
-void Test_8_DoubleHummer(CCTK_ARGUMENTS) {
+bool Test_8_DoubleHummer(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
 #if defined _ARCH_450D // Blue Gene/P Double Hummer
-  Test(CCTK_PASS_CTOC, "8-DoubleHummer");
+  return Test(CCTK_PASS_CTOC, "8-DoubleHummer");
+#else
+  return true;
 #endif
 }
 

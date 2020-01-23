@@ -3,3 +3,5 @@
 IMPLEMENTS: Vectors
 
 INCLUDE HEADER: vectors.h IN vectors.h
+
+CCTK_INT all_passed TYPE=SCALAR tags='checkpoint="no"' "all engines passed their tests"

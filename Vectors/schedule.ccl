@@ -1,5 +1,7 @@
 # Schedule definitions for thorn Vectors
 
+STORAGE: all_passed
+
 schedule Vectors_Startup at CCTK_STARTUP
 {
   LANG: C

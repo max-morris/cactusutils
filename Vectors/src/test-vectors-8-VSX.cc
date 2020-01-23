@@ -21,12 +21,14 @@
 
 namespace Vectors {
 
-void Test_8_VSX(CCTK_ARGUMENTS) {
+bool Test_8_VSX(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __ALTIVEC__ && defined _ARCH_PWR7 // Power VSX
-  Test(CCTK_PASS_CTOC, "8-VSX");
+  return Test(CCTK_PASS_CTOC, "8-VSX");
+#else
+  return true;
 #endif
 }
 

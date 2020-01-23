@@ -21,12 +21,14 @@
 
 namespace Vectors {
 
-void Test_8_MIC(CCTK_ARGUMENTS) {
+bool Test_8_MIC(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
 #if (defined __MIC__ || defined __knl__) && !defined DISABLE_AVX512 // Intel MIC
-  Test(CCTK_PASS_CTOC, "8-MIC");
+  return Test(CCTK_PASS_CTOC, "8-MIC");
+#else
+  return true;
 #endif
 }
 

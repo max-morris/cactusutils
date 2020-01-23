@@ -21,11 +21,11 @@
 
 namespace Vectors {
 
-void Test_4_default(CCTK_ARGUMENTS) {
+bool Test_4_default(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  Test(CCTK_PASS_CTOC, "4-default");
+  return Test(CCTK_PASS_CTOC, "4-default");
 }
 
 }

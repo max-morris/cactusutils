@@ -21,12 +21,14 @@
 
 namespace Vectors {
 
-void Test_8_QPX(CCTK_ARGUMENTS) {
+bool Test_8_QPX(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __bgq__ && defined __VECTOR4DOUBLE__ // Blue Gene/Q QPX
-  Test(CCTK_PASS_CTOC, "8-QPX");
+  return Test(CCTK_PASS_CTOC, "8-QPX");
+#else
+  return true;
 #endif
 }
 

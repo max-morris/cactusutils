@@ -21,12 +21,14 @@
 
 namespace Vectors {
 
-void Test_4_SSE(CCTK_ARGUMENTS) {
+bool Test_4_SSE(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __SSE__ // Intel SSE
-  Test(CCTK_PASS_CTOC, "4-SSE");
+  return Test(CCTK_PASS_CTOC, "4-SSE");
+#else
+  return true;
 #endif
 }
 

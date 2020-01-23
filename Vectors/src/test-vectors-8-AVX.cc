@@ -21,12 +21,14 @@
 
 namespace Vectors {
 
-void Test_8_AVX(CCTK_ARGUMENTS) {
+bool Test_8_AVX(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __AVX__ && !defined DISABLE_AVX // Intel AVX
-  Test(CCTK_PASS_CTOC, "8-AVX");
+  return Test(CCTK_PASS_CTOC, "8-AVX");
+#else
+  return true;
 #endif
 }
 
