@@ -25,7 +25,7 @@ bool Test_4_SSE(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __SSE__ // Intel SSE
-  return Test(CCTK_PASS_CTOC, "4-SSE");
+  return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;
 #endif

@@ -25,7 +25,7 @@ bool Test_8_MIC(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
 
 #if (defined __MIC__ || defined __knl__) && !defined DISABLE_AVX512 // Intel MIC
-  return Test(CCTK_PASS_CTOC, "8-MIC");
+  return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;
 #endif

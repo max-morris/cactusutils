@@ -25,7 +25,7 @@ bool Test_8_SSE2(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __SSE2__ // Intel SSE2
-  return Test(CCTK_PASS_CTOC, "8-SSE2");
+  return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;
 #endif

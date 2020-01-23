@@ -25,7 +25,7 @@ bool Test_8_AVX512(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
 
 #if (defined __knl__ || defined __AVX512F__) && !defined DISABLE_AVX512 // Intel AVX512
-  return Test(CCTK_PASS_CTOC, "8-AVX512");
+  return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;
 #endif

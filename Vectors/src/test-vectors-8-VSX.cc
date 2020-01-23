@@ -25,7 +25,7 @@ bool Test_8_VSX(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __ALTIVEC__ && defined _ARCH_PWR7 // Power VSX
-  return Test(CCTK_PASS_CTOC, "8-VSX");
+  return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;
 #endif

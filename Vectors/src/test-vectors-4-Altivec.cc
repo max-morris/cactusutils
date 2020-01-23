@@ -25,7 +25,7 @@ bool Test_4_Altivec(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __ALTIVEC__ // Power Altivec
-  return Test(CCTK_PASS_CTOC, "4-AltiVec");
+  return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;
 #endif

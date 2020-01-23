@@ -25,7 +25,7 @@ bool Test_4_AVX(CCTK_ARGUMENTS) {
   DECLARE_CCTK_PARAMETERS;
 
 #if defined __AVX__ && !defined DISABLE_AVX // Intel AVX
-  return Test(CCTK_PASS_CTOC, "4-AVX");
+  return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;
 #endif

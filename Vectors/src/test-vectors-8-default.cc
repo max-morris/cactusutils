@@ -24,7 +24,7 @@ bool Test_8_default(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-  return Test(CCTK_PASS_CTOC, "8-default");
+  return Test(CCTK_PASS_CTOC, vec_architecture);
 }
 
 }
