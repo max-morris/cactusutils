@@ -3,3 +3,9 @@
 BOOLEAN verbose "Verbose output during vector tests"
 {
 } "no"
+
+BOOLEAN test_all "test all available vector engines"
+{
+ "yes" :: "test all engines supported by the current CPU"
+ "no" :: "test only default engine for current CPU"
+} "no"
