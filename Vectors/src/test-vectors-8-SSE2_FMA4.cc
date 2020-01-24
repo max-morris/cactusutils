@@ -6,7 +6,7 @@
 //#undef __SSE2__
 #undef __SSE4_1__
 #undef __SSE4A__
-#undef __FMA4__
+//#undef __FMA4__
 #undef __SSE__
 #undef __bgq__
 #undef __VECTOR4DOUBLE__
@@ -23,11 +23,11 @@
 
 namespace Vectors {
 
-bool Test_8_SSE2(CCTK_ARGUMENTS) {
+bool Test_8_SSE2_SSE4A(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-#if defined __SSE2__ // Intel SSE2
+#if defined __SSE2__ && defined __FMA4__ // Intel SSE2
   return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;

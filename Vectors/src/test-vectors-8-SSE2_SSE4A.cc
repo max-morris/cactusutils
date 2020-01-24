@@ -5,7 +5,7 @@
 #undef __AVX512ER__
 //#undef __SSE2__
 #undef __SSE4_1__
-#undef __SSE4A__
+//#undef __SSE4A__
 #undef __FMA4__
 #undef __SSE__
 #undef __bgq__
@@ -23,11 +23,11 @@
 
 namespace Vectors {
 
-bool Test_8_SSE2(CCTK_ARGUMENTS) {
+bool Test_8_SSE2_FMA4(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-#if defined __SSE2__ // Intel SSE2
+#if defined __SSE2__ && defined __SSE4A__ // Intel SSE2
   return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;

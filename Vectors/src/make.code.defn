@@ -14,6 +14,9 @@ test-vectors-8-DoubleHummer.cc \
 test-vectors-8-MIC.cc \
 test-vectors-8-QPX.cc \
 test-vectors-8-SSE2.cc \
+test-vectors-8-SSE2_SSE41.cc \
+test-vectors-8-SSE2_SSE4A.cc \
+test-vectors-8-SSE2_FMA4.cc \
 test-vectors-8-VSX.cc \
 test-vectors-8-default.cc \
 $(NULL)
