@@ -24,6 +24,7 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
     passed = passed && Test_8_AVX512(CCTK_PASS_CTOC);
     passed = passed && Test_8_MIC(CCTK_PASS_CTOC);
     passed = passed && Test_8_AVX(CCTK_PASS_CTOC);
+    passed = passed && Test_8_AVX2(CCTK_PASS_CTOC);
     passed = passed && Test_8_SSE2(CCTK_PASS_CTOC);
     passed = passed && Test_8_QPX(CCTK_PASS_CTOC);
     passed = passed && Test_8_VSX(CCTK_PASS_CTOC);

@@ -1,5 +1,5 @@
 //#undef __AVX__
-#undef __AVX2__
+//#undef __AVX2__
 #undef __knl__
 #undef __MIC__
 #undef __AVX512F__
@@ -21,11 +21,11 @@
 
 namespace Vectors {
 
-bool Test_8_AVX(CCTK_ARGUMENTS) {
+bool Test_8_AVX2(CCTK_ARGUMENTS) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
-#if defined __AVX__ && !defined DISABLE_AVX // Intel AVX
+#if defined __AVX__ && defined __AVX2__ && !defined DISABLE_AVX // Intel AVX
   return Test(CCTK_PASS_CTOC, vec_architecture);
 #else
   return true;

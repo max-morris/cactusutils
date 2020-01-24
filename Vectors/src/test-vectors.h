@@ -8,6 +8,7 @@ bool Test_4_Altivec(CCTK_ARGUMENTS);
 bool Test_4_SSE(CCTK_ARGUMENTS);
 bool Test_4_default(CCTK_ARGUMENTS);
 bool Test_8_AVX(CCTK_ARGUMENTS);
+bool Test_8_AVX2(CCTK_ARGUMENTS);
 bool Test_8_AVX512(CCTK_ARGUMENTS);
 bool Test_8_DoubleHummer(CCTK_ARGUMENTS);
 bool Test_8_MIC(CCTK_ARGUMENTS);
