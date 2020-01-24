@@ -34,6 +34,7 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
     passed = passed && Test_4_SSE_FMA4(CCTK_PASS_CTOC);
     passed = passed && Test_4_Altivec(CCTK_PASS_CTOC);
     passed = passed && Test_8_AVX512(CCTK_PASS_CTOC);
+    passed = passed && Test_8_AVX512_AVX512ER(CCTK_PASS_CTOC);
     passed = passed && Test_8_MIC(CCTK_PASS_CTOC);
     passed = passed && Test_8_AVX(CCTK_PASS_CTOC);
     // there's technically AVX+FMA4 and AVX+AVX2+FMA4 but I am only going to
