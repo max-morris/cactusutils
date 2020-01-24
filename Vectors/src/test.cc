@@ -17,6 +17,7 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
   passed = passed && Test(CCTK_PASS_CTOC, "");
 
   if(test_all) {
+#if VECTORISE
     // the Test_N_XXX functions are no-ops if the engine is not avaiable
     passed = passed && Test_4_AVX(CCTK_PASS_CTOC);
     passed = passed && Test_4_SSE(CCTK_PASS_CTOC);
@@ -36,6 +37,7 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
     // Default implementation, do not vectorise
     passed = passed && Test_4_default(CCTK_PASS_CTOC);
     passed = passed && Test_8_default(CCTK_PASS_CTOC);
+#endif
   }
 
   *all_passed = CCTK_INT(passed);
