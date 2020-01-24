@@ -4,6 +4,8 @@
 
 namespace Vectors {
 bool Test_4_AVX(CCTK_ARGUMENTS);
+bool Test_4_AVX_AVX2(CCTK_ARGUMENTS);
+bool Test_4_AVX_FMA4(CCTK_ARGUMENTS);
 bool Test_4_Altivec(CCTK_ARGUMENTS);
 bool Test_4_SSE(CCTK_ARGUMENTS);
 bool Test_4_SSE_SSE41(CCTK_ARGUMENTS);

@@ -3,6 +3,8 @@
 # Source files in this directory
 SRCS = vectors.cc test.cc \
 test-vectors-4-AVX.cc \
+test-vectors-4-AVX_AVX2.cc \
+test-vectors-4-AVX_FMA4.cc \
 test-vectors-4-Altivec.cc \
 test-vectors-4-SSE.cc \
 test-vectors-4-SSE_SSE41.cc \

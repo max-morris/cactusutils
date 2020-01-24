@@ -20,6 +20,11 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
 #if VECTORISE
     // the Test_N_XXX functions are no-ops if the engine is not avaiable
     passed = passed && Test_4_AVX(CCTK_PASS_CTOC);
+    // there's technically AVX+FMA4 and AVX+AVX2+FMA4 but I am only going to
+    // test for FMA4 once since they do not form a tensor product in the source
+    // file
+    passed = passed && Test_4_AVX_AVX2(CCTK_PASS_CTOC);
+    passed = passed && Test_4_AVX_FMA4(CCTK_PASS_CTOC);
     passed = passed && Test_4_SSE(CCTK_PASS_CTOC);
     // there's technically SSE+FMA4 and SSE+SSE41 etc but I am only going to
     // test for them once since they do not form a tensor product in the source
