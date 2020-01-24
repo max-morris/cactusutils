@@ -1,5 +1,6 @@
 //#undef __AVX__
 //#undef __AVX2__
+#undef __FMA4__
 #undef __knl__
 #undef __MIC__
 #undef __AVX512F__

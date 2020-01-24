@@ -10,6 +10,7 @@ test-vectors-8-AVX.cc \
 test-vectors-8-AVX2.cc \
 test-vectors-8-AVX512.cc \
 test-vectors-8-DoubleHummer.cc \
+test-vectors-8-FMA4.cc \
 test-vectors-8-MIC.cc \
 test-vectors-8-QPX.cc \
 test-vectors-8-SSE2.cc \
