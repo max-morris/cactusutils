@@ -25,10 +25,10 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
     passed = passed && Test_8_AVX512(CCTK_PASS_CTOC);
     passed = passed && Test_8_MIC(CCTK_PASS_CTOC);
     passed = passed && Test_8_AVX(CCTK_PASS_CTOC);
-    passed = passed && Test_8_AVX2(CCTK_PASS_CTOC);
+    passed = passed && Test_8_AVX_AVX2(CCTK_PASS_CTOC);
     // there's technically AVX+FMA4 and AVX2+FMA4 but I am only going to test
     // for FMA4 once since they do not form a tensor product in the source file
-    passed = passed && Test_8_FMA4(CCTK_PASS_CTOC);
+    passed = passed && Test_8_AVX_FMA4(CCTK_PASS_CTOC);
     passed = passed && Test_8_SSE2(CCTK_PASS_CTOC);
     passed = passed && Test_8_QPX(CCTK_PASS_CTOC);
     passed = passed && Test_8_VSX(CCTK_PASS_CTOC);
