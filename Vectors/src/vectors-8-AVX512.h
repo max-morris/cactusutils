@@ -8,7 +8,13 @@
 
 #include <immintrin.h>
 
-#define vec8_architecture "AVX512 (64-bit precision)"
+#ifdef __AVX512ER__
+#define vec8_architecture_AVX512ER "+AVX512ER"
+#else
+#define vec8_architecture_AVX512ER ""
+#endif
+#define vec8_architecture                                                      \
+  "AVX512" vec8_architecture_AVX512ER " (64-bit precision)"
 
 // Vector type corresponding to CCTK_REAL
 typedef __m512d CCTK_REAL8_VEC;
