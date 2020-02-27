@@ -108,7 +108,7 @@ $(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/fles
 	$(FORMALINE_BIN_DIR)/makemetablob.pl CactusConfig Cactus $(notdir $(THORNS)) > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/cactus-meta.c $(TARBALL_DIR)/cactus-meta.o
+.SECONDARY: $(TARBALL_DIR)/cactus-meta.c $(TARBALL_DIR)/cactus-meta.o
 
 
 
@@ -122,7 +122,8 @@ $(TARBALL_DIR)/config-Cactus.o: $(TARBALL_DIR)/config-Cactus.c
 	@echo "Creating Formaline tarball for the configuration options"
 	cd $(TARBALL_DIR) && \
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(^:%.c=%-????.c) && \
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $^
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $^ && \
+        $(RM) -f $(^:%.c=%-????.c)
 
 $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
 	$(RM) -f $(@:%.c=%-????.c)
@@ -130,8 +131,7 @@ $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.tar.gz $(CCTK_HOME)
 
 $(TARBALL_DIR)/config-Cactus.tar.gz: $(TARBALL_DIR)/config-Cactus.files
 	cd $(CACTUS_CONFIGS_DIR) && \
-	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
-	mv $@.tmp $@
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for the configuration options
 # is only updated if the flesh is actually recompiled. This does not
@@ -172,7 +172,9 @@ $(TARBALL_DIR)/config-Cactus.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files $(TARBALL_DIR)/config-Cactus.tar.gz $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/config-Cactus.o
+.PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files
+.SECONDARY: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/config-Cactus.o
+.INTERMEDIATE: $(TARBALL_DIR)/config-Cactus.tar.gz
 
 
 
@@ -195,8 +197,7 @@ $(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.tar.gz $(CCTK_HOME)/a
 
 $(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
-	mv $@.tmp $@
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for the flesh is only updated
 # if the flesh is actually recompiled.  This does not catch changes to
@@ -231,7 +232,9 @@ $(TARBALL_DIR)/flesh-Cactus.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/flesh-Cactus.ccldeps $(TARBALL_DIR)/flesh-Cactus.files $(TARBALL_DIR)/flesh-Cactus.tar.gz $(TARBALL_DIR)/flesh-Cactus.c $(TARBALL_DIR)/flesh-Cactus.o
+.PRECIOUS: $(TARBALL_DIR)/flesh-Cactus.ccldeps $(TARBALL_DIR)/flesh-Cactus.files
+.SECONDARY: $(TARBALL_DIR)/flesh-Cactus.c $(TARBALL_DIR)/flesh-Cactus.o
+.INTERMEDIATE: $(TARBALL_DIR)/flesh-Cactus.tar.gz
 
 
 
@@ -246,7 +249,8 @@ $(TARBALL_DIR)/thorn-%.o: $(TARBALL_DIR)/thorn-%.c
 	cd $(TARBALL_DIR) && \
 	$(RM) -f $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.o)) && \
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.c)) && \
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^) && \
+        $(RM) -f $(^:%.c=%-????.c)
 
 $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
 	cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c)
@@ -254,8 +258,7 @@ $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangement
 
 $(TARBALL_DIR)/thorn-%.tar.gz: $(TARBALL_DIR)/thorn-%.files
 	cd $(CCTK_HOME) && \
-	$(TAR) czf $@.tmp -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
-	mv $@.tmp $@
+	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
@@ -290,7 +293,9 @@ $(TARBALL_DIR)/thorn-%.ccldeps:
 	} > $@.tmp
 	mv $@.tmp $@
 
-.PRECIOUS: $(TARBALL_DIR)/thorn-%.ccldeps $(TARBALL_DIR)/thorn-%.files $(TARBALL_DIR)/thorn-%.tar.gz $(TARBALL_DIR)/thorn-%.c $(TARBALL_DIR)/thorn-%.o
+.PRECIOUS: $(TARBALL_DIR)/thorn-%.ccldeps $(TARBALL_DIR)/thorn-%.files
+.SECONDARY: $(TARBALL_DIR)/thorn-%.c $(TARBALL_DIR)/thorn-%.o
+.INTERMEDIATE: $(TARBALL_DIR)/thorn-%.tar.gz
 
 
 
