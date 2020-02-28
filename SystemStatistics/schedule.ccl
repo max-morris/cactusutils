@@ -4,4 +4,5 @@ schedule SystemStatistics_Collect at CCTK_ANALYSIS
 {
   LANG: C
   OPTIONS: GLOBAL
+  WRITES: SystemStatistics::process_memory(everywhere), process_memory_mb, process_memory_kb
 } "Collect system statistics"

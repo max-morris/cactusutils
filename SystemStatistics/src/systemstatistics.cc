@@ -8,6 +8,7 @@
 
 #include "cctk.h" 
 #include "cctk_Arguments.h" 
+#include "cctk_Arguments_Checked.h" 
 #include "cctk_Parameters.h" 
 
 #ifdef HAVE_MALLOC_H
@@ -185,7 +186,7 @@ static long long int get_swap_kB()
 
 extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
 {
-  DECLARE_CCTK_ARGUMENTS
+  DECLARE_CCTK_ARGUMENTS_SystemStatistics_Collect
   DECLARE_CCTK_PARAMETERS
 
   const int mb = 1024*1024;

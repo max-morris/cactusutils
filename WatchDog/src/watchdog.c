@@ -7,6 +7,7 @@
 
 #include "cctk.h"
 #include "cctk_Arguments.h"
+#include "cctk_Arguments_Checked.h"
 #include "cctk_Parameters.h"
 
 #include <pthread.h>
@@ -66,7 +67,7 @@ static void * patrol(void * arg) {
 }
 
 void WatchDog(CCTK_ARGUMENTS) {
-    DECLARE_CCTK_ARGUMENTS
+    DECLARE_CCTK_ARGUMENTS_WatchDog
     DECLARE_CCTK_PARAMETERS
 
     pthread_mutex_lock(&mutex);

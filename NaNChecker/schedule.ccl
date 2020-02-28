@@ -7,18 +7,21 @@ schedule NaNChecker_ResetCounter at BASEGRID
 {
   LANG:    C
   OPTIONS: global
+  WRITES: NaNChecker::NaNsFound(everywhere) #scalar
 } "Reset the NaNChecker::NaNsFound counter"
 
 schedule NaNChecker_ResetCounter at PRESTEP
 {
   LANG:    C
   OPTIONS: global
+  WRITES: NaNChecker::NaNsFound(everywhere) #scalar
 } "Reset the NaNChecker::NaNsFound counter"
 
 schedule NaNChecker_NaNCheck_Prepare IN NaNChecker_NaNCheck
 {
   LANG:    C
   OPTIONS: level
+  WRITES: NaNChecker::NaNmask(everywhere) #scalar
 } "Prepare data structures to check for NaNs"
 
 schedule GROUP NaNChecker_NaNCheck as zzz_NaNChecker_NaNCheck at POSTSTEP
@@ -35,12 +38,14 @@ schedule NaNChecker_NaNCheck_Finish IN NaNChecker_NaNCheck AFTER NaNChecker_NaNC
 {
   LANG:    C
   OPTIONS: level
+  WRITES: NaNChecker::NaNsFound(everywhere) #scalar
 } "Count NaNs in NaNChecker::NaNsFound"
 
 schedule NaNChecker_TakeAction at POSTSTEP after zzz_NaNChecker_NaNCheck
 {
   LANG:    C
   OPTIONS: global loop-level
+  READS: NaNChecker::NaNsFound(everywhere) #scalar
 } "Output NaNChecker::NaNmask and take action according to NaNChecker::action_if_found"
 
 schedule GROUP NaNChecker_NaNCheck as zzz_NaNChecker_NaNCheck at POST_RECOVER_VARIABLES
@@ -51,6 +56,7 @@ schedule NaNChecker_TakeAction at POST_RECOVER_VARIABLES after zzz_NaNChecker_Na
 {
   LANG:    C
   OPTIONS: global loop-level
+  READS: NaNChecker::NaNsFound(everywhere) #scalar
 } "Output NaNChecker::NaNmask and take action according to NaNChecker::action_if_found"
 
 if (setup_test) {
