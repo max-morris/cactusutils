@@ -2,6 +2,10 @@
 
 PRIVATE:
 
+# on remaining_walltime will be ignored if it is less than max_walltime at
+# simulation start. This avoids a common issue where a short debug simulation
+# is terminated right away because max_walltime ends up being less than
+# on_remaining_walltime.
 REAL on_remaining_walltime "When to trigger termination in MINUTES" STEERABLE = ALWAYS
 {
   0.0    :: "Don't trigger termination"

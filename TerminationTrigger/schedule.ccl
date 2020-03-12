@@ -2,7 +2,10 @@
 
 STORAGE: watchminutes triggered
 
-
+SCHEDULE TerminationTrigger_ParamCheck AT PARAMCHECK
+{
+  LANG: C
+} "Check consitency of parameters"
 
 SCHEDULE TerminationTrigger_ResetTrigger AT BaseGrid
 {
