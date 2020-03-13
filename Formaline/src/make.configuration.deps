@@ -126,13 +126,18 @@ $(TARBALL_DIR)/config-Cactus.o: $(TARBALL_DIR)/config-Cactus.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $^ && \
         $(RM) -f $(^:%.c=%-????.c)
 
-$(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
-	$(RM) -f $(@:%.c=%-????.c)
-	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' CactusConfig < $<
-
-$(TARBALL_DIR)/config-Cactus.tar.gz: $(TARBALL_DIR)/config-Cactus.files
-	cd $(CACTUS_CONFIGS_DIR) && \
-	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
+$(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.files $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
+        # cannot use a pipe for tar output since that makes it impossible to
+        # catch tar failures
+        # using multiple make recipes and .INTERMEDIATE files can cause make
+        # 3.81 to hang due to a make bug
+	if ( cd $(CACTUS_CONFIGS_DIR) && ( $(TAR) czf $(TARBALL_DIR)/config-Cactus.tar.gz -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ] ) ) ; then \
+	    $(RM) -f $(@:%.c=%-????.c) && \
+	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' CactusConfig < $(TARBALL_DIR)/config-Cactus.tar.gz && \
+            rm $(TARBALL_DIR)/config-Cactus.tar.gz ; \
+        else \
+            exit $$? ; \
+        fi
 
 # This dependency means that the tarball for the configuration options
 # is only updated if the flesh is actually recompiled. This does not
@@ -175,7 +180,6 @@ $(TARBALL_DIR)/config-Cactus.ccldeps:
 
 .PRECIOUS: $(TARBALL_DIR)/config-Cactus.ccldeps $(TARBALL_DIR)/config-Cactus.files
 .SECONDARY: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/config-Cactus.o
-.INTERMEDIATE: $(TARBALL_DIR)/config-Cactus.tar.gz
 
 
 
@@ -193,13 +197,19 @@ $(TARBALL_DIR)/flesh-Cactus.o: $(TARBALL_DIR)/flesh-Cactus.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $^ && \
 	$(RM) -f $(^:%.c=%-????.c)
 
-$(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
-	$(RM) -f $(@:%.c=%-????.c)
-	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' Cactus < $<
+$(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.files $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
+        # cannot use a pipe for tar output since that makes it impossible to
+        # catch tar failures
+        # using multiple make recipes and .INTERMEDIATE files can cause make
+        # 3.81 to hang due to a make bug
+	if ( cd $(CCTK_HOME) && ( $(TAR) czf $(TARBALL_DIR)/flesh-Cactus.tar.gz -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ] ) ) ; then \
+	    $(RM) -f $(@:%.c=%-????.c) && \
+	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' Cactus < $(TARBALL_DIR)/flesh-Cactus.tar.gz && \
+            $(RM) $(TARBALL_DIR)/flesh-Cactus.tar.gz ; \
+        else \
+            exit $$? ; \
+        fi
 
-$(TARBALL_DIR)/flesh-Cactus.tar.gz: $(TARBALL_DIR)/flesh-Cactus.files
-	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for the flesh is only updated
 # if the flesh is actually recompiled.  This does not catch changes to
@@ -236,7 +246,6 @@ $(TARBALL_DIR)/flesh-Cactus.ccldeps:
 
 .PRECIOUS: $(TARBALL_DIR)/flesh-Cactus.ccldeps $(TARBALL_DIR)/flesh-Cactus.files
 .SECONDARY: $(TARBALL_DIR)/flesh-Cactus.c $(TARBALL_DIR)/flesh-Cactus.o
-.INTERMEDIATE: $(TARBALL_DIR)/flesh-Cactus.tar.gz
 
 
 
@@ -254,13 +263,19 @@ $(TARBALL_DIR)/thorn-%.o: $(TARBALL_DIR)/thorn-%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(patsubst $(TARBALL_DIR)/%, %, $^) && \
         $(RM) -f $(patsubst $(TARBALL_DIR)/%, %, $(^:%.c=%-????.c))
 
-$(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.tar.gz $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
-	cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c)
-	$(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/thorn-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/thorn-%.c=%) < $<
+$(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.files $(CCTK_HOME)/arrangements/CactusUtils/Formaline/src/util/VERSION | $(FORMALINE-UTILS)
+        # cannot use a pipe for tar output since that makes it impossible to
+        # catch tar failures
+        # using multiple make recipes and .INTERMEDIATE files can cause make
+        # 3.81 to hang due to a make bug
+	if ( cd $(CCTK_HOME) && ( $(TAR) czf $(@:%.c=%.tar.gz) -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ] ) ) ; then \
+	    cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c) && \
+	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/thorn-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/thorn-%.c=%) < $(@:%.c=%.tar.gz) && \
+            rm $(@:%.c=%.tar.gz) ; \
+        else \
+            exit $$? ; \
+        fi
 
-$(TARBALL_DIR)/thorn-%.tar.gz: $(TARBALL_DIR)/thorn-%.files
-	cd $(CCTK_HOME) && \
-	$(TAR) czf $@ -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ]
 
 # This dependency means that the tarball for a thorn is only updated
 # if the thorn is actually recompiled.  This does not catch changes to
@@ -297,7 +312,6 @@ $(TARBALL_DIR)/thorn-%.ccldeps:
 
 .PRECIOUS: $(TARBALL_DIR)/thorn-%.ccldeps $(TARBALL_DIR)/thorn-%.files
 .SECONDARY: $(TARBALL_DIR)/thorn-%.c $(TARBALL_DIR)/thorn-%.o
-.INTERMEDIATE: $(TARBALL_DIR)/thorn-%.tar.gz
 
 
 
