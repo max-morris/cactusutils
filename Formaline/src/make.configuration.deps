@@ -4,12 +4,12 @@
 
 # Some configury magic
 
-# Is this gnu tar? If so, set this to 1, otherwise to 0. This is used
+# Is this gnu tar? If so, set this to 2, otherwise to 1. This is used
 # to treat an exit code of 1 from gnu tar as non-fatal. This exit code
 # indicates that files changed while reading, which can happen if the
 # atime changed. (An atime change means that another program read the
 # file, which is inconsequential.)
-IS_GNUTAR := $(shell $(TAR) --version 2>/dev/null | grep -q 'GNU tar' && echo "1" || echo "0")
+TAR_ERROR_THRESHOLD := $(shell $(TAR) --version 2>/dev/null | grep -q 'GNU tar' && echo "2" || echo "1")
 
 # Does tr support -C, or should we use -c instead?
 TR_C := $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -C' || echo 'tr -c')
@@ -131,7 +131,7 @@ $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.files $(CCTK_HOME)/
         # catch tar failures
         # using multiple make recipes and .INTERMEDIATE files can cause make
         # 3.81 to hang due to a make bug
-	if ( cd $(CACTUS_CONFIGS_DIR) && ( $(TAR) czf $(TARBALL_DIR)/config-Cactus.tar.gz -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ] ) ) ; then \
+	if ( cd $(CACTUS_CONFIGS_DIR) && ( $(TAR) czf $(TARBALL_DIR)/config-Cactus.tar.gz -T $< || [ $$? -lt $(TAR_ERROR_THRESHOLD) ] ) ) ; then \
 	    $(RM) -f $(@:%.c=%-????.c) && \
 	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' CactusConfig < $(TARBALL_DIR)/config-Cactus.tar.gz && \
             rm $(TARBALL_DIR)/config-Cactus.tar.gz ; \
@@ -202,7 +202,7 @@ $(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.files $(CCTK_HOME)/ar
         # catch tar failures
         # using multiple make recipes and .INTERMEDIATE files can cause make
         # 3.81 to hang due to a make bug
-	if ( cd $(CCTK_HOME) && ( $(TAR) czf $(TARBALL_DIR)/flesh-Cactus.tar.gz -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ] ) ) ; then \
+	if ( cd $(CCTK_HOME) && ( $(TAR) czf $(TARBALL_DIR)/flesh-Cactus.tar.gz -T $< || [ $$? -lt $(TAR_ERROR_THRESHOLD) ] ) ) ; then \
 	    $(RM) -f $(@:%.c=%-????.c) && \
 	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' Cactus < $(TARBALL_DIR)/flesh-Cactus.tar.gz && \
             $(RM) $(TARBALL_DIR)/flesh-Cactus.tar.gz ; \
@@ -268,7 +268,7 @@ $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.files $(CCTK_HOME)/arrangements
         # catch tar failures
         # using multiple make recipes and .INTERMEDIATE files can cause make
         # 3.81 to hang due to a make bug
-	if ( cd $(CCTK_HOME) && ( $(TAR) czf $(@:%.c=%.tar.gz) -T $< || [ $$(( $$? / ($(IS_GNUTAR)+1) )) -eq 0 ] ) ) ; then \
+	if ( cd $(CCTK_HOME) && ( $(TAR) czf $(@:%.c=%.tar.gz) -T $< || [ $$? -lt $(TAR_ERROR_THRESHOLD) ] ) ) ; then \
 	    cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c) && \
 	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/thorn-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/thorn-%.c=%) < $(@:%.c=%.tar.gz) && \
             rm $(@:%.c=%.tar.gz) ; \
