@@ -1,10 +1,12 @@
 
+#include <assert.h>
+#include <errno.h>
 #include <stdio.h> 
+#include <stdlib.h>
 #include <string.h> 
 #include <sys/resource.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include "assert.h"
+
 
 #include "cctk.h" 
 #include "cctk_Arguments.h" 
@@ -183,6 +185,98 @@ static long long int get_swap_kB()
   return swap_total - swap_free;
 }
 
+#ifdef HAVE_MALLOC_H
+// numbers compared to mallinfo seem to be off by the size of the xml string
+// rounded to full pages plus one page, plus 16 byte. No idea where the 16 byte
+// come from.
+#define FUDGE_AMOUNT 16
+
+static size_t extract_value(const char* buf, const char* fmt)
+{
+  size_t value = 0;
+  bool found = false;
+  for(const char* p = buf ; p && *p ; p = strchr(p, '\n') + 1) {
+    /* skip over all individual heaps until we find the true totals */
+    int nr;
+    if(sscanf(p, "<heap nr=\"%d\">", &nr)) {
+      for(const char* h = h ; p && *p ; p = strchr(p, '\n') + 1) {
+        const char* endheap = "</heap>";
+        if(strncmp(p, endheap, strlen(endheap)) == 0) {
+          break;
+        }
+      }
+      continue;
+    }
+    /* reached end of string without seeing a '\n', this shouldn't really happen */
+    if(!p)
+      break;
+
+    found = sscanf(p, fmt, &value);
+    if(found)
+      break;
+  }
+  if(!found) {
+    CCTK_VWARN(CCTK_WARN_COMPLAIN, "Could not extract using format '%s' from '%s'",
+               fmt, buf);
+  }
+  return value;
+}
+
+static char* get_malloc_info(size_t* sz)
+{
+  char* buf = NULL;
+  FILE* memfh = open_memstream(&buf, sz);
+  if(memfh != NULL) {
+    const int ierr = malloc_info(0, memfh);
+    fclose(memfh); // must be before call to free()
+    if(ierr != 0) {
+      CCTK_VWARN(CCTK_WARN_COMPLAIN, "malloc_info failed: %s", strerror(ierr));
+      free(buf);
+      buf = NULL;
+    }
+  } else {
+    CCTK_VWARN(CCTK_WARN_COMPLAIN, "Could not open memory file handle: %s",
+               strerror(errno));
+  }
+  return buf;
+}
+
+static size_t get_uordblks()
+{
+  size_t uordblks = 0;
+  const long page_size = sysconf(_SC_PAGE_SIZE);
+
+  size_t sz; /* keep track of how much memory is used by us */
+  char* buf = get_malloc_info(&sz);
+  if(buf != NULL) {
+    const size_t malloc_version = extract_value(buf, "<malloc version=\"%zu\"/>");
+    static bool have_warned = false;
+    if(!have_warned && malloc_version != 0 && malloc_version != 1) {
+      CCTK_VWARN(CCTK_WARN_COMPLAIN, "Unexpected malloc version: %zu, only know how to handle 1",
+                 malloc_version);
+      have_warned = true;
+    }
+
+    const size_t total_aspace = extract_value(buf, "<aspace type=\"total\" size=\"%zu\"/>");
+    const size_t total_fastavail =
+      extract_value(buf, "<total type=\"fast\" count=\"%*zu\" size=\"%zu\"/>");
+    const size_t total_avail =
+      extract_value(buf, "<total type=\"rest\" count=\"%*zu\" size=\"%zu\"/>");
+    // Fudge free amount a bit to account for memory used by XML string buffer
+    const size_t fudge = ((sz + page_size-1) & ~(page_size-1)) + page_size + FUDGE_AMOUNT;
+    uordblks = total_aspace - total_avail - total_fastavail - fudge;
+  }
+  free(buf);
+
+  return uordblks;
+}
+#else
+static size_t get_uordblks()
+{
+  return mallinfo().uordblks;
+}
+#endif
+
 extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS_SystemStatistics_Collect
@@ -197,7 +291,7 @@ extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
   *ordblks = mallinfo().ordblks;
   *hblks = mallinfo().hblks;
   *hblkhd = mallinfo().hblkhd;
-  *uordblks = mallinfo().uordblks;
+  *uordblks = get_uordblks();
   *fordblks = mallinfo().fordblks;
   *keepcost = mallinfo().keepcost;
   *swap_used = get_swap_kB() / 1024.0;
