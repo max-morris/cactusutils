@@ -270,10 +270,39 @@ static size_t get_uordblks()
 
   return uordblks;
 }
+
+static size_t get_hblkhd()
+{
+  size_t hblkhd = 0;
+
+  size_t sz; /* keep track of how much memory is used by us */
+  char* buf = get_malloc_info(&sz);
+  if(buf != NULL) {
+    const size_t malloc_version = extract_value(buf, "<malloc version=\"%zu\"/>");
+    static bool have_warned = false;
+    if(!have_warned && malloc_version != 0 && malloc_version != 1) {
+      CCTK_VWARN(CCTK_WARN_COMPLAIN, "Unexpected malloc version: %zu, only know how to handle 1",
+                 malloc_version);
+      have_warned = true;
+    }
+
+    const size_t mmapped_mem =
+      extract_value(buf, "<total type=\"mmap\" count=\"%*zu\" size=\"%zu\"/>");
+    hblkhd = mmapped_mem;
+  }
+  free(buf);
+
+  return hblkhd;
+}
 #else
 static size_t get_uordblks()
 {
   return mallinfo().uordblks;
+}
+
+static size_t get_hblkhd()
+{
+  return mallinfo().hblkhd;
 }
 #endif
 
@@ -354,7 +383,7 @@ extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
   *arena = mallinfo().arena;
   *ordblks = mallinfo().ordblks;
   *hblks = mallinfo().hblks;
-  *hblkhd = mallinfo().hblkhd;
+  *hblkhd = get_hblkhd();
   *uordblks = get_uordblks();
   *fordblks = mallinfo().fordblks;
   *keepcost = mallinfo().keepcost;
