@@ -277,6 +277,70 @@ static size_t get_uordblks()
 }
 #endif
 
+#ifdef TEST_MALLOC_INFO
+#define CCTK_VWARN(level, fmt, ...) printf(fmt, __VA_ARGS__), putchar('\n')
+
+int main() {
+  size_t total = 0;
+
+  // try to preallocate all internal structures
+  for(int j = 1 ; j < 3 ; j++) {
+    size_t sz = 1;
+    for(size_t i = 0 ; i < 20 ; i++) {
+      malloc(sz);
+      total += sz;
+      sz *= 2;
+    }
+  }
+  mallinfo();
+  get_uordblks();
+
+  #define DIM(a) (int)(sizeof(a)/sizeof(a[0]))
+  // some trial sizes
+  size_t sz1[] = {4096, 4096, 12, 100000};
+  void* p1[DIM(sz1)];
+  bool free1[DIM(sz1)] = {true,false,false,true};
+
+  size_t sz2[] = {4096, 128, 1};
+  void* p2[DIM(sz2)];
+  bool free2[DIM(sz2)] = {false,false,false};
+
+  int ref1 = mallinfo().uordblks;
+  size_t mine1 = get_uordblks();
+  for(int i = 0 ; i < DIM(sz1) ; i++) {
+    p1[i] = malloc(sz1[i]);
+    total += sz1[i];
+  }
+  for(int i = 0 ; i < DIM(sz1) ; i++) {
+    if(free1[i]) free(p1[i]);
+    total -= sz1[i];
+  }
+  int ref2 = mallinfo().uordblks;
+  size_t mine2 = get_uordblks();
+  for(int i = 0 ; i < DIM(sz2) ; i++) {
+    p2[i] = malloc(sz2[i]);
+    total += sz2[i];
+  }
+  for(int i = 0 ; i < DIM(sz2) ; i++) {
+    if(free2[i]) free(p2[i]);
+    total -= sz2[i];
+  }
+  int ref3 = mallinfo().uordblks;
+  size_t mine3 = get_uordblks();
+
+  printf("ref1: %d ref2: %d ref3: %d\n", ref1, ref2, ref3);
+  printf("mine1: %zu mine2: %zu mine3: %zu\n", mine1, mine2, mine3);
+
+  printf("mine21: %zu mine32: %zu mine31: %zu\n", mine2-mine1, mine3-mine2, mine3-mine1);
+  printf("ref21: %d ref32: %d ref31: %d\n", ref2-ref1, ref3-ref2, ref3-ref1);
+  printf("total: %zu\n", total);
+
+  malloc_stats();
+
+  return 0;
+}
+#endif
+
 extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
 {
   DECLARE_CCTK_ARGUMENTS_SystemStatistics_Collect
