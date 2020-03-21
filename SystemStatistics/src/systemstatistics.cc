@@ -234,6 +234,14 @@ static char* get_malloc_info(size_t* sz)
       free(buf);
       buf = NULL;
     }
+
+    const size_t malloc_version = extract_value(buf, "<malloc version=\"%zu\"/>");
+    static bool have_warned = false;
+    if(!have_warned && malloc_version != 0 && malloc_version != 1) {
+      CCTK_VWARN(CCTK_WARN_COMPLAIN, "Unexpected malloc version: %zu, only know how to handle 1",
+                 malloc_version);
+      have_warned = true;
+    }
   } else {
     CCTK_VWARN(CCTK_WARN_COMPLAIN, "Could not open memory file handle: %s",
                strerror(errno));
@@ -249,14 +257,6 @@ static size_t get_uordblks()
   size_t sz; /* keep track of how much memory is used by us */
   char* buf = get_malloc_info(&sz);
   if(buf != NULL) {
-    const size_t malloc_version = extract_value(buf, "<malloc version=\"%zu\"/>");
-    static bool have_warned = false;
-    if(!have_warned && malloc_version != 0 && malloc_version != 1) {
-      CCTK_VWARN(CCTK_WARN_COMPLAIN, "Unexpected malloc version: %zu, only know how to handle 1",
-                 malloc_version);
-      have_warned = true;
-    }
-
     const size_t total_aspace = extract_value(buf, "<aspace type=\"total\" size=\"%zu\"/>");
     const size_t total_fastavail =
       extract_value(buf, "<total type=\"fast\" count=\"%*zu\" size=\"%zu\"/>");
@@ -278,14 +278,6 @@ static size_t get_hblkhd()
   size_t sz; /* keep track of how much memory is used by us */
   char* buf = get_malloc_info(&sz);
   if(buf != NULL) {
-    const size_t malloc_version = extract_value(buf, "<malloc version=\"%zu\"/>");
-    static bool have_warned = false;
-    if(!have_warned && malloc_version != 0 && malloc_version != 1) {
-      CCTK_VWARN(CCTK_WARN_COMPLAIN, "Unexpected malloc version: %zu, only know how to handle 1",
-                 malloc_version);
-      have_warned = true;
-    }
-
     const size_t mmapped_mem =
       extract_value(buf, "<total type=\"mmap\" count=\"%*zu\" size=\"%zu\"/>");
     hblkhd = mmapped_mem;
