@@ -358,7 +358,7 @@ extern "C" void SystemStatistics_Collect(CCTK_ARGUMENTS)
   *uordblks = get_uordblks();
   *fordblks = mallinfo().fordblks;
   *keepcost = mallinfo().keepcost;
-  *swap_used = get_swap_kB() / 1024.0;
+  *swap_used = get_swap_kB() * kb;
 
   *maxrss_mb = get_rss() / mb;
   *majflt_mb = *majflt / mb;
