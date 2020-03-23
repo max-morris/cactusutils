@@ -193,21 +193,23 @@ static size_t extract_value(const char* buf, const char* fmt)
 {
   size_t value = 0;
   bool found = false;
-  for(const char* p = buf ; p && *p ; p = strchr(p, '\n') + 1) {
+  /* (p = strchr(p, '\n')) && ++p avoids SEGFAULT if '\n' is not found */
+  for(const char* p = buf ; p && *p ; (p = strchr(p, '\n')) && ++p) {
     /* skip over all individual heaps until we find the true totals */
     int nr;
     if(sscanf(p, "<heap nr=\"%d\">", &nr)) {
-      for(const char* h = h ; p && *p ; p = strchr(p, '\n') + 1) {
+      for(/*nop*/ ; p && *p ; (p = strchr(p, '\n')) && ++p) {
         const char* endheap = "</heap>";
         if(strncmp(p, endheap, strlen(endheap)) == 0) {
           break;
         }
       }
+      /* reached end of string without seeing a '\n', this shouldn't really happen */
+      if(!p || !*p)
+        break;
+      /* current line is </heap> which never matches */
       continue;
     }
-    /* reached end of string without seeing a '\n', this shouldn't really happen */
-    if(!p)
-      break;
 
     found = sscanf(p, fmt, &value);
     if(found)
