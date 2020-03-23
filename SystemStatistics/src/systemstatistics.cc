@@ -1,3 +1,6 @@
+#include "cctk.h"
+#include "cctk_Arguments.h"
+#include "cctk_Parameters.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -8,12 +11,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-
-#include "cctk.h" 
-#include "cctk_Arguments.h" 
-#include "cctk_Parameters.h" 
-
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -187,7 +184,7 @@ static long long int get_swap_kB()
   return swap_total - swap_free;
 }
 
-#ifdef HAVE_MALLOC_H
+#ifdef HAVE_MALLOC_INFO
 // numbers compared to mallinfo seem to be off by the size of the xml string
 // rounded to full pages plus one page, plus 16 byte. No idea where the 16 byte
 // come from.
