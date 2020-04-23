@@ -1,8 +1,5 @@
 # Schedule definitions for thorn TimerReport
 # $Header$
-# All three functions should have the same rd/wr. Internal functions are called by
-# all three, but they only use one arguments macro (OutputEvery). The other
-# two functions should match the top function's rd/wr directives.
 
 SCHEDULE TimerReport_OutputEvery AS zzz_TimerReport_Output AT CCTK_ANALYSIS
 {

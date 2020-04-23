@@ -12,21 +12,21 @@ SCHEDULE TerminationTrigger_ResetTrigger AT BaseGrid
 SCHEDULE TerminationTrigger_StartTimer AT BaseGrid
 {
   LANG: C
-  WRITES: TerminationTrigger::watchminutes(everywhere) #scalar
+  WRITES: TerminationTrigger::watchminutes(everywhere)
 } "Start timer"
 
 SCHEDULE TerminationTrigger_ResetMinutes AT post_recover_variables
 {
   LANG: C
   OPTIONS: global
-  WRITES: TerminationTrigger::watchminutes(everywhere) #scalar
+  WRITES: TerminationTrigger::watchminutes(everywhere)
 } "Reset Watchtime"
 
 SCHEDULE TerminationTrigger_CheckWalltime AT analysis
 {
   LANG: C
-  READS: TerminationTrigger::watchminutes(everywhere) #scalar
-  WRITES: TerminationTrigger::watchminutes(everywhere) #scalar
+  READS: TerminationTrigger::watchminutes(everywhere)
+  WRITES: TerminationTrigger::watchminutes(everywhere)
 } "Check elapsed job walltime"
 
 SCHEDULE TerminationTrigger_StartSignalHandler AT startup
