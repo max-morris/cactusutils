@@ -197,7 +197,7 @@ vec4_store_partial_prepare_(bool &all, __m256i &mask, std::ptrdiff_t const i,
                             std::ptrdiff_t const imax) {
   all = i >= imin and i + CCTK_REAL4_VEC_SIZE - 1 < imax;
 
-  if (not CCTK_BUILTIN_EXPECT(all, true)) {
+  if (not all) {
 #ifdef __AVX2__
     mask = _mm256_andnot_si256(
         _mm256_add_epi32(vec4_set1i(i - imin),
@@ -240,13 +240,10 @@ vec4_store_nta_partial_(bool const all, __m256i const mask, CCTK_REAL4 &p,
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec4_storeu_partial_(bool const all, __m256i const mask, CCTK_REAL4 &p,
                      CCTK_REAL4_VEC const x) {
-#if 0
-  if (CCTK_BUILTIN_EXPECT(all, true))
+  if (all)
     vec4_store_nta(p, x);
   else
     _mm256_maskstore_ps(&p, mask, x);
-#endif
-  _mm256_maskstore_ps(&p, mask, x);
 }
 
 // Store a lower or higher partial vector (aligned and non-temporal);
