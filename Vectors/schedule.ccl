@@ -10,4 +10,6 @@ schedule Vectors_Startup at CCTK_STARTUP
 schedule Vectors_Test at CCTK_PARAMCHECK
 {
   LANG: C
+
+  WRITES: all_passed
 } "Run correctness tests."

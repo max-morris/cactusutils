@@ -2,6 +2,10 @@
 #include <cctk_Arguments.h>
 #include <cctk_Parameters.h>
 
+#ifndef DECLARE_CCTK_ARGUMENTS_CHECKED
+#define DECLARE_CCTK_ARGUMENTS_CHECKED(fun) DECLARE_CCTK_ARGUMENTS
+#endif
+
 #include "test-vectors.h"
 
 #define VECTOR_REAL_PRECISION CCTK_REAL_PRECISION
@@ -9,7 +13,7 @@
 
 namespace Vectors {
 extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
-  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_ARGUMENTS_CHECKED(Vectors_Test);
   DECLARE_CCTK_PARAMETERS;
 
   bool passed = true;
