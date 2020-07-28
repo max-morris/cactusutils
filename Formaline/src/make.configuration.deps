@@ -108,7 +108,7 @@ $(TARBALL_DIR)/cactus-meta.c: $(TARBALL_DIR)/config-Cactus.c $(TARBALL_DIR)/fles
 	$(FORMALINE_BIN_DIR)/makemetablob.pl CactusConfig Cactus $(notdir $(THORNS)) > $@.tmp
 	mv $@.tmp $@
 
-.SECONDARY: $(TARBALL_DIR)/cactus-meta.c $(TARBALL_DIR)/cactus-meta.o
+.SECONDARY: $(TARBALL_DIR)/cactus-meta.o
 
 
 
