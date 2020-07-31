@@ -71,13 +71,19 @@ vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
 
 // Load a vector from memory (aligned and unaligned); this loads from
 // a reference to a scalar
+//
+// vec_ld (is alwasy the AltiVec lvx which silently aligns the pointer)
+// vec_vsx_ld allows unaligned access (lxvx on POWER9)
+//
+// openpowerfoundation.org/wp-content/uploads/resources/Vector-Intrinsics/Vector-Intrinsics-20180306.pdf
+// 1.1.3.2. page 10
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 vec8_load(CCTK_REAL8 const &p) {
-  return *(CCTK_REAL8_VEC const *)&p;
+  return vec_ld(0, &p);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 vec8_loadu(CCTK_REAL8 const &p) {
-  return *(CCTK_REAL8_VEC const *)&p;
+  return vec_vsx_ld(0, &p);
 }
 
 // Load a vector from memory that may or may not be aligned, as
@@ -96,11 +102,11 @@ vec8_loadu_maybe3(std::ptrdiff_t off1, std::ptrdiff_t off2, std::ptrdiff_t off3,
 // a reference to a scalar
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void vec8_store(CCTK_REAL8 &p,
                                                            CCTK_REAL8_VEC x) {
-  *(CCTK_REAL8_VEC *)&p = x;
+  vec_st(x, 0 , &p);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void vec8_storeu(CCTK_REAL8 &p,
                                                             CCTK_REAL8_VEC x) {
-  *(CCTK_REAL8_VEC *)&p = x;
+  vec_vsx_st(x, 0 , &p);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void
 vec8_store_nta(CCTK_REAL8 &p, CCTK_REAL8_VEC x) {
@@ -168,7 +174,10 @@ vec8_storeu_partial_(bool const lo, bool const hi, CCTK_REAL8 &p,
 #define k8nmsub(x, y, z) (vec_nmsub(x, y, z))
 
 // Cheap functions
-#define k8copysign(x, y) (vec_cpsgn(y, x))
+// IBM
+// https://www.ibm.com/support/knowledgecenter/en/SSGH2K_13.1.2/com.ibm.xlc1312.aix.doc/compiler_ref/vec_cpsgn.html
+// says x's sign is copied but experiment shows that gcc copys y's sign
+#define k8copysign(x, y) (vec_cpsgn(x, y))
 #define k8fabs(x) (vec_abs(x))
 #define k8fmax(x, y) (vec_max(x, y))
 #define k8fmin(x, y) (vec_min(x, y))
