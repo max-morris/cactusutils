@@ -28,11 +28,9 @@ $#ARGV == 6 or die;
 my ($git_cmd, $git_repo, $git_master_repo, $git_local_repo, $git_central_repo,
     $build_id, $config_id) = @ARGV;
 
-# Define $silencer to hide stdout/stderr if desired
 my $silent = $ENV{'SILENT'};
 $silent = 'yes' if ! defined $silent;
 $silent = $silent !~ /^no$/i;
-my $silencer = $silent ? '>/dev/null 2>&1' : '';
 
 if (!$silent) {
   print "Formaline: git_cmd [$git_cmd]\n";
@@ -55,9 +53,10 @@ sub runcmd($$)
   $#_ == 1 or die;
   my ($descr, $cmd) = @_;
   print "Formaline: executing: $cmd\n" unless $silent;
-  system "{ $cmd; } $silencer";
+  my $out = `{ $cmd; } 2>&1`;
+  print $out unless $silent;
   if ($?) {
-    die "Formaline: ERROR during: $descr\nCommand was: $cmd";
+    die "Formaline: ERROR during: $descr\nCommand was: $cmd\nOutput: $out";
   }
 }
 
