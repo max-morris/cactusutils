@@ -84,7 +84,7 @@ sub init_repo($$)
 
     # Create the repository
     runcmd "Initializing git repository", "$git_cmd --git-dir='$git_repo/.git' init-db";
-    runcmd "Configuring git reposiroty", "$git_cmd --git-dir='$git_repo/.git' config receive.denyCurrentBranch false";
+    runcmd "Configuring git repository", "$git_cmd --git-dir='$git_repo/.git' config receive.denyCurrentBranch false && $git_cmd --git-dir='$git_repo/.git' config gc.detachauto false";
 
     # Add a README
     open README, ">$git_repo/README" or die "open $git_repo/README failed: $!";
@@ -249,6 +249,8 @@ sub main()
     # Invent a user id if there is none, since newer versions of git insist on it
     runcmd "Setting user id for git repo", "$git_cmd --git-dir='$git_repo/.git' config user.name >/dev/null 2>&1 || $git_cmd --git-dir='$git_repo/.git' config user.name \"\${USER}\"";
     runcmd "Setting email address for git repo", "$git_cmd --git-dir='$git_repo/.git' config user.email >/dev/null 2>&1 || $git_cmd --git-dir='$git_repo/.git' config user.email \"\${USER}\@localhost\"";
+    # make sure no background processes are started
+    runcmd "Disabling background garbage collection", "$git_cmd --git-dir='$git_repo/.git' config gc.detachauto false";
     # Try to use the previous commit as parent, if possible
     runcmd "Commiting to git repo", "$git_cmd --git-dir='$git_repo/.git' commit -m '$build_id'";
     runcmd "Tagging git repo", "$git_cmd --git-dir='$git_repo/.git' tag '$build_id'";
