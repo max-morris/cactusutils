@@ -80,14 +80,14 @@ sub init_repo($$)
     print "Formaline: Creating $name git repository...\n";
 
     # Create the directory for the repository
-    mkdir $git_repo or die;
+    mkdir $git_repo or die "mkdir $git_repo failed: $!";
 
     # Create the repository
     runcmd "Initializing git repository", "$git_cmd --git-dir='$git_repo/.git' init-db";
     runcmd "Configuring git reposiroty", "$git_cmd --git-dir='$git_repo/.git' config receive.denyCurrentBranch false";
 
     # Add a README
-    open README, ">$git_repo/README" or die;
+    open README, ">$git_repo/README" or die "open $git_repo/README failed: $!";
     my $today = `date`;
     chomp $today;
     print README "\
@@ -114,8 +114,8 @@ sub init_repo($$)
             git clone -o <name> $git_repo
             git checkout <tag>
     "
-        or die;
-    close README or die;
+        or die "Could not write to README file: $!";
+    close README or die "Could not write to README file: $!";
   }
 
   # Ensure the repository exists
@@ -130,7 +130,7 @@ sub gc_repo($)
   my $sizefile = "$git_repo/.oldreposize";
 
   # Determine current repository size
-  my $reposize = `du -s $git_repo/.git` or die;
+  my $reposize = `du -s $git_repo/.git` or die "du -s $git_repo/.git failed: $!";
   $reposize = (split ' ', $reposize)[0];
 
   # Read old repository size
@@ -152,13 +152,13 @@ sub gc_repo($)
       runcmd "Garbage collecting git repo", "$git_cmd --git-dir='$git_repo/.git' gc";
 
       # Determine new repository size
-      my $newreposize = `du -s '$git_repo/.git'` or die;
+      my $newreposize = `du -s '$git_repo/.git'` or die "du -s '$git_repo/.git' failed: $!";
       $newreposize = (split ' ', $newreposize)[0];
 
       # Write new repository size
-      open (FILE, "> $sizefile") or die;
-      print FILE "$newreposize\n" or die;
-      close FILE or die;
+      open (FILE, "> $sizefile") or die "open $sizefile failed: $!";
+      print FILE "$newreposize\n" or die "Could not write to $sizefile: $!";
+      close FILE or die "Could not write to $sizefile: $!";
   }
 }
 
@@ -179,7 +179,7 @@ sub main()
   map {s{//}{/}g;} @want_files;
 
   my $scratch = $ENV{'SCRATCH_BUILD'};
-  defined $scratch or die;
+  defined $scratch or die "SCRATCH_BUILD environment variable not found";
   my $dstdir = "$scratch/Formaline-tmp-tree";
   rmtree $dstdir;
 
@@ -231,7 +231,7 @@ sub main()
   if (@want_files) {
     runcmd "Adding files @want_files to git repo", "cd $dstdir; $git_cmd --git-dir='$git_repo/.git' add --no-all .";
   }
-  rmtree $dstdir or die;
+  rmtree $dstdir or die "Failed to remove $dstdir: $!";
 
   # Remove the files one by one because we want to ignore errors, but git aborts
   # after the first error

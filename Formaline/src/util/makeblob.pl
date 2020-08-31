@@ -23,7 +23,7 @@ for (my $count = 0; ! $done; ++ $count) {
     my $fcount      = sprintf "%04d", $count;
     my $fcount_next = sprintf "%04d", $count + 1;
     
-    open FILE, "> $basename-$fcount.c" or die;
+    open FILE, "> $basename-$fcount.c" or die "Could not open $basename-$fcount.c: $!";
     print FILE <<EOF;
 /* This is an auto-generated file -- do not edit */
 
@@ -83,7 +83,7 @@ EOF
 # Write meta-file
 
 {
-    open FILE, "> $basename.c" or die;
+    open FILE, "> $basename.c" or die "Could not open $basename.c: $!";
     printf FILE <<EOF;
 /* This is an auto-generated file -- do not edit */
 
