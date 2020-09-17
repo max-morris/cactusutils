@@ -203,7 +203,7 @@ extern "C" void NaNChecker_NaNCheck_Finish(CCTK_ARGUMENTS) {
   }
 
   /* reduce the NaN counter globally and accumulate in NaNChecker::NaNsFound */
-  int sum_handle = CCTK_ReductionHandle("sum");
+  int sum_handle = CCTK_ReductionArrayHandle("sum");
   CCTK_INT count = 0;
   CCTK_ReduceLocalScalar(cctkGH, -1, sum_handle, &info.count, &count,
                          CCTK_VARIABLE_INT);
@@ -886,7 +886,7 @@ void CheckForNaN(int vindex, const char *optstring, void *_info) {
   /* check if the (global) bitmask needs to be incremented */
   if (info->NaNmask && gtype == CCTK_GF &&
       info->bitmask < int(8 * sizeof(CCTK_INT))) {
-    sum_handle = CCTK_ReductionHandle("sum");
+    sum_handle = CCTK_ReductionArrayHandle("sum");
     CCTK_ReduceLocalScalar(info->GH, -1, sum_handle, &nans_found,
                            &global_nans_found, CCTK_VARIABLE_INT);
     if (global_nans_found) {
