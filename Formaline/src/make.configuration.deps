@@ -25,7 +25,6 @@ TR_C := $(shell tr -C 'a' 'b' < /dev/null > /dev/null 2> /dev/null && echo 'tr -
 
 TARBALL_DIR = $(SCRATCH_BUILD)/Formaline
 FORMALINE_BIN_DIR = $(SCRATCH_BUILD)/Formaline/bin
-CACTUS_CONFIGS_DIR ?= $(CCTK_HOME)/configs
 
 # The Formaline utilities (the perl scripts needed to create tarballs
 # and execute git commands) are installed when Formaline's thorn
@@ -131,7 +130,7 @@ $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.files $(CCTK_HOME)/
         # catch tar failures
         # using multiple make recipes and .INTERMEDIATE files can cause make
         # 3.81 to hang due to a make bug
-	if ( cd $(CACTUS_CONFIGS_DIR) && ( $(TAR) czf $(TARBALL_DIR)/config-Cactus.tar.gz -T $< || [ $$? -lt $(TAR_ERROR_THRESHOLD) ] ) ) ; then \
+	if ( cd $(CONFIGS_DIR) && ( $(TAR) czf $(TARBALL_DIR)/config-Cactus.tar.gz -T $< || [ $$? -lt $(TAR_ERROR_THRESHOLD) ] ) ) ; then \
 	    $(RM) -f $(@:%.c=%-????.c) && \
 	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' CactusConfig < $(TARBALL_DIR)/config-Cactus.tar.gz && \
             rm $(TARBALL_DIR)/config-Cactus.tar.gz ; \
@@ -145,7 +144,7 @@ $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.files $(CCTK_HOME)/
 $(TARBALL_DIR)/config-Cactus.files: $(CCTK_LIBDIR)/$(LIBNAME_PREFIX)$(CCTK_LIBNAME_PREFIX)$(FLESHLIB)$(LIBNAME_SUFFIX) $(TARBALL_DIR)/config-Cactus.ccldeps $(CONFIG)/make.thornlist
 	mkdir -p $(TARBALL_DIR)/configs/$(notdir $(TOP))
 	{ \
-		cd $(CACTUS_CONFIGS_DIR)/$(notdir $(TOP)) && \
+		cd $(CONFIGS_DIR)/$(notdir $(TOP)) && \
 		cp -r OptionList properties.ini RunScript ScriptFile SubmitScript ThornList config-data config-info $(TARBALL_DIR)/configs/$(notdir $(TOP)) 2>/dev/null; \
 	} || true
 	cd $(TARBALL_DIR)/configs && \
@@ -397,14 +396,13 @@ $(TOP)/build/Formaline/git-store-source: $(BUILD-ID-FILE) $(TARBALL_DIR)/flesh-C
 	fi && \
 	export 'GIT_SSH=$(GIT-BIN)/git-ssh.sh' && \
 	export 'CACTUS_CENTRAL_SSH_ID' && \
-	export CACTUS_CONFIGS_DIR=$(CACTUS_CONFIGS_DIR) && \
 	{ \
 		cat /dev/null $(filter-out $(TARBALL_DIR)/config-Cactus.files,$?)  && \
 		$(if $(filter $(TARBALL_DIR)/config-Cactus.files,$?), \
-	             sed 's|^|$(CACTUS_CONFIGS_DIR)/|' '$(TARBALL_DIR)/config-Cactus.files', \
+	             sed 's|^|$(CONFIGS_DIR)/|' '$(TARBALL_DIR)/config-Cactus.files', \
 	             :) && \
-		echo '$(CACTUS_CONFIGS_DIR)/$(notdir $(TOP))/BUILD-ID' && \
-		echo '$(CACTUS_CONFIGS_DIR)/$(notdir $(TOP))/CONFIG-ID'; \
+		echo '$(CONFIGS_DIR)/$(notdir $(TOP))/BUILD-ID' && \
+		echo '$(CONFIGS_DIR)/$(notdir $(TOP))/CONFIG-ID'; \
 	} | \
 	'$(GIT-BIN)/update-git-repo.pl' '$(GIT-CMD)' '$(GIT-REPO)' \
 		'$(GIT-MASTER-REPO)' '$(GIT-LOCAL-REPO)' "$$CACTUS_CENTRAL_GIT_REPO" \
