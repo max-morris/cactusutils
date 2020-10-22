@@ -29,6 +29,18 @@
 
 using namespace std;
 
+#ifdef __CUDACC__
+
+CCTK_ATTRIBUTE_UNUSED
+bool Test(CCTK_ARGUMENTS, const std::string veceng) {
+  DECLARE_CCTK_ARGUMENTS;
+  DECLARE_CCTK_PARAMETERS;
+
+  return false;
+}
+
+#else
+
 namespace {
 constexpr inline CCTK_REAL my_sgn(CCTK_REAL const x) {
   return x == (CCTK_REAL)0.0 ? (CCTK_REAL)0.0 : copysign((CCTK_REAL)1.0, x);
@@ -373,3 +385,5 @@ void cxxtests()
   return passed == numtests;
 }
 } // namespace
+
+#endif
