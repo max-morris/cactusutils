@@ -805,12 +805,10 @@ public:
   constexpr vectype(vector_t const &x) : v(x) {}
   // Hide the constructor, which is necessary in case scalar_t and
   // vector_t are the same type (e.g. if vectorization is disabled)
-  template<typename = void>
+  template <typename = void>
   constexpr vectype(scalar_t const &a) : v(props::set1(a)) {}
-  template<typename = void>
-  constexpr operator vector_t() const { return v; }
-  template<typename = void>
-  constexpr vectype &operator=(vectype const &x) {
+  template <typename = void> constexpr operator vector_t() const { return v; }
+  template <typename = void> constexpr vectype &operator=(vectype const &x) {
     v = x.v;
     return *this;
   }
@@ -875,6 +873,23 @@ public:
     return props::div(*this, x);
   }
 
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype
+  operator+(T const &x) const {
+    return props::add(*this, vectype(x));
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype
+  operator-(T const &x) const {
+    return props::sub(*this, vectype(x));
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype
+  operator*(T const &x) const {
+    return props::mul(*this, vectype(x));
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype
+  operator/(T const &x) const {
+    return props::div(*this, vectype(x));
+  }
+
   inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr vectype &
   operator+=(vectype const &x) {
     return *this = *this + x;
@@ -915,6 +930,31 @@ public:
   inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvectype<T>
   operator<=(vectype const &x) const {
     return props::cmple(*this, x);
+  }
+
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvectype<T>
+  operator==(T const &x) const {
+    return props::cmpeq(*this, vectype(x));
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvectype<T>
+  operator!=(T const &x) const {
+    return props::cmpne(*this, vectype(x));
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvectype<T>
+  operator>(T const &x) const {
+    return props::cmpgt(*this, vectype(x));
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvectype<T>
+  operator>=(T const &x) const {
+    return props::cmpge(*this, vectype(x));
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvectype<T>
+  operator<(T const &x) const {
+    return props::cmplt(*this, vectype(x));
+  }
+  inline CCTK_ATTRIBUTE_ALWAYS_INLINE constexpr bvectype<T>
+  operator<=(T const &x) const {
+    return props::cmple(*this, vectype(x));
   }
 
   friend std::ostream &operator<<(std::ostream &os, vectype const &x) {
