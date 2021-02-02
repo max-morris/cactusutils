@@ -29,6 +29,12 @@
 
 using namespace std;
 
+// Erik Schnetter, 2021-02-02: Compiling this file with nvcc fails
+// with syntax errors. I assume that this is because nvcc doesn't
+// handle all the vectorization intrinsics properly. Since this is
+// only a test file and doesn't affect run-time performance, I didn't
+// investigate further. This #ifdef thus essentially disables this
+// file when building via nvcc.
 #ifdef __CUDACC__
 
 CCTK_ATTRIBUTE_UNUSED
