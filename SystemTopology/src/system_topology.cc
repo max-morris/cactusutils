@@ -29,7 +29,7 @@ void MPI_Get_processor_name1(char *name, int *resultlen) {
                hw.Coords[1], hw.Coords[2], hw.Coords[3], hw.Coords[4]);
   // ignoring hw.Coords[5], which is the core number inside a node
 }
-}
+} // namespace
 #define MPI_Get_processor_name MPI_Get_processor_name1
 #endif
 #endif
@@ -70,7 +70,7 @@ bool is_pow2(int a) {
   }
   return true;
 }
-}
+} // namespace
 
 namespace {
 
@@ -140,7 +140,7 @@ void check_openmp() {
     CCTK_ERROR("Severe OpenMP inconsistency detected -- aborting");
   }
 }
-}
+} // namespace
 
 namespace {
 
@@ -251,7 +251,7 @@ void mpi_host_mapping_t::load() {
 }
 
 #endif
-}
+} // namespace
 
 // Inspired by code in hwloc's documentation
 
@@ -515,7 +515,7 @@ void set_bindings(hwloc_topology_t topology,
     }
   }
 }
-}
+} // namespace
 
 namespace {
 
@@ -586,13 +586,14 @@ void node_topology_info_t::load(hwloc_topology_t const &topology,
         hwloc_get_cache_type_depth(topology, cache_level, HWLOC_OBJ_CACHE_DATA);
 #else
     hwloc_obj_type_t const cache_type[] = {HWLOC_OBJ_L1CACHE, HWLOC_OBJ_L2CACHE,
-      HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L4CACHE, HWLOC_OBJ_L5CACHE};
-    if(cache_level > sizeof(cache_type)/sizeof(cache_type[0]))
+                                           HWLOC_OBJ_L3CACHE, HWLOC_OBJ_L4CACHE,
+                                           HWLOC_OBJ_L5CACHE};
+    if (cache_level > sizeof(cache_type) / sizeof(cache_type[0]))
       break;
     assert(cache_level >= 1);
-    assert(cache_level <= sizeof(cache_type)/sizeof(cache_type[0]));
+    assert(cache_level <= sizeof(cache_type) / sizeof(cache_type[0]));
     int const cache_depth =
-      hwloc_get_type_depth(topology, cache_type[cache_level-1]);
+        hwloc_get_type_depth(topology, cache_type[cache_level - 1]);
 #endif
     if (cache_depth < 0)
       break;
@@ -680,7 +681,8 @@ void node_topology_info_t::load(hwloc_topology_t const &topology,
 #if (HWLOC_API_VERSION < 0x00020000)
       hwloc_obj_memory_s const &memory_attr = node_obj->memory;
 #else
-      hwloc_obj_attr_u::hwloc_numanode_attr_s const &memory_attr = node_obj->attr->numanode;
+      hwloc_obj_attr_u::hwloc_numanode_attr_s const &memory_attr =
+          node_obj->attr->numanode;
 #endif
       for (int memory_level = 0; memory_level < num_memory_levels;
            ++memory_level) {
@@ -714,7 +716,7 @@ void node_topology_info_t::load(hwloc_topology_t const &topology,
     }
   }
 }
-}
+} // namespace
 
 extern "C" CCTK_INT ST_GetNumSMTThreads() {
   return node_topology_info->num_smt_threads;
@@ -802,7 +804,7 @@ extern "C" int ST_system_topology() {
     do_set_thread_bindings = true;
 #endif
   } else {
-    CCTK_BUILTIN_UNREACHABLE();
+    CCTK_ERROR("internal error");
   }
   if (do_set_thread_bindings) {
     set_bindings(topology, *mpi_host_mapping);
