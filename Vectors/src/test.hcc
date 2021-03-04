@@ -37,12 +37,14 @@ using namespace std;
 // file when building via nvcc.
 #ifdef __CUDACC__
 
+namespace {
 CCTK_ATTRIBUTE_UNUSED
 bool Test(CCTK_ARGUMENTS, const std::string veceng) {
   DECLARE_CCTK_ARGUMENTS;
   DECLARE_CCTK_PARAMETERS;
 
   return false;
+}
 }
 
 #else
