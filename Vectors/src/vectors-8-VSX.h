@@ -79,7 +79,7 @@ vec8_eltb(CCTK_BOOLEAN8_VEC x, int d) {
 // 1.1.3.2. page 10
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 vec8_load(CCTK_REAL8 const &p) {
-  return vec_ld(0, &p);
+  return vec_ld(0, (CCTK_REAL8_VEC*)&p);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE CCTK_REAL8_VEC
 vec8_loadu(CCTK_REAL8 const &p) {
@@ -102,7 +102,7 @@ vec8_loadu_maybe3(std::ptrdiff_t off1, std::ptrdiff_t off2, std::ptrdiff_t off3,
 // a reference to a scalar
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void vec8_store(CCTK_REAL8 &p,
                                                            CCTK_REAL8_VEC x) {
-  vec_st(x, 0 , &p);
+  vec_st(x, 0 , (CCTK_REAL8_VEC*)&p);
 }
 static inline CCTK_ATTRIBUTE_ALWAYS_INLINE void vec8_storeu(CCTK_REAL8 &p,
                                                             CCTK_REAL8_VEC x) {
