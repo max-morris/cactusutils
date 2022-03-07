@@ -8,11 +8,8 @@
 #undef __SSE4A__
 //#undef __FMA4__
 #undef __SSE__
-#undef __bgq__
-#undef __VECTOR4DOUBLE__
 #undef __ALTIVEC__
 #undef _ARCH_PWR7
-#undef _ARCH_450D
 
 #define VECTOR_REAL_PRECISION 8
 

@@ -53,9 +53,7 @@ extern "C" void Vectors_Test(CCTK_ARGUMENTS) {
     passed = passed && Test_8_SSE2_SSE41(CCTK_PASS_CTOC);
     passed = passed && Test_8_SSE2_SSE4A(CCTK_PASS_CTOC);
     passed = passed && Test_8_SSE2_FMA4(CCTK_PASS_CTOC);
-    passed = passed && Test_8_QPX(CCTK_PASS_CTOC);
     passed = passed && Test_8_VSX(CCTK_PASS_CTOC);
-    passed = passed && Test_8_DoubleHummer(CCTK_PASS_CTOC);
 
     // Default implementation, do not vectorise
     passed = passed && Test_4_default(CCTK_PASS_CTOC);

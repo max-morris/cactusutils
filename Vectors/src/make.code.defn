@@ -16,9 +16,7 @@ test-vectors-8-AVX_AVX2.cc \
 test-vectors-8-AVX_FMA4.cc \
 test-vectors-8-AVX512.cc \
 test-vectors-8-AVX512_AVX512ER.cc \
-test-vectors-8-DoubleHummer.cc \
 test-vectors-8-MIC.cc \
-test-vectors-8-QPX.cc \
 test-vectors-8-SSE2.cc \
 test-vectors-8-SSE2_SSE41.cc \
 test-vectors-8-SSE2_SSE4A.cc \
