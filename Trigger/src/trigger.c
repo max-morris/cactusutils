@@ -521,11 +521,14 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
         }
         else
         {
-          if (!CCTK_TraverseString(Trigger_Checked_Variable[i],
-                                   Trigger_Transverse_Callback, info, CCTK_VAR))
-              CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                         "No variable with the name '%s' found",
-                         Trigger_Checked_Variable[i]);
+          const int nvars = CCTK_TraverseString(Trigger_Checked_Variable[i],
+                                                Trigger_Transverse_Callback,
+                                                info, CCTK_VAR);
+          if (nvars != 1)
+            CCTK_VERROR(CCTK_THORNSTRING,
+                        "%s parsing variable with the name '%s' in trigger %d: %d",
+                        nvars < 0 ? "Error" : "Incorrect number of variables",
+                        Trigger_Checked_Variable[i]);
           my_GH->active[i]=1;
         }
     }
@@ -548,23 +551,27 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
     else if (CCTK_EQUALS(Trigger_Reaction[i],"steerscalar"))
     {
       info->what_to_set = WTS_STEERSCALAR;
-      if (!CCTK_TraverseString(Trigger_Steered_Scalar[i],
-                               Trigger_Transverse_Callback,
-                               info, CCTK_VAR))
-        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                   "No scalar with the name '%s' found",
-                   Trigger_Steered_Scalar[i]);
+      const int nvars = CCTK_TraverseString(Trigger_Steered_Scalar[i],
+                                            Trigger_Transverse_Callback,
+                                            info, CCTK_VAR);
+      if (nvars != 1)
+        CCTK_VERROR(CCTK_THORNSTRING,
+                    "%s parsing variable with the name '%s' in trigger %d: %d",
+                    nvars < 0 ? "Error" : "Incorrect number of variables",
+                    Trigger_Steered_Scalar[i]);
     }
     /* output */
     else if (CCTK_EQUALS(Trigger_Reaction[i],"output"))
     {
       info->what_to_set = WTS_OUTPUT;
-      if (!CCTK_TraverseString(Trigger_Output_Variables[i],
-                               Trigger_Transverse_Callback,
-                               info, CCTK_GROUP_OR_VAR))
-        CCTK_VWarn(0, __LINE__, __FILE__, CCTK_THORNSTRING,
-                   "No variable with the name '%s' found in trigger %d",
-                   Trigger_Output_Variables[i], i);
+      const int nvars = CCTK_TraverseString(Trigger_Output_Variables[i],
+                                            Trigger_Transverse_Callback,
+                                            info, CCTK_GROUP_OR_VAR);
+      if (nvars <= 0)
+        CCTK_VERROR(CCTK_THORNSTRING,
+                    "%s parsing variable with the name '%s' in trigger %d: %d",
+                    nvars < 0 ? "Error" : "Incorrect number of variables",
+                    Trigger_Output_Variables[i], i, nvars);
     }
   }
   free(info);
