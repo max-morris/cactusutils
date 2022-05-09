@@ -95,11 +95,11 @@ IO::out_fileinfo="none"
 IO::out_dir = $parfile
 
 IOBasic::outScalar_every = 1
-IOBasic::outScalar_vars  = "hydrobase::rho"
+IOBasic::outScalar_vars  = "hydrobase::rho IOBasic::next_info_output_time"
 
 ActiveThorns = "Trigger"
 
-Trigger::Trigger_Number              = 1
+Trigger::Trigger_Number              = 3
 
 trigger::Trigger_Checked_Variable[0] = "hydrobase::rho"
 trigger::Trigger_Reduction[0]        = "maximum"
@@ -108,6 +108,24 @@ trigger::Trigger_Checked_Value[0]    = 0.001276
 trigger::Trigger_Reaction[0]         = "output"
 trigger::Trigger_Output_Method[0]    = "scalar"
 trigger::Trigger_Output_Variables[0] = "hydrobase::press"
+
+trigger::Trigger_Checked_Variable[1] = "hydrobase::rho"
+trigger::Trigger_Reduction[1]        = "maximum"
+trigger::Trigger_Relation[1]         = ">"
+trigger::Trigger_Checked_Value[1]    = 0.0
+trigger::Trigger_Reaction[1]         = "steerscalar"
+trigger::Trigger_Steered_Scalar[1]   = "IOBasic::next_info_output_time"
+trigger::Trigger_Steered_Scalar_Index[1] = 0
+trigger::Trigger_Steered_Scalar_Value[1] = "42."
+
+trigger::Trigger_Checked_Variable[2] = "trigger::trigger_cctk_time"
+trigger::Trigger_Reduction[2]        = "minimum"
+trigger::Trigger_Relation[2]         = ">"
+trigger::Trigger_Checked_Value[2]    = 1.0
+trigger::Trigger_Reaction[2]         = "steerparam"
+trigger::Trigger_Steered_Parameter_Thorn[2] = "IOBasic"
+trigger::Trigger_Steered_Parameter_Name[2] = "outScalar_vars"
+trigger::Trigger_Steered_Parameter_Value[2] = "hydrobase::rho IOBasic::next_info_output_time IOBasic::next_scalar_output_time"
 
 #trigger::Trigger_Debug               = 1
 
