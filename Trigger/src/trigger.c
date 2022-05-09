@@ -445,6 +445,7 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
   my_GH = (TriggerGH*) malloc(sizeof(TriggerGH));
   info = (transverse_info*) malloc(sizeof(transverse_info));
 
+  // many of these must be initialized to 0 to so calloc is used
   my_GH->last_checked    = (int*)   
                            calloc(Trigger_Number,sizeof(int));
   my_GH->trigger_once    = (int*)   
@@ -542,10 +543,6 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
                        "No parameter with the name '%s' found in trigger %d",
                        Trigger_Steered_Parameter_Name[i], i);
         /* TODO: check for steerability */
-        my_GH->output_variables
-                 [i*CCTK_NumVars() + my_GH->output_variables_number[i]]
-              =-1;
-        my_GH->output_variables_number[i]++;
     }
     /* scalar */
     else if (CCTK_EQUALS(Trigger_Reaction[i],"steerscalar"))
