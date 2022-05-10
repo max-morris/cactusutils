@@ -92,6 +92,7 @@ IOBasic::outInfo_every 			= 	1
 IOBasic::outInfo_vars 			= 	"HydroBase::rho"
 
 IO::out_fileinfo="none"
+IO::parfile_write="no"
 IO::out_dir = $parfile
 
 IOBasic::outScalar_every = 1
