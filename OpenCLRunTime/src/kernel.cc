@@ -1,6 +1,9 @@
 #include "kernel.hh"
 #include "copy.hh"
 
+#include "cctk.h"
+#include "cctk_Arguments.h"
+
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
