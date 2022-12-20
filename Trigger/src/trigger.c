@@ -56,7 +56,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger);
 int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
 {
   TriggerGH *my_GH;
-  int varindex, reduction_handle=0, errno, ret;
+  int varindex, reduction_handle=-1, errno, ret;
   CCTK_REAL value;
 
   my_GH = (TriggerGH*)CCTK_GHExtension(GH, "Trigger");
@@ -78,19 +78,29 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
                  "triggered in the past.", trigger);
     return 0;
   }
+  /* get variable to check for */
+  varindex=my_GH->checked_variable[trigger];
+  const int check_something = (varindex != -1) ||
+                              (!CCTK_EQUALS(my_GH->checked_parameter_name[trigger], "") ||
+                               !CCTK_EQUALS(my_GH->checked_parameter_thorn[trigger], ""));
+  if (!check_something)
+  {
+    return 0;
+  }
   /* do we have to use a reduction? */
   if (!CCTK_EQUALS(my_GH->reduction[trigger], ""))
   {
     /* get a reduction handle */
     reduction_handle=CCTK_ReductionHandle(my_GH->reduction[trigger]);
     if (reduction_handle<0)
-      CCTK_WARN(0, "Unable to get reduction handle.");
+      CCTK_ERROR("Unable to get reduction handle.");
   }
-  /* get variable to check for */
-  varindex=my_GH->checked_variable[trigger];
   /* Do reduce */
-  if (reduction_handle)
+  if (reduction_handle >= 0)
   {
+    if (varindex < 0)
+      CCTK_ERROR("Cannot use reductions without checked variable");
+
     union anytypevalue_u {
       CCTK_REAL realval;
       CCTK_INT intval;
@@ -106,7 +116,7 @@ int Trigger_TriggerFullFilled(const cGH *GH, int trigger)
     if (my_GH->debug)
       CCTK_VINFO("reducing was ok");
     if (errno)
-      CCTK_WARN(0, "Reduce returned an error.");
+      CCTK_ERROR("Reduce returned an error.");
 
     switch (vartype) {
       case CCTK_VARIABLE_REAL:
@@ -314,7 +324,9 @@ void Trigger_Check(CCTK_ARGUMENTS)
   {
     // Reset this from parameter because it might have been steered
     my_GH->trigger_once[i] = Trigger_Once[i];
-    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
+    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam") &&
+        !CCTK_EQUALS(Trigger_Steered_Parameter_Name[i], "") &&
+        !CCTK_EQUALS(Trigger_Steered_Parameter_Thorn[i], ""))
     {
       if (Trigger_TriggerFullFilled(cctkGH, i))
       {
@@ -344,7 +356,8 @@ void Trigger_Check(CCTK_ARGUMENTS)
         }
       }
     }
-    if (CCTK_EQUALS(Trigger_Reaction[i],"steerscalar"))
+    if (CCTK_EQUALS(Trigger_Reaction[i],"steerscalar") &&
+        my_GH->steered_scalar[i] != -1)
     {
       if (Trigger_TriggerFullFilled(cctkGH, i))
       {
@@ -517,25 +530,35 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
     }
 
     /* What should be done when the trigger is positive? */
-    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
+    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam") &&
+        !CCTK_EQUALS(Trigger_Steered_Parameter_Name[i], "") &&
+        !CCTK_EQUALS(Trigger_Steered_Parameter_Thorn[i], ""))
     {
         if (!CCTK_ParameterGet(Trigger_Steered_Parameter_Name[i],
                                Trigger_Steered_Parameter_Thorn[i],NULL))
             CCTK_VERROR("No parameter with the name '%s' found in trigger %d",
-                       Trigger_Steered_Parameter_Name[i], i);
+                        Trigger_Steered_Parameter_Name[i], i);
         /* TODO: check for steerability */
     }
     /* scalar */
     else if (CCTK_EQUALS(Trigger_Reaction[i],"steerscalar"))
     {
       info->what_to_set = WTS_STEERSCALAR;
-      const int nvars = CCTK_TraverseString(Trigger_Steered_Scalar[i],
-                                            Trigger_Transverse_Callback,
-                                            info, CCTK_VAR);
-      if (nvars != 1)
-        CCTK_VERROR("%s parsing variable with the name '%s' in trigger %d: %d",
-                    nvars < 0 ? "Error" : "Incorrect number of variables",
-                    Trigger_Steered_Scalar[i]);
+
+      if (CCTK_EQUALS(Trigger_Checked_Variable[i],""))
+      {
+        info->my_GH->steered_scalar[i] = -1;
+      }
+      else
+      {
+        const int nvars = CCTK_TraverseString(Trigger_Steered_Scalar[i],
+                                              Trigger_Transverse_Callback,
+                                              info, CCTK_VAR);
+        if (nvars != 1)
+          CCTK_VERROR("%s parsing variable with the name '%s' in trigger %d: %d",
+                      nvars < 0 ? "Error" : "Incorrect number of variables",
+                      Trigger_Steered_Scalar[i]);
+      }
     }
     /* output */
     else if (CCTK_EQUALS(Trigger_Reaction[i],"output"))
@@ -544,7 +567,7 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
       const int nvars = CCTK_TraverseString(Trigger_Output_Variables[i],
                                             Trigger_Transverse_Callback,
                                             info, CCTK_GROUP_OR_VAR);
-      if (nvars <= 0)
+      if (nvars < 0)
         CCTK_VERROR("%s parsing variable with the name '%s' in trigger %d: %d",
                     nvars < 0 ? "Error" : "Incorrect number of variables",
                     Trigger_Output_Variables[i], i, nvars);
@@ -575,7 +598,9 @@ void Trigger_ParamCheck(CCTK_ARGUMENTS)
     if (!my_GH->active[i])
       continue;
 
-    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam"))
+    if (CCTK_EQUALS(Trigger_Reaction[i],"steerparam") &&
+        !CCTK_EQUALS(Trigger_Steered_Parameter_Name[i], "") &&
+        !CCTK_EQUALS(Trigger_Steered_Parameter_Thorn[i], ""))
     {
       const cParamData *paramdata = CCTK_ParameterData(
                                       Trigger_Steered_Parameter_Name[i],
