@@ -84,7 +84,7 @@ sub init_repo($$)
 
     # Create the repository
     runcmd "Initializing git repository", "$git_cmd --git-dir='$git_repo/.git' init-db";
-    runcmd "Configuring git repository", "$git_cmd --git-dir='$git_repo/.git' config receive.denyCurrentBranch false && $git_cmd --git-dir='$git_repo/.git' config gc.detachauto false";
+    runcmd "Configuring git repository", "$git_cmd --git-dir='$git_repo/.git' config receive.denyCurrentBranch false && $git_cmd --git-dir='$git_repo/.git' config gc.autoDetach false";
 
     # Add a README
     open README, ">$git_repo/README" or die "open $git_repo/README failed: $!";
