@@ -391,6 +391,7 @@ $(TOP)/build/Formaline/git-store-source: $(BUILD-ID-FILE) $(TARBALL_DIR)/flesh-C
 	$(GIT-THORNS:%=$(TARBALL_DIR)/thorn-%.files) \
 	$(TARBALL_DIR)/config-Cactus.files | $(FORMALINE-UTILS)
 	export 'CCTK_HOME=$(CCTK_HOME)' && \
+	export 'CONFIGS_DIR=$(CONFIGS_DIR)' && \
 	if [ -e '$(CCTK_HOME)/cactus.config' ]; then \
 		. '$(CCTK_HOME)/cactus.config'; \
 	fi && \

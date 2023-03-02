@@ -220,7 +220,7 @@ sub main()
       chomp $hash;
       # Use 3-arguments version of cacheinfo due to old git versions on some clusters
 
-      my $configs_dir = $ENV{'CACTUS_CONFIGS_DIR'};
+      my $configs_dir = $ENV{'CONFIGS_DIR'};
       my $relative_file = $file;
       $relative_file =~ s|^$configs_dir/|configs/|g;
 
