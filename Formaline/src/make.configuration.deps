@@ -132,7 +132,7 @@ $(TARBALL_DIR)/config-Cactus.c: $(TARBALL_DIR)/config-Cactus.files $(CCTK_HOME)/
         # 3.81 to hang due to a make bug
 	if ( cd $(CONFIGS_DIR) && ( $(TAR) czf $(TARBALL_DIR)/config-Cactus.tar.gz -T $< || [ $$? -lt $(TAR_ERROR_THRESHOLD) ] ) ) ; then \
 	    $(RM) -f $(@:%.c=%-????.c) && \
-	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' CactusConfig < $(TARBALL_DIR)/config-Cactus.tar.gz && \
+           $(PERL) $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' CactusConfig < $(TARBALL_DIR)/config-Cactus.tar.gz && \
             rm $(TARBALL_DIR)/config-Cactus.tar.gz ; \
         else \
             exit $$? ; \
@@ -203,7 +203,7 @@ $(TARBALL_DIR)/flesh-Cactus.c: $(TARBALL_DIR)/flesh-Cactus.files $(CCTK_HOME)/ar
         # 3.81 to hang due to a make bug
 	if ( cd $(CCTK_HOME) && ( $(TAR) czf $(TARBALL_DIR)/flesh-Cactus.tar.gz -T $< || [ $$? -lt $(TAR_ERROR_THRESHOLD) ] ) ) ; then \
 	    $(RM) -f $(@:%.c=%-????.c) && \
-	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' Cactus < $(TARBALL_DIR)/flesh-Cactus.tar.gz && \
+           $(PERL) $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) '' Cactus < $(TARBALL_DIR)/flesh-Cactus.tar.gz && \
             $(RM) $(TARBALL_DIR)/flesh-Cactus.tar.gz ; \
         else \
             exit $$? ; \
@@ -269,7 +269,7 @@ $(TARBALL_DIR)/thorn-%.c: $(TARBALL_DIR)/thorn-%.files $(CCTK_HOME)/arrangements
         # 3.81 to hang due to a make bug
 	if ( cd $(CCTK_HOME) && ( $(TAR) czf $(@:%.c=%.tar.gz) -T $< || [ $$? -lt $(TAR_ERROR_THRESHOLD) ] ) ) ; then \
 	    cd $(TARBALL_DIR) && $(RM) -f $(@:$(TARBALL_DIR)/%.c=%-????.c) && \
-	    $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/thorn-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/thorn-%.c=%) < $(@:%.c=%.tar.gz) && \
+           $(PERL) $(FORMALINE_BIN_DIR)/makeblob.pl $(@:%.c=%) $(patsubst %/,%,$(dir $(filter %/$(@:$(TARBALL_DIR)/thorn-%.c=%),$(THORNS)))) $(@:$(TARBALL_DIR)/thorn-%.c=%) < $(@:%.c=%.tar.gz) && \
             rm $(@:%.c=%.tar.gz) ; \
         else \
             exit $$? ; \
