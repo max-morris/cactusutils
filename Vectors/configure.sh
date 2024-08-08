@@ -71,7 +71,7 @@ esac
 case $(echo "x$VECTORISE_ALWAYS_USE_UNALIGNED_LOADS" | tr '[:upper:]' '[:lower:]') in
     (xyes) VECTORISE_ALWAYS_USE_UNALIGNED_LOADS=1 ;;
     (xno)  VECTORISE_ALWAYS_USE_UNALIGNED_LOADS=0 ;;
-    (x)    VECTORISE_ALWAYS_USE_UNALIGNED_LOADS=0 ;; # default
+    (x)    VECTORISE_ALWAYS_USE_UNALIGNED_LOADS=1 ;; # default
     (*)    echo "BEGIN ERROR"
            echo "Illegal value of option VECTORISE_ALWAYS_USE_UNALIGNED_LOADS"
            echo "END ERROR"

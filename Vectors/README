@@ -28,12 +28,12 @@ differencing operators in the y and z directions. (Setting this
 produces faster code, but may lead to segfaults if the assumption is
 not true.)
 
-VECTORISE_ALWAYS_USE_UNALIGNED_LOADS (default "no", experimental):
+VECTORISE_ALWAYS_USE_UNALIGNED_LOADS (default "yes"):
 Replace all aligned load operations with unaligned load operations.
 This may simplify some code where alignment is unknown at compile
 time. This should never lead to better code, since the default is to
 use aligned load operations iff the alignment is known to permit this
-at build time. This options is probably useless.
+at build time.
 
 VECTORISE_ALWAYS_USE_ALIGNED_LOADS (default "no", experimental):
 Replace all unaligned load operations by (multiple) aligned load
