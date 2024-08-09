@@ -524,7 +524,7 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
           if (nvars != 1)
             CCTK_VERROR("%s parsing variable with the name '%s' in trigger %d: %d",
                         nvars < 0 ? "Error" : "Incorrect number of variables",
-                        Trigger_Checked_Variable[i]);
+                        Trigger_Checked_Variable[i], i, nvars);
           my_GH->active[i]=1;
         }
     }
@@ -557,7 +557,7 @@ static void *Trigger_SetupGH(tFleshConfig *config, int conv_level, cGH *GH)
         if (nvars != 1)
           CCTK_VERROR("%s parsing variable with the name '%s' in trigger %d: %d",
                       nvars < 0 ? "Error" : "Incorrect number of variables",
-                      Trigger_Steered_Scalar[i]);
+                      Trigger_Steered_Scalar[i], i, nvars);
       }
     }
     /* output */
