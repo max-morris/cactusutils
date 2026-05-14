@@ -194,12 +194,16 @@ sub main()
   # changed), add any missing files to list of removed files since Formaline's
   # file tracking is not perfect for files that do not affect the executable.
   for my $file (@want_files) {
-    # only accept normal files, ignore missing files since our file tracking is not perfect
-    if (! -e $file) {
+    # only accept normal files and symbolic links, ignore missing files since our file tracking is not perfect
+    if (-l $file && ! -e $file) {
+      warn "WARNING: Refusing to add \"$file\" as it is a broken symbolic link";
       push @to_remove, $file;
       next;
-    } elsif (! -f $file) {
-      warn "WARNING: Refusing to add \"$file\" as it is not a regular file";
+    } elsif (! -e $file) {
+      push @to_remove, $file;
+      next;
+    } elsif (! -f $file && ! -l $file) {
+      warn "WARNING: Refusing to add \"$file\" as it is neither a regular file nor a symbolic link";
       next;
     }
     # first try building a shadow hierarchy of files that we can add in one git
@@ -214,17 +218,31 @@ sub main()
     if(not link $file, "$dstdir/$file") {
       delete $want_files{$file}; # remove from list of files to later add
 
-      my $st = stat $file or die "ERROR: could not stat \"$file\"";
-      my $mode = sprintf "%o", $st->mode;
-      my $hash = callcmd "Calculating hash for file", "$git_cmd --git-dir='$git_repo/.git' hash-object -w --stdin <'$file'";
+      my ($mode, $hash);
+      if (-l $file) {
+        my $link_target = readlink $file;
+        defined $link_target or die "ERROR: could not readlink \"$file\": $!";
+        local $ENV{'FORMALINE_LINK_TARGET'} = $link_target;
+        $mode = "120000";
+        $hash = callcmd "Calculating hash for symbolic link",
+                        qq(printf %s "\$FORMALINE_LINK_TARGET" | $git_cmd --git-dir='$git_repo/.git' hash-object -w --stdin);
+      } else {
+        my $st = stat $file or die "ERROR: could not stat \"$file\"";
+        $mode = sprintf "%o", $st->mode;
+        local $ENV{'FORMALINE_FILE'} = $file;
+        $hash = callcmd "Calculating hash for file",
+                        qq($git_cmd --git-dir='$git_repo/.git' hash-object -w --stdin < "\$FORMALINE_FILE");
+      }
       chomp $hash;
-      # Use 3-arguments version of cacheinfo due to old git versions on some clusters
 
       my $configs_dir = $ENV{'CONFIGS_DIR'};
       my $relative_file = $file;
       $relative_file =~ s|^$configs_dir/|configs/|g;
 
-      runcmd "Adding file to git repo", "$git_cmd --git-dir='$git_repo/.git' update-index --add --cacheinfo $mode $hash '$relative_file'";
+      local $ENV{'FORMALINE_RELATIVE_FILE'} = $relative_file;
+      # Use 3-arguments version of cacheinfo due to old git versions on some clusters
+      runcmd "Adding file to git repo",
+             qq($git_cmd --git-dir='$git_repo/.git' update-index --add --cacheinfo $mode $hash "\$FORMALINE_RELATIVE_FILE");
     }
   }
   @want_files = grep {$want_files{$_}} keys %want_files;
