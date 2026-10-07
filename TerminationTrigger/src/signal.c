@@ -155,7 +155,7 @@ static void signal_name_callback(CCTK_ATTRIBUTE_UNUSED void *data,
                                  const char *parameter,
                                  const char *new_value) {
   int which;
-  const int converted = sscanf("%*[a-zA-Z_0-9][%d]", parameter, &which);
+  const int converted = sscanf(parameter, "%*[a-zA-Z_0-9][%d]", &which);
   assert(converted == 1);
   set_sighandler(which, new_value, 0);
 }
@@ -165,7 +165,7 @@ static void signal_number_callback(CCTK_ATTRIBUTE_UNUSED void *data,
                                    const char *parameter,
                                    const char *new_value) {
   int which;
-  const int converted = sscanf("%*[a-zA-Z_0-9][%d]", parameter, &which);
+  const int converted = sscanf(parameter, "%*[a-zA-Z_0-9][%d]", &which);
   assert(converted == 1);
   set_sighandler(which, "", atoi(new_value));
 }
