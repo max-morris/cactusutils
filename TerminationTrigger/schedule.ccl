@@ -2,6 +2,12 @@
 
 STORAGE: watchminutes triggered
 
+# None of these routines works on grid functions. They act on state that
+# exists once per process (files, signal handlers, grid scalars), so they
+# run in global mode, once per process. In local mode a driver may call
+# them once per grid component, and CarpetX does so concurrently on
+# several threads.
+
 SCHEDULE TerminationTrigger_ParamCheck AT PARAMCHECK
 {
   LANG: C
@@ -11,11 +17,13 @@ SCHEDULE TerminationTrigger_ParamCheck AT PARAMCHECK
 SCHEDULE TerminationTrigger_ResetTrigger AT BaseGrid
 {
   LANG: C
+  OPTIONS: global
 } "Clear trigger state"
 
 SCHEDULE TerminationTrigger_StartTimer AT BaseGrid
 {
   LANG: C
+  OPTIONS: global
   WRITES: TerminationTrigger::watchminutes(everywhere)
 } "Start timer"
 
@@ -29,6 +37,7 @@ SCHEDULE TerminationTrigger_ResetMinutes AT post_recover_variables
 SCHEDULE TerminationTrigger_CheckWalltime AT analysis
 {
   LANG: C
+  OPTIONS: global
   READS: TerminationTrigger::watchminutes(everywhere)
   WRITES: TerminationTrigger::watchminutes(everywhere)
 } "Check elapsed job walltime"
@@ -41,6 +50,7 @@ SCHEDULE TerminationTrigger_StartSignalHandler AT startup
 SCHEDULE TerminationTrigger_CheckSignal AT analysis
 {
   LANG: C
+  OPTIONS: global
 } "Check if we received a termination signal"
 
 
@@ -49,10 +59,12 @@ if (create_termination_file)
   SCHEDULE TerminationTrigger_CreateFile AT BaseGrid
   {
     LANG: C
+    OPTIONS: global
   } "Create termination file"
 }
 
 SCHEDULE TerminationTrigger_CheckFile AT analysis
 {
   LANG: C
+  OPTIONS: global
 } "Check termination file"
