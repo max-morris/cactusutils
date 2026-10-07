@@ -124,21 +124,22 @@ static void set_sighandler(const int which, const char *signame,
   }
   assert(my_signum >= 0);
 
+  /* change the handlers only if the signal changed, so that the signal is
+   * never left without our handler while we keep listening to it */
   if(my_signum != current_signals[which]) {
     if(my_signum > 0) {
       CCTK_VInfo(CCTK_THORNSTRING, "Listening for signal '%s'.", signame);
     } else {
       CCTK_VInfo(CCTK_THORNSTRING, "Stopped listening for signals.");
     }
-  }
 
-  if(old_handlers[which] != NULL) {
-    assert(current_signals[which] > 0);
-    signal(current_signals[which], old_handlers[which]);
-  }
+    if(current_signals[which] > 0) {
+      signal(current_signals[which], old_handlers[which]);
+    }
 
-  if(my_signum > 0) {
-    old_handlers[which] = signal(my_signum, sighandler);
+    if(my_signum > 0) {
+      old_handlers[which] = signal(my_signum, sighandler);
+    }
     current_signals[which] = my_signum;
   }
 }
